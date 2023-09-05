@@ -82,7 +82,8 @@ executable level2
     -- Other library packages from which modules are imported.
     build-depends:   
       base ^>=4.16.4.0,
-      effectful
+      effectful,
+      amqp-worker >= 0.4
 
 
     -- Directories containing source files.
