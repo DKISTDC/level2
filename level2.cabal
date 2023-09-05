@@ -67,6 +67,7 @@ executable level2
     -- Modules included in this executable, other than Main.
     other-modules:
       NSO.Level2
+      NSO.Steps
       Flow
       Flow.Example
       Flow.Node
@@ -83,7 +84,12 @@ executable level2
     build-depends:   
       base ^>=4.16.4.0,
       effectful,
-      amqp-worker >= 0.4
+      text,
+      amqp-worker >= 2.0,
+      data-diverse >= 4.7,
+      tagged,
+      lens
+
 
 
     -- Directories containing source files.
