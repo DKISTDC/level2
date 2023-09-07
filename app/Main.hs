@@ -1,22 +1,36 @@
 module Main where
 
--- INFO: DOING NOW
-
--- INFO:    ENTIRE PIPELINE
--- ------------------------
+import TUI
 
 -- TODO: Listen for dataset activator message
---   TODO: AMQP Library
+--   DONE: AMQP Library
+--   TODO: worker to listen
+--   TODO: worker launches main process
 
--- TODO: Get file metadata via object store (GraphQL API)
+-- DONE: Get file metadata via object store (GraphQL API)
+--  DONE: Connect to Metadata API
+--  DONE: Fetch all datasets
 
--- TODO: Download files via GLOBUS API
+-- TODO: Sort
+--   TODO: Download files via GLOBUS API? (Not wh
 
--- TODO: Identify valid datasets
+-- TODO: Scan metadata store
+--   TODO: Identify valid datasets
+--   TODO: Update state in store
 
--- TODO: Preprocessing (Fake)
+-- TODO: Integrate local database
+--   TODO: Migrations
+--   TODO: Access module
 
--- TODO: Place files in location
+-- TODO: Admin Interface
+--   DOING: Brick?
+--   TODO: Web?
+--   TODO: Show status
+
+-- DONE: Preprocessing (Fake)
+
+-- TODO: Place files in location when ready
+--   DOING: Figure out where to put files for easy access with Han
 
 main :: IO ()
-main = putStrLn "Hello, Haskell!"
+main = TUI.main

@@ -4,6 +4,7 @@
 module NSO.Metadata
   ( test
   , parseAllDatasets
+  , fetchAll
   , Dataset (..)
   , DateTime (..)
   , JSONString (..)
