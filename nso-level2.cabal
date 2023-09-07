@@ -28,6 +28,7 @@ executable level2
       NSO.Metadata
       NSO.Steps
       NSO.Types
+      TUI
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
@@ -46,12 +47,18 @@ executable level2
       aeson ==2.1.2.1
     , amqp-worker >=2.0
     , base >=4.16.4.0
+    , brick
     , data-diverse >=4.7
     , effectful
     , lens
+    , microlens
+    , microlens-mtl
+    , microlens-th
     , morpheus-graphql >=0.27
     , morpheus-graphql-client >=0.27
+    , mtl
     , tagged
     , text
     , time
+    , vty
   default-language: GHC2021

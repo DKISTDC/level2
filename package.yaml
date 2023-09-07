@@ -40,7 +40,6 @@ dependencies:
   -  morpheus-graphql-client >= 0.27
   -  morpheus-graphql >= 0.27
 
-
 executables:
   level2:
     source-dirs: app
@@ -49,5 +48,11 @@ executables:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
-    dependencies: []
+    dependencies:
+    - brick
+    - vty
+    - mtl
+    - microlens
+    - microlens-mtl
+    - microlens-th
 
