@@ -1,0 +1,57 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.3.
+--
+-- see: https://github.com/sol/hpack
+
+name:           nso-level2
+version:        0.1.0
+synopsis:       NSO Level 2 Data Processing
+category:       System, Science
+homepage:       https://github.com/DKISTDC/Level2
+author:         Sean Hess
+maintainer:     shess@nso.edu
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    DEVELOPMENT.md
+
+executable level2
+  main-is: Main.hs
+  other-modules:
+      Flow
+      Flow.Example
+      Flow.Node
+      NSO.Level2
+      NSO.Metadata
+      NSO.Steps
+      NSO.Types
+      Paths_nso_level2
+  autogen-modules:
+      Paths_nso_level2
+  hs-source-dirs:
+      app
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      QuasiQuotes
+      DuplicateRecordFields
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson ==2.1.2.1
+    , amqp-worker >=2.0
+    , base >=4.16.4.0
+    , data-diverse >=4.7
+    , effectful
+    , lens
+    , morpheus-graphql >=0.27
+    , morpheus-graphql-client >=0.27
+    , tagged
+    , text
+    , time
+  default-language: GHC2021

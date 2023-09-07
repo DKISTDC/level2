@@ -1,0 +1,53 @@
+name:               nso-level2
+version:            0.1.0
+synopsis:           NSO Level 2 Data Processing
+homepage:           https://github.com/DKISTDC/Level2
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Sean Hess
+maintainer:         shess@nso.edu
+category:           System, Science
+
+extra-source-files:
+  - README.md
+  - DEVELOPMENT.md
+
+language: GHC2021
+
+
+ghc-options:
+  - -Wall
+
+default-extensions:
+  - TypeFamilies
+  - DataKinds
+  - DeriveAnyClass
+  - DerivingStrategies
+  - OverloadedRecordDot
+  - QuasiQuotes
+  - DuplicateRecordFields
+
+dependencies:
+  -  base >=4.16.4.0
+  -  aeson == 2.1.2.1
+  -  effectful
+  -  text
+  -  amqp-worker >= 2.0
+  -  data-diverse >= 4.7
+  -  tagged
+  -  lens
+  -  time
+  -  morpheus-graphql-client >= 0.27
+  -  morpheus-graphql >= 0.27
+
+
+executables:
+  level2:
+    source-dirs: app
+    main: Main.hs
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies: []
+
