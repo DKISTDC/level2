@@ -1,0 +1,4448 @@
+schema {
+  query: Query
+  mutation: Mutations
+}
+
+"""List of users email addresses who are exempt from embargo rules"""
+type AuthorizedAgentType {
+  """The primary key of the authorized agent"""
+  authorizedAgentId: Int
+
+  """UUID for the identity record of the user in the Globus Auth platform"""
+  userId: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+type CreateAuthorizedAgent {
+  ok: Boolean
+  authorizedAgent: AuthorizedAgentType
+}
+
+"""
+Create both a processing candidate and associated processing candidate calibrations in one transaction.
+Update the record if it already exists and is not locked.
+"""
+type CreateDataAcquisitionSupportRecord {
+  ok: Boolean
+  processingCandidate: ProcessingCandidateType
+}
+
+"""Create a new dataset catalog receipt account."""
+type CreateDatasetCatalogReceiptAccount {
+  ok: Boolean
+  datasetCatalogReceiptAccount: DatasetCatalogReceiptAccountType
+}
+
+type CreateDatasetInventory {
+  ok: Boolean
+  datasetInventory: DatasetInventoryType
+}
+
+type CreateDeadLetteredMessage {
+  ok: Boolean
+  deadLetteredMessage: DeadLetteredMessageType
+}
+
+type CreateDigestNotification {
+  ok: Boolean
+  digestNotification: DigestNotificationType
+}
+
+type CreateExperimentDescription {
+  ok: Boolean
+  experimentDescription: ExperimentDescriptionType
+}
+
+"""Create operation for a single frame"""
+type CreateFrameInventory {
+  ok: Boolean
+  frameInventory: FrameInventoryType
+}
+
+"""Create or Update the frame receipt expected counts"""
+type CreateFrameReceiptExpected {
+  ok: Boolean
+  frameReceiptExpected: FrameReceiptExpectedType
+}
+
+"""Create a frame receipt journal entry"""
+type CreateFrameReceiptJournal {
+  ok: Boolean
+  frameReceiptJournal: FrameReceiptJournalType
+}
+
+type CreateInputDataset {
+  ok: Boolean
+  inputDataset: InputDatasetType
+}
+
+type CreateInputDatasetInputDatasetPart {
+  ok: Boolean
+  inputDatasetInputDatasetPart: InputDatasetInputDatasetPartType
+}
+
+type CreateInputDatasetPart {
+  ok: Boolean
+  inputDatasetPart: InputDatasetPartType
+}
+
+type CreateInputDatasetPartType {
+  ok: Boolean
+  inputDatasetPartType: InputDatasetPartTypeType
+}
+
+type CreateInstrument {
+  ok: Boolean
+  instrument: InstrumentType
+}
+
+"""Create operation for a single object inventory record"""
+type CreateObjectInventory {
+  ok: Boolean
+  objectInventory: ObjectInventoryType
+}
+
+type CreateParameter {
+  ok: Boolean
+  parameter: ParameterType
+}
+
+type CreateParameterType {
+  ok: Boolean
+  parameterType: ParameterTypeType
+}
+
+type CreateParameterValue {
+  ok: Boolean
+  parameterValue: ParameterValueType
+}
+
+type CreateProcessingCandidate {
+  ok: Boolean
+  processingCandidate: ProcessingCandidateType
+}
+
+type CreateProcessingCandidateCalibration {
+  ok: Boolean
+  processingCandidateCalibration: ProcessingCandidateCalibrationType
+}
+
+type CreateProposalAccess {
+  ok: Boolean
+  proposalAccess: ProposalAccessType
+}
+
+type CreateProposalInvestigator {
+  ok: Boolean
+  proposalInvestigator: ProposalInvestigatorType
+}
+
+type CreateQualityReport {
+  ok: Boolean
+  qualityReport: QualityReportType
+}
+
+type CreateRecipe {
+  ok: Boolean
+  recipe: RecipeType
+}
+
+type CreateRecipeConfiguration {
+  ok: Boolean
+  recipeConfiguration: RecipeConfigurationType
+}
+
+type CreateRecipeInstance {
+  ok: Boolean
+  recipeInstance: RecipeInstanceType
+}
+
+type CreateRecipeInstrument {
+  ok: Boolean
+  recipeInstrument: RecipeInstrumentType
+}
+
+type CreateRecipeParameter {
+  ok: Boolean
+  recipeParameter: RecipeParameterType
+}
+
+"""
+Create a recipe run based upon input parameters.  Set the create and status dates to the execution time
+"""
+type CreateRecipeRun {
+  ok: Boolean
+  recipeRun: RecipeRunType
+}
+
+type CreateRecipeRunProvenance {
+  ok: Boolean
+  recipeRunProvenance: RecipeRunProvenanceType
+}
+
+type CreateRecipeRunStatus {
+  ok: Boolean
+  recipeRunStatus: RecipeRunStatusType
+}
+
+type CreateWorkflow {
+  ok: Boolean
+  workflow: WorkflowType
+}
+
+"""
+Aggregation table for expected and actual processed object receipts grouped by dataset id
+"""
+type DatasetCatalogReceiptAccountType {
+  """Unique id for the dataset catalog receipt account"""
+  datasetCatalogReceiptAccountId: Int
+
+  """The id of the dataset that receipts are being accounted for"""
+  datasetId: String
+
+  """The number of receipts that are expected for the dataset"""
+  expectedObjectCount: Int
+
+  """The number of receipts that have been received for the dataset"""
+  receivedObjectCount: Int
+
+  """A flag indicating whether"""
+  isLocked: Boolean
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""Values and ranges for data in dataset inventory"""
+type DatasetInventoryLookupType {
+  """Name of the field the lookup applies to"""
+  fieldName: String
+
+  """A list of unique values found for the database column"""
+  categoricalValues: [String]
+
+  """Minimum value found for the database column"""
+  minValue: String
+
+  """Maximum value found for the database column"""
+  maxValue: String
+
+  """Data type of the value. Options defined by DataType type"""
+  dataType: DataType
+}
+
+"""Number of records matching a query"""
+type DatasetInventoryRecordCountType {
+  """Number of records matching a query"""
+  recordCount: Int
+}
+
+"""Metadata for the discovery of datasets"""
+type DatasetInventoryType {
+  """The unique id of the dataset inventory record"""
+  datasetInventoryId: Int
+
+  """
+  The object key used to retrieve the asdf file from the same bucket as the frame objects
+  """
+  asdfObjectKey: String
+
+  """
+  The spatial extent of all data within the dataset in arc seconds from the
+  center of the sun using the upper right and lower left corners in that order
+  and in the format ((x1,y1),(x2,y2))
+  """
+  boundingBox: String
+
+  """
+  The object key used to retrieve the browse movie from the browse-movie bucket
+  """
+  browseMovieObjectKey: String
+
+  """The URL for the published browse movie e.g. in YouTube"""
+  browseMovieUrl: String
+
+  """The unique id of the dataset"""
+  datasetId: String
+
+  """
+  A sum of the size in GB (space on disk) of the available frames within a data set in
+  """
+  datasetSize: Int
+
+  """Time of acquisition for the latest frame in the data set"""
+  endTime: DateTime
+
+  """A list of the experiment ids that contributed to a dataset"""
+  contributingExperimentIds: [String]
+
+  """
+  The mode length of time that the CCD was exposed for within the dataset
+  """
+  exposureTime: Float
+
+  """Number of frames currently available within a data set"""
+  frameCount: Int
+
+  """Name of the instrument that produced the data in the dataset"""
+  instrumentName: String
+
+  """Number of frames in the data set when it was created"""
+  originalFrameCount: Int
+
+  """The experiment id the observation data was collected under"""
+  primaryExperimentId: String
+
+  """The proposal id the observation data was collected under"""
+  primaryProposalId: String
+
+  """A list of the proposal ids that contributed to a dataset"""
+  contributingProposalIds: [String]
+
+  """Average Fried parameter in the dataset"""
+  qualityAverageFriedParameter: Float
+
+  """Average polarimetric accuracy calculated from the dataset"""
+  qualityAveragePolarimetricAccuracy: Float
+
+  """Foreign key reference to the recipe instance that created the data set"""
+  recipeInstanceId: Int
+
+  """
+  Foreign key reference to the recipe run that created the data set.  Also used to look up provenance information
+  """
+  recipeRunId: Int
+
+  """
+  Foreign key reference to the recipe specification that created the data set
+  """
+  recipeId: Int
+
+  """Time of acquisition for the earliest frame in the data set"""
+  startTime: DateTime
+
+  """
+  A Boolean indicating true if all stokes parameters exist in the data set
+  """
+  hasAllStokes: Boolean
+
+  """A list of which stokes parameters exist in the dataset (I, Q, U, V)"""
+  stokesParameters: String
+
+  """
+  Contains the value of the OBJECT field in the input frames of the processing candidate
+  """
+  targetTypes: [String]
+
+  """Upper bound of wavelength range within a dataset"""
+  wavelengthMax: Float
+
+  """Lower bound of wavelength range within a dataset"""
+  wavelengthMin: Float
+
+  """The bucket the frame objects and asdf file reside in"""
+  bucket: String
+
+  """Flag indicating if the dataset inventory record is active for search"""
+  isActive: Boolean
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """Flag indicating that the dataset contains a spectral axis"""
+  hasSpectralAxis: Boolean
+
+  """Flag indicating that the dataset contains a time axis"""
+  hasTemporalAxis: Boolean
+
+  """The average spectral sampling size if it exists (nm)"""
+  averageDatasetSpectralSampling: Float
+
+  """The average spatial sampling size if it exists"""
+  averageDatasetSpatialSampling: Float
+
+  """The average temporal sampling size if it exists"""
+  averageDatasetTemporalSampling: Float
+
+  """
+  JSON document containing any extra key value pairs provided on the creation of an inventory record
+  """
+  extraInventory: JSONString
+
+  """
+  The object key used to retrieve the quality report file from the same bucket as the frame objects
+  """
+  qualityReportObjectKey: String
+
+  """Id of the parameters section of the input dataset"""
+  inputDatasetParametersPartId: Int
+
+  """Id of the observe frames section of the input dataset"""
+  inputDatasetObserveFramesPartId: Int
+
+  """Id of the calibration frames section of the input dataset"""
+  inputDatasetCalibrationFramesPartId: Int
+
+  """
+  Version of the High Level Software (HLS) used on the summit at the time of data acquisition
+  """
+  highLevelSoftwareVersion: String
+
+  """Name of the workflow used to process the data"""
+  workflowName: String
+
+  """Version of the workflow used to process the data"""
+  workflowVersion: String
+
+  """Date the data was processed"""
+  headerDataUnitCreationDate: DateTime
+
+  """The observing program execution id the data was collected using"""
+  observingProgramExecutionId: String
+
+  """The instrument program execution id the data was collected using"""
+  instrumentProgramExecutionId: String
+
+  """
+  Version of the header specification (spec 214) used to package the data
+  """
+  headerVersion: String
+
+  """
+  Link to the documentation for the version of the header specification (spec 214) used to package the data
+  """
+  headerDocumentationUrl: String
+
+  """Link to additional documentation for the dataset"""
+  infoUrl: String
+
+  """
+  Link to the documentation for the version of the workflow used to process the data
+  """
+  calibrationDocumentationUrl: String
+}
+
+"""
+The dataset_inventory table with the addition of embargo, experiment description, and investigator metadata
+"""
+type DatasetInventoryViewType {
+  """The unique id of the dataset inventory record"""
+  datasetInventoryId: Int
+
+  """
+  The object key used to retrieve the asdf file from the same bucket as the frame objects
+  """
+  asdfObjectKey: String
+
+  """
+  The spatial extent of all data within the dataset in arc seconds from the
+  center of the sun using the upper right and lower left corners in that order
+  and in the format ((x1,y1),(x2,y2))
+  """
+  boundingBox: String
+
+  """
+  The object key used to retrieve the browse movie from the browse-movie bucket
+  """
+  browseMovieObjectKey: String
+
+  """The URL for the published browse movie e.g. in YouTube"""
+  browseMovieUrl: String
+
+  """The bucket the frame objects and asdf file reside in"""
+  bucket: String
+
+  """The unique id of the dataset"""
+  datasetId: String
+
+  """
+  A sum of the size in GB (space on disk) of the available frames within a data set in
+  """
+  datasetSize: Int
+
+  """Time of acquisition for the latest frame in the data set"""
+  endTime: DateTime
+
+  """A list of the experiment ids that contributed to a dataset"""
+  contributingExperimentIds: [String]
+
+  """
+  The mode length of time that the CCD was exposed for within the dataset
+  """
+  exposureTime: Float
+
+  """Number of frames currently available within a data set"""
+  frameCount: Int
+
+  """Name of the instrument that produced the data in the dataset"""
+  instrumentName: String
+
+  """Number of frames in the data set when it was created"""
+  originalFrameCount: Int
+
+  """The experiment id the observation data was collected under"""
+  primaryExperimentId: String
+
+  """The proposal id the observation data was collected under"""
+  primaryProposalId: String
+
+  """A list of the proposal ids that contributed to a dataset"""
+  contributingProposalIds: [String]
+
+  """Average Fried parameter in the dataset"""
+  qualityAverageFriedParameter: Float
+
+  """Average polarimetric accuracy calculated from the dataset"""
+  qualityAveragePolarimetricAccuracy: Float
+
+  """Foreign key reference to the recipe instance that created the data set"""
+  recipeInstanceId: Int
+
+  """
+  Foreign key reference to the recipe run that created the data set.  Also used to look up provenance information
+  """
+  recipeRunId: Int
+
+  """
+  Foreign key reference to the recipe specification that created the data set
+  """
+  recipeId: Int
+
+  """Time of acquisition for the earliest frame in the data set"""
+  startTime: DateTime
+
+  """
+  A Boolean indicating true if all stokes parameters exist in the data set
+  """
+  hasAllStokes: Boolean
+
+  """A list of which stokes parameters exist in the dataset (I, Q, U, V)"""
+  stokesParameters: String
+
+  """
+  Contains the value of the OBJECT field in the input frames of the processing candidate
+  """
+  targetTypes: [String]
+
+  """Upper bound of wavelength range within a dataset"""
+  wavelengthMax: Float
+
+  """Lower bound of wavelength range within a dataset"""
+  wavelengthMin: Float
+
+  """Flag indicating if the dataset inventory record is active for search"""
+  isActive: Boolean
+
+  """Boolean indicating whether a proposal is currently embargoed"""
+  isEmbargoed: Boolean
+
+  """Description of the experiment"""
+  experimentDescription: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """Date an embargoed proposal will become unembargoed"""
+  embargoEndDate: DateTime
+
+  """Flag indicating that the dataset contains a spectral axis"""
+  hasSpectralAxis: Boolean
+
+  """Flag indicating that the dataset contains a time axis"""
+  hasTemporalAxis: Boolean
+
+  """The average spectral sampling size if it exists (nm)"""
+  averageDatasetSpectralSampling: Float
+
+  """The average spatial sampling size if it exists"""
+  averageDatasetSpatialSampling: Float
+
+  """The average temporal sampling size if it exists"""
+  averageDatasetTemporalSampling: Float
+
+  """
+  The object key used to retrieve the quality report file from the same bucket as the frame objects
+  """
+  qualityReportObjectKey: String
+
+  """Id of the parameters section of the input dataset"""
+  inputDatasetParametersPartId: Int
+
+  """Id of the observe frames section of the input dataset"""
+  inputDatasetObserveFramesPartId: Int
+
+  """Id of the calibration frames section of the input dataset"""
+  inputDatasetCalibrationFramesPartId: Int
+
+  """
+  Version of the High Level Software (HLS) used on the summit at the time of data acquisition
+  """
+  highLevelSoftwareVersion: String
+
+  """Name of the workflow used to process the data"""
+  workflowName: String
+
+  """Version of the workflow used to process the data"""
+  workflowVersion: String
+
+  """Date the data was processed"""
+  headerDataUnitCreationDate: DateTime
+
+  """The observing program execution id the data was collected using"""
+  observingProgramExecutionId: String
+
+  """The instrument program execution id the data was collected using"""
+  instrumentProgramExecutionId: String
+
+  """
+  Version of the header specification (spec 214) used to package the data
+  """
+  headerVersion: String
+
+  """
+  Link to the documentation for the version of the header specification (spec 214) used to package the data
+  """
+  headerDocumentationUrl: String
+
+  """Link to additional documentation for the dataset"""
+  infoUrl: String
+
+  """
+  Link to the documentation for the version of the workflow used to process the data
+  """
+  calibrationDocumentationUrl: String
+  proposalInvestigators: [ProposalInvestigatorViewType]
+  authorizedAgents: [AuthorizedAgentType]
+}
+
+enum DataType {
+  DATE
+  FLOAT
+  STRING
+  INT
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+"""Aggregation of dead letter messages by queue name"""
+type DeadLetteredMessagesByQueueViewType {
+  """The queue the message was dead lettered from"""
+  queue: String!
+
+  """Number of dead lettered messages"""
+  count: Int
+
+  """Dead lettered messages for the queue aggregation"""
+  deadLetteredMessages: [DeadLetteredMessageType]
+}
+
+"""List of dead letter messages to act upon before removal"""
+type DeadLetteredMessageType {
+  """Unique id for the Dead Lettered Message"""
+  deadLetteredMessageId: Int
+
+  """Properties from the dead lettered message"""
+  properties: JSONString
+
+  """The payload of the dead lettered message"""
+  payload: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """The queue the message was dead lettered from"""
+  queue: String
+
+  """The conversation id from the  dead lettered message"""
+  conversationId: String
+}
+
+type DeleteAuthorizedAgent {
+  ok: Boolean
+}
+
+type DeleteDeadLetteredMessage {
+  ok: Boolean
+}
+
+type DeleteDigestNotification {
+  ok: Boolean
+}
+
+type DeleteExperimentDescription {
+  ok: Boolean
+}
+
+type DeleteInputDatasetInputDatasetPart {
+  ok: Boolean
+}
+
+type DeleteProposalInvestigator {
+  ok: Boolean
+}
+
+type DeleteRecipeInstrument {
+  ok: Boolean
+}
+
+type DeleteRecipeParameter {
+  ok: Boolean
+}
+
+"""List of notifications awaiting digest processing"""
+type DigestNotificationType {
+  """Unique id of the digest notification record"""
+  digestNotificationId: Int
+
+  """Grouping type of notification"""
+  notificationType: String
+
+  """The payload of the dead lettered message"""
+  payload: JSONString
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """The conversation id from the message that caused the record insertion"""
+  conversationId: String
+}
+
+"""List of Experiment Ids and their associated descriptions"""
+type ExperimentDescriptionType {
+  """The primary key for the experiment description record"""
+  experimentDescriptionId: Int
+
+  """Description of the experiment"""
+  experimentDescription: String
+
+  """Experiment Id to which the description belongs"""
+  experimentId: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""Statistical information about the group of frames"""
+type FrameAggregationType {
+  """Number of frames in the set"""
+  frameCount: Int
+
+  """Sum of the frameSize of frames in the set"""
+  frameSizeSum: Float
+
+  """Bucketed instrument counts"""
+  instrumentAggregations: [FrameSubAggregationType]
+
+  """Bucketed proposal id counts"""
+  proposalIdAggregations: [FrameSubAggregationType]
+
+  """Bucketed wavelength counts"""
+  wavelengthAggregations: [FrameSubAggregationType]
+
+  """Bucketed instrument program task type counts"""
+  instrumentProgramTaskTypeAggregations: [FrameSubAggregationType]
+
+  """Bucketed vbi processed flag counts"""
+  vbiProcessedAggregations: [FrameSubAggregationType]
+
+  """Bucketed cryo-nirsp ARM counts"""
+  cryonirspArmAggregations: [FrameSubAggregationType]
+
+  """Bucketed visp polarimeter mode counts"""
+  vispPolarimeterModeAggregations: [FrameSubAggregationType]
+
+  """Bucketed vbi step counts"""
+  vbiNumberOfSpatialStepsAggregations: [FrameSubAggregationType]
+
+  """Bucketed accumulations in frame counts"""
+  accumulationsInFrameAggregations: [FrameSubAggregationType]
+
+  """Bucketed frame exposure time counts"""
+  frameExposureTimeAggregations: [FrameSubAggregationType]
+
+  """Frame records associated with the aggregation"""
+  frames: [FrameInventoryType]
+
+  """Aggregation parameters propagated to sub aggregations"""
+  aggregationParams: JSONString
+}
+
+"""Accumulation of the actual filtered frame counts"""
+type FrameFilterActualType {
+  """The unique id of the frame filter actual record"""
+  frameFilterActualId: Int
+
+  """The observing program execution the filter accounts apply to"""
+  observingProgramExecutionId: String
+
+  """Number of frames filtered prior to ingest"""
+  filteredFrameCount: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""Attributes for a frame inventory recorc"""
+type FrameInventoryType {
+  """NSUMEXP"""
+  accumulationsInFrame: Int
+  bucket: String!
+  createDate: DateTime!
+
+  """CNARMID"""
+  cryonirspArm: String
+
+  """DSETID"""
+  datasetId: String
+
+  """DSP_ID"""
+  datasetParametersId: String
+
+  """EXPER_ID"""
+  experimentId: String
+
+  """XPOSURE"""
+  frameExposureTime: Float
+
+  """FILE_ID"""
+  frameId: String!
+
+  """FRAMEVOL"""
+  frameSize: Float
+  frameStatus: String!
+  headerHDU: Int
+
+  """INSTRUME"""
+  instrument: String
+
+  """IP_ID"""
+  instrumentProgramExecutionId: String
+
+  """DKIST004"""
+  instrumentProgramTaskType: String
+
+  """_id"""
+  inventoryId: ID!
+  lostDate: DateTime
+  objectKey: String!
+
+  """DATE-BEG"""
+  observationDate: DateTime
+
+  """OBSPR_ID"""
+  observingProgramExecutionId: String
+
+  """DKIST003"""
+  observingProgramTaskType: String
+
+  """PROCTYPE"""
+  processingType: String
+
+  """PROP_ID"""
+  proposalId: String
+
+  """RRUNID"""
+  recipeRunId: Int
+  updateDate: DateTime
+
+  """VBINSTP"""
+  vbiNumberOfSpatialSteps: Int
+
+  """VBI__005"""
+  vbiProcessed: String
+
+  """VSPPOLMD"""
+  vispPolarimeterMode: String
+
+  """LINEWAV"""
+  wavelength: Float
+
+  """JSON encoded string of the full document including extra fields"""
+  jsonFrameHeaders: String
+}
+
+"""
+Aggregation table for expected and actual frame receipts to be grouped by
+  observing program execution id
+"""
+type FrameReceiptAccountViewType {
+  """The unique id of the frame receipt expected record"""
+  frameReceiptAccountId: Int
+
+  """The number of frames expected to be received"""
+  expectedFrameCount: Int
+
+  """The observing program execution the receipt accounts apply to"""
+  observingProgramExecutionId: String
+
+  """Number of frames received and ingested"""
+  receivedFrameCount: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """
+  Flag indicating true if the received frame count is less than the expected frame count
+  """
+  isReceivedLessThanExpected: Boolean
+
+  """Number of frames filtered prior to ingest"""
+  filteredFrameCount: Int
+
+  """
+  Flag indicating true if the sum of received and filtered frame count is less than the expected frame count
+  """
+  isReceivedPlusFilteredLessThanExpected: Boolean
+  processingCandidates: [ProcessingCandidateViewType]
+  processingCandidateCalibrations: [ProcessingCandidateCalibrationType]
+  frameReceiptJournals: [FrameReceiptJournalType]
+}
+
+"""Accumulation of the actual received frame counts"""
+type FrameReceiptActualType {
+  """The unique id of the frame receipt actual record"""
+  frameReceiptActualId: Int
+
+  """The observing program execution the receipt accounts apply to"""
+  observingProgramExecutionId: String
+
+  """Number of frames received and ingested"""
+  receivedFrameCount: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""Manifest of the expected frame counts"""
+type FrameReceiptExpectedType {
+  """The unique id of the frame receipt expected record"""
+  frameReceiptExpectedId: Int
+
+  """The observing program execution the receipt accounts apply to"""
+  observingProgramExecutionId: String
+
+  """The number of frames expected to be received"""
+  expectedFrameCount: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""Journal entries for the expected frame receipt counts"""
+type FrameReceiptJournalType {
+  """The unique id of the frame receipt journal record"""
+  frameReceiptJournalId: Int
+
+  """
+  The observing program execution the receipt account journal entries apply to
+  """
+  observingProgramExecutionId: String
+
+  """The number of frames to increase the expected count by"""
+  expectedCountCredit: Int
+
+  """The number of frames to decrease the expected count by"""
+  expectedCountDebit: Int
+
+  """The description of the journal entry"""
+  description: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+  frameReceiptAccounts: [FrameReceiptAccountViewType]
+}
+
+"""Statistical information about a subset of frames"""
+type FrameSubAggregationType {
+  """Value for the bin"""
+  value: String
+
+  """Quantity of items in the value bin"""
+  valueCount: Int
+
+  """Bucketed instrument counts"""
+  instrumentAggregations: [FrameSubAggregationType]
+
+  """Bucketed proposal id counts"""
+  proposalIdAggregations: [FrameSubAggregationType]
+
+  """Bucketed wavelength counts"""
+  wavelengthAggregations: [FrameSubAggregationType]
+
+  """Bucketed instrument program task type counts"""
+  instrumentProgramTaskTypeAggregations: [FrameSubAggregationType]
+
+  """Bucketed vbi processed flag counts"""
+  vbiProcessedAggregations: [FrameSubAggregationType]
+
+  """Bucketed cryo-nirsp ARM counts"""
+  cryonirspArmAggregations: [FrameSubAggregationType]
+
+  """Bucketed visp polarimeter mode counts"""
+  vispPolarimeterModeAggregations: [FrameSubAggregationType]
+
+  """Bucketed vbi step counts"""
+  vbiNumberOfSpatialStepsAggregations: [FrameSubAggregationType]
+
+  """Bucketed accumulations in frame counts"""
+  accumulationsInFrameAggregations: [FrameSubAggregationType]
+
+  """Bucketed frame exposure time counts"""
+  frameExposureTimeAggregations: [FrameSubAggregationType]
+
+  """Frame records associated with the aggregation"""
+  frames: [FrameInventoryType]
+
+  """Aggregation parameters propagated to sub aggregations"""
+  aggregationParams: JSONString
+}
+
+"""
+Join table for the many-to-many relationship between input datasets and their constituent parts
+"""
+type InputDatasetInputDatasetPartType {
+  """Unique identifier for the input dataset input dataset part"""
+  inputDatasetInputDatasetPartId: Int
+
+  """Foreign key to the input dataset"""
+  inputDatasetId: Int
+
+  """Foreign key to the input dataset part"""
+  inputDatasetPartId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  inputDatasetPart: InputDatasetPartType
+  inputDataset: InputDatasetType
+}
+
+"""List of input dataset parts"""
+type InputDatasetPartType {
+  """Unique identifier for the input dataset part"""
+  inputDatasetPartId: Int
+
+  """
+  JSON document containing the list of frame_ids, object_ids, parameters, and parameter_values necessary for data processing
+  """
+  inputDatasetPartDocument: JSONString
+
+  """Foreign key to the input dataset part type table"""
+  inputDatasetPartTypeId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  inputDatasetPartType: InputDatasetPartTypeType
+  inputDatasetPartInputDatasets: [InputDatasetInputDatasetPartType]
+}
+
+"""List of available types for input dataset parts"""
+type InputDatasetPartTypeType {
+  """Unique identifier for the input dataset part type"""
+  inputDatasetPartTypeId: Int
+
+  """Unique name for the input dataset part type"""
+  inputDatasetPartTypeName: String
+
+  """Description of the input dataset part type"""
+  inputDatasetPartTypeDescription: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  inputDatasetParts: [InputDatasetPartType]
+}
+
+"""
+Listing of input frames and parameter values either planned for use in a recipe run, or used in
+  a recipe run provenance record
+"""
+type InputDatasetType {
+  """Unique identifier for the input data set"""
+  inputDatasetId: Int
+
+  """
+  A boolean value indicating whether the input dataset has been used and therefor cannot be updated
+  """
+  isActive: Boolean
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  inputDatasetInputDatasetParts: [InputDatasetInputDatasetPartType]
+  recipeInstances: [RecipeInstanceViewType]
+  recipeRunProvenances: [RecipeRunProvenanceType]
+}
+
+"""List of valid instruments"""
+type InstrumentType {
+  """Unique id of the instrument"""
+  instrumentId: Int
+
+  """Name of the instrument"""
+  instrumentName: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  instrumentRecipes: [RecipeInstrumentType]
+}
+
+"""Metadata about the inventory data as a whole"""
+type InventoryMetadataType {
+  """Name of the inventory collection"""
+  name: String
+
+  """Number of records in the inventory collection"""
+  recordCount: Int
+}
+
+"""
+Allows use of a JSON String for input / output from the GraphQL schema.
+
+Use of this type is *not recommended* as you lose the benefits of having a defined, static
+schema (one of the key benefits of GraphQL).
+"""
+scalar JSONString
+
+"""Definition of data modification operations"""
+type Mutations {
+  """Create a digest notification record"""
+  createDigestNotification(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The conversation id from the message that caused the record insertion"""
+    conversationId: String
+
+    """Grouping type of notification"""
+    notificationType: String!
+
+    """The payload of the dead lettered message"""
+    payload: JSONString
+  ): CreateDigestNotification
+
+  """Delete one or more digest notification record(s)"""
+  deleteDigestNotification(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A list of digest notification ids to delete: Unique id of the digest notification record
+    """
+    digestNotificationIds: [Int]
+  ): DeleteDigestNotification
+
+  """Create a dead lettered message record"""
+  createDeadLetteredMessage(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The conversation id from the  dead lettered message"""
+    conversationId: String
+
+    """The payload of the dead lettered message"""
+    payload: String
+
+    """Properties from the dead lettered message"""
+    properties: JSONString
+
+    """The queue the message was dead lettered from"""
+    queue: String
+  ): CreateDeadLetteredMessage
+
+  """Delete one or more dead lettered message record(s)"""
+  deleteDeadLetteredMessage(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A list of dead lettered message ids to delete: Unique id for the Dead Lettered Message
+    """
+    deadLetteredMessageIds: [Int]!
+  ): DeleteDeadLetteredMessage
+
+  """Create an authorized agent record"""
+  createAuthorizedAgent(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """UUID for the identity record of the user in the Globus Auth platform"""
+    userId: String!
+  ): CreateAuthorizedAgent
+
+  """Create, or update if present, an experiment description record"""
+  createExperimentDescription(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the experiment"""
+    experimentDescription: String!
+
+    """Experiment Id to which the description belongs"""
+    experimentId: String!
+  ): CreateExperimentDescription
+
+  """
+  Create a proposal access record and optionally associated proposal investigator records
+  """
+  createProposalAccess(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The duration of the embargo with 0 meaning no embargo at all"""
+    embargoDuration: Int!
+
+    """Boolean indicating whether a proposal is currently embargoed"""
+    isEmbargoed: Boolean!
+
+    """The proposal the access record applies to"""
+    proposalId: String!
+
+    """List of the globus user ids for the investigators on a proposal """
+    userIds: [String]
+  ): CreateProposalAccess
+
+  """Create a proposal investigator record"""
+  createProposalInvestigator(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Foreign key to the proposal access table"""
+    proposalAccessId: Int!
+
+    """UUID for the identity record of the user in the Globus Auth platform"""
+    userId: String!
+  ): CreateProposalInvestigator
+
+  """Create a dataset inventory record"""
+  createDatasetInventory(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    JSON String capturing all key value pairs for a dataset inventory record.
+    """
+    inventoryRecord: JSONString!
+  ): CreateDatasetInventory
+
+  """Create a quality report record"""
+  createQualityReport(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique Id of the dataset the record belongs to"""
+    datasetId: String!
+
+    """A JSON structured report of the quality of the dataset"""
+    qualityReport: JSONString!
+  ): CreateQualityReport
+
+  """Update a dataset inventory record"""
+  updateDatasetInventory(
+    """
+    The object key used to retrieve the asdf file from the same bucket as the frame objects
+    """
+    asdfObjectKey: String
+
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The URL for the published browse movie e.g. in YouTube"""
+    browseMovieUrl: String
+
+    """The bucket the frame objects and asdf file reside in"""
+    bucket: String
+
+    """The unique id of the dataset"""
+    datasetId: String!
+
+    """
+    A sum of the size in GB (space on disk) of the available frames within a data set in
+    """
+    datasetSize: Int
+
+    """
+    Reduces the count of available frames by one if true: Number of frames currently available within a data set
+    """
+    decrementFrameCount: Boolean
+
+    """
+    Increases the count of available frames by one if true: Number of frames currently available within a data set
+    """
+    incrementFrameCount: Boolean
+
+    """Flag indicating if the dataset inventory record is active for search"""
+    isActive: Boolean
+
+    """
+    The object key used to retrieve the asdf file from the same bucket as the frame objects
+    """
+    qualityReportObjectKey: String
+  ): UpdateDatasetInventory
+
+  """Update a proposal access record"""
+  updateProposalAccess(
+    """Unique id for the access rule stored in Globus"""
+    accessRuleId: String
+
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Date an embargoed proposal will become unembargoed"""
+    embargoEndDate: DateTime
+
+    """ProposalAccessModel.embargo_group_id"""
+    embargoGroupId: String
+
+    """Boolean indicating whether a proposal is currently embargoed"""
+    isEmbargoed: Boolean
+
+    """ProposalAccessModel.proposal_access_id"""
+    proposalAccessId: Int!
+
+    """Date the proposal was completed"""
+    proposalCompletionDate: DateTime
+  ): UpdateProposalAccess
+
+  """Update the proposal investigators for a proposal access record"""
+  updateProposalInvestigator(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Date of last investigator update"""
+    investigatorDate: DateTime!
+
+    """Index of last investigator update"""
+    investigatorSeq: Int!
+
+    """The proposal the access record applies to"""
+    proposalId: String!
+
+    """List of the globus user ids for the investigators on a proposal """
+    userIds: [String]
+  ): UpdateProposalInvestigator
+
+  """Delete an authorized agent record"""
+  deleteAuthorizedAgent(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The primary key of the authorized agent"""
+    authorizedAgentId: Int!
+  ): DeleteAuthorizedAgent
+
+  """Delete an experiment description record"""
+  deleteExperimentDescription(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The primary key for the experiment description record"""
+    experimentDescriptionId: Int!
+  ): DeleteExperimentDescription
+
+  """Delete a proposal investigator record"""
+  deleteProposalInvestigator(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The primary key for the proposal_investigator record"""
+    proposalInvestigatorId: Int!
+  ): DeleteProposalInvestigator
+
+  """Delete the association between a parameter and a recipe"""
+  deleteRecipeParameter(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique id for the recipe parameter  relationship"""
+    recipeParameterId: Int!
+  ): DeleteRecipeParameter
+
+  """Delete the association between an instrument and a recipe"""
+  deleteRecipeInstrument(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique id of the relationship between instrument and recipe"""
+    recipeInstrumentId: Int!
+  ): DeleteRecipeInstrument
+
+  """
+  Delete the association between an input dataset and an input dataset part
+  """
+  deleteInputDatasetInputDatasetPart(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique identifier for the input dataset input dataset part"""
+    inputDatasetInputDatasetPartId: Int!
+  ): DeleteInputDatasetInputDatasetPart
+
+  """
+  Update the actual count or locked status of a dataset catalog receipt account
+  """
+  updateDatasetCatalogReceiptAccount(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique id for the dataset catalog receipt account"""
+    datasetCatalogReceiptAccountId: Int!
+
+    """Boolean that increments the received object count by one if true"""
+    incrementReceivedObjectCount: Boolean
+
+    """A flag indicating whether"""
+    isLocked: Boolean
+  ): UpdateDatasetCatalogReceiptAccount
+
+  """
+  Update the filtered count of frames by one for an observing program execution id
+  """
+  updateFrameFilterActual(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The observing program execution the filter accounts apply to"""
+    observingProgramExecutionId: String!
+  ): UpdateFrameFilterActual
+
+  """
+  Update the received count of frames by one for an observing program execution id
+  """
+  updateFrameReceiptActual(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The observing program execution the receipt accounts apply to"""
+    observingProgramExecutionId: String!
+  ): UpdateFrameReceiptActual
+
+  """Update the active flag for an input dataset"""
+  updateInputDataset(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique identifier for the input data set"""
+    inputDatasetId: Int!
+
+    """
+    A boolean value indicating whether the input dataset has been used and therefor cannot be updated
+    """
+    isActive: Boolean!
+  ): UpdateInputDataset
+
+  """Update the name of an instrument"""
+  updateInstrument(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Unique id of the instrument"""
+    instrumentId: Int!
+
+    """Name of the instrument"""
+    instrumentName: String!
+  ): UpdateInstrument
+
+  """Update the name and/or description of a parameter"""
+  updateParameter(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the parameter"""
+    parameterDescription: String
+
+    """Unique Id for the parameter"""
+    parameterId: Int!
+
+    """Name of the parameter"""
+    parameterName: String
+  ): UpdateParameter
+
+  """Update the name and/or description of a parameter type"""
+  updateParameterType(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the parameter type"""
+    parameterTypeDescription: String
+
+    """Unique id for the parameter type"""
+    parameterTypeId: Int!
+
+    """Name of the parameter type"""
+    parameterTypeName: String
+  ): UpdateParameterType
+
+  """Update the value and or start date of a parameter value"""
+  updateParameterValue(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """A JSON structured value of the parameter."""
+    parameterValue: JSONString
+
+    """Unique Id for the parameter value"""
+    parameterValueId: Int!
+
+    """A JSON structured documentation of the provenance of a parameter value"""
+    parameterValueProvenance: JSONString
+
+    """Date and time the value became effective. Used for validity"""
+    parameterValueStartDate: String
+  ): UpdateParameterValue
+
+  """
+  Update the planned recipe count and/or lock flag of a processing candidate
+  """
+  updateProcessingCandidate(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Locking status of the processing candidate. """
+    isLocked: Boolean
+
+    """
+    The number of recipe instances expected.  Used to determine if a processing candidate is complete
+    """
+    plannedRecipeCount: Int
+
+    """Unique id for the processing candidate record"""
+    processingCandidateId: Int!
+  ): UpdateProcessingCandidate
+
+  """Update any recipe metadata"""
+  updateRecipe(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Flag indicating whether the recipe is active"""
+    isActive: Boolean
+
+    """
+    Flag indicating whether the recipe will be scheduled for automatic processing or manual processing
+    """
+    isAutoProcessed: Boolean
+
+    """Unique id of the recipe configuration record"""
+    recipeConfigurationId: Int
+
+    """Longer description of the recipe"""
+    recipeDescription: String
+
+    """Unique id of the recipe"""
+    recipeId: Int!
+
+    """Name describing the recipe"""
+    recipeName: String
+
+    """
+    Name of the resource pool which can be used as a parameter for automated processing
+    """
+    resourcePool: String
+
+    """Foreign key to the workflow associated with the recipe"""
+    workflowId: Int
+  ): UpdateRecipe
+
+  """Update any recipe configuration metadata"""
+  updateRecipeConfiguration(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A JSON structured enumeration of the default configuration available for recipes
+    """
+    recipeConfiguration: JSONString
+
+    """Description of the recipe configuration"""
+    recipeConfigurationDescription: String
+
+    """Unique id of the recipe configuration record"""
+    recipeConfigurationId: Int!
+
+    """
+    Name of the recipe configuration used to distinguish configuration sets
+    """
+    recipeConfigurationName: String
+  ): UpdateRecipeConfiguration
+
+  """
+  Update the recipe and/or input dataset associated with a recipe instance
+  """
+  updateRecipeInstance(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    Foreign key to the present (for the one used on a dataset see
+    recipeRunProvenance) input dataset used in the instance definition
+    """
+    inputDatasetId: Int
+
+    """Foreign key to the related recipe"""
+    recipeId: Int
+
+    """Unique Id of the recipe instance"""
+    recipeInstanceId: Int!
+  ): UpdateRecipeInstance
+
+  """Update the status and/or priority of a recipe run"""
+  updateRecipeRun(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    The id of the airflow run used to discover the recipe run in the case of DAG failure
+    """
+    dagRunId: String
+
+    """
+    Priority of the recipe run that is passed to the automated processing
+    scheduler as a parameter for scheduling where a higher number equals a
+    higher priority
+    """
+    priority: Int
+
+    """Unique Id for the recipe run"""
+    recipeRunId: Int
+
+    """Foreign Key to the recipe run status"""
+    recipeRunStatusId: Int
+  ): UpdateRecipeRun
+
+  """
+  Update the recipe run status name and/or description and/or completion flag
+  """
+  updateRecipeRunStatus(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A boolean indicator of whether a status can be interpreted as complete i.e. there is no work left to be done
+    """
+    isComplete: Boolean
+
+    """
+    Description of the status, ideally including inbound and outbound transitions
+    """
+    recipeRunStatusDescription: String
+
+    """Primary key for the recipe run status table"""
+    recipeRunStatusId: Int!
+
+    """Name of the status"""
+    recipeRunStatusName: String
+  ): UpdateRecipeRunStatus
+
+  """Update the workflow name and/or description"""
+  updateWorkflow(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the workflow"""
+    workflowDescription: String
+
+    """Unique id of the workflow record"""
+    workflowId: Int!
+
+    """
+    Name of the workflow which corresponds to the DAG name known to the scheduler
+    """
+    workflowName: String
+  ): UpdateWorkflow
+
+  """Create an expected object count for a dataset."""
+  createDatasetCatalogReceiptAccount(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The id of the dataset that receipts are being accounted for"""
+    datasetId: String!
+
+    """The number of receipts that are expected for the dataset"""
+    expectedObjectCount: Int!
+  ): CreateDatasetCatalogReceiptAccount
+
+  """
+  Create an expected frame count for an observing program id; The record is updated if already present
+  """
+  createFrameReceiptExpected(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The number of frames expected to be received"""
+    expectedFrameCount: Int!
+
+    """The observing program execution the receipt accounts apply to"""
+    observingProgramExecutionId: String!
+  ): CreateFrameReceiptExpected
+
+  """
+  Create a journal entry against the observing program execution id's frame receipt account.
+  """
+  createFrameReceiptJournal(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """The description of the journal entry"""
+    description: String
+
+    """The number of frames to increase the expected count by"""
+    expectedCountCredit: Int
+
+    """The number of frames to decrease the expected count by"""
+    expectedCountDebit: Int
+
+    """The observing program execution the receipt accounts apply to"""
+    observingProgramExecutionId: String!
+  ): CreateFrameReceiptJournal
+
+  """Create a new input data set"""
+  createInputDataset(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A boolean value indicating whether the input dataset has been used and therefor cannot be updated
+    """
+    isActive: Boolean!
+  ): CreateInputDataset
+
+  """Create a new join between an input dataset and it's constituent parts"""
+  createInputDatasetInputDatasetPart(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Foreign key to the input dataset"""
+    inputDatasetId: Int!
+
+    """Foreign key to the input dataset part"""
+    inputDatasetPartId: Int!
+  ): CreateInputDatasetInputDatasetPart
+
+  """Create an new input dataset part"""
+  createInputDatasetPart(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    JSON document containing the list of frame_ids, object_ids, parameters, and
+    parameter_values necessary for data processing
+    """
+    inputDatasetPartDocument: JSONString!
+
+    """Foreign key to the input dataset part type table"""
+    inputDatasetPartTypeId: Int!
+  ): CreateInputDatasetPart
+
+  """Create an new input dataset part type"""
+  createInputDatasetPartType(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the input dataset part type"""
+    inputDatasetPartTypeDescription: String
+
+    """Unique name for the input dataset part type"""
+    inputDatasetPartTypeName: String!
+  ): CreateInputDatasetPartType
+
+  """Create a new instrument"""
+  createInstrument(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Name of the instrument"""
+    instrumentName: String!
+  ): CreateInstrument
+
+  """Create a new parameter"""
+  createParameter(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the parameter"""
+    parameterDescription: String
+
+    """Name of the parameter"""
+    parameterName: String!
+
+    """Foreign key to the parameter type"""
+    parameterTypeId: Int!
+  ): CreateParameter
+
+  """Create a new parameter type"""
+  createParameterType(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the parameter type"""
+    parameterTypeDescription: String
+
+    """Name of the parameter type"""
+    parameterTypeName: String!
+  ): CreateParameterType
+
+  """Create a new parameter value"""
+  createParameterValue(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Foreign key to the parameter"""
+    parameterId: Int!
+
+    """A JSON structured value of the parameter."""
+    parameterValue: JSONString!
+
+    """A JSON structured documentation of the provenance of a parameter value"""
+    parameterValueProvenance: JSONString
+
+    """Date and time the value became effective. Used for validity"""
+    parameterValueStartDate: String
+  ): CreateParameterValue
+
+  """Create a new processing candidate"""
+  createProcessingCandidate(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    The maximum date of the data collected in an observing program to be used in
+    calibration. (i.e. Observe and calibrate OPs)
+    """
+    dataAcquisitionCompletionDate: String!
+
+    """Id of the experiment the observing program belongs to"""
+    experimentId: String!
+
+    """Locking status of the processing candidate. """
+    isLocked: Boolean!
+
+    """Id of the observing program execution that needs to be calibrated"""
+    observingProgramExecutionId: String!
+
+    """
+    The number of recipe instances expected.  Used to determine if a processing candidate is complete
+    """
+    plannedRecipeCount: Int
+
+    """Id of the proposal the observing program belongs to"""
+    proposalId: String!
+  ): CreateProcessingCandidate
+
+  """Create a new processing candidate calibration"""
+  createProcessingCandidateCalibration(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    Id of the observing program execution that will be used to calibrate the candidate
+    """
+    observingProgramExecutionId: String!
+
+    """Foreign key to the processing candidate"""
+    processingCandidateId: Int!
+  ): CreateProcessingCandidateCalibration
+
+  """Create a new recipe"""
+  createRecipe(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Flag indicating whether the recipe is active"""
+    isActive: Boolean
+
+    """
+    Flag indicating whether the recipe will be scheduled for automatic processing or manual processing
+    """
+    isAutoProcessed: Boolean
+
+    """Unique id of the recipe configuration record"""
+    recipeConfigurationId: Int
+
+    """Longer description of the recipe"""
+    recipeDescription: String
+
+    """Name describing the recipe"""
+    recipeName: String!
+
+    """
+    Name of the resource pool which can be used as a parameter for automated processing
+    """
+    resourcePool: String
+
+    """Foreign key to the workflow associated with the recipe"""
+    workflowId: Int
+  ): CreateRecipe
+
+  """Create a new recipe configuration"""
+  createRecipeConfiguration(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A JSON structured enumeration of the default configuration available for recipes
+    """
+    recipeConfiguration: JSONString
+
+    """Description of the recipe configuration"""
+    recipeConfigurationDescription: String
+
+    """
+    Name of the recipe configuration used to distinguish configuration sets
+    """
+    recipeConfigurationName: String!
+  ): CreateRecipeConfiguration
+
+  """Create a new recipe instance"""
+  createRecipeInstance(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    Foreign key to the present (for the one used on a dataset see
+    recipeRunProvenance) input dataset used in the instance definition
+    """
+    inputDatasetId: Int!
+
+    """Foreign key to the related processing candidate"""
+    processingCandidateId: Int
+
+    """Foreign key to the related recipe"""
+    recipeId: Int!
+  ): CreateRecipeInstance
+
+  """Create a new recipe instrument relationship"""
+  createRecipeInstrument(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Foreign key to instrument"""
+    instrumentId: Int!
+
+    """Foreign key to recipe"""
+    recipeId: Int!
+  ): CreateRecipeInstrument
+
+  """Create a new recipe parameter relationship"""
+  createRecipeParameter(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Foreign key to the parameter"""
+    parameterId: Int!
+
+    """Foreign key to recipe"""
+    recipeId: Int!
+  ): CreateRecipeParameter
+
+  """Create a new recipe run"""
+  createRecipeRun(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """A JSON structured enumeration of the configuration for the recipe run"""
+    configuration: JSONString
+
+    """
+    The id of the airflow run used to discover the recipe run in the case of DAG failure
+    """
+    dagRunId: String
+
+    """
+    Priority of the recipe run that is passed to the automated processing
+    scheduler as a parameter for scheduling where a higher number equals a
+    higher priority
+    """
+    priority: Int
+
+    """Foreign Key to the recipe instance"""
+    recipeInstanceId: Int!
+
+    """Foreign Key to the recipe run status"""
+    recipeRunStatusId: Int!
+  ): CreateRecipeRun
+
+  """Create a new recipe run provenance"""
+  createRecipeRunProvenance(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """version of the code executed in a recipe run task"""
+    codeVersion: String
+
+    """Foreign key to the input dataset that was used in the recipe run"""
+    inputDatasetId: Int!
+
+    """Flag indicating whether the tag was manually intervened with"""
+    isTaskManual: Boolean!
+
+    """
+    versions of the critical (as determined by the code) libraries used by the recipe run task
+    """
+    libraryVersions: String
+
+    """
+    Foreign key to the recipe run the provenance record applies to.  Also used
+    to find frames the provenance record applies to
+    """
+    recipeRunId: Int!
+
+    """Workflow task the provenance record applies to"""
+    taskName: String
+
+    """version of the workflow the recipe run used"""
+    workflowVersion: String
+  ): CreateRecipeRunProvenance
+
+  """Create a new recipe run status"""
+  createRecipeRunStatus(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A boolean indicator of whether a status can be interpreted as complete i.e. there is no work left to be done
+    """
+    isComplete: Boolean!
+
+    """
+    Description of the status, ideally including inbound and outbound transitions
+    """
+    recipeRunStatusDescription: String
+
+    """Name of the status"""
+    recipeRunStatusName: String!
+  ): CreateRecipeRunStatus
+
+  """Create a new workflow"""
+  createWorkflow(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Description of the workflow"""
+    workflowDescription: String
+
+    """
+    Name of the workflow which corresponds to the DAG name known to the scheduler
+    """
+    workflowName: String!
+  ): CreateWorkflow
+
+  """Create a processing candidate and associated """
+  createDataAcquisitionSupportRecord(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """
+    A list of observing program execution ids that are used to calibrate the processing candidate
+    """
+    calibratingObservingProgramExecutionIds: [String]
+
+    """
+    The maximum date of the data collected in an observing program to be used in
+    calibration. (i.e. Observe and calibrate OPs)
+    """
+    dataAcquisitionCompletionDate: String!
+
+    """Id of the experiment the observing program belongs to"""
+    experimentId: String!
+
+    """Id of the observing program execution that needs to be calibrated"""
+    observingProgramExecutionId: String!
+
+    """Id of the proposal the observing program belongs to"""
+    proposalId: String!
+  ): CreateDataAcquisitionSupportRecord
+
+  """Create operation for a single frame inventory record"""
+  createFrameInventory(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Bucket the object resides in"""
+    bucket: String!
+
+    """The FITS HDU the header is found within."""
+    headerHDU: Int
+
+    """JSON String capturing all the headers from the FITS file"""
+    jsonFrameHeaders: String!
+
+    """The key to access the object in the bucket"""
+    objectKey: String!
+  ): CreateFrameInventory
+
+  """Update operation for a single frame inventory record"""
+  updateFrameInventory(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Bucket the object resides in"""
+    bucket: String
+
+    """The status of the frame e.g. AVAILABLE, LOST, or REMOVED"""
+    frameStatus: String
+
+    """Primary key for the object inventory record"""
+    inventoryId: String!
+
+    """The key to access the object in the bucket"""
+    objectKey: String
+  ): UpdateFrameInventory
+
+  """Create operation for a single object inventory record"""
+  createObjectInventory(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Bucket the object resides in"""
+    bucket: String!
+
+    """
+    The id for the group to which the object belongs e.g. datasetId for ASDF, movie, and Quality Report.
+    """
+    groupId: String
+
+    """
+    The name of the group to which the object belongs. e.g. DATASET, OPEXEC, or PARAMETER_VALUE
+    """
+    groupName: String
+
+    """The key to access the object in the bucket"""
+    objectKey: String!
+
+    """
+    The type of object being inventoried. e.g. ASDF, MOVIE, QREPORT, PARAMETER_VALUE or WFC
+    """
+    objectType: String!
+  ): CreateObjectInventory
+
+  """Create operation for a single object inventory record"""
+  updateObjectInventory(
+    """Token used to confirm authorization to perform the mutation operations"""
+    authToken: String!
+
+    """Bucket the object resides in"""
+    bucket: String
+
+    """Unique id for the object inventory record"""
+    inventoryId: String!
+
+    """The key to access the object in the bucket"""
+    objectKey: String
+
+    """The status of the object e.g. AVAILABLE, LOST, or REMOVED"""
+    objectStatus: String
+  ): UpdateObjectInventory
+}
+
+"""Attributes for an object inventory record"""
+type ObjectInventoryType {
+  bucket: String!
+  createDate: DateTime!
+  groupId: String
+  groupName: String
+
+  """_id"""
+  inventoryId: ID!
+  lostDate: DateTime
+  objectKey: String!
+  objectStatus: String!
+  objectType: String!
+  updateDate: DateTime
+}
+
+"""Metadata about the object store data as a whole"""
+type ObjectSyncInventoryMetadataType {
+  """Number of records in the inventory collection"""
+  recordCount: Int
+}
+
+"""Metadata about a single Object Sync Inventory Record"""
+type ObjectSyncInventoryType {
+  """The bucket the object resides in"""
+  bucket: String
+
+  """THe unique key for the object within the bucket"""
+  objectKey: String
+}
+
+"""Parameters that can be used in processing"""
+type ParameterType {
+  """Unique Id for the parameter"""
+  parameterId: Int
+
+  """Description of the parameter"""
+  parameterDescription: String
+
+  """Name of the parameter"""
+  parameterName: String
+
+  """Foreign key to the parameter type"""
+  parameterTypeId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  parameterType: ParameterTypeType
+  parameterValues: [ParameterValueType]
+  parameterRecipes: [RecipeParameterType]
+}
+
+"""List of valid parameter types"""
+type ParameterTypeType {
+  """Unique id for the parameter type"""
+  parameterTypeId: Int
+
+  """Description of the parameter type"""
+  parameterTypeDescription: String
+
+  """Name of the parameter type"""
+  parameterTypeName: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  parameters: [ParameterType]
+}
+
+"""Values for processing parameters"""
+type ParameterValueType {
+  """Unique Id for the parameter value"""
+  parameterValueId: Int
+
+  """Foreign key to the parameter"""
+  parameterId: Int
+
+  """A JSON structured value of the parameter."""
+  parameterValue: JSONString
+
+  """Date and time the value became effective. Used for validity"""
+  parameterValueStartDate: DateTime
+
+  """A JSON structured documentation of the provenance of a parameter value"""
+  parameterValueProvenance: JSONString
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  parameter: ParameterType
+}
+
+"""
+Observing program executions that will be used to calibrate a processing candidate
+"""
+type ProcessingCandidateCalibrationType {
+  """Unique id of the processing candidate calibration record"""
+  processingCandidateCalibrationId: Int
+
+  """
+  Id of the observing program execution that will be used to calibrate the candidate
+  """
+  observingProgramExecutionId: String
+
+  """Foreign key to the processing candidate"""
+  processingCandidateId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  processingCandidate: ProcessingCandidateViewType
+  frameReceiptAccounts: [FrameReceiptAccountViewType]
+}
+
+"""
+Observing program execution and related metadata that will be calibrated
+"""
+type ProcessingCandidateType {
+  """Unique id for the processing candidate record"""
+  processingCandidateId: Int
+
+  """
+  The maximum date of the data collected in an observing program to be used in calibration. (i.e. Observe and calibrate OPs)
+  """
+  dataAcquisitionCompletionDate: DateTime
+
+  """Id of the experiment the observing program belongs to"""
+  experimentId: String
+
+  """Locking status of the processing candidate. """
+  isLocked: Boolean
+
+  """Id of the observing program execution that needs to be calibrated"""
+  observingProgramExecutionId: String
+
+  """
+  The number of recipe instances expected.  Used to determine if a processing candidate is complete
+  """
+  plannedRecipeCount: Int
+
+  """Id of the proposal the observing program belongs to"""
+  proposalId: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""
+A view on the observing program execution and related metadata that will be calibrated
+  which includes recipe instance aggregations
+"""
+type ProcessingCandidateViewType {
+  """Unique id for the processing candidate record"""
+  processingCandidateId: Int
+
+  """
+  The maximum date of the data collected in an observing program to be used in calibration. (i.e. Observe and calibrate OPs)
+  """
+  dataAcquisitionCompletionDate: DateTime
+
+  """Id of the experiment the observing program belongs to"""
+  experimentId: String
+
+  """Locking status of the processing candidate. """
+  isLocked: Boolean
+
+  """Id of the observing program execution that needs to be calibrated"""
+  observingProgramExecutionId: String
+
+  """
+  The number of recipe instances expected.  Used to determine if a processing candidate is complete
+  """
+  plannedRecipeCount: Int
+
+  """Id of the proposal the observing program belongs to"""
+  proposalId: String
+
+  """
+  Number of recipe instances associated with a processing candidate that can be
+  considered complete via its associated recipe run statuses
+  """
+  completeRecipeInstanceCount: Int
+
+  """Number of recipe instances associated with a processing candidate"""
+  totalRecipeInstanceCount: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  processingCandidateCalibrations: [ProcessingCandidateCalibrationType]
+  recipeInstances: [RecipeInstanceViewType]
+  frameReceiptAccounts: [FrameReceiptAccountViewType]
+}
+
+"""List of proposals and their embargo state"""
+type ProposalAccessType {
+  """The primary key for the proposal access record."""
+  proposalAccessId: Int
+
+  """The proposal the access record applies to"""
+  proposalId: String
+
+  """Boolean indicating whether a proposal is currently embargoed"""
+  isEmbargoed: Boolean
+
+  """Unique id for the access rule stored in Globus"""
+  accessRuleId: String
+
+  """Unique id for the investigator user group stored in Globus"""
+  embargoGroupId: String
+
+  """Date the proposal was completed"""
+  proposalCompletionDate: DateTime
+
+  """Date an embargoed proposal will become unembargoed"""
+  embargoEndDate: DateTime
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """The duration of the embargo with 0 meaning no embargo at all"""
+  embargoDuration: Int
+
+  """Index of last investigator update"""
+  investigatorSeq: Int
+
+  """Date of last investigator update"""
+  investigatorDate: DateTime
+  proposalInvestigators: [ProposalInvestigatorViewType]
+}
+
+"""List investigators associated with a proposal access record"""
+type ProposalInvestigatorType {
+  """The primary key for the proposal_investigator record"""
+  proposalInvestigatorId: Int
+
+  """Foreign key to the proposal access table"""
+  proposalAccessId: Int
+
+  """UUID for the identity record of the user in the Globus Auth platform"""
+  userId: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""
+The proposal_investigator table with the additional boolean of whether the proposal is embargoed.
+"""
+type ProposalInvestigatorViewType {
+  """The primary key for the proposal_investigator record"""
+  proposalInvestigatorId: Int
+
+  """Foreign key to the proposal access table"""
+  proposalAccessId: Int
+
+  """The proposal the access record applies to"""
+  proposalId: String
+
+  """UUID for the identity record of the user in the Globus Auth platform"""
+  userId: String
+
+  """Boolean indicating whether a proposal is currently embargoed"""
+  isEmbargoed: Boolean
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  proposalAccess: ProposalAccessType
+}
+
+"""Machine readable report on the quality of a dataset"""
+type QualityReportType {
+  """Unique Id for the quality report record"""
+  qualityReportId: Int
+
+  """Unique Id of the dataset the record belongs to"""
+  datasetId: String
+
+  """A JSON structured report of the quality of the dataset"""
+  qualityReport: JSONString
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""Definition of queryable objects"""
+type Query {
+  """Metadata regarding the object sync inventory"""
+  objectSyncInventoryMetaData(
+    """Name of the index to retrieve metadata for"""
+    index: String
+  ): ObjectSyncInventoryMetadataType
+
+  """Randomly selected object sync inventory records"""
+  randomObjectSyncInventories(
+    """The number of object aync inventory records to return"""
+    recordCount: Int = 1
+
+    """Name of the index to retrieve metadata for"""
+    index: String
+  ): [ObjectSyncInventoryType]
+
+  """Digest notifications to be processed"""
+  digestNotifications(
+    """Unique id of the digest notification record"""
+    digestNotificationId: Int
+
+    """Grouping type of notification"""
+    notificationType: String
+
+    """The conversation id from the message that caused the record insertion"""
+    conversationId: String
+  ): [DigestNotificationType]
+
+  """Dead lettered messages awaiting review"""
+  deadLetteredMessages(
+    """Unique id for the Dead Lettered Message"""
+    deadLetteredMessageId: Int
+
+    """The queue the message was dead lettered from"""
+    queue: String
+
+    """The conversation id from the  dead lettered message"""
+    conversationId: String
+
+    """
+    The minimum allowable creation time for the dead lettered message record: Date time in UTC the record was created
+    """
+    createDateMin: DateTime
+
+    """
+    The maximum allowable creation time for the dead lettered message record: Date time in UTC the record was created
+    """
+    createDateMax: DateTime
+  ): [DeadLetteredMessageType]
+
+  """Aggregation of dead lettered messages by queue"""
+  deadLetteredMessagesByQueue(
+    """The queue the message was dead lettered from"""
+    queue: String
+  ): [DeadLetteredMessagesByQueueViewType]
+
+  """Users who are excepted from embargo requirements"""
+  authorizedAgents(
+    """The primary key of the authorized agent"""
+    authorizedAgentId: Int
+
+    """UUID for the identity record of the user in the Globus Auth platform"""
+    userId: String
+  ): [AuthorizedAgentType]
+
+  """Descriptions of experiments as received from Ops Tools"""
+  experimentDescriptions(
+    """The primary key for the experiment description record"""
+    experimentDescriptionId: Int
+
+    """Experiment Id to which the description belongs"""
+    experimentId: String
+  ): [ExperimentDescriptionType]
+
+  """Access control state (embargo) of a proposal"""
+  proposalAccesses(
+    """The primary key for the proposal access record."""
+    proposalAccessId: Int
+
+    """The proposal the access record applies to"""
+    proposalId: String
+
+    """The duration of the embargo with 0 meaning no embargo at all"""
+    embargoDuration: Int
+
+    """Boolean indicating whether a proposal is currently embargoed"""
+    isEmbargoed: Boolean
+
+    """Unique id for the access rule stored in Globus"""
+    accessRuleId: String
+
+    """Unique id for the investigator user group stored in Globus"""
+    embargoGroupId: String
+
+    """
+    The minimum allowable date for the proposal to have completed: Date the proposal was completed
+    """
+    proposalCompletionDateMin: DateTime
+
+    """
+    The maximum allowable date for the proposal to have completed: Date the proposal was completed
+    """
+    proposalCompletionDateMax: DateTime
+
+    """
+    The minimum allowable date for the embargo to expire: Date an embargoed proposal will become unembargoed
+    """
+    embargoEndDateMin: DateTime
+
+    """
+    The maximum allowable date for the embargo to expire: Date an embargoed proposal will become unembargoed
+    """
+    embargoEndDateMax: DateTime
+  ): [ProposalAccessType]
+
+  """Investigators associated with a proposal as received from Ops Tools"""
+  proposalInvestigators(
+    """Foreign key to the proposal access table"""
+    proposalAccessId: Int
+
+    """The primary key for the proposal_investigator record"""
+    proposalInvestigatorId: Int
+
+    """The proposal the access record applies to"""
+    proposalId: String
+
+    """UUID for the identity record of the user in the Globus Auth platform"""
+    userId: String
+  ): [ProposalInvestigatorViewType]
+
+  """
+  Endpoint providing the total number of records that would match a query
+  """
+  datasetInventoriesRecordCount(
+    """The unique id of the dataset inventory record"""
+    datasetInventoryId: Int
+
+    """
+    The object key used to retrieve the asdf file from the same bucket as the frame objects
+    """
+    asdfObjectKey: String
+
+    """
+    The object key used to retrieve the browse movie from the browse-movie bucket
+    """
+    browseMovieObjectKey: String
+
+    """The URL for the published browse movie e.g. in YouTube"""
+    browseMovieUrl: String
+
+    """
+    The minimum allowable creation time for the dataset inventory record: Date time in UTC the record was created
+    """
+    createDateMin: DateTime
+
+    """
+    The maximum allowable creation time for the dataset inventory record: Date time in UTC the record was created
+    """
+    createDateMax: DateTime
+
+    """
+    A list of datasetIds that can be present within a dataset. datasetId: The unique id of the dataset
+    """
+    datasetIds: [String]
+
+    """
+    The minimum allowable end time of a dataset. endTime: Time of acquisition for the latest frame in the data set
+    """
+    endTimeMin: DateTime
+
+    """
+    The maximum allowable end time of a dataset. endTime: Time of acquisition for the latest frame in the data set
+    """
+    endTimeMax: DateTime
+
+    """
+    The minimum allowable exposure time within a dataset. exposureTime: The mode
+    length of time that the CCD was exposed for within the dataset
+    """
+    exposureTimeMin: Float
+
+    """
+    The maximum allowable exposure time within a dataset. exposureTime: The mode
+    length of time that the CCD was exposed for within the dataset
+    """
+    exposureTimeMax: Float
+
+    """
+    A list of instrument names that can be present within a dataset. 
+    instrumentName: Name of the instrument that produced the data in the dataset
+    """
+    instrumentNames: [String]
+
+    """
+    A user id that is an investigator on the dataset proposal. userId: UUID for
+    the identity record of the user in the Globus Auth platform
+    """
+    investigatorUserIds: [String]
+
+    """
+    A list of experiment ids that can be present within a dataset. 
+    primaryExperimentId: The experiment id the observation data was collected under
+    """
+    primaryExperimentIds: [String]
+
+    """
+    A list of proposal ids that can be present within a dataset. 
+    primaryProposalId: The proposal id the observation data was collected under
+    """
+    primaryProposalIds: [String]
+
+    """
+    The mininum allowable value of the average Fried Parameter within a dataset.
+     qualityAverageFriedParameter: Average Fried parameter in the dataset
+    """
+    qualityAverageFriedParameterMin: Float
+
+    """
+    The minimum allowable value of the average Fried Parameter within a dataset.
+     qualityAverageFriedParameter: Average Fried parameter in the dataset
+    """
+    qualityAverageFriedParameterMax: Float
+
+    """
+    The minimum allowable value of the average Polarimetric Accuracy.
+    qualityAveragePolarametricAccuracy: Average polarimetric accuracy calculated
+    from the dataset
+    """
+    qualityAveragePolarimetricAccuracyMin: Float
+
+    """
+    The maximum allowable value of the average Polarimetric Accuracy.
+    qualityAveragePolarametricAccuracy: Average polarimetric accuracy calculated
+    from the dataset
+    """
+    qualityAveragePolarimetricAccuracyMax: Float
+
+    """Foreign key reference to the recipe instance that created the data set"""
+    recipeInstanceId: Int
+
+    """
+    Foreign key reference to the recipe run that created the data set.  Also used to look up provenance information
+    """
+    recipeRunId: Int
+
+    """
+    Foreign key reference to the recipe specification that created the data set
+    """
+    recipeId: Int
+
+    """
+    The minimum allowable start time of a dataset. startTime: Time of acquisition for the earliest frame in the data set
+    """
+    startTimeMin: DateTime
+
+    """
+    The maximum allowable start time of a dataset. startTime: Time of acquisition for the earliest frame in the data set
+    """
+    startTimeMax: DateTime
+
+    """
+    A Boolean indicating true if all stokes parameters exist in the data set
+    """
+    hasAllStokes: Boolean
+
+    """
+    A list of target types that can be present within a dataset. targetType:
+    Contains the value of the OBJECT field in the input frames of the processing candidate
+    """
+    targetTypes: [String]
+
+    """
+    :The minimum allowable modification time for the dataset inventory record: DatasetInventoryViewModel.update_date
+    """
+    updateDateMin: DateTime
+
+    """
+    :The minimum allowable modification time for the dataset inventory record: DatasetInventoryViewModel.update_date
+    """
+    updateDateMax: DateTime
+
+    """
+    List of minimum and maximum allowable wavelength valuesrepresenting a
+    wavelength range that can be present in the dataset. Expected formatis a
+    list of an even number of ranges. e.g. [1,2,10,20] which is translated as
+    two ranges 1 - 2 and 10 - 20. wavelengthMax: Upper bound of wavelength range
+    within a dataset, wavelengthMin: Lower bound of wavelength range within a dataset
+    """
+    wavelengthRanges: [Float]
+
+    """
+    A rectangle wholly containing the bounding box of a dataset in the format
+    (x1,y1),(x2,y2). boundingBox: The spatial extent of all data within the
+    dataset in arc seconds from the center of the sun using the upper right and
+    lower left corners in that order and in the format ((x1,y1),(x2,y2))
+    """
+    rectangleContainingBoundingBox: String
+
+    """
+    A rectangle wholly within the bounding box of a dataset in the format
+    (x1,y1),(x2,y2). boundingBox: The spatial extent of all data within the
+    dataset in arc seconds from the center of the sun using the upper right and
+    lower left corners in that order and in the format ((x1,y1),(x2,y2))
+    """
+    rectangleContainedByBoundingBox: String
+
+    """
+    A rectangle that intersects with the bounding box of a dataset in the format
+    (x1,y1),(x2,y2). boundingBox: The spatial extent of all data within the
+    dataset in arc seconds from the center of the sun using the upper right and
+    lower left corners in that order and in the format ((x1,y1),(x2,y2))
+    """
+    rectangleIntersectingBoundingBox: String
+
+    """Boolean indicating whether a proposal is currently embargoed"""
+    isEmbargoed: Boolean
+
+    """
+    The minimum allowable date for the embargo to expire. embargoEndDate: DatasetInventoryViewModel.embargo_end_date
+    """
+    embargoEndDateMin: DateTime
+
+    """
+    The maximum allowable date for the embargo to expire. embargoEndDate: DatasetInventoryViewModel.embargo_end_date
+    """
+    embargoEndDateMax: DateTime
+
+    """Flag indicating if the dataset inventory record is active for search"""
+    isActive: Boolean
+
+    """
+    The number of rows to return in a single call. Default is all records on 1 page.
+    """
+    pageSize: Int
+
+    """
+    The page number to return.  e.g. 1 is the first page and 10 the 10th. Default is page 1
+    """
+    pageNumber: Int
+
+    """
+    A column to order by the dataset inventory results by e.g createDate to
+    order by create date ascending or -instrument to order by instrument descending.
+    """
+    sortColumn: String
+
+    """Flag indicating that the dataset contains a spectral axis"""
+    hasSpectralAxis: Boolean
+
+    """Flag indicating that the dataset contains a time axis"""
+    hasTemporalAxis: Boolean
+
+    """
+    The minimum allowable average spectral sampling in a dataset.
+    averageSpectralSampling: The average spectral sampling size if it exists (nm)
+    """
+    averageDatasetSpectralSamplingMin: Float
+
+    """
+    The maximum allowable average spectral sampling in a dataset.
+    averageSpectralSampling: The average spectral sampling size if it exists (nm)
+    """
+    averageDatasetSpectralSamplingMax: Float
+
+    """
+    The minimum allowable average spatial sampling in a dataset.
+    averageSpatialSampling: The average spatial sampling size if it exists
+    """
+    averageDatasetSpatialSamplingMin: Float
+
+    """
+    The maximum allowable average spatial sampling in a dataset.
+    averageSpatialSampling: The average spatial sampling size if it exists
+    """
+    averageDatasetSpatialSamplingMax: Float
+
+    """
+    The minimum allowable average temporal sampling in a dataset.
+    averageTemporalSampling: The average temporal sampling size if it exists
+    """
+    averageDatasetTemporalSamplingMin: Float
+
+    """
+    The maximum allowable average temporal sampling in a dataset.
+    averageTemporalSampling: The average temporal sampling size if it exists
+    """
+    averageDatasetTemporalSamplingMax: Float
+
+    """
+    The object key used to retrieve the quality report file from the same bucket as the frame objects
+    """
+    qualityReportObjectKey: String
+
+    """Id of the parameters section of the input dataset"""
+    inputDatasetParametersPartId: Int
+
+    """Id of the observe frames section of the input dataset"""
+    inputDatasetObserveFramesPartId: Int
+
+    """Id of the calibration frames section of the input dataset"""
+    inputDatasetCalibrationFramesPartId: Int
+
+    """
+    Version of the High Level Software (HLS) used on the summit at the time of data acquisition
+    """
+    highLevelSoftwareVersion: String
+
+    """Name of the workflow used to process the data"""
+    workflowName: String
+
+    """Version of the workflow used to process the data"""
+    workflowVersion: String
+
+    """
+    The minimum allowable date for the HDU to be created. embargoEndDate:
+    DatasetInventoryViewModel.header_data_unit_creation_date
+    """
+    headerDataUnitCreationDateMin: DateTime
+
+    """
+    The maximum allowable date for the HDU to be created.
+    headerDataUnitCreationDate:
+    DatasetInventoryViewModel.header_data_unit_creation_date
+    """
+    headerDataUnitCreationDateMax: DateTime
+
+    """The observing program execution id the data was collected using"""
+    observingProgramExecutionId: String
+
+    """The instrument program execution id the data was collected using"""
+    instrumentProgramExecutionId: String
+
+    """
+    Version of the header specification (spec 214) used to package the data
+    """
+    headerVersion: String
+  ): DatasetInventoryRecordCountType
+
+  """
+  Dataset metadata used for dataset discovery.  Separate attributes are joined
+  by an and operator while arrays of values for a single attribute are joined by
+  an or operator.
+  """
+  datasetInventories(
+    """The unique id of the dataset inventory record"""
+    datasetInventoryId: Int
+
+    """
+    The object key used to retrieve the asdf file from the same bucket as the frame objects
+    """
+    asdfObjectKey: String
+
+    """
+    The object key used to retrieve the browse movie from the browse-movie bucket
+    """
+    browseMovieObjectKey: String
+
+    """The URL for the published browse movie e.g. in YouTube"""
+    browseMovieUrl: String
+
+    """
+    The minimum allowable creation time for the dataset inventory record: Date time in UTC the record was created
+    """
+    createDateMin: DateTime
+
+    """
+    The maximum allowable creation time for the dataset inventory record: Date time in UTC the record was created
+    """
+    createDateMax: DateTime
+
+    """
+    A list of datasetIds that can be present within a dataset. datasetId: The unique id of the dataset
+    """
+    datasetIds: [String]
+
+    """
+    The minimum allowable end time of a dataset. endTime: Time of acquisition for the latest frame in the data set
+    """
+    endTimeMin: DateTime
+
+    """
+    The maximum allowable end time of a dataset. endTime: Time of acquisition for the latest frame in the data set
+    """
+    endTimeMax: DateTime
+
+    """
+    The minimum allowable exposure time within a dataset. exposureTime: The mode
+    length of time that the CCD was exposed for within the dataset
+    """
+    exposureTimeMin: Float
+
+    """
+    The maximum allowable exposure time within a dataset. exposureTime: The mode
+    length of time that the CCD was exposed for within the dataset
+    """
+    exposureTimeMax: Float
+
+    """
+    A list of instrument names that can be present within a dataset. 
+    instrumentName: Name of the instrument that produced the data in the dataset
+    """
+    instrumentNames: [String]
+
+    """
+    A user id that is an investigator on the dataset proposal. userId: UUID for
+    the identity record of the user in the Globus Auth platform
+    """
+    investigatorUserIds: [String]
+
+    """
+    A list of experiment ids that can be present within a dataset. 
+    primaryExperimentId: The experiment id the observation data was collected under
+    """
+    primaryExperimentIds: [String]
+
+    """
+    A list of proposal ids that can be present within a dataset. 
+    primaryProposalId: The proposal id the observation data was collected under
+    """
+    primaryProposalIds: [String]
+
+    """
+    The mininum allowable value of the average Fried Parameter within a dataset.
+     qualityAverageFriedParameter: Average Fried parameter in the dataset
+    """
+    qualityAverageFriedParameterMin: Float
+
+    """
+    The minimum allowable value of the average Fried Parameter within a dataset.
+     qualityAverageFriedParameter: Average Fried parameter in the dataset
+    """
+    qualityAverageFriedParameterMax: Float
+
+    """
+    The minimum allowable value of the average Polarimetric Accuracy.
+    qualityAveragePolarametricAccuracy: Average polarimetric accuracy calculated
+    from the dataset
+    """
+    qualityAveragePolarimetricAccuracyMin: Float
+
+    """
+    The maximum allowable value of the average Polarimetric Accuracy.
+    qualityAveragePolarametricAccuracy: Average polarimetric accuracy calculated
+    from the dataset
+    """
+    qualityAveragePolarimetricAccuracyMax: Float
+
+    """Foreign key reference to the recipe instance that created the data set"""
+    recipeInstanceId: Int
+
+    """
+    Foreign key reference to the recipe run that created the data set.  Also used to look up provenance information
+    """
+    recipeRunId: Int
+
+    """
+    Foreign key reference to the recipe specification that created the data set
+    """
+    recipeId: Int
+
+    """
+    The minimum allowable start time of a dataset. startTime: Time of acquisition for the earliest frame in the data set
+    """
+    startTimeMin: DateTime
+
+    """
+    The maximum allowable start time of a dataset. startTime: Time of acquisition for the earliest frame in the data set
+    """
+    startTimeMax: DateTime
+
+    """
+    A Boolean indicating true if all stokes parameters exist in the data set
+    """
+    hasAllStokes: Boolean
+
+    """
+    A list of target types that can be present within a dataset. targetType:
+    Contains the value of the OBJECT field in the input frames of the processing candidate
+    """
+    targetTypes: [String]
+
+    """
+    :The minimum allowable modification time for the dataset inventory record: DatasetInventoryViewModel.update_date
+    """
+    updateDateMin: DateTime
+
+    """
+    :The minimum allowable modification time for the dataset inventory record: DatasetInventoryViewModel.update_date
+    """
+    updateDateMax: DateTime
+
+    """
+    List of minimum and maximum allowable wavelength valuesrepresenting a
+    wavelength range that can be present in the dataset. Expected formatis a
+    list of an even number of ranges. e.g. [1,2,10,20] which is translated as
+    two ranges 1 - 2 and 10 - 20. wavelengthMax: Upper bound of wavelength range
+    within a dataset, wavelengthMin: Lower bound of wavelength range within a dataset
+    """
+    wavelengthRanges: [Float]
+
+    """
+    A rectangle wholly containing the bounding box of a dataset in the format
+    (x1,y1),(x2,y2). boundingBox: The spatial extent of all data within the
+    dataset in arc seconds from the center of the sun using the upper right and
+    lower left corners in that order and in the format ((x1,y1),(x2,y2))
+    """
+    rectangleContainingBoundingBox: String
+
+    """
+    A rectangle wholly within the bounding box of a dataset in the format
+    (x1,y1),(x2,y2). boundingBox: The spatial extent of all data within the
+    dataset in arc seconds from the center of the sun using the upper right and
+    lower left corners in that order and in the format ((x1,y1),(x2,y2))
+    """
+    rectangleContainedByBoundingBox: String
+
+    """
+    A rectangle that intersects with the bounding box of a dataset in the format
+    (x1,y1),(x2,y2). boundingBox: The spatial extent of all data within the
+    dataset in arc seconds from the center of the sun using the upper right and
+    lower left corners in that order and in the format ((x1,y1),(x2,y2))
+    """
+    rectangleIntersectingBoundingBox: String
+
+    """Boolean indicating whether a proposal is currently embargoed"""
+    isEmbargoed: Boolean
+
+    """
+    The minimum allowable date for the embargo to expire. embargoEndDate: DatasetInventoryViewModel.embargo_end_date
+    """
+    embargoEndDateMin: DateTime
+
+    """
+    The maximum allowable date for the embargo to expire. embargoEndDate: DatasetInventoryViewModel.embargo_end_date
+    """
+    embargoEndDateMax: DateTime
+
+    """Flag indicating if the dataset inventory record is active for search"""
+    isActive: Boolean
+
+    """
+    The number of rows to return in a single call. Default is all records on 1 page.
+    """
+    pageSize: Int
+
+    """
+    The page number to return.  e.g. 1 is the first page and 10 the 10th. Default is page 1
+    """
+    pageNumber: Int
+
+    """
+    A column to order by the dataset inventory results by e.g createDate to
+    order by create date ascending or -instrument to order by instrument descending.
+    """
+    sortColumn: String
+
+    """Flag indicating that the dataset contains a spectral axis"""
+    hasSpectralAxis: Boolean
+
+    """Flag indicating that the dataset contains a time axis"""
+    hasTemporalAxis: Boolean
+
+    """
+    The minimum allowable average spectral sampling in a dataset.
+    averageSpectralSampling: The average spectral sampling size if it exists (nm)
+    """
+    averageDatasetSpectralSamplingMin: Float
+
+    """
+    The maximum allowable average spectral sampling in a dataset.
+    averageSpectralSampling: The average spectral sampling size if it exists (nm)
+    """
+    averageDatasetSpectralSamplingMax: Float
+
+    """
+    The minimum allowable average spatial sampling in a dataset.
+    averageSpatialSampling: The average spatial sampling size if it exists
+    """
+    averageDatasetSpatialSamplingMin: Float
+
+    """
+    The maximum allowable average spatial sampling in a dataset.
+    averageSpatialSampling: The average spatial sampling size if it exists
+    """
+    averageDatasetSpatialSamplingMax: Float
+
+    """
+    The minimum allowable average temporal sampling in a dataset.
+    averageTemporalSampling: The average temporal sampling size if it exists
+    """
+    averageDatasetTemporalSamplingMin: Float
+
+    """
+    The maximum allowable average temporal sampling in a dataset.
+    averageTemporalSampling: The average temporal sampling size if it exists
+    """
+    averageDatasetTemporalSamplingMax: Float
+
+    """
+    The object key used to retrieve the quality report file from the same bucket as the frame objects
+    """
+    qualityReportObjectKey: String
+
+    """Id of the parameters section of the input dataset"""
+    inputDatasetParametersPartId: Int
+
+    """Id of the observe frames section of the input dataset"""
+    inputDatasetObserveFramesPartId: Int
+
+    """Id of the calibration frames section of the input dataset"""
+    inputDatasetCalibrationFramesPartId: Int
+
+    """
+    Version of the High Level Software (HLS) used on the summit at the time of data acquisition
+    """
+    highLevelSoftwareVersion: String
+
+    """Name of the workflow used to process the data"""
+    workflowName: String
+
+    """Version of the workflow used to process the data"""
+    workflowVersion: String
+
+    """
+    The minimum allowable date for the HDU to be created. embargoEndDate:
+    DatasetInventoryViewModel.header_data_unit_creation_date
+    """
+    headerDataUnitCreationDateMin: DateTime
+
+    """
+    The maximum allowable date for the HDU to be created.
+    headerDataUnitCreationDate:
+    DatasetInventoryViewModel.header_data_unit_creation_date
+    """
+    headerDataUnitCreationDateMax: DateTime
+
+    """The observing program execution id the data was collected using"""
+    observingProgramExecutionId: String
+
+    """The instrument program execution id the data was collected using"""
+    instrumentProgramExecutionId: String
+
+    """
+    Version of the header specification (spec 214) used to package the data
+    """
+    headerVersion: String
+  ): [DatasetInventoryViewType]
+
+  """
+  Endpoint providing valid values for searching select dataset inventory fields
+  """
+  datasetInventoryLookups: [DatasetInventoryLookupType]
+
+  """Machine readable quality reports for processed datasets"""
+  qualityReports(
+    """Unique Id for the quality report record"""
+    qualityReportId: Int
+
+    """Unique Id of the dataset the record belongs to"""
+    datasetId: String
+  ): [QualityReportType]
+
+  """
+  Aggregations of expected and actual processed object receipts grouped by dataset id
+  """
+  datasetCatalogReceiptAccounts(
+    """Unique id for the dataset catalog receipt account"""
+    datasetCatalogReceiptAccountId: Int
+
+    """The id of the dataset that receipts are being accounted for"""
+    datasetId: String
+
+    """A flag indicating whether"""
+    isLocked: Boolean
+
+    """
+    Boolean indicating true if all objects that are expected have not yet been received
+    """
+    isReceivedCountLessThanExpected: Boolean
+  ): [DatasetCatalogReceiptAccountType]
+
+  """
+  Aggregations of expected and actual frame receipts grouped by observing program id
+  """
+  frameReceiptAccounts(
+    """The unique id of the frame receipt expected record"""
+    frameReceiptAccountId: Int
+
+    """The observing program execution the receipt accounts apply to"""
+    observingProgramExecutionId: String
+
+    """
+    Flag indicating true if the received frame count is less than the expected frame count
+    """
+    isReceivedLessThanExpected: Boolean
+
+    """
+    Flag indicating true if the sum of received and filtered frame count is less than the expected frame count
+    """
+    isReceivedPlusFilteredLessThanExpected: Boolean
+  ): [FrameReceiptAccountViewType]
+
+  """Journal entries for the frame receipt accounts"""
+  frameReceiptJournals(
+    """The unique id of the frame receipt journal record"""
+    frameReceiptJournalId: Int
+
+    """
+    The observing program execution the receipt account journal entries apply to
+    """
+    observingProgramExecutionId: String
+  ): [FrameReceiptJournalType]
+
+  """Input values either planned for use or used in a recipe run"""
+  inputDatasets(
+    """Unique identifier for the input data set"""
+    inputDatasetId: Int
+
+    """
+    A boolean value indicating whether the input dataset has been used and therefor cannot be updated
+    """
+    isActive: Boolean
+  ): [InputDatasetType]
+
+  """Input value parts either planned for use or used in a recipe run"""
+  inputDatasetParts(
+    """Unique identifier for the input dataset part"""
+    inputDatasetPartId: Int
+
+    """Foreign key to the input dataset part type table"""
+    inputDatasetPartTypeId: Int
+
+    """
+    The number of rows to return in a single call. Default is all records on 1 page.
+    """
+    pageSize: Int
+
+    """
+    The page number to return.  e.g. 1 is the first page and 10 the 10th. Default is page 1
+    """
+    pageNumber: Int
+
+    """
+    A column to order by the input dataset part results by e.g createDate to
+    order by create date ascending or -updateDate to order by update date descending.
+    """
+    sortColumn: String
+  ): [InputDatasetPartType]
+
+  """Input value part types which categorize input dataset parts"""
+  inputDatasetPartTypes(
+    """Unique identifier for the input dataset part type"""
+    inputDatasetPartTypeId: Int
+
+    """Unique name for the input dataset part type"""
+    inputDatasetPartTypeName: String
+  ): [InputDatasetPartTypeType]
+
+  """Valid instruments"""
+  instruments(
+    """Unique id of the instrument"""
+    instrumentId: Int
+
+    """Name of the instrument"""
+    instrumentName: String
+  ): [InstrumentType]
+
+  """Parameters that can be used in processing"""
+  parameters(
+    """Unique Id for the parameter"""
+    parameterId: Int
+
+    """Name of the parameter"""
+    parameterName: String
+
+    """Foreign key to the parameter type"""
+    parameterTypeId: Int
+  ): [ParameterType]
+
+  """Valid parameter types"""
+  parameterTypes(
+    """Unique id for the parameter type"""
+    parameterTypeId: Int
+
+    """Name of the parameter type"""
+    parameterTypeName: String
+  ): [ParameterTypeType]
+
+  """Values for processing parameters"""
+  parameterValues(
+    """Unique Id for the parameter value"""
+    parameterValueId: Int
+
+    """Foreign key to the parameter"""
+    parameterId: Int
+  ): [ParameterValueType]
+
+  """
+  Observing Programs that will be used to calibrate a processing candidate
+  """
+  processingCandidateCalibrations(
+    """Unique id of the processing candidate calibration record"""
+    processingCandidateCalibrationId: Int
+
+    """Foreign key to the processing candidate"""
+    processingCandidateId: Int
+
+    """
+    Id of the observing program execution that will be used to calibrate the candidate
+    """
+    observingProgramExecutionId: String
+  ): [ProcessingCandidateCalibrationType]
+
+  """Observing Program and related metadata that will be calibrated"""
+  processingCandidates(
+    """Unique id for the processing candidate record"""
+    processingCandidateId: Int
+
+    """Id of the observing program execution that needs to be calibrated"""
+    observingProgramExecutionId: String
+
+    """Id of the experiment the observing program belongs to"""
+    experimentId: String
+
+    """Id of the proposal the observing program belongs to"""
+    proposalId: String
+
+    """Locking status of the processing candidate. """
+    isLocked: Boolean
+
+    """
+    The number of recipe instances expected.  Used to determine if a processing candidate is complete
+    """
+    plannedRecipeCount: Int
+
+    """Number of recipe instances associated with a processing candidate"""
+    totalRecipeInstanceCount: Int
+
+    """
+    Number of recipe instances associated with a processing candidate that can
+    be considered complete via its associated recipe run statuses
+    """
+    completeRecipeInstanceCount: Int
+
+    """
+    A boolean value representing whether the totalRecipeInstanceCount is less than the plannedRecipeCount
+    """
+    isTotalRecipeInstanceCountLessThanPlanned: Boolean
+
+    """
+    A boolean value representing whether the completeRecipeInstanceCount is less than the plannedRecipeCount
+    """
+    isCompleteRecipeInstanceCountLessThanPlanned: Boolean
+
+    """
+    A boolean value representing whether the planned recipe count is >0 or
+    intentionally 0 (planned but there are none) vs. has yet to have been
+    evaluated (unplanned)
+    """
+    isUnplanned: Boolean
+  ): [ProcessingCandidateViewType]
+
+  """Discoverable specification of a workflow and related parameters"""
+  recipes(
+    """Unique id of the recipe"""
+    recipeId: Int
+
+    """Name describing the recipe"""
+    recipeName: String
+
+    """
+    Flag indicating whether the recipe will be scheduled for automatic processing or manual processing
+    """
+    isAutoProcessed: Boolean
+
+    """Flag indicating whether the recipe is active"""
+    isActive: Boolean
+
+    """
+    Name of the resource pool which can be used as a parameter for automated processing
+    """
+    resourcePool: String
+
+    """Foreign key to the workflow associated with the recipe"""
+    workflowId: Int
+
+    """Foreign key to the recipe configuration associated with the recipe"""
+    recipeConfigurationId: Int
+  ): [RecipeType]
+
+  """Specification of a reusable recipe configurations"""
+  recipeConfigurations(
+    """Unique id of the recipe configuration record"""
+    recipeConfigurationId: Int
+
+    """
+    Name of the recipe configuration used to distinguish configuration sets
+    """
+    recipeConfigurationName: String
+  ): [RecipeConfigurationType]
+
+  """Instances of a recipe with a particular set of input data"""
+  recipeInstances(
+    """Unique Id of the recipe instance"""
+    recipeInstanceId: Int
+
+    """Foreign key to the related recipe"""
+    recipeId: Int
+
+    """Foreign key to the related processing candidate"""
+    processingCandidateId: Int
+
+    """
+    Foreign key to the present (for the one used on a dataset see
+    recipeRunProvenance) input dataset used in the instance definition
+    """
+    inputDatasetId: Int
+
+    """
+    Number of recipe runs associated with a recipe instance that can be considered complete
+    """
+    completeRecipeRunCount: Int
+
+    """Number of recipe runs associated with a recipe instance"""
+    totalRecipeRunCount: Int
+  ): [RecipeInstanceViewType]
+
+  """An execution of a recipe instance"""
+  recipeRuns(
+    """Unique Id for the recipe run"""
+    recipeRunId: Int
+
+    """Foreign Key to the recipe instance"""
+    recipeInstanceId: Int
+
+    """Foreign Key to the recipe run status"""
+    recipeRunStatusId: Int
+
+    """Name of the status"""
+    recipeRunStatusName: String
+
+    """
+    Priority of the recipe run that is passed to the automated processing
+    scheduler as a parameter for scheduling where a higher number equals a
+    higher priority
+    """
+    priority: Int
+
+    """
+    A boolean indicator of whether a status can be interpreted as complete i.e. there is no work left to be done
+    """
+    isComplete: Boolean
+
+    """
+    The id of the airflow run used to discover the recipe run in the case of DAG failure
+    """
+    dagRunId: String
+
+    """
+    Flag indicating whether the recipe will be scheduled for automatic processing or manual processing
+    """
+    isAutoProcessed: Boolean
+
+    """
+    A list of columns to order by the recipe results by e.g ['-priority',
+    'statusDate'] to order by create date ascending or -instrument to order by
+    instrument descending.
+    """
+    sortColumns: [String]
+
+    """
+    The number of rows to return in a single call. Default is all records on 1 page.
+    """
+    pageSize: Int
+
+    """
+    The page number to return.  e.g. 1 is the first page and 10 the 10th. Default is page 1
+    """
+    pageNumber: Int
+  ): [RecipeRunViewType]
+
+  """Valid statuses for the recipe runs"""
+  recipeRunStatuses(
+    """Primary key for the recipe run status table"""
+    recipeRunStatusId: Int
+
+    """Name of the status"""
+    recipeRunStatusName: String
+
+    """
+    A boolean indicator of whether a status can be interpreted as complete i.e. there is no work left to be done
+    """
+    isComplete: Boolean
+  ): [RecipeRunStatusType]
+
+  """
+  A record of code, workflow, and input data version information for a recipe run referenced on all processed frames
+  """
+  recipeRunProvenances(
+    """Unique id for the recipe run provenance record"""
+    recipeRunProvenanceId: Int
+
+    """version of the code executed in a recipe run task"""
+    codeVersion: String
+
+    """version of the workflow the recipe run used"""
+    workflowVersion: String
+
+    """Workflow task the provenance record applies to"""
+    taskName: String
+
+    """
+    Foreign key to the recipe run the provenance record applies to.  Also used
+    to find frames the provenance record applies to
+    """
+    recipeRunId: Int
+
+    """Flag indicating whether the tag was manually intervened with"""
+    isTaskManual: Boolean
+
+    """Foreign key to the input dataset that was used in the recipe run"""
+    inputDatasetId: Int
+  ): [RecipeRunProvenanceType]
+
+  """
+  Catalog record for the Directed Acyclic Graphs (DAGs) that represent a processing workflow
+  """
+  workflows(
+    """Unique id of the workflow record"""
+    workflowId: Int
+
+    """
+    Name of the workflow which corresponds to the DAG name known to the scheduler
+    """
+    workflowName: String
+  ): [WorkflowType]
+
+  """Frame Inventory records"""
+  frameInventories(
+    """Primary key for the object inventory record"""
+    inventoryIds: [String]
+
+    """Bucket the object resides in"""
+    bucket: String
+
+    """The key to access the object in the bucket"""
+    objectKey: String
+
+    """
+    Minimum allowable create date. The date the object inventory record was created
+    """
+    createDateMin: DateTime
+
+    """
+    Maximum allowable create date. The date the object inventory record was created
+    """
+    createDateMax: DateTime
+
+    """
+    Minimum allowable update date. The date the object inventory record was last updated
+    """
+    updateDateMin: DateTime
+
+    """
+    Maximum allowable update date. The date the object inventory record was last updated
+    """
+    updateDateMax: DateTime
+
+    """
+    Minimum allowable lost date. The date the inventoried object was discovered to be lost
+    """
+    lostDateMin: DateTime
+
+    """
+    Maximum allowable lost date. The date the inventoried object was discovered to be lost
+    """
+    lostDateMax: DateTime
+
+    """Dataset id the processed frame belongs to"""
+    datasetId: String
+
+    """Frame id of the processed frame"""
+    frameId: String
+
+    """The status of the frame e.g. AVAILABLE, LOST, or REMOVED"""
+    frameStatus: String
+
+    """Name of the instrument that produced the data"""
+    instrument: String
+
+    """Instrument program task type for the frame"""
+    instrumentProgramTaskType: String
+
+    """Minimum allowable observation date. Date the frame was observed"""
+    observationDateMin: DateTime
+
+    """Maximum allowable observation date. Date the frame was observed"""
+    observationDateMax: DateTime
+
+    """
+    List of observing program execution ids: Observing program execution id for the frame
+    """
+    observingProgramExecutionIds: [String]
+
+    """Observing program task type for the frame"""
+    observingProgramTaskType: String
+
+    """Level of data center processing for the frame e.g. RAW, L1, L2"""
+    processingType: String
+
+    """
+    Unique ID of the proposal associated with the experiment associated with the generation of these data
+    """
+    proposalId: String
+
+    """The recipe run iId the processed frame was produced with"""
+    recipeRunId: Int
+
+    """Minimum allowable wavelength. The filter wavelength of the frame data"""
+    wavelengthMin: Float
+
+    """Maximum allowable wavelength. The filter wavelength of the frame data"""
+    wavelengthMax: Float
+
+    """The filter wavelength of the frame data"""
+    wavelength: Float
+
+    """Flag indicating whether a VBI Frame was processed"""
+    vbiProcessed: String
+
+    """
+    Unique ID of the experiment associated with the generation of these data
+    """
+    experimentId: String
+
+    """
+    Unique ID dynamically generated at he time the InstrumentProgram was
+    submitted for execution. This unique ID shall contain the
+    InstrumentProgramID (16 characters) as base ID, a subsequent period (‘.’),
+    and a unique suffix containing of up to 17 characters, for a total of up to 34 characters
+    """
+    instrumentProgramExecutionId: String
+
+    """
+    Unique ID of the DataSetParameters used to configure the InstrumentProgram associated with these data
+    """
+    datasetParametersId: String
+
+    """Arm name id for CryoNIRSP that generates the data"""
+    cryonirspArm: String
+
+    """Polarimeter Mode with which these data were acquired"""
+    vispPolarimeterMode: String
+
+    """
+    Number of images belonging to the scanned FieldOfView, representing the ‘length’ of VBISTPAT
+    """
+    vbiNumberOfSpatialSteps: Int
+
+    """Number of raw frames that contributed to the FPA"""
+    accumulationsInFrame: Int
+
+    """
+    Total duration of exposure to photons, in milliseconds, that resulted in this FPA
+    """
+    frameExposureTime: Float
+
+    """
+    The number of rows to return in a single call. Default is all records on 1 page.
+    """
+    pageSize: Int = 1000
+
+    """
+    The page number to return.  e.g. 1 is the first page and 10 the 10th. Default is page 1
+    """
+    pageNumber: Int = 1
+  ): [FrameInventoryType]
+
+  """Object Inventory records"""
+  objectInventories(
+    """Unique id for the object inventory record"""
+    inventoryIds: [String]
+
+    """Bucket the object resides in"""
+    bucket: String
+
+    """The key to access the object in the bucket"""
+    objectKey: String
+
+    """The status of the object e.g. AVAILABLE, LOST, or REMOVED"""
+    objectStatus: String
+
+    """
+    Minimum allowable create date.  The date the object inventory record was created
+    """
+    createDateMin: DateTime
+
+    """
+    Maximum allowable create date. The date the object inventory record was created
+    """
+    createDateMax: DateTime
+
+    """
+    Minimum allowable update date. The date the object inventory record was last updated
+    """
+    updateDateMin: DateTime
+
+    """
+    Maximum allowable update date. The date the object inventory record was last updated
+    """
+    updateDateMax: DateTime
+
+    """
+    Minimum allowable lost date. The date the inventoried object was discovered to be lost
+    """
+    lostDateMin: DateTime
+
+    """
+    Maximum allowable lost date. The date the inventoried object was discovered to be lost
+    """
+    lostDateMax: DateTime
+
+    """
+    The type of object being inventoried. e.g. ASDF, MOVIE, QREPORT, PARAMETER_VALUE or WFC
+    """
+    objectType: String
+
+    """
+    The id for the group to which the object belongs e.g. datasetId for ASDF, movie, and Quality Report.
+    """
+    groupId: String
+
+    """
+    The name of the group to which the object belongs. e.g. DATASET, OPEXEC, or PARAMETER_VALUE
+    """
+    groupName: String
+
+    """
+    The number of rows to return in a single call. Default is all records on 1 page.
+    """
+    pageSize: Int = 1000
+
+    """
+    The page number to return.  e.g. 1 is the first page and 10 the 10th. Default is page 1
+    """
+    pageNumber: Int = 1
+  ): [ObjectInventoryType]
+
+  """Randomly selected available frame inventory records"""
+  randomFrameInventories(
+    """The number of frame inventory records to return"""
+    recordCount: Int = 1
+  ): [FrameInventoryType]
+
+  """Randomly selected available object inventory records"""
+  randomObjectInventories(
+    """The number of object inventory records to return"""
+    recordCount: Int = 1
+  ): [ObjectInventoryType]
+
+  """Statistical information about the quantity of frame inventory records"""
+  frameInventoryAggregation(
+    """Bucket the object resides in"""
+    bucket: String
+
+    """The key to access the object in the bucket"""
+    objectKey: String
+
+    """
+    Minimum allowable create date. The date the object inventory record was created
+    """
+    createDateMin: DateTime
+
+    """
+    Maximum allowable create date. The date the object inventory record was created
+    """
+    createDateMax: DateTime
+
+    """
+    Minimum allowable update date. The date the object inventory record was last updated
+    """
+    updateDateMin: DateTime
+
+    """
+    Maximum allowable update date. The date the object inventory record was last updated
+    """
+    updateDateMax: DateTime
+
+    """
+    Minimum allowable lost date. The date the inventoried object was discovered to be lost
+    """
+    lostDateMin: DateTime
+
+    """
+    Maximum allowable lost date. The date the inventoried object was discovered to be lost
+    """
+    lostDateMax: DateTime
+
+    """Dataset id the processed frame belongs to"""
+    datasetId: String
+
+    """Frame id of the processed frame"""
+    frameId: String
+
+    """The status of the frame e.g. AVAILABLE, LOST, or REMOVED"""
+    frameStatus: String
+
+    """Name of the instrument that produced the data"""
+    instrument: String
+
+    """Instrument program task type for the frame"""
+    instrumentProgramTaskType: String
+
+    """Minimum allowable observation date. Date the frame was observed"""
+    observationDateMin: DateTime
+
+    """Maximum allowable observation date. Date the frame was observed"""
+    observationDateMax: DateTime
+
+    """
+    List of observing program execution ids: Observing program execution id for the frame
+    """
+    observingProgramExecutionIds: [String]
+
+    """Observing program task type for the frame"""
+    observingProgramTaskType: String
+
+    """Level of data center processing for the frame e.g. RAW, L1, L2"""
+    processingType: String
+
+    """
+    Unique ID of the proposal associated with the experiment associated with the generation of these data
+    """
+    proposalId: String
+
+    """The recipe run iId the processed frame was produced with"""
+    recipeRunId: Int
+
+    """Minimum allowable wavelength. The filter wavelength of the frame data"""
+    wavelengthMin: Float
+
+    """Maximum allowable wavelength. The filter wavelength of the frame data"""
+    wavelengthMax: Float
+
+    """The filter wavelength of the frame data"""
+    wavelength: Float
+
+    """Flag indicating whether a VBI Frame was processed"""
+    vbiProcessed: String
+
+    """
+    Unique ID of the experiment associated with the generation of these data
+    """
+    experimentId: String
+
+    """
+    Unique ID dynamically generated at he time the InstrumentProgram was
+    submitted for execution. This unique ID shall contain the
+    InstrumentProgramID (16 characters) as base ID, a subsequent period (‘.’),
+    and a unique suffix containing of up to 17 characters, for a total of up to 34 characters
+    """
+    instrumentProgramExecutionId: String
+
+    """
+    Unique ID of the DataSetParameters used to configure the InstrumentProgram associated with these data
+    """
+    datasetParametersId: String
+
+    """Arm name id for CryoNIRSP that generates the data"""
+    cryonirspArm: String
+
+    """Polarimeter Mode with which these data were acquired"""
+    vispPolarimeterMode: String
+
+    """
+    Number of images belonging to the scanned FieldOfView, representing the ‘length’ of VBISTPAT
+    """
+    vbiNumberOfSpatialSteps: Int
+
+    """Number of raw frames that contributed to the FPA"""
+    accumulationsInFrame: Int
+
+    """
+    Total duration of exposure to photons, in milliseconds, that resulted in this FPA
+    """
+    frameExposureTime: Float
+  ): FrameAggregationType
+
+  """Metadata regarding the inventory collection"""
+  inventoryMetaData(
+    """Name of the inventory collection"""
+    name: String
+  ): [InventoryMetadataType]
+}
+
+"""Specification of a default configuration reusable across recipes"""
+type RecipeConfigurationType {
+  """Unique id of the recipe configuration record"""
+  recipeConfigurationId: Int
+
+  """
+  Name of the recipe configuration used to distinguish configuration sets
+  """
+  recipeConfigurationName: String
+
+  """Description of the recipe configuration"""
+  recipeConfigurationDescription: String
+
+  """
+  A JSON structured enumeration of the default configuration available for recipes
+  """
+  recipeConfiguration: JSONString
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  recipes: [RecipeType]
+}
+
+"""An instance of a recipe for a particular set of input data"""
+type RecipeInstanceType {
+  """Unique Id of the recipe instance"""
+  recipeInstanceId: Int
+
+  """
+  Foreign key to the present (for the one used on a dataset see
+  recipeRunProvenance) input dataset used in the instance definition
+  """
+  inputDatasetId: Int
+
+  """Foreign key to the related processing candidate"""
+  processingCandidateId: Int
+
+  """Foreign key to the related recipe"""
+  recipeId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+}
+
+"""
+An view of the instance of a recipe for a particular set of input data including aggregations
+  of associated recipe runs
+"""
+type RecipeInstanceViewType {
+  """Unique Id of the recipe instance"""
+  recipeInstanceId: Int
+
+  """
+  Foreign key to the present (for the one used on a dataset see
+  recipeRunProvenance) input dataset used in the instance definition
+  """
+  inputDatasetId: Int
+
+  """Foreign key to the related processing candidate"""
+  processingCandidateId: Int
+
+  """Foreign key to the related recipe"""
+  recipeId: Int
+
+  """
+  Number of recipe runs associated with a recipe instance that can be considered complete
+  """
+  completeRecipeRunCount: Int
+
+  """Number of recipe runs associated with a recipe instance"""
+  totalRecipeRunCount: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  inputDataset: InputDatasetType
+  processingCandidate: ProcessingCandidateViewType
+  recipe: RecipeType
+  recipeRuns: [RecipeRunViewType]
+}
+
+"""Instruments that are valid for a particular recipe"""
+type RecipeInstrumentType {
+  """Unique id of the relationship between instrument and recipe"""
+  recipeInstrumentId: Int
+
+  """Foreign key to instrument"""
+  instrumentId: Int
+
+  """Foreign key to recipe"""
+  recipeId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  recipe: RecipeType
+  instrument: InstrumentType
+}
+
+"""Parameters that are valid for a particular recipe"""
+type RecipeParameterType {
+  """Unique id for the recipe parameter  relationship"""
+  recipeParameterId: Int
+
+  """Foreign key to the parameter"""
+  parameterId: Int
+
+  """Foreign key to recipe"""
+  recipeId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  recipe: RecipeType
+  parameter: ParameterType
+}
+
+"""
+A record of code, workflow, and input data version information for a recipe run referenced on
+  all processed frames
+"""
+type RecipeRunProvenanceType {
+  """Unique id for the recipe run provenance record"""
+  recipeRunProvenanceId: Int
+
+  """version of the code executed in a recipe run task"""
+  codeVersion: String
+
+  """Foreign key to the input dataset that was used in the recipe run"""
+  inputDatasetId: Int
+
+  """Flag indicating whether the tag was manually intervened with"""
+  isTaskManual: Boolean
+
+  """
+  versions of the critical (as determined by the code) libraries used by the recipe run task
+  """
+  libraryVersions: String
+
+  """
+  Foreign key to the recipe run the provenance record applies to.  Also used to find frames the provenance record applies to
+  """
+  recipeRunId: Int
+
+  """Workflow task the provenance record applies to"""
+  taskName: String
+
+  """version of the workflow the recipe run used"""
+  workflowVersion: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  recipeRun: RecipeRunViewType
+  inputDataset: InputDatasetType
+}
+
+"""
+A list of the valid statuses for a recipe run including whether the status can be considered
+  complete
+"""
+type RecipeRunStatusType {
+  """Primary key for the recipe run status table"""
+  recipeRunStatusId: Int
+
+  """Name of the status"""
+  recipeRunStatusName: String
+
+  """
+  Description of the status, ideally including inbound and outbound transitions
+  """
+  recipeRunStatusDescription: String
+
+  """
+  A boolean indicator of whether a status can be interpreted as complete i.e. there is no work left to be done
+  """
+  isComplete: Boolean
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  recipeRuns: [RecipeRunViewType]
+}
+
+"""An execution of a recipe instance"""
+type RecipeRunType {
+  """Unique Id for the recipe run"""
+  recipeRunId: Int
+
+  """
+  Priority of the recipe run that is passed to the automated processing
+  scheduler as a parameter for scheduling where a higher number equals a higher priority
+  """
+  priority: Int
+
+  """Foreign Key to the recipe instance"""
+  recipeInstanceId: Int
+
+  """Foreign Key to the recipe run status"""
+  recipeRunStatusId: Int
+
+  """Date applicable to the recipe run status"""
+  statusDate: DateTime
+
+  """
+  The id of the airflow run used to discover the recipe run in the case of DAG failure
+  """
+  dagRunId: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """A JSON structured enumeration of the configuration for the recipe run"""
+  configuration: JSONString
+}
+
+"""
+A view on the execution of a recipe instance which includes the recipe status completion flag
+"""
+type RecipeRunViewType {
+  """Unique Id for the recipe run"""
+  recipeRunId: Int
+
+  """
+  Priority of the recipe run that is passed to the automated processing
+  scheduler as a parameter for scheduling where a higher number equals a higher priority
+  """
+  priority: Int
+
+  """Foreign Key to the recipe instance"""
+  recipeInstanceId: Int
+
+  """Foreign Key to the recipe run status"""
+  recipeRunStatusId: Int
+
+  """Date applicable to the recipe run status"""
+  statusDate: DateTime
+
+  """
+  A boolean indicator of whether a status can be interpreted as complete i.e. there is no work left to be done
+  """
+  isComplete: Boolean
+
+  """
+  The id of the airflow run used to discover the recipe run in the case of DAG failure
+  """
+  dagRunId: String
+
+  """Name of the status"""
+  recipeRunStatusName: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """
+  Flag indicating whether the recipe will be scheduled for automatic processing or manual processing
+  """
+  isAutoProcessed: Boolean
+
+  """A JSON structured enumeration of the configuration for the recipe run"""
+  configuration: JSONString
+  recipeRunStatus: RecipeRunStatusType
+  recipeInstance: RecipeInstanceViewType
+  recipeRunProvenances: [RecipeRunProvenanceType]
+}
+
+"""Discoverable specification of a workflow and parameters"""
+type RecipeType {
+  """Unique id of the recipe"""
+  recipeId: Int
+
+  """Flag indicating whether the recipe is active"""
+  isActive: Boolean
+
+  """
+  Flag indicating whether the recipe will be scheduled for automatic processing or manual processing
+  """
+  isAutoProcessed: Boolean
+
+  """Longer description of the recipe"""
+  recipeDescription: String
+
+  """Name describing the recipe"""
+  recipeName: String
+
+  """
+  Name of the resource pool which can be used as a parameter for automated processing
+  """
+  resourcePool: String
+
+  """Foreign key to the workflow associated with the recipe"""
+  workflowId: Int
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+
+  """Foreign key to the recipe configuration associated with the recipe"""
+  recipeConfigurationId: Int
+  workflow: WorkflowType
+  recipeConfiguration: RecipeConfigurationType
+  recipeInstruments: [RecipeInstrumentType]
+  recipeParameters: [RecipeParameterType]
+  recipeInstances: [RecipeInstanceViewType]
+}
+
+type UpdateDatasetCatalogReceiptAccount {
+  ok: Boolean
+  datasetCatalogReceiptAccount: DatasetCatalogReceiptAccountType
+}
+
+type UpdateDatasetInventory {
+  ok: Boolean
+  datasetInventory: DatasetInventoryType
+}
+
+"""Update or create the frame filtered actual counts"""
+type UpdateFrameFilterActual {
+  ok: Boolean
+  frameFilterActual: FrameFilterActualType
+}
+
+"""Update a single frame record"""
+type UpdateFrameInventory {
+  ok: Boolean
+  frameInventory: FrameInventoryType
+}
+
+"""Update or create the frame receipt actual counts"""
+type UpdateFrameReceiptActual {
+  ok: Boolean
+  frameReceiptActual: FrameReceiptActualType
+}
+
+type UpdateInputDataset {
+  ok: Boolean
+  inputDataset: InputDatasetType
+}
+
+type UpdateInstrument {
+  ok: Boolean
+  instrument: InstrumentType
+}
+
+"""Update operation for a single object inventory record"""
+type UpdateObjectInventory {
+  ok: Boolean
+  objectInventory: ObjectInventoryType
+}
+
+type UpdateParameter {
+  ok: Boolean
+  parameter: ParameterType
+}
+
+type UpdateParameterType {
+  ok: Boolean
+  parameterType: ParameterTypeType
+}
+
+type UpdateParameterValue {
+  ok: Boolean
+  parameterValue: ParameterValueType
+}
+
+type UpdateProcessingCandidate {
+  ok: Boolean
+  processingCandidate: ProcessingCandidateType
+}
+
+type UpdateProposalAccess {
+  ok: Boolean
+  proposalAccess: ProposalAccessType
+}
+
+type UpdateProposalInvestigator {
+  ok: Boolean
+  proposalAccess: ProposalAccessType
+}
+
+type UpdateRecipe {
+  ok: Boolean
+  recipe: RecipeType
+}
+
+type UpdateRecipeConfiguration {
+  ok: Boolean
+  recipeConfiguration: RecipeConfigurationType
+}
+
+type UpdateRecipeInstance {
+  ok: Boolean
+  recipeInstance: RecipeInstanceType
+}
+
+type UpdateRecipeRun {
+  ok: Boolean
+  recipeRun: RecipeRunType
+}
+
+type UpdateRecipeRunStatus {
+  ok: Boolean
+  recipeRunStatus: RecipeRunStatusType
+}
+
+type UpdateWorkflow {
+  ok: Boolean
+  workflow: WorkflowType
+}
+
+"""
+Catalog record for the Directed Acyclic Graphs (DAGs) that represent a processing workflow
+"""
+type WorkflowType {
+  """Unique id of the workflow record"""
+  workflowId: Int
+
+  """Description of the workflow"""
+  workflowDescription: String
+
+  """
+  Name of the workflow which corresponds to the DAG name known to the scheduler
+  """
+  workflowName: String
+
+  """Date time in UTC the record was created"""
+  createDate: DateTime
+
+  """Date time in UTC the record was last updated"""
+  updateDate: DateTime
+  recipes: [RecipeType]
+}
+

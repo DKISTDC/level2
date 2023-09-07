@@ -11,13 +11,23 @@ module NSO.Steps where
 -- import Data.Vinyl.Functor (Identity (..))
 --
 
-import Data.Diverse
-import Data.Tagged
+-- import Data.Diverse
+-- import Data.Tagged
 import Data.Text
 import GHC.Records
 
-test :: IO ()
-test = do
+newtype Id a = Id Text
+  deriving (Show, Eq)
+
+data PreprocessedDataset = PreprocessedDataset deriving (Show)
+data Magnetogram = Magnetogram deriving (Show)
+data Dopplergram = Dopplergram deriving (Show)
+data PublishedDataset = PublishedDataset deriving (Show)
+
+{--
+
+testExtensible :: IO ()
+testExtensible = do
   -- let id' = Id "dataset"
   --     -- dis = Discover id
   --     -- qua = Qualify id
@@ -34,14 +44,6 @@ test = do
   print $ grabL @"dopplergram" inv
   -- print dat.published
   pure ()
-
-newtype Id a = Id Text
-  deriving (Show, Eq)
-
-data PreprocessedDataset = PreprocessedDataset deriving (Show)
-data Magnetogram = Magnetogram deriving (Show)
-data Dopplergram = Dopplergram deriving (Show)
-data PublishedDataset = PublishedDataset deriving (Show)
 
 type Identified = '[Id Dataset]
 type Qualified = Identified
@@ -61,6 +63,7 @@ inv = Tagged Dopplergram ./ Magnetogram ./ PreprocessedDataset ./ Id "woot" ./ n
 
 -- TODO: this isn't ideal, because you may end up with just the `Many f` being passed around
 -- probably have to commit to using `grab @Preprocessed` instead of records
+
 instance HasField "id" (Dataset a) (Id Dataset) where
   getField (Identified m) = grab m
   getField (Qualified m) = grab m
@@ -88,11 +91,11 @@ instance HasField "id" (Dataset a) (Id Dataset) where
 --
 -- instance HasField "preprocessed" (Dataset Published) PreprocessedDataset where
 --   getField (Published m) = grab m
+--}
 
 -- NOTE: The easiest way to do this is just make a bunch of records. Good autocomplete. Updates. Easy
 -- we can assemble them separately too? Sure, you can just have a record with the extra information
 
-{--
 newtype Identified' = Identified'
   { id :: Id Dataset
   }
@@ -121,6 +124,8 @@ data Published' = Published'
   , published :: PublishedDataset
   }
 
+-- NOTE: we don't need a GADT because we can just pass around the above objects
+-- and write functions that depend on the data being available
 data Dataset
   = Identified Identified'
   | Qualified Qualified'
@@ -134,7 +139,6 @@ instance HasField "id" Dataset (Id Dataset) where
   getField (Preprocessed a) = a.id
   getField (Inverted a) = a.id
   getField (Published a) = a.id
---}
 
 {--
 data Steps = Discovered | Qualified | Preprocessed | Inverted | Published

@@ -68,6 +68,7 @@ executable level2
     other-modules:
       NSO.Level2
       NSO.Steps
+      NSO.Metadata
       Flow
       Flow.Example
       Flow.Node
@@ -79,16 +80,26 @@ executable level2
     default-extensions:
         TypeFamilies
         DataKinds
+        DeriveAnyClass
+        DerivingStrategies
+        OverloadedRecordDot
+        QuasiQuotes
+        DuplicateRecordFields
 
     -- Other library packages from which modules are imported.
     build-depends:   
       base ^>=4.16.4.0,
+      aeson == 2.1.2.1,
       effectful,
       text,
       amqp-worker >= 2.0,
       data-diverse >= 4.7,
       tagged,
-      lens
+      lens,
+      time,
+      morpheus-graphql-client >= 0.27,
+      morpheus-graphql >= 0.27,
+
 
 
 
