@@ -4,13 +4,20 @@ Level 2 Inversion
 See [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 
-Unknowns
+Questions
 --------
 
-- [ ] Reading the Metadata store and also having the Metadata Store read from us feels strange. Circular dependency. But updating whatever service is behind Metadata is more interdependent.
+- [ ] L2 data and metadata should be available from the existing metadata store, portal, etc. Do we publish data to the metadata store? To search support directly?  does metadata store read from us? or is there a downstream 3rd service which unifies metadata and other sources?
+  - Avoid data interdependencies.
+  - Need to redraw L1 service boundaries?
 - [ ] (Tony) We need local persistence to know the state of what worked has already been performed, but a new DB may increase the workload for Tony. Using an existing database creates an unwanted dependency. 
-- [ ] Who chooses which OP to process next? Do we manually choose one and notify them, or can they work on any ready OP?
-- [x] Han wants to work on OPs, not datasets. How do we know when an OP is complete? Are all datasets activated at once?
+  - use existing postgres instance for search support with new tables?
+- [ ] Who chooses which OP to process next? Do we manually choose one and notify Han, or do they choose from a list we provide?
+
+Answers
+--------
+- [x] Han wants to work on OPs, not datasets. How do we know when an OP is complete?
+  - There is no reliable metadata for this: OPs do not exist at the metadata level yet. It was suggested that we wait a certain number of days for all datasets to appear before assuming it is ready.
 
 Service Graph
 -------------
@@ -18,7 +25,7 @@ Service Graph
 ```mermaid
 graph LR;
     L2[Level 2]
-    PG[(Postgres)]
+    State[(Internal State)]
     Meta[Metadata Store]
     Events[Event Bus]
     Globus[GLOBUS]
@@ -26,7 +33,7 @@ graph LR;
 
     Meta --> Portal
     Meta --- L2
-    L2 --- PG
+    L2 --- State
     L2 --- Events
     L2 --- Globus
     Events --- Sci
@@ -78,7 +85,7 @@ _Publish_ - Make L2 data available to metadata store / portal
 Inversion States
 ----------------
 
-Observing Programs are identified, then pass through the following states.
+Observing Programs are identified, then pass through the following states. Any processing step may fail, putting the OP into an Error state. The graph below illustrates a successful flow
 
 ```mermaid
 stateDiagram-v2
