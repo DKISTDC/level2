@@ -7,10 +7,10 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md)
 Unknowns
 --------
 
-- [ ] Reading the Metadata store and also having the Metadata Store read from us feels strange. Circular dependency. But updating whatever service is behind Metadata is 
+- [ ] Reading the Metadata store and also having the Metadata Store read from us feels strange. Circular dependency. But updating whatever service is behind Metadata is more interdependent.
 - [ ] (Tony) We need local persistence to know the state of what worked has already been performed, but a new DB may increase the workload for Tony. Using an existing database creates an unwanted dependency. 
 - [ ] Who chooses which OP to process next? Do we manually choose one and notify them, or can they work on any ready OP?
-- [ ] Han wants to work on OPs, not datasets. How do we know when an OP is complete? Are all datasets activated at once?
+- [x] Han wants to work on OPs, not datasets. How do we know when an OP is complete? Are all datasets activated at once?
 
 Service Graph
 -------------
@@ -75,7 +75,6 @@ _Publish_ - Make L2 data available to metadata store / portal
 
 
 
-
 Inversion States
 ----------------
 
@@ -112,3 +111,9 @@ States are cumulative, meaning an OP at the `Inverted` state, would have the sta
     Discovered
     Invertible
     Error "Preprocessing ____"
+
+
+Definitions
+-----------
+
+**Observing Program** - a group of datasets related to a single observation with a measurement in mind, which is a smaller division of a proposal. These may be data from different ViSP arms?

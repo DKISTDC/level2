@@ -21,6 +21,7 @@ extra-source-files:
 executable level2
   main-is: Main.hs
   other-modules:
+      Admin
       Flow
       Flow.Example
       Flow.Node
@@ -51,12 +52,16 @@ executable level2
     , data-diverse >=4.7
     , effectful
     , lens
+    , lucid2
+    , lucid2-htmx
     , microlens
     , microlens-mtl
     , microlens-th
     , morpheus-graphql >=0.27
     , morpheus-graphql-client >=0.27
     , mtl
+    , scotty
+    , string-interpolate
     , tagged
     , text
     , time

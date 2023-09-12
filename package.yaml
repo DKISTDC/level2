@@ -37,6 +37,7 @@ dependencies:
   -  tagged
   -  lens
   -  time
+  -  string-interpolate
   -  morpheus-graphql-client >= 0.27
   -  morpheus-graphql >= 0.27
 
@@ -55,4 +56,8 @@ executables:
     - microlens
     - microlens-mtl
     - microlens-th
+
+    - scotty
+    - lucid2
+    - lucid2-htmx
 
