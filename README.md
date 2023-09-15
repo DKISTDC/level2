@@ -4,6 +4,7 @@ Level 2 Inversion
 See [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 
+
 Questions
 --------
 
@@ -22,22 +23,30 @@ Answers
 Service Graph
 -------------
 
+Arrow indicate the direction of dependency. If A -> B, then A is aware of B and calls it or interacts with it.
+
 ```mermaid
 graph LR;
     L2[Level 2]
     State[(Internal State)]
     Meta[Metadata Store]
-    Events[Event Bus]
     Globus[GLOBUS]
     Sci[Science / CU Blanca]
 
-    Meta --> Portal
-    Meta --- L2
-    L2 --- State
-    L2 --- Events
-    L2 --- Globus
-    Events --- Sci
-    Globus --- Sci
+    subgraph Level 2
+      L2
+      L2 --> State
+      State
+      Sci --> |OPs| L2
+      Sci --> |ready event| L2
+    end
+
+    Meta --> |OPs| L2
+    Portal --> Meta
+    L2 --> |datasets| Meta
+    Meta --> Globus
+    Sci --> |dataset files| Globus
+
 ```
 
 
@@ -64,9 +73,9 @@ flowchart LR;
 
 _Scan_ - Check the entire metadata store for OP candidates and add to the database if they don't exist. Update if necessary
 
-_Qualify_ - Check criteria for invertibility and record if OPs are invertible or not
+[_Qualify_](docs/Invertibility.md) - Check criteria for invertibility and record if OPs are invertible or not
 
-_Preprocess_ - Preprocess data if necessary, saving intermediate files as needed
+_Preprocess_ - Preprocess data if necessary, saving intermediate files if needed (unknown)
 
 _Invert_ - Han's Science Team manually inverts the OP
 
@@ -78,14 +87,10 @@ _Publish_ - Make L2 data available to metadata store / portal
 
 
 
-
-
-
-
 Inversion States
 ----------------
 
-Observing Programs are identified, then pass through the following states. Any processing step may fail, putting the OP into an Error state. The graph below illustrates a successful flow
+Observing Programs are identified, then pass through the following states. The graph below illustrates a successful flow, but any processing step may fail, putting the OP into an Error state. 
 
 ```mermaid
 stateDiagram-v2
@@ -93,7 +98,7 @@ stateDiagram-v2
     inv: Invertible
     no: Not Invertible
     pre: Preprocessed
-    qd: Queued
+    work: Working
     done: Inverted
     pub: Published
     err: Error
@@ -101,23 +106,12 @@ stateDiagram-v2
     dis --> inv
     dis --> no
     inv --> pre
-    pre --> qd
-    qd --> done: Science
+    pre --> work
+    work --> done: Science
     done --> pub
 ```
-States are cumulative, meaning an OP at the `Inverted` state, would have the states:
 
-    Discovered
-    Invertible
-    Preprocessed
-    Queued
-    Inverted
-
- And an OP that errored during preprocessing would have the states:
-
-    Discovered
-    Invertible
-    Error "Preprocessing ____"
+We record this history of all states, and only add information rather than mutating the record
 
 
 Definitions
