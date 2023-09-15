@@ -54,7 +54,9 @@ graph LR;
 
 ```
 
-
+Deployable Containers
+* L2 Service
+* State Postgres DB - New or existing instance, but L2 accesses unique tables
 
 Process
 -------
