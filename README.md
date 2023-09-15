@@ -8,17 +8,22 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md)
 Questions
 --------
 
-- [ ] L2 data and metadata should be available from the existing metadata store, portal, etc. Do we publish data to the metadata store? To search support directly?  does metadata store read from us? or is there a downstream 3rd service which unifies metadata and other sources?
-  - Avoid data interdependencies.
-  - Need to redraw L1 service boundaries?
-- [ ] (Tony) We need local persistence to know the state of what worked has already been performed, but a new DB may increase the workload for Tony. Using an existing database creates an unwanted dependency. 
-  - use existing postgres instance for search support with new tables?
-- [ ] Who chooses which OP to process next? Do we manually choose one and notify Han, or do they choose from a list we provide?
+- [ ] (Tony) We need local persistence but a new DB may increase the workload for Tony.
+  * adding fields to existing tables creates an unwanted dependency and slows dev
+  * same physical postgres instance with different tables? (Prefix?)
+- [ ] Who chooses which OP to process next?
+  * do we mark A as "work on this  next?"
+  * or does Han scan available work and choose?
+  * who gets yelled at if something doesn't get done?
 
 Answers
 --------
 - [x] Han wants to work on OPs, not datasets. How do we know when an OP is complete?
-  - There is no reliable metadata for this: OPs do not exist at the metadata level yet. It was suggested that we wait a certain number of days for all datasets to appear before assuming it is ready.
+  - OPs do not exist at the metadata level yet
+  - Wait a certain number of days for all datasets to appear before assuming it is ready.
+- [x] How does L2 data become available to the system?
+  - L2 will store OP metadata related to inversions
+  - Metadata store will aggregate this information and introduce an OP schema
 
 Service Graph
 -------------
@@ -117,4 +122,4 @@ We record this history of all states, and only add information rather than mutat
 Definitions
 -----------
 
-**Observing Program** - a group of datasets related to a single observation with a measurement in mind, which is a smaller division of a proposal. These may be data from different ViSP arms?
+**Observing Program** - a group of datasets related to a single observation with a measurement in mind, which is a smaller division of a proposal
