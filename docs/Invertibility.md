@@ -4,15 +4,15 @@ Invertibility
 This document contains all the invertibility requirements, and exact details on how they are to be obtained
 * VISP only for now for simplicity
 
-
-
-
-SPEC-2 30
----------
-
-VISP: 4.1.1
-
-- [ ] (Frazer/Scott) What does this mean?
+TODO: Update Metadata API
+-------------------------
+The following headers need to be promoted to Metadata GraphQL API
+* Update [schema.js](https://bitbucket.org/dkistdc/metadata-store-object-inventory-db/src/master/deploy/full/schema.js) (merge)
+* Update [inventory_model.py](https://bitbucket.org/dkistdc/metadata-graphql-api/src/d6a5ad47d7f01776ea1eabd47c96f30fdd94ea6d/metadata_graphql_api/inventory/inventory_model.py?at=strawberry)
+- [ ] DSHEALTH
+- [ ] GOS_STAT
+- [ ] AO_LOCK
+- [ ] LIGHTLVL
 
 TELESCOPE
 ---------
@@ -21,13 +21,13 @@ L1 doesn't reject any data based on quality measurements. It simply provides a r
 
 | Metadata | GraphQL | Header | Header Values |
 | -------- | ------- | ------ | ------------- |
-| [Health](#telescope_health)     | _______  | [DSHEALTH](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | GOOD, BAD, ILL, UNKNOWN |
-| [GOS Status](#gos_status) | _______  | [GOS_STAT](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) | open, opening, closed, closing, undefined |
-| [AO Status](#ao_status) | _______  | [AO_LOCK](https://tinyurl.com/dkist-spec-213#adaptive-optics-keywords) | True, False |
+| Health     | _______  | [DSHEALTH](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | GOOD, BAD, ILL, UNKNOWN |
+| GOS Status | _______  | [GOS_STAT](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) | open, opening, closed, closing, undefined |
+| AO Status | _______  | [AO_LOCK](https://tinyurl.com/dkist-spec-213#adaptive-optics-keywords) | True, False |
+
 
 Health
 - Takes the worst of all the instruments to create the summary header. One per FITS file
-- [ ] (Scott/Frazer) Metadata?
 - [ ] (Han) What are the rules? All Good? Percent of datasets good?
 
 GOS Status
@@ -42,10 +42,10 @@ INSTRUMENT
 
 | Metadata | GraphQL | Header | Header Values |
 | -------- | ------- | ------ | ------------- |
-| Health   |         |        |               |
+| Health   |         | ???    |               |
 | Stokes   | stokesParameters, hasAllStokes | STOKES | I,Q,U,V |
 
-- [ ] (Han/Frazer) Instrument Health - what is this?
+- [ ] (Han/Frazer/Scott) Instrument Health - does anyone know what this is? It's mentioned separately from Telescope Health
 - [ ] (Han) Stokes - Reject if any do not exist?
 
 
@@ -54,11 +54,11 @@ QUALITY
 
 | Metadata | GraphQL | Header | Header Values |
 | -------- | ------- | ------ | ------------- |
-| Light Level | ? | [LIGHTLVL](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | float |
+| Light Level | ________________ | [LIGHTLVL](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | float |
 | Polarimetric Sensitivity | qualityAveragePolarimetricAccuracy (float) | [POL_SENS](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) |  |
 | ~~Humidity~~ |  |  |  |
 
-- [ ] (Scott) Light Level - Metadata?
+- [ ] (Han) LIGHTLVL - criteria?
 - [ ] (Han) POL_SENS - criteria?
 
 
@@ -73,7 +73,7 @@ SPATIAL
 | ~~FOV Height~~ |         |        |               |
 | ~~FOV Height~~ |         |        |               |
 | ~~Slit Width~~ |         |        |               |
-| On Disk        | boundingBox (string, arcseconds) ((x1,y1),(x2,y2)) |        |               |
+| On Disk        | boundingBox (arcseconds, string) ((x1,y1),(x2,y2)) |        |               |
 | ~~Slit Horizon Azimuth~~ |         |        |               |
 
 - Off-disk is when they block the sun's light and measure just to the side of it, to isolate atmosphere
@@ -95,8 +95,8 @@ Inversion is possible only when certain spectral lines are observed
 
 | Metadata       | GraphQL | Header | Header Values |
 | -------------- | ------- | ------ | ------------- |
-| Wavelength Min | wavelengthMin |        |               |
-| Wavelength Max | wavelengthMax |        |               |
+| Wavelength Min | wavelengthMin (nm) |        |               |
+| Wavelength Max | wavelengthMax (nm) |        |               |
 | Wave Band  |  | [WAVEBAND](https://tinyurl.com/dkist-spec-214#dataset-keywords) | "Ca II (854.21 nm)" |
 | Spec LN  |  | [SPECLN<sl>](https://tinyurl.com/dkist-spec-214#datacenter-keywords) | ? |
 
@@ -106,12 +106,9 @@ Inversion is possible only when certain spectral lines are observed
 - SPECNLN is not available in all datasets
 - Use wavelengthMin and max, more reliable
 - Wait N days for datasets to become available before processing, hoping CaII 8498 becomes available
-- [ ] (Scott) what are the units of wavelengthMax and wavelengthMin?
-- [ ] (Han) What overlap rules should we use? Overlapping the center? Overlapping the range at all?
+- [ ] (Han) Which overlap rules should we use? Overlapping the center? Overlapping the range at all?
 
 
 
 
-
-[spec_214]: https://docs.dkist.nso.edu/projects/data-products/en/stable/specs/spec-214.html
 [spec_214]: https://tinyurl.com/dkist-spec-214
