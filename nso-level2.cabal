@@ -22,6 +22,8 @@ executable level2
   main-is: Main.hs
   other-modules:
       Admin
+      Effectful.GraphQL
+      Effectful.Request
       Flow
       Flow.Example
       Flow.Node
@@ -43,12 +45,14 @@ executable level2
       OverloadedRecordDot
       QuasiQuotes
       DuplicateRecordFields
+      LambdaCase
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson ==2.1.2.1
     , amqp-worker >=2.0
     , base >=4.16.4.0
     , brick
+    , bytestring
     , data-diverse >=4.7
     , effectful
     , lens
@@ -57,13 +61,16 @@ executable level2
     , microlens
     , microlens-mtl
     , microlens-th
+    , modern-uri
     , morpheus-graphql >=0.27
     , morpheus-graphql-client >=0.27
     , mtl
+    , req
     , scotty
     , string-interpolate
     , tagged
     , text
     , time
     , vty
+    , web-ui
   default-language: GHC2021

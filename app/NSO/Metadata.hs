@@ -1,25 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module NSO.Metadata
-  ( test
-  , parseAllDatasets
-  , fetchAll
-  , Dataset (..)
-  , DateTime (..)
-  , JSONString (..)
-  ) where
+-- {-# OPTIONS_GHC -ddump-splices #-}
 
-import Control.Monad
+module NSO.Metadata where
+
+import Control.Monad (forM)
 import Data.Bifunctor (first)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601
+import Effectful
+import Effectful.Dispatch.Dynamic
+import Effectful.Request
 import GHC.Generics
-
--- import NSO.Types
+import Network.HTTP.Req
 
 newtype DateTime = DateTime UTCTime
   deriving (Show, Eq, Generic)
@@ -29,7 +28,8 @@ instance EncodeScalar DateTime where
   encodeScalar (DateTime x) = String $ Text.pack $ iso8601Show x
 
 instance DecodeScalar DateTime where
-  decodeScalar (String s) = iso8601ParseM $ Text.unpack s
+  -- dates do not have the UTC suffix
+  decodeScalar (String s) = iso8601ParseM $ Text.unpack $ s <> "Z"
   decodeScalar _ = Left "Cannot decode DateTime"
 
 newtype JSONString = JSONString Text
@@ -45,18 +45,71 @@ declareLocalTypesInline
   [raw|
     query AllDatasets {
       datasetInventories {
+        datasetInventoryId
+        asdfObjectKey
+        boundingBox
+        browseMovieObjectKey
+        browseMovieUrl
         datasetId
+        datasetSize
+        endTime
+        contributingExperimentIds
+        exposureTime
+        frameCount
+        instrumentName
+        originalFrameCount
+        primaryExperimentId
+        primaryProposalId
+        contributingProposalIds
+        qualityAverageFriedParameter
+        qualityAveragePolarimetricAccuracy
+        recipeInstanceId
+        recipeRunId
+        recipeId
+        startTime
+        hasAllStokes
+        stokesParameters
+        targetTypes
+        wavelengthMax
+        wavelengthMin
+        bucket
+        isActive
+        createDate
+        updateDate
+        hasSpectralAxis
+        hasTemporalAxis
+        averageDatasetSpectralSampling
+        averageDatasetSpatialSampling
+        averageDatasetTemporalSampling
+        qualityReportObjectKey
+        inputDatasetParametersPartId
+        inputDatasetObserveFramesPartId
+        inputDatasetCalibrationFramesPartId
+        highLevelSoftwareVersion
+        workflowName
+        workflowVersion
+        headerDataUnitCreationDate
+        observingProgramExecutionId
+        instrumentProgramExecutionId
+        headerVersion
+        headerDocumentationUrl
+        infoUrl
         isEmbargoed
+        calibrationDocumentationUrl
       }
     }
   |]
 
-fetchAll :: GQLClient -> IO (ResponseStream AllDatasets)
-fetchAll client = request client ()
+-- testApi :: ByteString -> IO ByteString
+-- testApi = _
 
+-- fetchAll :: GQLClient -> IO (ResponseStream AllDatasets)
+-- fetchAll client = request client ()
+--
 data Dataset = Dataset
   { datasetId :: Text
   , isEmbargoed :: Bool
+  , observingProgramExecutionId :: Text
   }
   deriving (Show, Eq)
 
@@ -68,28 +121,54 @@ parseAllDatasets res = first (ParseError res) $ do
     ads <- parse "DatasetInventory Object" mads
     i <- parse ".datasetId" ads.datasetId
     e <- parse ".isEmbargoed" ads.isEmbargoed
-    pure $ Dataset i e
+    opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
+    pure $ Dataset i e opid
 
 parse :: String -> Maybe a -> Either String a
 parse e = maybe (Left e) Right
 
--- (<?>) :: Maybe a -> String -> Either String a
--- ma <?> e = maybe (Left e) Right ma
-
+-- -- (<?>) :: Maybe a -> String -> Either String a
+-- -- ma <?> e = maybe (Left e) Right ma
+--
 data ParseError a = ParseError a String
   deriving (Show)
 
+-- sendRequest :: Url 'Http -> ByteString -> IO ByteString
+-- sendRequest endpoint input = runReq defaultHttpConfig $ do
+--   let headers = header "Content-Type" "application/json"
+--   res <- req POST endpoint (ReqBodyLbs input) lbsResponse headers
+--   pure $ responseBody res
+
+-- successfully mocked!
+mockRequest :: Text -> ByteString -> IO ByteString
+mockRequest "http://internal-api-gateway.service.prod.consul/graphql" _ =
+  L.readFile "deps/datasets.json"
+mockRequest url _ = do
+  error $ "URL Not Mocked: " <> show url
+
+metadata :: Service
+metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql"
+
 test :: IO ()
 test = do
-  -- putStrLn "HELLO"
-  -- let woot = AllDatasets $ Just [Just $ AllDatasetsDatasetInventories (Just "T") Nothing]
-  -- print $ parseAllDatasets woot
-  -- pure ()
+  -- let url = http "internal-api-gateway.service.prod.consul" /: "graphql"
+  -- let send = sendRequest url
+  er <- runEff . runRequestMock mockRequest . runGraphQL $ do
+    send $ Fetch @AllDatasets metadata ()
+  ads <- either (fail . show) pure er
+  ds <- either (fail . show) pure $ parseAllDatasets ads
 
-  let client = "http://internal-api-gateway.service.prod.consul/graphql"
-  res <- fetchAll client
+  mapM_ print ds
+  putStrLn "HELLO"
 
-  forEach print res
+-- let woot = AllDatasets $ Just [Just $ AllDatasetsDatasetInventories (Just "T") Nothing]
+-- print $ parseAllDatasets woot
+-- pure ()
+
+-- let client = "http://internal-api-gateway.service.prod.consul/graphql"
+-- res <- fetchAll client
+--
+-- forEach print res
 
 -- ads <- single res
 

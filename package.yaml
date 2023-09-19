@@ -26,20 +26,25 @@ default-extensions:
   - OverloadedRecordDot
   - QuasiQuotes
   - DuplicateRecordFields
+  - LambdaCase
 
 dependencies:
-  -  base >=4.16.4.0
-  -  aeson == 2.1.2.1
-  -  effectful
-  -  text
-  -  amqp-worker >= 2.0
-  -  data-diverse >= 4.7
-  -  tagged
-  -  lens
-  -  time
-  -  string-interpolate
-  -  morpheus-graphql-client >= 0.27
-  -  morpheus-graphql >= 0.27
+  - base >=4.16.4.0
+  - aeson == 2.1.2.1
+  - bytestring
+  - effectful
+  - text
+  - amqp-worker >= 2.0
+  - data-diverse >= 4.7
+  - tagged
+  - lens
+  - time
+  - string-interpolate
+  - morpheus-graphql-client >= 0.27
+  - morpheus-graphql >= 0.27
+  - web-ui
+  - modern-uri
+  - req
 
 executables:
   level2:
