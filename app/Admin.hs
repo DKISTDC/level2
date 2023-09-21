@@ -1,12 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Admin where
 
-import Control.Monad.IO.Class
 import Data.String.Interpolate
-import Data.Text.Lazy
+import Data.Text.Lazy qualified as L
 import Lucid
+import NSO.Prelude
 import Web.Scotty
 
 -- import Lucid.Htmx
@@ -64,7 +63,7 @@ document b = do
     head_ $ script_ [src_ "https://unpkg.com/htmx.org@1.9.5", integrity_ "sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO", crossorigin_ "anonymous"] ("" :: Text)
     body_ b
 
-documentText :: Text -> Text
+documentText :: L.Text -> L.Text
 documentText b = do
   [i| <html>
     <head>

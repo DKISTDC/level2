@@ -1,14 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module TUI where
-
-import Control.Monad (void)
-import Control.Monad.Trans (liftIO)
-import Graphics.Vty qualified as V
-import Lens.Micro ((^.))
-import Lens.Micro.Mtl
-import Lens.Micro.TH (makeLenses)
 
 import Brick.AttrMap
 import Brick.Main qualified as M
@@ -19,6 +11,12 @@ import Brick.Widgets.Border qualified as B
 import Brick.Widgets.Center qualified as C
 import Brick.Widgets.Core
 import Brick.Widgets.Edit qualified as E
+import Control.Monad (void)
+import Graphics.Vty qualified as V
+import Lens.Micro ((^.))
+import Lens.Micro.Mtl
+import Lens.Micro.TH (makeLenses)
+import NSO.Prelude
 
 data Name = Info | Button1 | Button2 | Button3 | Prose | TextBox
   deriving (Show, Ord, Eq)
@@ -116,8 +114,8 @@ aMap =
     , (E.editFocusedAttr, V.black `on` V.yellow)
     ]
 
-app :: M.App St e Name
-app =
+tuiApp :: M.App St e Name
+tuiApp =
   M.App
     { M.appDraw = drawUi
     , M.appStartEvent = do
@@ -131,7 +129,7 @@ app =
 main :: IO ()
 main = do
   void $
-    M.defaultMain app $
+    M.defaultMain tuiApp $
       St
         []
         Nothing

@@ -16,6 +16,9 @@ Install command-line tools:
     > cabal install ghcid
     > cabal install hpack
 
+Install Postgres Database
+* 
+
 Testing Changes
 ---------------
 
@@ -36,3 +39,16 @@ Auto-reload: write a `test` function in your module, then:
 Running automated tests
 
     > cabal test
+
+There are scripts that automate these
+
+    > bin/test
+    > bin/dev
+
+Dependencies
+------------
+
+Run database with docker-compose
+
+    docker-compose up
+

@@ -2,22 +2,30 @@
 
 module Effectful.Request where
 
+import Data.Aeson
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Text
+import Data.Morpheus.Client
 import Data.Text qualified as T
-
--- import Data.ByteString.Lazy.Char8 qualifed as L
 import Effectful
 import Effectful.Dispatch.Dynamic
+import NSO.Prelude
 import Network.HTTP.Req
 
-import Data.Aeson
-import Data.Morpheus.Client
+newtype Service = Service (Url 'Http)
 
 data Request :: Effect where
   Post :: Url scheme -> ByteString -> Option scheme -> Request m ByteString
 
 type instance DispatchOf Request = 'Dynamic
+
+data GraphQL :: Effect where
+  Fetch
+    :: (ToJSON (Args a), FromJSON a, RequestType a)
+    => Service
+    -> Args a
+    -> GraphQL m (Either (FetchError a) a)
+
+type instance DispatchOf GraphQL = 'Dynamic
 
 httpsText :: Text -> Url 'Https
 httpsText t = https $ T.drop 8 t
@@ -38,17 +46,6 @@ runRequestMock
   -> Eff es a
 runRequestMock run = interpret $ \_ -> \case
   Post url inp _ -> liftIO $ run (renderUrl url) inp
-
-data GraphQL :: Effect where
-  Fetch
-    :: (ToJSON (Args a), FromJSON a, RequestType a)
-    => Service
-    -> Args a
-    -> GraphQL m (Either (FetchError a) a)
-
-type instance DispatchOf GraphQL = 'Dynamic
-
-newtype Service = Service (Url 'Http)
 
 runGraphQL
   :: (Request :> es)

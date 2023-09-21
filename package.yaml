@@ -24,9 +24,12 @@ default-extensions:
   - DeriveAnyClass
   - DerivingStrategies
   - OverloadedRecordDot
+  - OverloadedLists
+  - OverloadedStrings
   - QuasiQuotes
   - DuplicateRecordFields
   - LambdaCase
+  - NoImplicitPrelude
 
 dependencies:
   - base >=4.16.4.0
@@ -38,6 +41,7 @@ dependencies:
   - data-diverse >= 4.7
   - tagged
   - lens
+  - hasql
   - time
   - string-interpolate
   - morpheus-graphql-client >= 0.27
@@ -45,6 +49,10 @@ dependencies:
   - web-ui
   - modern-uri
   - req
+  - containers
+  - string-conversions
+  - wai-extra
+  - rel8
 
 executables:
   level2:

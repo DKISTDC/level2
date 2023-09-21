@@ -22,13 +22,16 @@ executable level2
   main-is: Main.hs
   other-modules:
       Admin
-      Effectful.GraphQL
+      App
+      App.Page.Dashboard
+      App.Test
       Effectful.Request
       Flow
       Flow.Example
       Flow.Node
       NSO.Level2
       NSO.Metadata
+      NSO.Prelude
       NSO.Steps
       NSO.Types
       TUI
@@ -43,9 +46,12 @@ executable level2
       DeriveAnyClass
       DerivingStrategies
       OverloadedRecordDot
+      OverloadedLists
+      OverloadedStrings
       QuasiQuotes
       DuplicateRecordFields
       LambdaCase
+      NoImplicitPrelude
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson ==2.1.2.1
@@ -53,8 +59,10 @@ executable level2
     , base >=4.16.4.0
     , brick
     , bytestring
+    , containers
     , data-diverse >=4.7
     , effectful
+    , hasql
     , lens
     , lucid2
     , lucid2-htmx
@@ -65,12 +73,15 @@ executable level2
     , morpheus-graphql >=0.27
     , morpheus-graphql-client >=0.27
     , mtl
+    , rel8
     , req
     , scotty
+    , string-conversions
     , string-interpolate
     , tagged
     , text
     , time
     , vty
+    , wai-extra
     , web-ui
   default-language: GHC2021

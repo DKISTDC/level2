@@ -1,6 +1,6 @@
 module NSO.Types where
 
-import Data.Text
+import NSO.Prelude
 
 newtype Endpoint = Endpoint Text
   deriving (Show, Eq)

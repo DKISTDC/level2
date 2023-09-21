@@ -1,23 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 -- {-# OPTIONS_GHC -ddump-splices #-}
 
 module NSO.Metadata where
 
-import Control.Monad (forM)
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client
-import Data.Text (Text)
-import Data.Text qualified as Text
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Request
 import GHC.Generics
+import NSO.Prelude
 import Network.HTTP.Req
 
 newtype DateTime = DateTime UTCTime
@@ -25,11 +22,11 @@ newtype DateTime = DateTime UTCTime
   deriving newtype (ISO8601)
 
 instance EncodeScalar DateTime where
-  encodeScalar (DateTime x) = String $ Text.pack $ iso8601Show x
+  encodeScalar (DateTime x) = String $ cs $ iso8601Show x
 
 instance DecodeScalar DateTime where
   -- dates do not have the UTC suffix
-  decodeScalar (String s) = iso8601ParseM $ Text.unpack $ s <> "Z"
+  decodeScalar (String s) = iso8601ParseM $ cs $ s <> "Z"
   decodeScalar _ = Left "Cannot decode DateTime"
 
 newtype JSONString = JSONString Text

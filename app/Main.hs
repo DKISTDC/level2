@@ -1,5 +1,6 @@
 module Main where
 
+import NSO.Prelude
 import TUI
 
 -- TODO: Listen for dataset activator message

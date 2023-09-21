@@ -1,8 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module NSO.Steps where
 
 -- import Control.Lens
@@ -15,6 +10,7 @@ module NSO.Steps where
 -- import Data.Tagged
 import Data.Text
 import GHC.Records
+import NSO.Prelude
 
 newtype Id a = Id Text
   deriving (Show, Eq)
