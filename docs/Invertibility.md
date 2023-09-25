@@ -7,59 +7,59 @@ This document contains all the invertibility requirements, and exact details on 
 TODO: Update Metadata API
 -------------------------
 The following headers need to be promoted to Metadata GraphQL API
-* Update [schema.js](https://bitbucket.org/dkistdc/metadata-store-object-inventory-db/src/master/deploy/full/schema.js) (merge)
-* Update [inventory_model.py](https://bitbucket.org/dkistdc/metadata-graphql-api/src/d6a5ad47d7f01776ea1eabd47c96f30fdd94ea6d/metadata_graphql_api/inventory/inventory_model.py?at=strawberry)
-- [ ] DSHEALTH
-- [ ] GOS_STAT
-- [ ] AO_LOCK
-- [ ] LIGHTLVL
+
+- [ ] Implement `health`
+- [ ] Implement `gosStatus`
+- [ ] Implement `aoLock`
+- [ ] Implement `lightLevel`
 
 TELESCOPE
 ---------
 
 L1 doesn't reject any data based on quality measurements. It simply provides a report on the quality so scientists can decide what to do.
 
-| Metadata | GraphQL | Header | Header Values |
-| -------- | ------- | ------ | ------------- |
-| Health     | _______  | [DSHEALTH](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | GOOD, BAD, ILL, UNKNOWN |
-| GOS Status | _______  | [GOS_STAT](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) | open, opening, closed, closing, undefined |
-| AO Status | _______  | [AO_LOCK](https://tinyurl.com/dkist-spec-213#adaptive-optics-keywords) | True, False |
+| Metadata   | GraphQL | GraphQL Values | Header | Header Values |
+|------------|---------|----------------|--------|---------------|
+| Health     | *health* | `[*Health]` | [DSHEALTH](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | GOOD, BAD, ILL, UNKNOWN |
+| GOS Status | *gosStatus* | `[*GosStatus]` | [GOS_STAT](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) | open, opening, closed, closing, undefined |
+| AO Locked  | *aoLocked*  | `[*AoLocked]` | [AO_LOCK](https://tinyurl.com/dkist-spec-213#adaptive-optics-keywords) | True, False |
 
+- `*Value:` a set of *unique* values. If there are 30 GOOD frames and 1 ILL frame, the value of `health` will be `["GOOD","ILL"]`
 
 Health
 - Takes the worst of all the instruments to create the summary header. One per FITS file
-- [ ] (Han) What are the rules? All Good? Percent of datasets good?
+- [ ] (Han) Criteria?
 
 GOS Status
 - [ ] (Han) Criteria?
 
-AO Status
+AO Locked
 - normally always locked during ViSP measurements. 
-- [ ] (Han) Do we reject if any are not locked? Or certain percent?
+- [ ] (Han) Criteria? What if this assumption isn't true?
 
 INSTRUMENT
 ----------
 
 | Metadata | GraphQL | Header | Header Values |
 | -------- | ------- | ------ | ------------- |
-| Health   |         | ???    |               |
+| ~~Health~~   |         |     |               |
 | Stokes   | stokesParameters, hasAllStokes | STOKES | I,Q,U,V |
 
-- [ ] (Han/Frazer/Scott) Instrument Health - does anyone know what this is? It's mentioned separately from Telescope Health
-- [ ] (Han) Stokes - Reject if any do not exist?
+- There is no separate instrument health. Use telescope health
+- [ ] (Han) Stokes - Criteria? Reject if any parameters are not accounted for?
 
 
 QUALITY
 -------
 
-| Metadata | GraphQL | Header | Header Values |
-| -------- | ------- | ------ | ------------- |
-| Light Level | ________________ | [LIGHTLVL](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | float |
-| Polarimetric Sensitivity | qualityAveragePolarimetricAccuracy (float) | [POL_SENS](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) |  |
-| ~~Humidity~~ |  |  |  |
+| Metadata | GraphQL | GraphQL Values |  Header | Header Values |
+|----------|---------|----------------|---------|---------------|
+| Light Level | *qualityLightlevel* | `{mean, deviation}` | [LIGHTLVL](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | float |
+| Polarimetric Sensitivity | qualityAveragePolarimetricAccuracy | (float) | [POL_SENS](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) |  |
+| ~~Humidity~~ |  |  |  | |
 
-- [ ] (Han) LIGHTLVL - criteria?
-- [ ] (Han) POL_SENS - criteria?
+- [ ] (Han) `lightLevel` - criteria?
+- [ ] (Han) `qualityAveragePolarimetricAccuracy` - criteria? Is average enough?
 
 
 SPATIAL
