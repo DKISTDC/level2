@@ -2,12 +2,12 @@ module App.Page.Dashboard where
 
 import Control.Monad.Trans (lift)
 import NSO.Prelude
-import Data.Int (Int64)
 import Web.Htmx
 import Web.Hyperbole (view)
 import Rel8
 import Web.Hyperbole.Htmx
 import Web.Scotty.Trans hiding (text)
+import NSO.Data.Dataset hiding (Id)
 import Web.UI
 import Web.UI.Url
 import Data.Text.Lazy qualified as L
@@ -18,12 +18,12 @@ route :: (IOE :> es, Rel8 :> es) => ScottyT L.Text (Eff es) ()
 route = do
   get "/" $ do
     -- u <- loadUser
-    ms <- lift $ query () (select $ each messages)
+    ms <- lift $ query () allDatasets
     view $ viewDashboard ms
 
   get "/dashboard" $ do
     -- u <- loadUser
-    ms <- lift $ query () (select $ each messages)
+    ms <- lift $ query () allDatasets
     view $ viewDashboard ms
 
   get "/dashboard/scan" $ do
@@ -62,7 +62,7 @@ viewScan = do
       button (hxPost ("dashboard" // "scan")) "RUN SCAN"
       
 
-viewDashboard :: [Message Identity] -> View ()
+viewDashboard :: [Dataset Result] -> View ()
 viewDashboard ms = do
   row_ $ do
     col (pad 10 . gap 10) $ do
@@ -79,29 +79,12 @@ viewDashboard ms = do
 
       forM_ ms $ \m -> do
         row (gap 8) $ do
-          el_ $ text $ cs $ show m.messageId
-          el_ $ text m.message
-      -- TODO: list all the available datasets!
+          el_ $ text $ cs $ show m.datasetId
+          el_ $ text $ cs $ show m.programId
+          el_ $ text $ cs $ show m.stokesParameters
+          el_ $ text $ cs $ show m.createDate
+          el_ $ text $ cs $ show m.wavelengthMin
+          el_ $ text $ cs $ show m.wavelengthMax
 
-
-
-
-data Message f = Message
-  { messageId :: Column f Int64
-  , message   :: Column f Text
-  }
-  deriving stock (Generic)
-  deriving anyclass (Rel8able)
-deriving stock instance f ~ Result => Show (Message f)
-
-messages :: TableSchema (Message Name)
-messages = TableSchema
-  { name = "test"
-  , schema = Nothing
-  , columns = Message
-      { messageId = "message_id"
-      , message = "message"
-      }
-  }
 
 

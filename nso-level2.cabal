@@ -24,12 +24,13 @@ executable level2
       Admin
       App
       App.Page.Dashboard
-      App.Test
       Effectful.Rel8
       Effectful.Request
       Flow
       Flow.Example
       Flow.Node
+      NSO.Data.Dataset
+      NSO.Data.DateTime
       NSO.Level2
       NSO.Metadata
       NSO.Prelude

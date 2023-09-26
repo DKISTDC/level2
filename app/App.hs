@@ -18,7 +18,7 @@ import Hasql.Connection (Connection)
 
 app :: IO ()
 app = do
-  postgres <- getEnv "POSTGRES"
+  postgres <- getEnv "DATABASE_URL"
   conn <- runEff . runErrorNoCallStackWith @Rel8Error onRel8Error $ Rel8.connect $ cs postgres
 
   scottyT 3001 (runApp conn) $ do
