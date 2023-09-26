@@ -16,39 +16,30 @@ Install command-line tools:
     > cabal install ghcid
     > cabal install hpack
 
-Install Postgres Database
-* 
+Postgres Database
+* Install [Docker](https://www.docker.com/get-started/)
+* Install [SQLX](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md) (migrations) 
+
+    > brew install sqlx-cli
 
 Testing Changes
 ---------------
 
-Recompile package.yaml when files are added or changes are made
+Run all dev dependencies, including hpack, docker-compose, and ghcid
 
-    > watchexec -e hs,yaml hpack
+    $ bin/dev
 
-Testing individual changes
+Run tests
 
-    > cabal repl
-    ghci> import NSO.Level2.MyModule
-    ghci> runMyFunction
+    $ bin/test
 
-Auto-reload: write a `test` function in your module, then:
-  
-    > ghcid --test NSO.MyModule.test
+Database Migrations
+-------------------
 
-Running automated tests
+Create a new migration, then edit the generated .sql file
 
-    > cabal test
+    $ sqlx migrate create
 
-There are scripts that automate these
+Bring database up-to-date with migrations
 
-    > bin/test
-    > bin/dev
-
-Dependencies
-------------
-
-Run database with docker-compose
-
-    docker-compose up
-
+    $ sqlx migrate run
