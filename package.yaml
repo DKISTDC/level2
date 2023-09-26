@@ -43,6 +43,7 @@ dependencies:
   - lens
   - hasql
   - time
+  - exceptions
   - string-interpolate
   - morpheus-graphql-client >= 0.27
   - morpheus-graphql >= 0.27

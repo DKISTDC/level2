@@ -5,6 +5,7 @@ module NSO.Prelude
   , cs
   , module Control.Monad.IO.Class
   , module Data.Maybe
+  , module Data.String
   , identity
   , Generic
   , Map
@@ -40,7 +41,8 @@ import Data.Proxy (Proxy (..))
 import Data.String.Conversions (cs)
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Prelude hiding (Real, head, id, last, print, putStr, putStrLn, readFile, reverse, writeFile, (!!))
+import Data.String (IsString)
+import Prelude hiding (Real, head, last, print, putStr, putStrLn, readFile, reverse, writeFile, (!!))
 import Prelude qualified
 
 identity :: a -> a

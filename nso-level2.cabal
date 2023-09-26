@@ -25,6 +25,7 @@ executable level2
       App
       App.Page.Dashboard
       App.Test
+      Effectful.Rel8
       Effectful.Request
       Flow
       Flow.Example
@@ -62,6 +63,7 @@ executable level2
     , containers
     , data-diverse >=4.7
     , effectful
+    , exceptions
     , hasql
     , lens
     , lucid2
