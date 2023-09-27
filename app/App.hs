@@ -2,13 +2,15 @@ module App where
 
 import App.Page.Dashboard as Dashboard
 import Data.Version (showVersion)
+import Data.Text.Lazy qualified as L
 import NSO.Prelude
 import Control.Monad.Catch
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Paths_nso_level2 (version)
 import Effectful
 import Effectful.Error.Static
-import Web.Scotty.Trans as Scotty
+import Effectful.Scotty
+-- import Web.Scotty.Trans as Scotty
 import System.Environment (getEnv)
 import Effectful.Rel8 as Rel8
 import Hasql.Connection (Connection)
@@ -21,12 +23,14 @@ app = do
   postgres <- getEnv "DATABASE_URL"
   conn <- runEff . runErrorNoCallStackWith @Rel8Error onRel8Error $ Rel8.connect $ cs postgres
 
-  scottyT 3001 (runApp conn) $ do
+  scotty 3001 $ do
     middleware appInfo
     get "/version" $ Scotty.text appVersion
     Dashboard.route
  where
   appInfo = addHeaders [("Service", cs appVersion)]
+
+  appVersion :: L.Text
   appVersion = "NSO L2 " <> cs (showVersion Paths_nso_level2.version)
 
   onRel8Error :: IOE :> es => Rel8Error -> Eff es a
@@ -34,7 +38,7 @@ app = do
     putStrLn "CAUGHT"
     liftIO $ throwM e
 
-  runApp :: Connection -> Eff '[Rel8, Error Rel8Error, IOE] a -> IO a
-  runApp conn = do
-    runEff . runErrorNoCallStackWith @Rel8Error onRel8Error . runRel8 conn
+  -- runApp :: Connection -> Eff '[Rel8, Error Rel8Error, IOE] a -> IO a
+  -- runApp conn = do
+  --   runEff . runErrorNoCallStackWith @Rel8Error onRel8Error . runRel8 conn
 

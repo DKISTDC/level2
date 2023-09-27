@@ -54,6 +54,8 @@ dependencies:
   - string-conversions
   - wai-extra
   - rel8
+  - wai-routing
+
 
 executables:
   level2:
@@ -71,7 +73,7 @@ executables:
     - microlens-mtl
     - microlens-th
 
-    - scotty
+    # - scotty
     - lucid2
     - lucid2-htmx
 
