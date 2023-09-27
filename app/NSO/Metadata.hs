@@ -4,20 +4,21 @@
 
 module NSO.Metadata where
 
-import Data.Bifunctor (first)
+import NSO.Data.Dataset
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601
 import Effectful
+import Effectful.Error.Static
 import Effectful.Dispatch.Dynamic
 import Effectful.Request
 import GHC.Generics
 import NSO.Prelude
 import Network.HTTP.Req
 
-newtype DateTime = DateTime UTCTime
+newtype DateTime = DateTime { utc :: UTCTime }
   deriving (Show, Eq, Generic)
   deriving newtype (ISO8601)
 
@@ -103,38 +104,41 @@ declareLocalTypesInline
 -- fetchAll :: GQLClient -> IO (ResponseStream AllDatasets)
 -- fetchAll client = request client ()
 --
-data Dataset = Dataset
-  { datasetId :: Text
-  , isEmbargoed :: Bool
-  , observingProgramExecutionId :: Text
-  }
-  deriving (Show, Eq)
-
 -- | Parse deeply nested Maybe data into a sane type
-parseAllDatasets :: AllDatasets -> Either (ParseError AllDatasets) [Dataset]
-parseAllDatasets res = first (ParseError res) $ do
+parseAllDatasets :: AllDatasets -> Either String [Dataset Identity]
+parseAllDatasets res = do
   divs <- parse ".datasetInventories" res.datasetInventories
   forM divs $ \mads -> do
     ads <- parse "DatasetInventory Object" mads
     i <- parse ".datasetId" ads.datasetId
-    e <- parse ".isEmbargoed" ads.isEmbargoed
+    DateTime cd <- parse ".createDate" ads.createDate
+    stokes <- parseStokes =<< parse ".stokesParameters" ads.stokesParameters
+    wmn <- parse ".wavelengthMin" ads.wavelengthMin
+    wmx <- parse ".wavelengthMax" ads.wavelengthMax
     opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
-    pure $ Dataset i e opid
+    pure $ Dataset
+      { datasetId = Id i
+      , programId = Id opid
+      , stokesParameters = StokesParameters stokes
+      , createDate = cd
+      , wavelengthMin = wmn
+      , wavelengthMax = wmx
+      }
+
+  where
+
+    parseStokes :: Text -> Either String [Stokes]
+    parseStokes inp = mapM parse1 $ cs inp
+      where
+        parse1 'I' = pure I
+        parse1 'Q' = pure Q
+        parse1 'U' = pure U
+        parse1 'V' = pure V
+        parse1 c = fail $ "Could not parse stokes: " <> [c]
+
 
 parse :: String -> Maybe a -> Either String a
 parse e = maybe (Left e) Right
-
--- -- (<?>) :: Maybe a -> String -> Either String a
--- -- ma <?> e = maybe (Left e) Right ma
---
-data ParseError a = ParseError a String
-  deriving (Show)
-
--- sendRequest :: Url 'Http -> ByteString -> IO ByteString
--- sendRequest endpoint input = runReq defaultHttpConfig $ do
---   let headers = header "Content-Type" "application/json"
---   res <- req POST endpoint (ReqBodyLbs input) lbsResponse headers
---   pure $ responseBody res
 
 -- successfully mocked!
 mockRequest :: Text -> ByteString -> IO ByteString
@@ -146,17 +150,24 @@ mockRequest url _ = do
 metadata :: Service
 metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql"
 
-test :: IO ()
-test = do
-  -- let url = http "internal-api-gateway.service.prod.consul" /: "graphql"
-  -- let send = sendRequest url
-  er <- runEff . runRequestMock mockRequest . runGraphQL $ do
-    send $ Fetch @AllDatasets metadata ()
-  ads <- either (fail . show) pure er
-  ds <- either (fail . show) pure $ parseAllDatasets ads
+-- fetchDatasets :: (GraphQL :> es, Error (RequestError ()) :> es) => Eff es [Dataset Identity]
+-- fetchDatasets = do
+--   er <- send $ Fetch @AllDatasets metadata ()
+--   ads <- either (throwError . FetchError) pure er
+--   ds <- either (throwError . ParseError) pure $ parseAllDatasets ads
+--   pure ds
 
-  mapM_ print ds
-  putStrLn "HELLO"
+-- test :: IO ()
+-- test = do
+--   -- let url = http "internal-api-gateway.service.prod.consul" /: "graphql"
+--   -- let send = sendRequest url
+--   er <- runEff . runRequestMock mockRequest . runGraphQL $ do
+--     send $ Fetch @AllDatasets metadata ()
+--   ads <- either (fail . show) pure er
+--   ds <- either (fail . show) pure $ parseAllDatasets ads
+--
+--   mapM_ print ds
+--   putStrLn "HELLO"
 
 -- let woot = AllDatasets $ Just [Just $ AllDatasetsDatasetInventories (Just "T") Nothing]
 -- print $ parseAllDatasets woot

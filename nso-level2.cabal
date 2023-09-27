@@ -30,7 +30,6 @@ executable level2
       Flow.Example
       Flow.Node
       NSO.Data.Dataset
-      NSO.Data.DateTime
       NSO.Level2
       NSO.Metadata
       NSO.Prelude

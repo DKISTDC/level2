@@ -6,31 +6,33 @@ import Web.Htmx
 import Web.Hyperbole (view)
 import Rel8
 import Web.Hyperbole.Htmx
-import Web.Scotty.Trans hiding (text)
+import Web.Scotty hiding (text)
 import NSO.Data.Dataset hiding (Id)
 import Web.UI
 import Web.UI.Url
 import Data.Text.Lazy qualified as L
 import Effectful
 import Effectful.Rel8 (query, Rel8)
+import Effectful.Request (GraphQL)
 
-route :: (IOE :> es, Rel8 :> es) => ScottyT L.Text (Eff es) ()
+route :: ScottyM ()
 route = do
   get "/" $ do
     -- u <- loadUser
-    ms <- lift $ query () allDatasets
+    ms <- query () allDatasets
     view $ viewDashboard ms
 
   get "/dashboard" $ do
     -- u <- loadUser
-    ms <- lift $ query () allDatasets
+    ms <- query () allDatasets
     view $ viewDashboard ms
 
   get "/dashboard/scan" $ do
-    view viewScan
+    view $ viewScan Nothing
 
   post "/dashboard/scan" $ do
-    view $ el_ "SCANNING...."
+    ds <- query () allDatasets
+    view $ viewScan $ Just ds
 
   -- get "/contact/:id/edit" $ do
   --   u <- loadUser
@@ -55,12 +57,21 @@ route = do
   --   email <- param "email"
   --   pure $ User uid firstName lastName email True
 
-viewScan :: View ()
-viewScan = do
-  row_ $ do
-    col (pad 10 . gap 10 . hxTarget This . hxSwap InnerHTML) $ do
+viewScan :: Maybe [Dataset Result] -> View ()
+viewScan Nothing = do
+  row (hxTarget This . hxSwap OuterHTML) $ do
+    col (pad 10 . gap 10) $ do
+      -- 1. Make a POST to the server
+      -- 2. The server works
+      -- 3. Prints out any NEW ones found... or the status of all of them..
       button (hxPost ("dashboard" // "scan")) "RUN SCAN"
-      
+
+viewScan (Just ds) = do
+  row (hxTarget This . hxSwap OuterHTML) $ do
+    col (pad 10 . gap 10) $ do
+      el_ "SCANNED!"
+      mapM_ datasetRow ds
+
 
 viewDashboard :: [Dataset Result] -> View ()
 viewDashboard ms = do
@@ -77,14 +88,18 @@ viewDashboard ms = do
       el (att "id" "hi") $ do
         label (fontSize 32) "OPERATING PROGRAMS"
 
-      forM_ ms $ \m -> do
-        row (gap 8) $ do
-          el_ $ text $ cs $ show m.datasetId
-          el_ $ text $ cs $ show m.programId
-          el_ $ text $ cs $ show m.stokesParameters
-          el_ $ text $ cs $ show m.createDate
-          el_ $ text $ cs $ show m.wavelengthMin
-          el_ $ text $ cs $ show m.wavelengthMax
+      mapM_ datasetRow ms
+
+
+datasetRow :: Dataset Result -> View ()
+datasetRow d = do
+  row (gap 8) $ do
+    el_ $ text $ cs $ show d.datasetId
+    el_ $ text $ cs $ show d.programId
+    el_ $ text $ cs $ show d.stokesParameters
+    el_ $ text $ cs $ show d.createDate
+    el_ $ text $ cs $ show d.wavelengthMin
+    el_ $ text $ cs $ show d.wavelengthMax
 
 
 

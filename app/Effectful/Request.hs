@@ -2,12 +2,15 @@
 
 module Effectful.Request where
 
+-- import Control.Exception
 import Data.Aeson
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
+import Data.Morpheus.Types (GQLError)
 import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import NSO.Prelude
 import Network.HTTP.Req
 
@@ -23,7 +26,7 @@ data GraphQL :: Effect where
     :: (ToJSON (Args a), FromJSON a, RequestType a)
     => Service
     -> Args a
-    -> GraphQL m (Either (FetchError a) a)
+    -> GraphQL m a
 
 type instance DispatchOf GraphQL = 'Dynamic
 
@@ -48,13 +51,23 @@ runRequestMock run = interpret $ \_ -> \case
   Post url inp _ -> liftIO $ run (renderUrl url) inp
 
 runGraphQL
-  :: (Request :> es)
+  :: (Request :> es, Error RequestError :> es)
   => Eff (GraphQL : es) a
   -> Eff es a
 runGraphQL = interpret $ \_ -> \case
   Fetch (Service url) args -> do
-    fetch (sendRequest url) args
+    er <- fetch (sendRequest url) args
+    either (throwError . toError) pure er
  where
   sendRequest url inp = do
     let headers = header "Content-Type" "application/json"
     send $ Post url inp headers
+
+  toError FetchErrorNoResult = FetchNoResult
+  toError (FetchErrorProducedErrors ges _) = FetchGQLErrors ges
+  toError (FetchErrorParseFailure s) = FetchParseFailure s
+
+data RequestError
+  = FetchParseFailure String
+  | FetchGQLErrors (NonEmpty GQLError)
+  | FetchNoResult
