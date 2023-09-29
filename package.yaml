@@ -47,14 +47,12 @@ dependencies:
   - string-interpolate
   - morpheus-graphql-client >= 0.27
   - morpheus-graphql >= 0.27
-  - web-ui
   - modern-uri
   - req
   - containers
   - string-conversions
-  - wai-extra
   - rel8
-  - wai-routing
+  - web-ui
 
 
 executables:

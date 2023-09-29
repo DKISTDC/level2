@@ -21,12 +21,11 @@ extra-source-files:
 executable level2
   main-is: Main.hs
   other-modules:
-      Admin
       App
+      App.Colors
       App.Page.Dashboard
       Effectful.Rel8
       Effectful.Request
-      Effectful.Scotty
       Flow
       Flow.Example
       Flow.Node
@@ -37,19 +36,6 @@ executable level2
       NSO.Steps
       NSO.Types
       TUI
-      Web.Htmx
-      Web.Hyperbole
-      Web.Hyperbole.Action
-      Web.Hyperbole.Htmx
-      Web.Hyperbole.Page
-      Web.Hyperbole.Route
-      Web.Hyperbole.Scotty
-      Web.UI
-      Web.UI.Element
-      Web.UI.Render
-      Web.UI.Style
-      Web.UI.Types
-      Web.UI.Url
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
@@ -97,6 +83,5 @@ executable level2
     , text
     , time
     , vty
-    , wai-extra
     , web-ui
   default-language: GHC2021

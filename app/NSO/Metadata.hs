@@ -4,21 +4,22 @@
 
 module NSO.Metadata where
 
-import NSO.Data.Dataset
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601
-import Effectful
-import Effectful.Error.Static
-import Effectful.Dispatch.Dynamic
 import Effectful.Request
 import GHC.Generics
+import NSO.Data.Dataset
 import NSO.Prelude
 import Network.HTTP.Req
 
-newtype DateTime = DateTime { utc :: UTCTime }
+-- import Effectful
+-- import Effectful.Dispatch.Dynamic
+-- import Effectful.Error.Static
+
+newtype DateTime = DateTime {utc :: UTCTime}
   deriving (Show, Eq, Generic)
   deriving newtype (ISO8601)
 
@@ -104,6 +105,7 @@ declareLocalTypesInline
 -- fetchAll :: GQLClient -> IO (ResponseStream AllDatasets)
 -- fetchAll client = request client ()
 --
+
 -- | Parse deeply nested Maybe data into a sane type
 parseAllDatasets :: AllDatasets -> Either String [Dataset Identity]
 parseAllDatasets res = do
@@ -116,26 +118,24 @@ parseAllDatasets res = do
     wmn <- parse ".wavelengthMin" ads.wavelengthMin
     wmx <- parse ".wavelengthMax" ads.wavelengthMax
     opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
-    pure $ Dataset
-      { datasetId = Id i
-      , programId = Id opid
-      , stokesParameters = StokesParameters stokes
-      , createDate = cd
-      , wavelengthMin = wmn
-      , wavelengthMax = wmx
-      }
-
-  where
-
-    parseStokes :: Text -> Either String [Stokes]
-    parseStokes inp = mapM parse1 $ cs inp
-      where
-        parse1 'I' = pure I
-        parse1 'Q' = pure Q
-        parse1 'U' = pure U
-        parse1 'V' = pure V
-        parse1 c = fail $ "Could not parse stokes: " <> [c]
-
+    pure $
+      Dataset
+        { datasetId = Id i
+        , programId = Id opid
+        , stokesParameters = StokesParameters stokes
+        , createDate = cd
+        , wavelengthMin = wmn
+        , wavelengthMax = wmx
+        }
+ where
+  parseStokes :: Text -> Either String [Stokes]
+  parseStokes inp = mapM parse1 $ cs inp
+   where
+    parse1 'I' = pure I
+    parse1 'Q' = pure Q
+    parse1 'U' = pure U
+    parse1 'V' = pure V
+    parse1 c = fail $ "Could not parse stokes: " <> [c]
 
 parse :: String -> Maybe a -> Either String a
 parse e = maybe (Left e) Right
