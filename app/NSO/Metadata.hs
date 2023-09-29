@@ -6,9 +6,11 @@ module NSO.Metadata where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
-import Data.Morpheus.Client
+import Data.Morpheus.Client hiding (fetch)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601
+import Effectful
+import Effectful.Error.Static
 import Effectful.Request
 import GHC.Generics
 import NSO.Data.Dataset
@@ -118,8 +120,8 @@ parseAllDatasets res = do
     wmn <- parse ".wavelengthMin" ads.wavelengthMin
     wmx <- parse ".wavelengthMax" ads.wavelengthMax
     opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
-    pure $
-      Dataset
+    pure
+      $ Dataset
         { datasetId = Id i
         , programId = Id opid
         , stokesParameters = StokesParameters stokes
@@ -150,12 +152,10 @@ mockRequest url _ = do
 metadata :: Service
 metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql"
 
--- fetchDatasets :: (GraphQL :> es, Error (RequestError ()) :> es) => Eff es [Dataset Identity]
--- fetchDatasets = do
---   er <- send $ Fetch @AllDatasets metadata ()
---   ads <- either (throwError . FetchError) pure er
---   ds <- either (throwError . ParseError) pure $ parseAllDatasets ads
---   pure ds
+fetchDatasets :: (GraphQL :> es, Error RequestError :> es) => Eff es [Dataset Identity]
+fetchDatasets = do
+  ads <- fetch @AllDatasets metadata ()
+  either (throwError . ParseError) pure $ parseAllDatasets ads
 
 -- test :: IO ()
 -- test = do

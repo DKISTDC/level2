@@ -2,8 +2,11 @@ module App.Page.Dashboard where
 
 import App.Colors
 import Effectful
+import Effectful.Error.Static
 import Effectful.Rel8 (Rel8, query)
+import Effectful.Request
 import NSO.Data.Dataset hiding (Id)
+import NSO.Metadata
 import NSO.Prelude
 import Rel8
 import Web.Hyperbole
@@ -14,13 +17,14 @@ data Route
   | Scan
   deriving (Show, Eq, Generic, PageRoute)
 
-route :: (Wai :> es, Rel8 :> es) => Route -> Eff es ()
+route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Route -> Eff es ()
 route Main = do
   ms <- query () allDatasets
   view $ viewDashboard ms
 route Scan = do
-  ms <- query () allDatasets
-  view $ viewScanRun ms
+  -- ms <- query () allDatasets
+  ds <- fetchDatasets
+  view $ viewScanRun ds
 
 viewDashboard :: [Dataset Result] -> View ()
 viewDashboard ms = do

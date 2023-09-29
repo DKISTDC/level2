@@ -5,6 +5,8 @@ import Control.Monad.Catch
 import Effectful
 import Effectful.Error.Static
 import Effectful.Rel8 as Rel8
+import Effectful.Request
+import NSO.Metadata qualified as Metadata
 import NSO.Prelude
 import System.Environment (getEnv)
 import Web.Hyperbole
@@ -18,9 +20,9 @@ main = do
   run 3000 $ app conn
 
 app :: Rel8.Connection -> Application
-app conn = application (runApp conn . route)
+app conn = application (runApp . route)
  where
-  route :: (Wai :> es, Rel8 :> es) => Route -> Eff es ()
+  route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Route -> Eff es ()
   route Main = redirect (routeUrl $ Dashboard defRoute)
   route (Dashboard d) = Dashboard.route d
   route (Hello h) = view $ row_ $ do
@@ -32,11 +34,21 @@ app conn = application (runApp conn . route)
       el id "ECHO:"
       text $ cs $ show f
 
-runApp :: (IOE :> es) => Connection -> Eff (Rel8 : Error Rel8Error : es) a -> Eff es a
-runApp conn = runErrorNoCallStackWith @Rel8Error onRel8Error . runRel8 conn
+  runApp =
+    runErrorNoCallStackWith @Rel8Error onRel8Error
+      . runErrorNoCallStackWith @RequestError onRequestError
+      . runRel8 conn
+      . runRequestMock Metadata.mockRequest
+      -- . runRequest
+      . runGraphQL
 
 onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
 onRel8Error e = do
+  putStrLn "CAUGHT"
+  liftIO $ throwM e
+
+onRequestError :: (IOE :> es) => RequestError -> Eff es a
+onRequestError e = do
   putStrLn "CAUGHT"
   liftIO $ throwM e
 

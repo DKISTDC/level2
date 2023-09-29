@@ -2,10 +2,10 @@
 
 module Effectful.Request where
 
--- import Control.Exception
+import Control.Exception
 import Data.Aeson
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Morpheus.Client
+import Data.Morpheus.Client as Morpheus
 import Data.Morpheus.Types (GQLError)
 import Data.Text qualified as T
 import Effectful
@@ -56,7 +56,7 @@ runGraphQL
   -> Eff es a
 runGraphQL = interpret $ \_ -> \case
   Fetch (Service url) args -> do
-    er <- fetch (sendRequest url) args
+    er <- Morpheus.fetch (sendRequest url) args
     either (throwError . toError) pure er
  where
   sendRequest url inp = do
@@ -71,3 +71,13 @@ data RequestError
   = FetchParseFailure String
   | FetchGQLErrors (NonEmpty GQLError)
   | FetchNoResult
+  | ParseError String
+  deriving (Show, Exception)
+
+fetch
+  :: (ToJSON (Args a), FromJSON a, RequestType a, GraphQL :> es)
+  => Service
+  -> Args a
+  -> Eff es a
+fetch service args = do
+  send $ Fetch service args
