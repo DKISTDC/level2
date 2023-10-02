@@ -158,6 +158,7 @@ parseAllDatasets scanDate res = do
     wmn <- parse ".wavelengthMin" ads.wavelengthMin
     wmx <- parse ".wavelengthMax" ads.wavelengthMax
     opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
+    ipid <- parse ".instrumentProgramExecutionId" ads.instrumentProgramExecutionId
     DateTime st <- parse ".startTime" ads.startTime
     DateTime et <- parse ".endTime" ads.endTime
     fc <- parse ".frameCount" ads.frameCount
@@ -165,22 +166,25 @@ parseAllDatasets scanDate res = do
     ppid <- parse ".primaryProposalId" ads.primaryProposalId
     desc <- parse ".experimentDescription" ads.experimentDescription
     inpObsId <- parse ".inputDatasetObserveFramesPartId" ads.inputDatasetObserveFramesPartId
+    expTime :: Double <- parse ".exposureTime" ads.exposureTime
     pure
       $ Dataset
         { datasetId = Id i
-        , programId = Id opid
+        , observingProgramExecutionId = Id opid
+        , instrumentProgramExecutionId = ipid
         , scanDate = scanDate
         , stokesParameters = StokesParameters stokes
         , createDate = cd
         , wavelengthMin = wmn
         , wavelengthMax = wmx
-        , primaryExperimentId = peid
-        , primaryProposalId = ppid
+        , primaryExperimentId = Id peid
+        , primaryProposalId = Id ppid
         , experimentDescription = desc
         , inputDatasetObserveFramesPartId = Id . cs . show $ inpObsId
         , startTime = st
         , endTime = et
         , frameCount = fromIntegral fc
+        , exposureTime = realToFrac expTime
         }
  where
   parseStokes :: Text -> Either String [Stokes]

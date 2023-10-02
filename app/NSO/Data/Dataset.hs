@@ -15,11 +15,17 @@ newtype Id a = Id {fromId :: Text}
 newtype StokesParameters = StokesParameters [Stokes]
   deriving newtype (DBType)
 
+data Proposal
+data Experiment = Experiment
+  { experimentId :: Id Experiment
+  , observingProgramExecutions :: NonEmpty ObservingProgramExecution
+  }
+
 instance Show StokesParameters where
   show (StokesParameters ss) = mconcat $ fmap show ss
 
-data ObservingProgram = ObservingProgram
-  { programId :: Id ObservingProgram
+data ObservingProgramExecution = ObservingProgramExecution
+  { observingProgramExecutionId :: Id ObservingProgramExecution
   , datasets :: NonEmpty Dataset
   }
 
@@ -33,7 +39,8 @@ type Dataset = Dataset' Identity
 data Dataset' f = Dataset
   { datasetId :: Column f (Id Dataset)
   , scanDate :: Column f UTCTime
-  , programId :: Column f (Id ObservingProgram)
+  , observingProgramExecutionId :: Column f (Id ObservingProgramExecution)
+  , instrumentProgramExecutionId :: Column f Text
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
   , wavelengthMin :: Column f Double
@@ -41,9 +48,10 @@ data Dataset' f = Dataset
   , startTime :: Column f UTCTime
   , endTime :: Column f UTCTime
   , frameCount :: Column f Int16
-  , primaryExperimentId :: Column f Text
-  , primaryProposalId :: Column f Text
+  , primaryExperimentId :: Column f (Id Experiment)
+  , primaryProposalId :: Column f (Id Proposal)
   , experimentDescription :: Column f Text
+  , exposureTime :: Column f Float
   , inputDatasetObserveFramesPartId :: Column f (Id ObserveFrames)
   }
   deriving stock (Generic)
@@ -58,7 +66,8 @@ datasets =
     , columns =
         Dataset
           { datasetId = "dataset_id"
-          , programId = "observing_program_id"
+          , observingProgramExecutionId = "observing_program_execution_id"
+          , instrumentProgramExecutionId = "instrument_program_execution_id"
           , scanDate = "scan_date"
           , stokesParameters = "stokes_parameters"
           , createDate = "create_date"
@@ -71,6 +80,7 @@ datasets =
           , primaryProposalId = "primary_proposal_id"
           , inputDatasetObserveFramesPartId = "input_observe_frames_id"
           , experimentDescription = "experiment_description"
+          , exposureTime = "exposure_time"
           }
     }
 
@@ -87,7 +97,17 @@ insertAll ds =
       , returning = NumberOfRowsAffected
       }
 
-toObservingPrograms :: [Dataset] -> [ObservingProgram]
-toObservingPrograms = fmap toProgram . groupWith (.programId) . sortOn (.programId)
+toObservingPrograms :: NonEmpty Dataset -> NonEmpty ObservingProgramExecution
+toObservingPrograms = fmap toProgram . groupSort (.observingProgramExecutionId)
  where
-  toProgram (d :| ds) = ObservingProgram d.programId (d :| ds)
+  toProgram :: NonEmpty Dataset -> ObservingProgramExecution
+  toProgram ds = ObservingProgramExecution (head ds).observingProgramExecutionId ds
+
+toExperiments :: NonEmpty Dataset -> NonEmpty Experiment
+toExperiments = fmap toExperiment . groupSort (.primaryExperimentId)
+ where
+  toExperiment :: NonEmpty Dataset -> Experiment
+  toExperiment ds = Experiment (head ds).primaryExperimentId (toObservingPrograms ds)
+
+groupSort :: (Eq b, Ord b) => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
+groupSort f = groupWith1 f . sortWith f

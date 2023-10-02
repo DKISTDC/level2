@@ -22,23 +22,12 @@ data Route
 
 route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Route -> Eff es ()
 route Main = do
-  ms <- query () allDatasets
-  let ops = toObservingPrograms ms
-  view $ viewDashboard ops
+  ds <- query () allDatasets
+  view $ viewDashboard ds
 route Scan = do
   -- ms <- query () allDatasets
   ds <- scanDatasets
   view $ viewScanRun ds
-
-viewDashboard :: [ObservingProgram] -> View ()
-viewDashboard ops = do
-  swapTarget InnerHTML $ do
-    row_ $ col (pad 10 . gap 10) $ do
-      button (action Scan) "Scan Datasets"
-      label (fontSize 32) "OBSERVING PROGRAMS"
-
-      col (gap 40) $ do
-        forM_ ops viewObservingProgram
 
 viewScanRun :: [Dataset] -> View ()
 viewScanRun ds = do
@@ -47,11 +36,41 @@ viewScanRun ds = do
       label (fontSize 32) "SCAN RESULTS"
       datasetsTable ds
 
-viewObservingProgram :: ObservingProgram -> View ()
+viewDashboard :: [Dataset] -> View ()
+viewDashboard ds = do
+  swapTarget InnerHTML $ do
+    row_ $ col (pad 10 . gap 10) $ do
+      button (action Scan) "Scan Datasets"
+      viewExperiments ds
+ where
+  viewExperiments [] = el_ "No Datasets!"
+  viewExperiments (d : ds') = do
+    let exs = toExperiments $ d :| ds'
+    label (bold . fontSize 32) "EXPERIMENTS"
+
+    col (gap 40) $ do
+      forM_ exs viewExperiment
+
+viewExperiment :: Experiment -> View ()
+viewExperiment e = do
+  let ds1 = e.observingProgramExecutions & head & (.datasets) & head :: Dataset
+  col (gap 8) $ do
+    el bold $ do
+      text "Experiment: "
+      text e.experimentId.fromId
+    el_ $ text ds1.experimentDescription
+    forM_ e.observingProgramExecutions $ \ob -> do
+      col (gap 10) $ do
+        el bold $ text ob.observingProgramExecutionId.fromId
+        datasetsTable . NE.toList $ ob.datasets
+
+viewObservingProgram :: ObservingProgramExecution -> View ()
 viewObservingProgram op = do
   let ds1 = head op.datasets
   col (gap 8) $ do
-    el bold $ text op.programId.fromId
+    el bold $ do
+      text "Program: "
+      text op.observingProgramExecutionId.fromId
     el_ $ text ds1.experimentDescription
     datasetsTable . NE.toList $ op.datasets
 
@@ -67,11 +86,13 @@ datasetsTable ds = do
     tcol cell (hd "Wave Min") $ \d -> dcell . cs $ showFFloat (Just 1) d.wavelengthMin ""
     tcol cell (hd "Wave Max") $ \d -> dcell . cs $ showFFloat (Just 1) d.wavelengthMax ""
     tcol cell (hd "Start Time") $ \d -> dcell . timestamp $ d.startTime
+    tcol cell (hd "Exposure Time") $ \d -> dcell . cs . show $ d.exposureTime
     -- tcol cell (hd "End Time") $ \d -> dcell . cs . show $ d.endTime
     tcol cell (hd "Frame Count") $ \d -> dcell . cs . show $ d.frameCount
-    tcol cell (hd "peid") $ \d -> dcell . cs $ d.primaryExperimentId
-    tcol cell (hd "ppid") $ \d -> dcell . cs $ d.primaryProposalId
  where
+  -- tcol cell (hd "peid") $ \d -> dcell . cs $ d.primaryExperimentId
+  -- tcol cell (hd "ppid") $ \d -> dcell . cs $ d.primaryProposalId
+
   -- tcol cell (hd "ExperimentDescription") $ \d -> dcell . cs . show $ d.experimentDescription
 
   timestamp = cs . formatTime defaultTimeLocale "%F %T"
