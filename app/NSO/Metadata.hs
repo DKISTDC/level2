@@ -9,8 +9,6 @@ import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client hiding (fetch)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601
-import Effectful
-import Effectful.Error.Static
 import Effectful.Request
 import GHC.Generics
 import NSO.Data.Dataset
@@ -40,63 +38,103 @@ newtype JSONString = JSONString Text
 -- | this only defines a few basic types
 declareGlobalTypes "deps/metadata.graphql"
 
+-- NOTE: These fields may be used to identify data
+
+-- """Time of acquisition for the earliest frame in the data set"""
+-- startTime: DateTime
+--
+-- """Time of acquisition for the latest frame in the data set"""
+-- endTime: DateTime
+--
+-- """Id of the parameters section of the input dataset"""
+-- inputDatasetParametersPartId: Int
+--
+-- """Id of the observe frames section of the input dataset"""
+-- inputDatasetObserveFramesPartId: Int
+--
+-- """Id of the calibration frames section of the input dataset"""
+-- inputDatasetCalibrationFramesPartId: Int
+--
+-- """Number of frames in the data set when it was created"""
+-- originalFrameCount: Int
+--
+-- """The experiment id the observation data was collected under"""
+-- primaryExperimentId: String
+--
+-- """The proposal id the observation data was collected under"""
+-- primaryProposalId: String
+--
+-- """
+-- The mode length of time that the CCD was exposed for within the dataset
+-- """
+-- exposureTime: Float
+--
+--
+--
+--
+--
+--
+--
+--
+
 -- | makes unique types for each query
 declareLocalTypesInline
   "deps/metadata.graphql"
   [raw|
     query AllDatasets {
       datasetInventories {
-        datasetInventoryId
         asdfObjectKey
+        averageDatasetSpatialSampling
+        averageDatasetSpectralSampling
+        averageDatasetTemporalSampling
         boundingBox
         browseMovieObjectKey
         browseMovieUrl
+        bucket
+        calibrationDocumentationUrl
+        contributingExperimentIds
+        contributingProposalIds
+        createDate
         datasetId
+        datasetInventoryId
         datasetSize
         endTime
-        contributingExperimentIds
+        experimentDescription
         exposureTime
         frameCount
+        hasAllStokes
+        hasSpectralAxis
+        hasTemporalAxis
+        headerDataUnitCreationDate
+        headerDocumentationUrl
+        headerVersion
+        highLevelSoftwareVersion
+        infoUrl
+        inputDatasetCalibrationFramesPartId
+        inputDatasetObserveFramesPartId
+        inputDatasetParametersPartId
         instrumentName
+        instrumentProgramExecutionId
+        isActive
+        isEmbargoed
+        observingProgramExecutionId
         originalFrameCount
         primaryExperimentId
         primaryProposalId
-        contributingProposalIds
         qualityAverageFriedParameter
         qualityAveragePolarimetricAccuracy
+        qualityReportObjectKey
+        recipeId
         recipeInstanceId
         recipeRunId
-        recipeId
         startTime
-        hasAllStokes
         stokesParameters
         targetTypes
+        updateDate
         wavelengthMax
         wavelengthMin
-        bucket
-        isActive
-        createDate
-        updateDate
-        hasSpectralAxis
-        hasTemporalAxis
-        averageDatasetSpectralSampling
-        averageDatasetSpatialSampling
-        averageDatasetTemporalSampling
-        qualityReportObjectKey
-        inputDatasetParametersPartId
-        inputDatasetObserveFramesPartId
-        inputDatasetCalibrationFramesPartId
-        highLevelSoftwareVersion
         workflowName
         workflowVersion
-        headerDataUnitCreationDate
-        observingProgramExecutionId
-        instrumentProgramExecutionId
-        headerVersion
-        headerDocumentationUrl
-        infoUrl
-        isEmbargoed
-        calibrationDocumentationUrl
       }
     }
   |]
@@ -109,8 +147,8 @@ declareLocalTypesInline
 --
 
 -- | Parse deeply nested Maybe data into a sane type
-parseAllDatasets :: AllDatasets -> Either String [Dataset Identity]
-parseAllDatasets res = do
+parseAllDatasets :: UTCTime -> AllDatasets -> Either String [Dataset]
+parseAllDatasets scanDate res = do
   divs <- parse ".datasetInventories" res.datasetInventories
   forM divs $ \mads -> do
     ads <- parse "DatasetInventory Object" mads
@@ -120,14 +158,29 @@ parseAllDatasets res = do
     wmn <- parse ".wavelengthMin" ads.wavelengthMin
     wmx <- parse ".wavelengthMax" ads.wavelengthMax
     opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
+    DateTime st <- parse ".startTime" ads.startTime
+    DateTime et <- parse ".endTime" ads.endTime
+    fc <- parse ".frameCount" ads.frameCount
+    peid <- parse ".primaryExperimentId" ads.primaryExperimentId
+    ppid <- parse ".primaryProposalId" ads.primaryProposalId
+    desc <- parse ".experimentDescription" ads.experimentDescription
+    inpObsId <- parse ".inputDatasetObserveFramesPartId" ads.inputDatasetObserveFramesPartId
     pure
       $ Dataset
         { datasetId = Id i
         , programId = Id opid
+        , scanDate = scanDate
         , stokesParameters = StokesParameters stokes
         , createDate = cd
         , wavelengthMin = wmn
         , wavelengthMax = wmx
+        , primaryExperimentId = peid
+        , primaryProposalId = ppid
+        , experimentDescription = desc
+        , inputDatasetObserveFramesPartId = Id . cs . show $ inpObsId
+        , startTime = st
+        , endTime = et
+        , frameCount = fromIntegral fc
         }
  where
   parseStokes :: Text -> Either String [Stokes]
@@ -152,10 +205,7 @@ mockRequest url _ = do
 metadata :: Service
 metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql"
 
-fetchDatasets :: (GraphQL :> es, Error RequestError :> es) => Eff es [Dataset Identity]
-fetchDatasets = do
-  ads <- fetch @AllDatasets metadata ()
-  either (throwError . ParseError) pure $ parseAllDatasets ads
+-- give me the datasets!
 
 -- test :: IO ()
 -- test = do

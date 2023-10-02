@@ -26,10 +26,12 @@ executable level2
       App.Page.Dashboard
       Effectful.Rel8
       Effectful.Request
+      Effectful.Time
       Flow
       Flow.Example
       Flow.Node
       NSO.Data.Dataset
+      NSO.Data.Scan
       NSO.Level2
       NSO.Metadata
       NSO.Prelude
@@ -47,12 +49,12 @@ executable level2
       DeriveAnyClass
       DerivingStrategies
       OverloadedRecordDot
-      OverloadedLists
       OverloadedStrings
       QuasiQuotes
       DuplicateRecordFields
       LambdaCase
       NoImplicitPrelude
+      NoFieldSelectors
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson ==2.1.2.1

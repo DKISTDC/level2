@@ -24,12 +24,12 @@ default-extensions:
   - DeriveAnyClass
   - DerivingStrategies
   - OverloadedRecordDot
-  - OverloadedLists
   - OverloadedStrings
   - QuasiQuotes
   - DuplicateRecordFields
   - LambdaCase
   - NoImplicitPrelude
+  - NoFieldSelectors
 
 dependencies:
   - base >=4.16.4.0

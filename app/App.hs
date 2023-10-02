@@ -6,6 +6,7 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.Rel8 as Rel8
 import Effectful.Request
+import Effectful.Time (Time, runTime)
 import NSO.Metadata qualified as Metadata
 import NSO.Prelude
 import System.Environment (getEnv)
@@ -22,7 +23,7 @@ main = do
 app :: Rel8.Connection -> Application
 app conn = application (runApp . route)
  where
-  route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Route -> Eff es ()
+  route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Route -> Eff es ()
   route Main = redirect (routeUrl $ Dashboard defRoute)
   route (Dashboard d) = Dashboard.route d
   route (Hello h) = view $ row_ $ do
@@ -39,6 +40,7 @@ app conn = application (runApp . route)
       . runErrorNoCallStackWith @RequestError onRequestError
       . runRel8 conn
       . runRequestMock Metadata.mockRequest
+      . runTime
       -- . runRequest
       . runGraphQL
 
