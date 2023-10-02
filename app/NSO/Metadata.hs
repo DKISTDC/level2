@@ -159,6 +159,7 @@ parseAllDatasets scanDate res = do
     wmx <- parse ".wavelengthMax" ads.wavelengthMax
     opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
     ipid <- parse ".instrumentProgramExecutionId" ads.instrumentProgramExecutionId
+    inst <- parse ".instrumentName" ads.instrumentName
     DateTime st <- parse ".startTime" ads.startTime
     DateTime et <- parse ".endTime" ads.endTime
     fc <- parse ".frameCount" ads.frameCount
@@ -175,6 +176,7 @@ parseAllDatasets scanDate res = do
         , scanDate = scanDate
         , stokesParameters = StokesParameters stokes
         , createDate = cd
+        , instrumentName = inst
         , wavelengthMin = wmn
         , wavelengthMax = wmx
         , primaryExperimentId = Id peid

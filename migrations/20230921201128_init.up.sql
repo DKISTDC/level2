@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS datasets (
   dataset_id TEXT PRIMARY KEY,
   observing_program_execution_id TEXT NOT NULL,
   instrument_program_execution_id TEXT NOT NULL,
+  instrument_name TEXT NOT NULL,
   stokes_parameters TEXT[] NOT NULL,
   create_date TIMESTAMP NOT NULL,
   wavelength_min REAL NOT NULL,

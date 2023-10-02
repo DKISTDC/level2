@@ -41,6 +41,7 @@ data Dataset' f = Dataset
   , scanDate :: Column f UTCTime
   , observingProgramExecutionId :: Column f (Id ObservingProgramExecution)
   , instrumentProgramExecutionId :: Column f Text
+  , instrumentName :: Column f Text
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
   , wavelengthMin :: Column f Double
@@ -68,6 +69,7 @@ datasets =
           { datasetId = "dataset_id"
           , observingProgramExecutionId = "observing_program_execution_id"
           , instrumentProgramExecutionId = "instrument_program_execution_id"
+          , instrumentName = "instrument_name"
           , scanDate = "scan_date"
           , stokesParameters = "stokes_parameters"
           , createDate = "create_date"

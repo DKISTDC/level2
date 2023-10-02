@@ -34,6 +34,7 @@ executable level2
       NSO.Data.Scan
       NSO.Level2
       NSO.Metadata
+      NSO.Metadata.Parse
       NSO.Prelude
       NSO.Steps
       NSO.Types
