@@ -4,39 +4,17 @@
 
 module NSO.Metadata where
 
+import Data.Aeson (FromJSON)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client hiding (fetch)
-import Data.Time.Clock (UTCTime)
-import Data.Time.Format.ISO8601
+import Data.Morpheus.Client.CodeGen.Internal (OperationType (..))
+import Data.String.Interpolate
 import Effectful.Request
 import GHC.Generics
-import NSO.Data.Dataset
+import NSO.Metadata.Types
 import NSO.Prelude
 import Network.HTTP.Req
-
--- import Effectful
--- import Effectful.Dispatch.Dynamic
--- import Effectful.Error.Static
-
-newtype DateTime = DateTime {utc :: UTCTime}
-  deriving (Show, Eq, Generic)
-  deriving newtype (ISO8601)
-
-instance EncodeScalar DateTime where
-  encodeScalar (DateTime x) = String $ cs $ iso8601Show x
-
-instance DecodeScalar DateTime where
-  -- dates do not have the UTC suffix
-  decodeScalar (String s) = iso8601ParseM $ cs $ s <> "Z"
-  decodeScalar _ = Left "Cannot decode DateTime"
-
-newtype JSONString = JSONString Text
-  deriving (Show, Eq, Generic)
-  deriving newtype (EncodeScalar, DecodeScalar)
-
--- | this only defines a few basic types
-declareGlobalTypes "deps/metadata.graphql"
 
 -- NOTE: These fields may be used to identify data
 
@@ -68,138 +46,73 @@ declareGlobalTypes "deps/metadata.graphql"
 -- The mode length of time that the CCD was exposed for within the dataset
 -- """
 -- exposureTime: Float
---
---
---
---
---
---
---
---
 
--- | makes unique types for each query
-declareLocalTypesInline
-  "deps/metadata.graphql"
-  [raw|
-    query AllDatasets {
-      datasetInventories {
-        asdfObjectKey
-        averageDatasetSpatialSampling
-        averageDatasetSpectralSampling
-        averageDatasetTemporalSampling
-        boundingBox
-        browseMovieObjectKey
-        browseMovieUrl
-        bucket
-        calibrationDocumentationUrl
-        contributingExperimentIds
-        contributingProposalIds
-        createDate
-        datasetId
-        datasetInventoryId
-        datasetSize
-        endTime
-        experimentDescription
-        exposureTime
-        frameCount
-        hasAllStokes
-        hasSpectralAxis
-        hasTemporalAxis
-        headerDataUnitCreationDate
-        headerDocumentationUrl
-        headerVersion
-        highLevelSoftwareVersion
-        infoUrl
-        inputDatasetCalibrationFramesPartId
-        inputDatasetObserveFramesPartId
-        inputDatasetParametersPartId
-        instrumentName
-        instrumentProgramExecutionId
-        isActive
-        isEmbargoed
-        observingProgramExecutionId
-        originalFrameCount
-        primaryExperimentId
-        primaryProposalId
-        qualityAverageFriedParameter
-        qualityAveragePolarimetricAccuracy
-        qualityReportObjectKey
-        recipeId
-        recipeInstanceId
-        recipeRunId
-        startTime
-        stokesParameters
-        targetTypes
-        updateDate
-        wavelengthMax
-        wavelengthMin
-        workflowName
-        workflowVersion
-      }
-    }
-  |]
+newtype AllDatasets = AllDatasets {datasetInventories :: [DatasetInventory]}
+  deriving (Show, Eq, Generic)
+  deriving anyclass (FromJSON)
 
--- testApi :: ByteString -> IO ByteString
--- testApi = _
-
--- fetchAll :: GQLClient -> IO (ResponseStream AllDatasets)
--- fetchAll client = request client ()
---
-
--- | Parse deeply nested Maybe data into a sane type
-parseAllDatasets :: UTCTime -> AllDatasets -> Either String [Dataset]
-parseAllDatasets scanDate res = do
-  divs <- parse ".datasetInventories" res.datasetInventories
-  forM divs $ \mads -> do
-    ads <- parse "DatasetInventory Object" mads
-    i <- parse ".datasetId" ads.datasetId
-    DateTime cd <- parse ".createDate" ads.createDate
-    stokes <- parseStokes =<< parse ".stokesParameters" ads.stokesParameters
-    wmn <- parse ".wavelengthMin" ads.wavelengthMin
-    wmx <- parse ".wavelengthMax" ads.wavelengthMax
-    opid <- parse ".observingProgramExecutionId" ads.observingProgramExecutionId
-    ipid <- parse ".instrumentProgramExecutionId" ads.instrumentProgramExecutionId
-    inst <- parse ".instrumentName" ads.instrumentName
-    DateTime st <- parse ".startTime" ads.startTime
-    DateTime et <- parse ".endTime" ads.endTime
-    fc <- parse ".frameCount" ads.frameCount
-    peid <- parse ".primaryExperimentId" ads.primaryExperimentId
-    ppid <- parse ".primaryProposalId" ads.primaryProposalId
-    desc <- parse ".experimentDescription" ads.experimentDescription
-    inpObsId <- parse ".inputDatasetObserveFramesPartId" ads.inputDatasetObserveFramesPartId
-    expTime :: Double <- parse ".exposureTime" ads.exposureTime
-    pure
-      $ Dataset
-        { datasetId = Id i
-        , observingProgramExecutionId = Id opid
-        , instrumentProgramExecutionId = ipid
-        , scanDate = scanDate
-        , stokesParameters = StokesParameters stokes
-        , createDate = cd
-        , instrumentName = inst
-        , wavelengthMin = wmn
-        , wavelengthMax = wmx
-        , primaryExperimentId = Id peid
-        , primaryProposalId = Id ppid
-        , experimentDescription = desc
-        , inputDatasetObserveFramesPartId = Id . cs . show $ inpObsId
-        , startTime = st
-        , endTime = et
-        , frameCount = fromIntegral fc
-        , exposureTime = realToFrac expTime
-        }
- where
-  parseStokes :: Text -> Either String [Stokes]
-  parseStokes inp = mapM parse1 $ cs inp
-   where
-    parse1 'I' = pure I
-    parse1 'Q' = pure Q
-    parse1 'U' = pure U
-    parse1 'V' = pure V
-    parse1 c = fail $ "Could not parse stokes: " <> [c]
-
-parse :: String -> Maybe a -> Either String a
-parse e = maybe (Left e) Right
+instance RequestType AllDatasets where
+  type RequestArgs AllDatasets = ()
+  __name _ = "AllDatasets"
+  __query _ =
+    [i|
+query AllDatasets {
+  datasetInventories {
+    asdfObjectKey
+    averageDatasetSpatialSampling
+    averageDatasetSpectralSampling
+    averageDatasetTemporalSampling
+    boundingBox
+    browseMovieObjectKey
+    browseMovieUrl
+    bucket
+    calibrationDocumentationUrl
+    contributingExperimentIds
+    contributingProposalIds
+    createDate
+    datasetId
+    datasetInventoryId
+    datasetSize
+    endTime
+    experimentDescription
+    exposureTime
+    frameCount
+    hasAllStokes
+    hasSpectralAxis
+    hasTemporalAxis
+    headerDataUnitCreationDate
+    headerDocumentationUrl
+    headerVersion
+    highLevelSoftwareVersion
+    infoUrl
+    inputDatasetCalibrationFramesPartId
+    inputDatasetObserveFramesPartId
+    inputDatasetParametersPartId
+    instrumentName
+    instrumentProgramExecutionId
+    isActive
+    isEmbargoed
+    observingProgramExecutionId
+    originalFrameCount
+    primaryExperimentId
+    primaryProposalId
+    qualityAverageFriedParameter
+    qualityAveragePolarimetricAccuracy
+    qualityReportObjectKey
+    recipeId
+    recipeInstanceId
+    recipeRunId
+    startTime
+    stokesParameters
+    targetTypes
+    updateDate
+    wavelengthMax
+    wavelengthMin
+    workflowName
+    workflowVersion
+  }
+} |]
+  __type _ = OPERATION_QUERY
 
 -- successfully mocked!
 mockRequest :: Text -> ByteString -> IO ByteString
@@ -288,3 +201,5 @@ metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql
 --   qualityReportObjectKey,
 --   infoUrl,
 -- }}
+--
+--
