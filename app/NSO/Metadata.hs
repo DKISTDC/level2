@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 -- {-# OPTIONS_GHC -ddump-splices #-}
 
 module NSO.Metadata where
@@ -55,66 +53,10 @@ instance RequestType AllDatasets where
   type RequestArgs AllDatasets = ()
   __name _ = "AllDatasets"
   __query _ =
-    [i|
-query AllDatasets {
-  datasetInventories {
-    asdfObjectKey
-    averageDatasetSpatialSampling
-    averageDatasetSpectralSampling
-    averageDatasetTemporalSampling
-    boundingBox
-    browseMovieObjectKey
-    browseMovieUrl
-    bucket
-    calibrationDocumentationUrl
-    contributingExperimentIds
-    contributingProposalIds
-    createDate
-    datasetId
-    datasetInventoryId
-    datasetSize
-    endTime
-    experimentDescription
-    exposureTime
-    frameCount
-    hasAllStokes
-    hasSpectralAxis
-    hasTemporalAxis
-    headerDataUnitCreationDate
-    headerDocumentationUrl
-    headerVersion
-    highLevelSoftwareVersion
-    infoUrl
-    inputDatasetCalibrationFramesPartId
-    inputDatasetObserveFramesPartId
-    inputDatasetParametersPartId
-    instrumentName
-    instrumentProgramExecutionId
-    isActive
-    isEmbargoed
-    observingProgramExecutionId
-    originalFrameCount
-    primaryExperimentId
-    primaryProposalId
-    qualityAverageFriedParameter
-    qualityAveragePolarimetricAccuracy
-    qualityReportObjectKey
-    recipeId
-    recipeInstanceId
-    recipeRunId
-    startTime
-    stokesParameters
-    targetTypes
-    updateDate
-    wavelengthMax
-    wavelengthMin
-    workflowName
-    workflowVersion
-  }
-} |]
+    let fields = genQueryFields @DatasetInventory Proxy
+     in [i| query AllDatasets { datasetInventories { #{fields} } } |]
   __type _ = OPERATION_QUERY
 
--- successfully mocked!
 mockRequest :: Text -> ByteString -> IO ByteString
 mockRequest "http://internal-api-gateway.service.prod.consul/graphql" _ =
   L.readFile "deps/datasets.json"
@@ -123,83 +65,3 @@ mockRequest url _ = do
 
 metadata :: Service
 metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql"
-
--- give me the datasets!
-
--- test :: IO ()
--- test = do
---   -- let url = http "internal-api-gateway.service.prod.consul" /: "graphql"
---   -- let send = sendRequest url
---   er <- runEff . runRequestMock mockRequest . runGraphQL $ do
---     send $ Fetch @AllDatasets metadata ()
---   ads <- either (fail . show) pure er
---   ds <- either (fail . show) pure $ parseAllDatasets ads
---
---   mapM_ print ds
---   putStrLn "HELLO"
-
--- let woot = AllDatasets $ Just [Just $ AllDatasetsDatasetInventories (Just "T") Nothing]
--- print $ parseAllDatasets woot
--- pure ()
-
--- let client = "http://internal-api-gateway.service.prod.consul/graphql"
--- res <- fetchAll client
---
--- forEach print res
-
--- ads <- single res
-
--- case ads of
---   Left e -> print e
---   Right (v :: AllDatasets) -> do
---     let (rest :: Either ParseError [Dataset]) = take 2 <$> parseAllDatasets v
---     print rest
-
--- {datasetInventories {
---   datasetId,
---   createDate,
---   wavelengthMin
--- }}
---
---
--- {
--- "data": {
---   "datasetInventories": [
---     {
---       "datasetId": "BLKGA",
---       "createDate": "2022-12-08T19:07:55.038280",
---       "wavelengthMin": 486
---     },
---
-
--- {datasetInventories(datasetIds: "BONJA") {
---   datasetId,
---   datasetSize,
---   datasetInventoryId,
---   asdfObjectKey,
---   createDate,
---   updateDate,
---   startTime,
---   stokesParameters,
---   targetTypes,
---   wavelengthMin,
---   wavelengthMax,
---   isActive,
---   isEmbargoed,
---   embargoEndDate,
---   bucket,
---   endTime,
---   frameCount,
---   instrumentName,
---   originalFrameCount,
---   primaryProposalId,
---   recipeId,
---   recipeRunId,
---   recipeInstanceId,
---   hasSpectralAxis,
---   hasTemporalAxis,
---   qualityReportObjectKey,
---   infoUrl,
--- }}
---
---

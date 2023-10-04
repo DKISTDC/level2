@@ -6,16 +6,29 @@ import Data.Int (Int16, Int64)
 import Data.List.NonEmpty as NE
 import Data.Time.Clock (UTCTime)
 import Hasql.Statement
-import NSO.Metadata.Types
+import NSO.Data.Types
 import NSO.Prelude
 import Rel8
+
+data Proposal
+data Experiment = Experiment
+  { experimentId :: Id Experiment
+  , observingProgramExecutions :: NonEmpty ObservingProgram
+  }
+
+data ObservingProgram = ObservingProgram
+  { observingProgramExecutionId :: Id ObservingProgram
+  , datasets :: NonEmpty Dataset
+  }
+
+data InstrumentProgram
 
 type Dataset = Dataset' Identity
 data Dataset' f = Dataset
   { datasetId :: Column f (Id Dataset)
   , scanDate :: Column f UTCTime
-  , observingProgramExecutionId :: Column f (Id ObservingProgramExecution)
-  , instrumentProgramExecutionId :: Column f Text
+  , observingProgramExecutionId :: Column f (Id ObservingProgram)
+  , instrumentProgramExecutionId :: Column f (Id InstrumentProgram)
   , instrumentName :: Column f Text
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
@@ -73,3 +86,18 @@ insertAll ds =
       , onConflict = DoNothing
       , returning = NumberOfRowsAffected
       }
+
+toObservingPrograms :: NonEmpty Dataset -> NonEmpty ObservingProgram
+toObservingPrograms = fmap toProgram . groupSort (.observingProgramExecutionId)
+ where
+  toProgram :: NonEmpty Dataset -> ObservingProgram
+  toProgram ds = ObservingProgram (head ds).observingProgramExecutionId ds
+
+toExperiments :: NonEmpty Dataset -> NonEmpty Experiment
+toExperiments = fmap toExperiment . groupSort (.primaryExperimentId)
+ where
+  toExperiment :: NonEmpty Dataset -> Experiment
+  toExperiment ds = Experiment (head ds).primaryExperimentId (toObservingPrograms ds)
+
+groupSort :: (Eq b, Ord b) => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
+groupSort f = groupWith1 f . sortWith f

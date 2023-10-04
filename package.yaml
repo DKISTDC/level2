@@ -46,6 +46,7 @@ dependencies:
   - exceptions
   - string-interpolate
   - morpheus-graphql-client >= 0.27
+  - morpheus-graphql-core
   - morpheus-graphql >= 0.27
   - modern-uri
   - req

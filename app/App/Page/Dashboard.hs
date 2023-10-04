@@ -5,11 +5,12 @@ import Data.List.NonEmpty qualified as NE
 import Data.Time (defaultTimeLocale, formatTime)
 import Effectful
 import Effectful.Error.Static
-import Effectful.Rel8 (Rel8, query)
+import Effectful.Rel8 (Rel8)
 import Effectful.Request
 import Effectful.Time (Time)
-import NSO.Data.Scan (fetchDatasets)
-import NSO.Metadata.Types
+import NSO.Data.Dataset
+import NSO.Data.Scan (scanDatasetInventory)
+import NSO.Data.Types
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.Hyperbole
@@ -23,21 +24,21 @@ data Route
 route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Route -> Eff es ()
 route Main = do
   -- ds <- query () allDatasets
-  ds <- fetchDatasets
+  ds <- scanDatasetInventory
   view $ viewDashboard ds
 route Scan = do
   -- ms <- query () allDatasets
-  ds <- fetchDatasets
+  ds <- scanDatasetInventory
   view $ viewScanRun ds
 
-viewScanRun :: [DatasetInventory] -> View ()
+viewScanRun :: [Dataset] -> View ()
 viewScanRun ds = do
   row_ $ do
     col (pad 10 . gap 10) $ do
       label (fontSize 32) "SCAN RESULTS"
       datasetsTable ds
 
-viewDashboard :: [DatasetInventory] -> View ()
+viewDashboard :: [Dataset] -> View ()
 viewDashboard ds = do
   swapTarget InnerHTML $ do
     row_ $ col (pad 10 . gap 10) $ do
@@ -54,7 +55,7 @@ viewDashboard ds = do
 
 viewExperiment :: Experiment -> View ()
 viewExperiment e = do
-  let ds1 = e.observingProgramExecutions & head & (.datasets) & head :: DatasetInventory
+  let ds1 = e.observingProgramExecutions & head & (.datasets) & head :: Dataset
   col (gap 8) $ do
     el bold $ do
       text "Experiment: "
@@ -65,7 +66,7 @@ viewExperiment e = do
         el bold $ text ob.observingProgramExecutionId.fromId
         datasetsTable . NE.toList $ ob.datasets
 
-viewObservingProgram :: ObservingProgramExecution -> View ()
+viewObservingProgram :: ObservingProgram -> View ()
 viewObservingProgram op = do
   let ds1 = head op.datasets
   col (gap 8) $ do
@@ -75,14 +76,14 @@ viewObservingProgram op = do
     el_ $ text ds1.experimentDescription
     datasetsTable . NE.toList $ op.datasets
 
-datasetsTable :: [DatasetInventory] -> View ()
+datasetsTable :: [Dataset] -> View ()
 datasetsTable ds = do
   let sorted = sortOn (.inputDatasetObserveFramesPartId) ds
 
   table (border 1 . pad 0) sorted $ do
     tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
     tcol (hd "Id") $ \d -> cell d.datasetId.fromId
-    tcol (hd "Inst Prog Id") $ \d -> cell d.instrumentProgramExecutionId
+    tcol (hd "Inst Prog Id") $ \d -> cell d.instrumentProgramExecutionId.fromId
     tcol (hd "Instrument") $ \d -> cell d.instrumentName
     tcol (hd "Stokes") $ \d -> cell . cs . show $ d.stokesParameters
     tcol (hd "Date") $ \d -> cell . timestamp $ d.createDate

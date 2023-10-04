@@ -1,17 +1,19 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module NSO.Metadata.Types where
 
-import Data.Aeson (FromJSON (..), withText)
-import Data.List.NonEmpty as NE
+import Data.Aeson (FromJSON)
+import Data.List qualified as L
 import Data.Morpheus.Client hiding (fetch)
-import Data.Text qualified as T
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (FormatTime)
 import Data.Time.Format.ISO8601
+import GHC.Generics
+import GHC.TypeLits
+import NSO.Data.Types (StokesParameters)
 import NSO.Prelude
-import Rel8
 
 newtype DateTime = DateTime {utc :: UTCTime}
   deriving (Show, Eq, Generic)
@@ -32,58 +34,6 @@ newtype JSONString = JSONString Text
 -- | this only defines a few basic types
 declareGlobalTypes "deps/metadata.graphql"
 
-newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Eq, Ord, DBType, FromJSON)
-
-toObservingPrograms :: NonEmpty DatasetInventory -> NonEmpty ObservingProgramExecution
-toObservingPrograms = fmap toProgram . groupSort (.observingProgramExecutionId)
- where
-  toProgram :: NonEmpty DatasetInventory -> ObservingProgramExecution
-  toProgram ds = ObservingProgramExecution (Id (head ds).observingProgramExecutionId) ds
-
-toExperiments :: NonEmpty DatasetInventory -> NonEmpty Experiment
-toExperiments = fmap toExperiment . groupSort (.primaryExperimentId)
- where
-  toExperiment :: NonEmpty DatasetInventory -> Experiment
-  toExperiment ds = Experiment (Id (head ds).primaryExperimentId) (toObservingPrograms ds)
-
-groupSort :: (Eq b, Ord b) => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
-groupSort f = groupWith1 f . sortWith f
-
-newtype StokesParameters = StokesParameters [Stokes]
-  deriving newtype (DBType, Eq)
-
-instance Show StokesParameters where
-  show (StokesParameters ss) = mconcat $ fmap show ss
-
-instance FromJSON StokesParameters where
-  parseJSON = withText "Stokes Params" $ \t -> do
-    sps <- mapM parseChar $ T.unpack t
-    pure $ StokesParameters sps
-   where
-    parseChar 'I' = pure I
-    parseChar 'Q' = pure Q
-    parseChar 'U' = pure U
-    parseChar 'V' = pure V
-    parseChar c = fail $ "Expected Stokes param (IQUV) but got: " <> [c]
-
-data Proposal
-data Experiment = Experiment
-  { experimentId :: Id Experiment
-  , observingProgramExecutions :: NonEmpty ObservingProgramExecution
-  }
-
-data ObservingProgramExecution = ObservingProgramExecution
-  { observingProgramExecutionId :: Id ObservingProgramExecution
-  , datasets :: NonEmpty DatasetInventory
-  }
-
-data ObserveFrames
-
-data Stokes = I | Q | U | V
-  deriving (Show, Read, Eq)
-  deriving (DBType) via ReadShow Stokes
-
 data DatasetInventory = DatasetInventory
   { asdfObjectKey :: Text
   , averageDatasetSpatialSampling :: Double
@@ -97,7 +47,7 @@ data DatasetInventory = DatasetInventory
   , contributingExperimentIds :: [Text]
   , contributingProposalIds :: [Text]
   , createDate :: DateTime
-  , datasetId :: Id DatasetInventory
+  , datasetId :: Text
   , datasetInventoryId :: Int
   , datasetSize :: Int
   , endTime :: DateTime
@@ -139,3 +89,52 @@ data DatasetInventory = DatasetInventory
   , workflowVersion :: Text
   }
   deriving (Generic, Show, Eq, FromJSON)
+
+data NestedFields = NestedFields String [NestedFields]
+
+-- | Return the field names for a given object by proxy
+class FieldNames f where
+  fieldNames :: Proxy f -> [NestedFields]
+
+instance (FieldNames f, FieldNames g) => FieldNames (f :*: g) where
+  fieldNames _ = fieldNames (Proxy :: Proxy f) ++ fieldNames (Proxy :: Proxy g)
+
+instance (FieldNames f, FieldNames g) => FieldNames (f :+: g) where
+  fieldNames _ = fieldNames (Proxy :: Proxy f) ++ fieldNames (Proxy :: Proxy g)
+
+instance (KnownSymbol name, FieldNames f) => FieldNames (M1 S ('MetaSel ('Just name) _1 _2 _3) f) where
+  fieldNames _ = [NestedFields (symbolVal (Proxy :: Proxy name)) []]
+
+-- instance (KnownSymbol name, FieldNames f) => FieldNames (M1 S ('MetaSel ('Just name) _1 _2 _3) f) where
+--   fieldNames _ = [NestedFields (symbolVal (Proxy :: Proxy name)) (fieldNames @f Proxy)]
+
+instance (FieldNames f) => FieldNames (M1 D meta f) where
+  fieldNames _ = fieldNames (Proxy :: Proxy f)
+
+instance (FieldNames f) => FieldNames (M1 C meta f) where
+  fieldNames _ = fieldNames (Proxy :: Proxy f)
+
+instance FieldNames U1 where
+  fieldNames _ = []
+
+instance FieldNames (K1 R f) where
+  fieldNames _ = []
+
+-- class DataName f where
+--   dataName :: Proxy f -> String
+--
+-- instance (Datatype d) => DataName (M1 D d f) where
+--   dataName _ = datatypeName (undefined :: M1 D d f a)
+
+-- recordFields :: forall a. (Generic a, FieldNames (Rep a)) => Proxy a -> [String]
+-- recordFields _ = fmap fst $ fieldNames @(Rep a) Proxy
+
+genQueryFields :: forall a. (Generic a, FieldNames (Rep a)) => Proxy a -> String
+genQueryFields _ = allFields $ fieldNames @(Rep a) Proxy
+ where
+  allFields :: [NestedFields] -> String
+  allFields = L.intercalate "\n" . fmap fields
+
+  fields :: NestedFields -> String
+  fields (NestedFields nm []) = nm
+  fields (NestedFields nm fs) = nm ++ "{" ++ allFields fs ++ "}"
