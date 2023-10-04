@@ -81,6 +81,7 @@ datasetsTable ds = do
   table (border 1 . pad 0) sorted $ do
     tcol cell (hd "Input Id") $ \d -> dcell . cs $ d.inputDatasetObserveFramesPartId.fromId
     tcol cell (hd "Id") $ \d -> dcell d.datasetId.fromId
+    tcol cell (hd "Inst Prog Id") $ \d -> dcell d.instrumentProgramExecutionId
     tcol cell (hd "Instrument") $ \d -> dcell d.instrumentName
     tcol cell (hd "Stokes") $ \d -> dcell . cs . show $ d.stokesParameters
     tcol cell (hd "Date") $ \d -> dcell . timestamp $ d.createDate
