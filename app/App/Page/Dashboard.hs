@@ -13,7 +13,7 @@ import NSO.Data.Scan qualified as Scan
 import NSO.Data.Types
 import NSO.Prelude
 import Numeric (showFFloat)
-import Web.Hyperbole
+import Web.Hyperbole as H
 import Web.UI hiding (head)
 
 data Route
@@ -57,13 +57,13 @@ layout r content = do
           space
         nav Programs "Programs"
         nav Experiments "Experiments"
-        row (pad 20) $ button (grow . action Scan . pad 20 . bg GrayLight . pointer . color Dark . hover |: bg Light . border 0 . rounded 4 . active |: bold . shadow) "Sync Datasets"
+        row (pad 20) $ button (grow . action Scan . pad 20 . bg GrayLight . pointer . color Dark . hover |: bg Light . border 0 . rounded 4 . active |: bold . shadow . hxIndicator (H.Id "content")) "Sync Datasets"
 
-      col (gap 25 . pad 25 . grow) $ do
+      col (gap 25 . pad 25 . grow . att "id" "content") $ do
         content
  where
   nav r' = link (routeUrl r') (pad 20 . color White . if r' == r then current else id)
-  current = bg PrimaryLight . bold
+  current = bg PrimaryLight . border' (TRBL 0 0 0 5) . padX 15
 
 viewExperiments :: [Dataset] -> View ()
 viewExperiments [] = el_ "No Datasets!"

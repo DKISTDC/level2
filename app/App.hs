@@ -21,7 +21,7 @@ main = do
   run 3000 $ app conn
 
 app :: Rel8.Connection -> Application
-app conn = application (runApp . route)
+app conn = application (toDocument "Level 2") (runApp . route)
  where
   route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Route -> Eff es ()
   route Main = redirect (routeUrl $ Dashboard defRoute)
