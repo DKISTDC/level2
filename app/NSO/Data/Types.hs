@@ -3,11 +3,13 @@
 module NSO.Data.Types where
 
 import Data.Aeson (FromJSON (..), withText)
+import Data.List qualified as L
 import NSO.Prelude
 import Rel8
+import Web.Hyperbole (PageRoute)
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Eq, Ord, DBType, FromJSON)
+  deriving newtype (Show, Eq, Ord, DBType, FromJSON, PageRoute)
   deriving (Generic)
 
 data Stokes = I | Q | U | V
@@ -17,7 +19,7 @@ data Stokes = I | Q | U | V
 data ObserveFrames
 
 newtype StokesParameters = StokesParameters [Stokes]
-  deriving newtype (DBType, Eq)
+  deriving newtype (DBType, Eq, Monoid)
 
 instance Show StokesParameters where
   show (StokesParameters ss) = mconcat $ fmap show ss
@@ -32,3 +34,6 @@ instance FromJSON StokesParameters where
     parseChar 'U' = pure U
     parseChar 'V' = pure V
     parseChar c = fail $ "Expected Stokes param (IQUV) but got: " <> [c]
+
+instance Semigroup StokesParameters where
+  (StokesParameters a) <> (StokesParameters b) = StokesParameters . L.nub $ a <> b

@@ -4,7 +4,10 @@ module NSO.Data.Dataset where
 
 import Data.Int (Int16, Int64)
 import Data.List.NonEmpty as NE
+import Data.Set as S
 import Data.Time.Clock (UTCTime)
+import Effectful
+import Effectful.Rel8
 import Hasql.Statement
 import NSO.Data.Types
 import NSO.Prelude
@@ -23,13 +26,19 @@ data ObservingProgram = ObservingProgram
 
 data InstrumentProgram
 
+data Instrument
+  = VBI
+  | VISP
+  deriving (Show, Ord, Eq, Read)
+  deriving (DBType) via ReadShow Instrument
+
 type Dataset = Dataset' Identity
 data Dataset' f = Dataset
   { datasetId :: Column f (Id Dataset)
   , scanDate :: Column f UTCTime
   , observingProgramExecutionId :: Column f (Id ObservingProgram)
+  , instrument :: Column f Instrument
   , instrumentProgramExecutionId :: Column f (Id InstrumentProgram)
-  , instrumentName :: Column f Text
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
   , wavelengthMin :: Column f Double
@@ -57,7 +66,7 @@ datasets =
           { datasetId = "dataset_id"
           , observingProgramExecutionId = "observing_program_execution_id"
           , instrumentProgramExecutionId = "instrument_program_execution_id"
-          , instrumentName = "instrument_name"
+          , instrument = "instrument"
           , scanDate = "scan_date"
           , stokesParameters = "stokes_parameters"
           , createDate = "create_date"
@@ -76,6 +85,9 @@ datasets =
 
 allDatasets :: Statement () [Dataset]
 allDatasets = select $ each datasets
+
+queryAll :: (Rel8 :> es) => Eff es [Dataset]
+queryAll = query () allDatasets
 
 insertAll :: [Dataset] -> Statement () Int64
 insertAll ds =
@@ -101,3 +113,13 @@ toExperiments = fmap toExperiment . groupSort (.primaryExperimentId)
 
 groupSort :: (Eq b, Ord b) => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
 groupSort f = groupWith1 f . sortWith f
+
+stokes :: NonEmpty Dataset -> StokesParameters
+stokes =
+  mconcat . NE.toList . fmap (.stokesParameters)
+
+instruments :: NonEmpty Dataset -> Set Instrument
+instruments = S.fromList . NE.toList . fmap (.instrument)
+
+maxCreateDate :: NonEmpty Dataset -> UTCTime
+maxCreateDate = maximum . fmap (.createDate)

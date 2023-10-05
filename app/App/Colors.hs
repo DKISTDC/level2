@@ -4,12 +4,28 @@ import NSO.Prelude
 import Web.UI
 
 data AppColor
-  = Green
-  | GreenLight
+  = White
+  | Light
   | GrayLight
+  | GrayDark
+  | Dark
+  | Success
+  | Error
+  | Warning
+  | Primary
+  | PrimaryLight
+  | Secondary
   deriving (Show)
 
 instance ToColor AppColor where
-  colorValue Green = HexColor "080"
-  colorValue GreenLight = HexColor "0F0"
-  colorValue GrayLight = HexColor "DDD"
+  colorValue White = "#FFF"
+  colorValue Light = "#F2F2F3"
+  colorValue GrayLight = "#E3E5E9"
+  colorValue GrayDark = "#2С3С44"
+  colorValue Dark = "#2E3842" -- "#232C41"
+  colorValue Primary = "#2C74BB"
+  colorValue PrimaryLight = "#3281cf"
+  colorValue Secondary = "#5CADDB"
+  colorValue Success = "67C837"
+  colorValue Error = "DF2020"
+  colorValue Warning = "EBAF47"
