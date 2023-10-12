@@ -42,14 +42,14 @@ route (Program op) = do
 viewScanRun :: [Dataset] -> View ()
 viewScanRun ds = do
   row_ $ do
-    col (pad 10 . gap 10) $ do
-      label (fontSize 32) "SCAN RESULTS"
+    col (pad 10 . gap 20) $ do
+      label (fontSize 32 . bg Warning . pad 25) "Scan Complete!"
       datasetsTable ds
 
 layout :: Route -> View () -> View ()
 layout r content = do
   swapTarget InnerHTML $ do
-    row (bg GrayLight) $ do
+    row (bg Light . color Dark) $ do
       col (gap 0 . bg Primary . width 400 . color White) $ do
         row (pad 20) $ do
           space

@@ -4,6 +4,8 @@ Invertibility
 This document contains all the invertibility requirements, and exact details on how they are to be obtained
 * VISP only for now for simplicity
 
+- [ ] WAITING: Han to specify waveband logic, specifics below
+
 TODO: Update Metadata API
 -------------------------
 The following headers need to be promoted to Metadata GraphQL API
@@ -75,7 +77,6 @@ SPATIAL
 
 - Off-disk is when they block the sun's light and measure just to the side of it, to isolate atmosphere
 - `boundingBox` is in coordinates from the sun's center. Can calculate on/off by knowing how many arcseconds the sun's radius is
-- ViSP will always be on-disk. Surface information but do not disqualify
 
 
 SPECTRAL

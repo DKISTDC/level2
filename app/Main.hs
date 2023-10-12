@@ -38,6 +38,5 @@ import TUI
 main :: IO ()
 main = TUI.main
 
-
 migrate :: IO ()
 migrate = putStrLn "MIGRATE"

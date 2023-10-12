@@ -8,9 +8,6 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md)
 Questions
 --------
 
-- [ ] (Tony) We need local persistence but a new DB may increase the workload for Tony.
-  * adding fields to existing tables creates an unwanted dependency and slows dev
-  * same physical postgres instance with different tables? (Prefix?)
 - [ ] Who chooses which OP to process next?
   * do we mark A as "work on this  next?"
   * or does Han scan available work and choose?
@@ -18,6 +15,9 @@ Questions
 
 Answers
 --------
+- [x] (Tony) We need local persistence but a new DB may increase the workload for Tony.
+  - Build against POSTGRES. Tony will figure it out
+  - migrations can work any way
 - [x] Han wants to work on OPs, not datasets. How do we know when an OP is complete?
   - OPs do not exist at the metadata level yet
   - Wait a certain number of days for all datasets to appear before assuming it is ready.
