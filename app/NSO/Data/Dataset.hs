@@ -83,11 +83,14 @@ datasets =
           }
     }
 
-allDatasets :: Statement () [Dataset]
-allDatasets = select $ each datasets
-
 queryAll :: (Rel8 :> es) => Eff es [Dataset]
-queryAll = query () allDatasets
+queryAll = query () $ select $ each datasets
+
+queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
+queryExperiment eid = query () $ select $ do
+  row <- each datasets
+  where_ (row.primaryExperimentId ==. lit eid)
+  return row
 
 insertAll :: [Dataset] -> Statement () Int64
 insertAll ds =

@@ -24,6 +24,11 @@ executable level2
       App
       App.Colors
       App.Page.Dashboard
+      App.Page.Experiment
+      App.Page.Experiments
+      App.Page.Scan
+      App.Route
+      App.Version
       Effectful.Rel8
       Effectful.Request
       Effectful.Time
@@ -89,5 +94,6 @@ executable level2
     , text
     , time
     , vty
+    , wai-extra
     , web-ui
   default-language: GHC2021

@@ -20,6 +20,10 @@ module NSO.Prelude
     -- * Monadic functions
   , module Control.Monad
 
+    -- * Effects
+  , Eff
+  , (:>)
+
     -- * Lifted IO
   , putStrLn
   , print
@@ -38,10 +42,11 @@ import Data.Map (Map)
 import Data.Maybe (catMaybes, fromMaybe, listToMaybe, mapMaybe)
 import Data.Ord (comparing)
 import Data.Proxy (Proxy (..))
+import Data.String (IsString)
 import Data.String.Conversions (cs)
 import Data.Text (Text)
+import Effectful
 import GHC.Generics (Generic)
-import Data.String (IsString)
 import Prelude hiding (Real, head, last, print, putStr, putStrLn, readFile, reverse, writeFile, (!!))
 import Prelude qualified
 

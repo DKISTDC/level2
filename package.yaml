@@ -54,6 +54,7 @@ dependencies:
   - string-conversions
   - rel8
   - web-ui
+  - wai-extra
 
 
 executables:
