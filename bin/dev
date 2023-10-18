@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST_FUNCTION=${1-Main.main}
+TEST_FUNCTION=${1-App.main}
 
 # Kill any background jobs when this script is killed
 cleanup() {

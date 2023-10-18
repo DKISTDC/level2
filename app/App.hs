@@ -2,6 +2,8 @@ module App where
 
 import App.Page.Dashboard qualified as Dashboard
 import Control.Monad.Catch
+import Data.ByteString.Lazy qualified as BL
+import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Rel8 as Rel8
@@ -21,15 +23,14 @@ main = do
   run 3000 $ app conn
 
 app :: Rel8.Connection -> Application
-app conn = application (toDocument "Level 2") (runApp . route)
+app conn = waiApplication document (runApp . router)
  where
-  route :: (Wai :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Route -> Eff es ()
-  route Main = redirect (routeUrl $ Dashboard defRoute)
-  route (Dashboard d) = Dashboard.route d
-  route (Hello h) = view $ row_ $ do
+  router :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => AppRoute -> Eff es ()
+  router Dashboard = Dashboard.page
+  router (Hello h) = view $ row_ $ do
     text "HELLO "
     text h
-  route Echo = do
+  router Echo = do
     f <- formData
     view $ col id $ do
       el id "ECHO:"
@@ -41,6 +42,7 @@ app conn = application (toDocument "Level 2") (runApp . route)
       . runRel8 conn
       . runRequestMock Metadata.mockRequest
       . runTime
+      . runPageWai
       -- . runRequest
       . runGraphQL
 
@@ -57,9 +59,19 @@ onRequestError e = do
 -- handle (Contacts rt) = Contacts.routes rt
 
 -- send Respond
-data Route
-  = Main
-  | Dashboard Dashboard.Route
+data AppRoute
+  = Dashboard
   | Hello Text
   | Echo
-  deriving (Show, Generic, Eq, PageRoute)
+  deriving (Show, Generic, Eq, Route)
+
+document :: BL.ByteString -> BL.ByteString
+document cnt =
+  [i|<html>
+    <head>
+      <title>Level2</title>
+      <script type="text/javascript">#{scriptEmbed}</script>
+      <style type type="text/css">#{cssResetEmbed}</style>
+    </head>
+    <body>#{cnt}</body>
+  </html>|]

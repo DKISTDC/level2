@@ -6,10 +6,10 @@ import Data.Aeson (FromJSON (..), withText)
 import Data.List qualified as L
 import NSO.Prelude
 import Rel8
-import Web.Hyperbole (PageRoute)
+import Web.Hyperbole (Route)
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Eq, Ord, DBType, FromJSON, PageRoute)
+  deriving newtype (Show, Eq, Ord, DBType, FromJSON, Route)
   deriving (Generic)
 
 data Stokes = I | Q | U | V
