@@ -11,7 +11,6 @@ import Effectful.Time (Time)
 import NSO.Data.Dataset as Dataset
 import NSO.Data.Types
 import NSO.Prelude hiding (truncate)
-import Numeric (showFFloat)
 import Web.Hyperbole as H
 import Web.UI hiding (head)
 
@@ -47,7 +46,7 @@ viewExperiments :: [Dataset] -> View MainView ()
 viewExperiments [] = el_ "No Datasets!"
 viewExperiments (d : ds') = col (pad 15 . gap 20) $ onRequest loading $ do
   let exs = toExperiments $ d :| ds'
-  label (bold . fontSize 32) "EXPERIMENTS"
+  -- label (bold . fontSize 32) "EXPERIMENTS"
 
   col (gap 40) $ do
     forM_ exs viewExperiment
@@ -56,7 +55,7 @@ viewExperiments (d : ds') = col (pad 15 . gap 20) $ onRequest loading $ do
   viewExperiment e = do
     let ds1 = e.instrumentPrograms & head & (.datasets) & head :: Dataset
     col (gap 8 . bg White) $ do
-      link (routeUrl $ Route.Experiment e.experimentId) (bold . border (TRBL 0 0 1 0) . pad 10) $ do
+      link (routeUrl $ Route.Experiment e.experimentId) (bold . bg Secondary . color White . pad 10) $ do
         text "Experiment "
         text e.experimentId.fromId
       col (gap 8 . pad 10) $ do
@@ -134,42 +133,3 @@ viewInstrumentProgram ip = el (transition Height 0.5 . height 200) $ do
   col (height 100) $ do
     el_ $ text $ cs $ show ip.instrumentProgramId
     liveButton Collapse (bg Primary . color White) "Collapse"
-
------------------------------------------------------
--- Datasets (Debug)
------------------------------------------------------
-
-datasetsTable :: [Dataset] -> View MainView ()
-datasetsTable ds = do
-  let sorted = sortOn (.inputDatasetObserveFramesPartId) ds :: [Dataset]
-
-  table (border 1 . pad 0) sorted $ do
-    tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
-    tcol (hd "Id") $ \d -> cell d.datasetId.fromId
-    tcol (hd "Obs Prog Id") $ \d -> cell d.observingProgramExecutionId.fromId
-    tcol (hd "Instrument") $ \d -> cell . cs . show $ d.instrument
-    tcol (hd "Stokes") $ \d -> cell . cs . show $ d.stokesParameters
-    tcol (hd "Create Date") $ \d -> cell . showTimestamp $ d.createDate
-    tcol (hd "Wave Min") $ \d -> cell . cs $ showFFloat (Just 1) d.wavelengthMin ""
-    tcol (hd "Wave Max") $ \d -> cell . cs $ showFFloat (Just 1) d.wavelengthMax ""
-    tcol (hd "Start Time") $ \d -> cell . showTimestamp $ d.startTime
-    tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
-    tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
- where
-  -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
-  -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
-  -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
-  -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
-
-  hd :: View () () -> View Head ()
-  hd = th (bold . bg GrayLight . pad 4 . border 1)
-
-  cell :: Text -> View Dataset ()
-  cell = td (pad 4 . border 1) . text
-
-viewScanRun :: [Dataset] -> View MainView ()
-viewScanRun ds = onRequest loading $ do
-  row_ $ do
-    col (pad 10 . gap 20) $ do
-      label (fontSize 32 . bg Warning . pad 25) "Scan Complete!"
-      datasetsTable ds

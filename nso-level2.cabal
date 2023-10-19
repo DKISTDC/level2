@@ -30,6 +30,7 @@ executable level2
       App.Page.Scan
       App.Route
       App.Version
+      Effectful.Debug
       Effectful.Rel8
       Effectful.Request
       Effectful.Time

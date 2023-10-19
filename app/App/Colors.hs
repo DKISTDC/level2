@@ -19,7 +19,7 @@ data AppColor
 
 instance ToColor AppColor where
   colorValue White = "#FFF"
-  colorValue Light = "#F2F2F3"
+  colorValue Light = "#F8F8F8"
   colorValue GrayLight = "#E3E5E9"
   colorValue GrayDark = "#2С3С44"
   colorValue Dark = "#2E3842" -- "#232C41"

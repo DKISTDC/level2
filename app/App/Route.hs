@@ -19,7 +19,7 @@ appLayout :: AppRoute -> View c () -> View c ()
 appLayout rc content = do
   layout (color Dark) $ row grow $ do
     sidebar
-    col collapse content
+    col (collapse . grow) content
  where
   nav r =
     link

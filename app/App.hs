@@ -11,10 +11,11 @@ import Control.Monad.Catch
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
 import Effectful
+import Effectful.Debug (runDebugIO)
 import Effectful.Error.Static
 import Effectful.Rel8 as Rel8
 import Effectful.Request
-import Effectful.Time (Time, runTime)
+import Effectful.Time (runTime)
 import NSO.Metadata qualified as Metadata
 import NSO.Prelude
 import Network.Wai.Middleware.AddHeaders (addHeaders)
@@ -37,7 +38,7 @@ initialize = do
 app :: Rel8.Connection -> Application
 app conn = waiApplication document (runApp . router)
  where
-  router :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => AppRoute -> Eff es ()
+  -- router :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => AppRoute -> Eff es ()
   router Dashboard = Dashboard.page
   router Experiments = Experiments.page
   router (Experiment eid) = Experiment.page eid
@@ -51,6 +52,7 @@ app conn = waiApplication document (runApp . router)
       . runRel8 conn
       . runRequestMock Metadata.mockRequest -- .runRequest
       . runPageWai
+      . runDebugIO
       . runGraphQL
 
 onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
