@@ -4,13 +4,19 @@ module NSO.Data.Types where
 
 import Data.Aeson (FromJSON (..), withText)
 import Data.List qualified as L
+import Data.Time.Clock (UTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import NSO.Prelude
 import Rel8
-import Web.Hyperbole (Route)
+import Web.Hyperbole (Param (..), Route)
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Eq, Ord, DBType, FromJSON, Route, DBEq)
+  deriving newtype (Show, Read, Eq, Ord, DBType, FromJSON, Route, DBEq)
   deriving (Generic)
+
+instance Param (Id a) where
+  toParam (Id t) = t
+  parseParam t = pure $ Id t
 
 data Stokes = I | Q | U | V
   deriving (Show, Read, Eq)
@@ -37,3 +43,9 @@ instance FromJSON StokesParameters where
 
 instance Semigroup StokesParameters where
   (StokesParameters a) <> (StokesParameters b) = StokesParameters . L.nub $ a <> b
+
+showDate :: UTCTime -> Text
+showDate = cs . formatTime defaultTimeLocale "%F"
+
+showTimestamp :: UTCTime -> Text
+showTimestamp = cs . formatTime defaultTimeLocale "%F %T"

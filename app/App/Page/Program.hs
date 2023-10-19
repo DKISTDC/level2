@@ -1,4 +1,4 @@
-module App.Page.Experiment where
+module App.Page.Program where
 
 import App.Route
 import Effectful.Rel8
@@ -8,11 +8,11 @@ import NSO.Prelude
 import Web.Hyperbole
 import Web.UI
 
-page :: (Page :> es, Rel8 :> es) => Id Experiment -> Eff es ()
-page eid = do
-  ds <- queryExperiment eid
+page :: (Page :> es, Rel8 :> es) => Id InstrumentProgram -> Eff es ()
+page i = do
+  ds <- queryProgram i
   view $ appLayout Experiments $ do
     col_ $ do
-      el_ "EXPERIMENT"
-      el_ $ text $ cs $ show eid
+      el_ "INSTRUMENT PROGRAM"
+      el_ $ text $ cs $ show i
       el_ $ text $ cs $ show $ length ds

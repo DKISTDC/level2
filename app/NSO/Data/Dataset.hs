@@ -16,15 +16,21 @@ import Rel8
 data Proposal
 data Experiment = Experiment
   { experimentId :: Id Experiment
-  , observingProgramExecutions :: NonEmpty ObservingProgram
+  , observingPrograms :: NonEmpty ObservingProgram
+  , instrumentPrograms :: NonEmpty InstrumentProgram
   }
 
 data ObservingProgram = ObservingProgram
-  { observingProgramExecutionId :: Id ObservingProgram
+  { observingProgramId :: Id ObservingProgram
   , datasets :: NonEmpty Dataset
   }
 
-data InstrumentProgram
+data InstrumentProgram = InstrumentProgram
+  { instrumentProgramId :: Id InstrumentProgram
+  , instrument :: Instrument
+  , createDate :: UTCTime
+  , datasets :: NonEmpty Dataset
+  }
 
 data Instrument
   = VBI
@@ -92,6 +98,12 @@ queryExperiment eid = query () $ select $ do
   where_ (row.primaryExperimentId ==. lit eid)
   return row
 
+queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
+queryProgram ip = query () $ select $ do
+  row <- each datasets
+  where_ (row.instrumentProgramExecutionId ==. lit ip)
+  return row
+
 insertAll :: [Dataset] -> Statement () Int64
 insertAll ds =
   Rel8.insert
@@ -108,11 +120,24 @@ toObservingPrograms = fmap toProgram . groupSort (.observingProgramExecutionId)
   toProgram :: NonEmpty Dataset -> ObservingProgram
   toProgram ds = ObservingProgram (head ds).observingProgramExecutionId ds
 
+toInstrumentPrograms :: NonEmpty Dataset -> NonEmpty InstrumentProgram
+toInstrumentPrograms = fmap instrumentProgram . groupSort (.instrumentProgramExecutionId)
+
+instrumentProgram :: NonEmpty Dataset -> InstrumentProgram
+instrumentProgram ds =
+  let d = head ds
+   in InstrumentProgram
+        { instrumentProgramId = d.instrumentProgramExecutionId
+        , createDate = d.createDate
+        , instrument = d.instrument
+        , datasets = ds
+        }
+
 toExperiments :: NonEmpty Dataset -> NonEmpty Experiment
 toExperiments = fmap toExperiment . groupSort (.primaryExperimentId)
  where
   toExperiment :: NonEmpty Dataset -> Experiment
-  toExperiment ds = Experiment (head ds).primaryExperimentId (toObservingPrograms ds)
+  toExperiment ds = Experiment (head ds).primaryExperimentId (toObservingPrograms ds) (toInstrumentPrograms ds)
 
 groupSort :: (Eq b, Ord b) => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
 groupSort f = groupWith1 f . sortWith f

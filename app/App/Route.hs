@@ -12,20 +12,25 @@ data AppRoute
   | Scan
   | Experiments
   | Experiment (Id Experiment)
+  | Program (Id InstrumentProgram)
   deriving (Show, Generic, Eq, Route)
 
-layout :: AppRoute -> View c () -> View c ()
-layout rc content = do
-  row (bg Light . color Dark) $ do
+appLayout :: AppRoute -> View c () -> View c ()
+appLayout rc content = do
+  layout (color Dark) $ row grow $ do
     sidebar
-    col (gap 25 . pad 25 . grow) $ do
-      content
+    col collapse content
  where
-  nav r = link (routeUrl r) (pad 20 . color White . if r == rc then current else id)
-  current = bg PrimaryLight . border' (TRBL 0 0 0 5) . padX 15
+  nav r =
+    link
+      (routeUrl r)
+      (border (TRBL 0 0 0 5) . pad 20 . hover |: borderColor White . hover |: color White . if r == rc then current else other)
+
+  current = bg PrimaryLight . borderColor GrayLight
+  other = borderColor Primary
 
   sidebar = do
-    col (gap 0 . bg Primary . width 400 . color White) $ do
+    col (gap 0 . bg Primary . width 400 . color GrayLight) $ do
       row (pad 20) $ do
         space
         link "/" (bold . fontSize 32) "Level 2"

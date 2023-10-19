@@ -10,6 +10,6 @@ import Web.UI
 page :: (Page :> es, Rel8 :> es) => Eff es ()
 page = do
   pageLoad $ do
-    pure $ layout Dashboard $ do
+    pure $ appLayout Dashboard $ do
       el_ "DASH"
       el_ $ text $ cs appVersion

@@ -26,6 +26,7 @@ executable level2
       App.Page.Dashboard
       App.Page.Experiment
       App.Page.Experiments
+      App.Page.Program
       App.Page.Scan
       App.Route
       App.Version
@@ -44,7 +45,6 @@ executable level2
       NSO.Metadata.Types
       NSO.Prelude
       NSO.Steps
-      NSO.Types
       TUI
       Paths_nso_level2
   autogen-modules:

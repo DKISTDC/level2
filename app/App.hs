@@ -3,6 +3,7 @@ module App where
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Experiment qualified as Experiment
 import App.Page.Experiments qualified as Experiments
+import App.Page.Program qualified as Program
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
@@ -40,14 +41,15 @@ app conn = waiApplication document (runApp . router)
   router Dashboard = Dashboard.page
   router Experiments = Experiments.page
   router (Experiment eid) = Experiment.page eid
+  router (Program pid) = Program.page pid
   router Scan = Scan.page
 
   runApp =
-    runErrorNoCallStackWith @Rel8Error onRel8Error
+    runTime
+      . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @RequestError onRequestError
       . runRel8 conn
       . runRequestMock Metadata.mockRequest -- .runRequest
-      . runTime
       . runPageWai
       . runGraphQL
 
@@ -69,7 +71,8 @@ document cnt =
     <head>
       <title>Level2</title>
       <script type="text/javascript">#{scriptEmbed}</script>
-      <style type type="text/css">#{cssResetEmbed}</style>
+      <style type="text/css">#{cssResetEmbed}</style>
+      <style type="text/css">body { background-color: \#F2F2F3 }</style>
     </head>
     <body>#{cnt}</body>
   </html>|]

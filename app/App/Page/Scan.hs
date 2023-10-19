@@ -12,7 +12,7 @@ import Web.UI
 page :: (Page :> es, Rel8 :> es) => Eff es ()
 page = do
   pageLoad $ do
-    pure $ layout Scan $ col_ $ do
+    pure $ appLayout Scan $ col_ $ do
       el bold "TODO"
       el_ "Show Previous Scans"
       el_ "Scan Button"
