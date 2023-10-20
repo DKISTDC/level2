@@ -48,8 +48,7 @@ handle _ _ = do
 viewExperiments :: [Dataset] -> View MainView ()
 viewExperiments [] = el_ "No Datasets!"
 viewExperiments (d : ds') = col (pad 15 . gap 20) $ onRequest loading $ do
-  let exs = toExperiments $ d :| ds'
-  -- label (bold . fontSize 32) "EXPERIMENTS"
+  let exs = reverse $ sortWith (.startTime) $ toExperiments $ d :| ds'
 
   col (gap 40) $ do
     forM_ exs viewExperiment
@@ -58,25 +57,48 @@ viewExperiments (d : ds') = col (pad 15 . gap 20) $ onRequest loading $ do
   viewExperiment e = do
     let ds1 = e.instrumentPrograms & head & (.datasets) & head :: Dataset
     col (gap 8 . bg White) $ do
-      link (routeUrl $ Route.Experiment e.experimentId) (bold . bg Secondary . color White . pad 10) $ do
-        text "Experiment "
-        text e.experimentId.fromId
+      row (bg GrayLight) $ do
+        link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
+          text "Experiment "
+          text e.experimentId.fromId
+        space
+        el (pad 10) $ do
+          -- text "Started "
+          text $ showDate ds1.startTime
+
       col (gap 8 . pad 10) $ do
-        el truncate $ text ds1.experimentDescription
-        tableInstrumentPrograms $ NE.toList e.instrumentPrograms
+        -- row (gap 5) $ do
+        --   el bold "Start Time:"
+        --   el_ $ text $ showDate ds1.startTime
+        link (routeUrl $ Route.Experiment e.experimentId) truncate $ text ds1.experimentDescription
+
+        let visp = filter isVisp $ NE.toList e.instrumentPrograms
+
+        tableInstrumentPrograms visp
+
+        let ignored = length e.instrumentPrograms - length visp
+        when (ignored > 0) $ do
+          link (routeUrl $ Route.Experiment e.experimentId) (color GrayDark) $ do
+            text $ cs (show ignored)
+            text "Other Instruments Ignored"
+
+  isVisp :: InstrumentProgram -> Bool
+  isVisp ip = ip.instrument == VISP
 
 tableInstrumentPrograms :: [InstrumentProgram] -> View MainView ()
 tableInstrumentPrograms ips = do
   let sorted = ips
   col_ $ do
-    row dataRow $ do
-      el header none
-      button header "Start Date"
-      button header "Instrument"
+    -- row dataRow $ do
+    --   el header "Instrument Programs"
+    --   button header "Create Date"
+    --   -- button header "Start Date"
+    --   button header "Instrument"
     dataRows sorted $ \ip -> do
-      liveView (IPRow ip.instrumentProgramId) $ rowInstrumentProgram ip
+      liveView (IPRow ip.instrumentProgramId) $ rowInstrumentProgram Expand ip
  where
-  header = dataCell . bold
+
+-- header = dataCell . bold
 
 dataRows :: [a] -> (a -> View c ()) -> View c ()
 dataRows as viewRow = forM_ (zip (cycle [True, False]) as) $ \(b, a) ->
@@ -121,18 +143,23 @@ handleIPRow (IPRow i) a = do
   action ip Expand =
     pure $ viewInstrumentProgram ip
   action ip Collapse =
-    pure $ rowInstrumentProgram ip
+    pure $ rowInstrumentProgram Expand ip
 
-rowInstrumentProgram :: InstrumentProgram -> View IPRow ()
-rowInstrumentProgram ip = el (transition Height 0.5 . height dataRowHeight) $ do
-  liveButton Expand id $ row (gap 10) $ do
+rowInstrumentProgram :: IPEvent -> InstrumentProgram -> View IPRow ()
+rowInstrumentProgram onClick ip = el (transition Height 0.5 . height dataRowHeight) $ do
+  liveButton onClick id $ row (gap 10) $ do
     el (dataCell . bg Warning) $ text "Status"
     el dataCell $ text $ showDate ip.createDate
+    -- el dataCell $ text $ showDate ip.startTime
     el dataCell $ text $ cs $ show ip.instrument
-    row (dataCell . gap 5) $ do
+    -- not worth showing Stokes in the row. They seem to be present for all VISP
+    -- el dataCell $ text $ cs $ show ip.stokesParameters
+
+    -- TODO: on disk
+    row (dataCell . gap 5 . fontSize 14) $ do
       let (mids, lns) = partitionEithers $ map identify $ NE.toList ip.datasets
       mapM_ lineTag lns
-      mapM_ midTag mids
+      mapM_ midTag $ sortOn id mids
  where
   identify :: Dataset -> Either (Wavelength Nm) SpectralLine
   identify d =
@@ -143,10 +170,10 @@ rowInstrumentProgram ip = el (transition Height 0.5 . height dataRowHeight) $ do
   midWave :: Dataset -> Wavelength Nm
   midWave d = d.wavelengthMin + d.wavelengthMax / 2
 
-  lineTag s = el (dataTag . bg Success) $ text $ cs $ show s
+  lineTag s = tag "pre" (dataTag . bg SecondaryLight) $ text $ cs $ show s
 
   midTag mid =
-    el (pad 2 . color GrayDark) $ text $ cs (showFFloat (Just 0) mid "nm")
+    tag "pre" (pad 2 . color GrayDark) $ text $ cs (showFFloat (Just 0) mid "nm")
 
   dataTag :: Mod
   dataTag = pad (XY 6 2) . rounded 3
@@ -154,5 +181,7 @@ rowInstrumentProgram ip = el (transition Height 0.5 . height dataRowHeight) $ do
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
 viewInstrumentProgram ip = el (transition Height 0.5 . height 200) $ do
   col (height 100) $ do
+    rowInstrumentProgram Collapse ip
     el_ $ text $ cs $ show ip.instrumentProgramId
-    liveButton Collapse (bg Primary . color White) "Collapse"
+
+-- liveButton Collapse (bg Primary . color White) "Collapse"

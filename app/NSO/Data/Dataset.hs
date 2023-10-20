@@ -16,6 +16,7 @@ import Rel8
 data Proposal
 data Experiment = Experiment
   { experimentId :: Id Experiment
+  , startTime :: UTCTime
   , observingPrograms :: NonEmpty ObservingProgram
   , instrumentPrograms :: NonEmpty InstrumentProgram
   }
@@ -29,6 +30,8 @@ data InstrumentProgram = InstrumentProgram
   { instrumentProgramId :: Id InstrumentProgram
   , instrument :: Instrument
   , createDate :: UTCTime
+  , startTime :: UTCTime
+  , stokesParameters :: StokesParameters
   , datasets :: NonEmpty Dataset
   }
 
@@ -129,6 +132,8 @@ instrumentProgram ds =
    in InstrumentProgram
         { instrumentProgramId = d.instrumentProgramExecutionId
         , createDate = d.createDate
+        , stokesParameters = d.stokesParameters
+        , startTime = d.startTime
         , instrument = d.instrument
         , datasets = ds
         }
@@ -137,7 +142,14 @@ toExperiments :: NonEmpty Dataset -> NonEmpty Experiment
 toExperiments = fmap toExperiment . groupSort (.primaryExperimentId)
  where
   toExperiment :: NonEmpty Dataset -> Experiment
-  toExperiment ds = Experiment (head ds).primaryExperimentId (toObservingPrograms ds) (toInstrumentPrograms ds)
+  toExperiment ds =
+    let d = head ds
+     in Experiment
+          { experimentId = d.primaryExperimentId
+          , startTime = d.startTime
+          , observingPrograms = toObservingPrograms ds
+          , instrumentPrograms = toInstrumentPrograms ds
+          }
 
 groupSort :: (Eq b, Ord b) => (a -> b) -> NonEmpty a -> NonEmpty (NonEmpty a)
 groupSort f = groupWith1 f . sortWith f

@@ -47,7 +47,7 @@ viewScan :: [Dataset] -> View ScanView ()
 viewScan ds =
   onRequest loading $ do
     col (gap 10 . pad 20) $ do
-      liveButton RunScan (pad 10 . bold . fontSize 24 . bg PrimaryLight . hover |: bg Secondary . color White) "Run Scan"
+      liveButton RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover |: bg PrimaryLight . color White) "Run Scan"
       datasetsTable ds
  where
   loading = row (pad 100 . grow) $ do
