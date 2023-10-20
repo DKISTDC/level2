@@ -52,7 +52,7 @@ viewScan ds =
  where
   loading = row (pad 100 . grow) $ do
     space
-    el (width 200 . color PrimaryLight) $ raw spinner
+    el (width 200 . color PrimaryLight) spinner
     space
 
 -----------------------------------------------------
@@ -87,11 +87,11 @@ datasetsTable ds = do
   cell :: Text -> View Dataset ()
   cell = td (pad 4 . border 1) . text
 
-spinner :: Text
+spinner :: View c ()
 spinner =
-  [i|
+  raw
+    $ [i|
 <!-- By Sam Herbert (@sherb), for everyone. More @ http://goo.gl/7AJzbL -->
-<!-- Todo: add easing -->
 <svg width="100%" height="100%" viewBox="0 0 57 57" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
     <g fill="none" fill-rule="evenodd">
         <g transform="translate(1 1)" stroke-width="2">

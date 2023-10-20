@@ -2,6 +2,7 @@ module App.Page.Experiments where
 
 import App.Colors
 import App.Route as Route
+import Data.Either (partitionEithers)
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Error.Static
@@ -9,8 +10,10 @@ import Effectful.Rel8 (Rel8)
 import Effectful.Request
 import Effectful.Time (Time)
 import NSO.Data.Dataset as Dataset
+import NSO.Data.Spectral as Spectral
 import NSO.Data.Types
 import NSO.Prelude hiding (truncate)
+import Numeric (showFFloat)
 import Web.Hyperbole as H
 import Web.UI hiding (head)
 
@@ -82,7 +85,7 @@ dataRows as viewRow = forM_ (zip (cycle [True, False]) as) $ \(b, a) ->
   alternateColor b = if b then bg Light else id
 
 dataCell :: Mod
-dataCell = width 100
+dataCell = minWidth 100
 
 dataRow :: Mod
 dataRow = gap 10 . pad (All dataRowPadding)
@@ -126,7 +129,27 @@ rowInstrumentProgram ip = el (transition Height 0.5 . height dataRowHeight) $ do
     el (dataCell . bg Warning) $ text "Status"
     el dataCell $ text $ showDate ip.createDate
     el dataCell $ text $ cs $ show ip.instrument
-    el dataCell $ text $ cs $ show $ length ip.datasets
+    row (dataCell . gap 5) $ do
+      let (mids, lns) = partitionEithers $ map identify $ NE.toList ip.datasets
+      mapM_ lineTag lns
+      mapM_ midTag mids
+ where
+  identify :: Dataset -> Either (Wavelength Nm) SpectralLine
+  identify d =
+    case Spectral.identifyLine d.wavelengthMin d.wavelengthMax of
+      Nothing -> Left (midWave d)
+      Just l -> Right l
+
+  midWave :: Dataset -> Wavelength Nm
+  midWave d = d.wavelengthMin + d.wavelengthMax / 2
+
+  lineTag s = el (dataTag . bg Success) $ text $ cs $ show s
+
+  midTag mid =
+    el (pad 2 . color GrayDark) $ text $ cs (showFFloat (Just 0) mid "nm")
+
+  dataTag :: Mod
+  dataTag = pad (XY 6 2) . rounded 3
 
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
 viewInstrumentProgram ip = el (transition Height 0.5 . height 200) $ do

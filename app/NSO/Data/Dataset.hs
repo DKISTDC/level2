@@ -47,8 +47,8 @@ data Dataset' f = Dataset
   , instrumentProgramExecutionId :: Column f (Id InstrumentProgram)
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
-  , wavelengthMin :: Column f Double
-  , wavelengthMax :: Column f Double
+  , wavelengthMin :: Column f (Wavelength Nm)
+  , wavelengthMax :: Column f (Wavelength Nm)
   , startTime :: Column f UTCTime
   , endTime :: Column f UTCTime
   , frameCount :: Column f Int16

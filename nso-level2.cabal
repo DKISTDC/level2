@@ -39,6 +39,7 @@ executable level2
       Flow.Node
       NSO.Data.Dataset
       NSO.Data.Scan
+      NSO.Data.Spectral
       NSO.Data.Types
       NSO.Level2
       NSO.Metadata

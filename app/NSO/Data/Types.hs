@@ -6,6 +6,7 @@ import Data.Aeson (FromJSON (..), withText)
 import Data.List qualified as L
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import GHC.Real (Real)
 import NSO.Prelude
 import Rel8
 import Web.Hyperbole (Param (..), Route)
@@ -49,3 +50,8 @@ showDate = cs . formatTime defaultTimeLocale "%F"
 
 showTimestamp :: UTCTime -> Text
 showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
+
+newtype Wavelength a = Wavelength Double
+  deriving newtype (Num, Eq, Ord, Show, DBType, Floating, Fractional, RealFloat, RealFrac, Real)
+
+data Nm
