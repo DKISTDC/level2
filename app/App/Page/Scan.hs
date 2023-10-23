@@ -9,6 +9,7 @@ import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
 import NSO.Data.Dataset
+import NSO.Data.Qualify (isOnDisk)
 import NSO.Data.Scan
 import NSO.Data.Types
 import NSO.Prelude
@@ -47,7 +48,7 @@ viewScan :: [Dataset] -> View ScanView ()
 viewScan ds =
   onRequest loading $ do
     col (gap 10 . pad 20) $ do
-      liveButton RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover |: bg PrimaryLight . color White) "Run Scan"
+      liveButton RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover (bg PrimaryLight) . color White) "Run Scan"
       datasetsTable ds
  where
   loading = row (pad 100 . grow) $ do
@@ -64,17 +65,20 @@ datasetsTable ds = do
   let sorted = sortOn (.inputDatasetObserveFramesPartId) ds :: [Dataset]
 
   table (border 1 . pad 0) sorted $ do
-    tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
+    -- tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
     tcol (hd "Id") $ \d -> cell d.datasetId.fromId
-    tcol (hd "Obs Prog Id") $ \d -> cell d.observingProgramExecutionId.fromId
+    -- tcol (hd "Obs Prog Id") $ \d -> cell d.observingProgramExecutionId.fromId
     tcol (hd "Instrument") $ \d -> cell . cs . show $ d.instrument
     tcol (hd "Stokes") $ \d -> cell . cs . show $ d.stokesParameters
     tcol (hd "Create Date") $ \d -> cell . showTimestamp $ d.createDate
     tcol (hd "Wave Min") $ \d -> cell . cs $ showFFloat (Just 1) d.wavelengthMin ""
     tcol (hd "Wave Max") $ \d -> cell . cs $ showFFloat (Just 1) d.wavelengthMax ""
-    tcol (hd "Start Time") $ \d -> cell . showTimestamp $ d.startTime
-    tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
+    -- tcol (hd "Start Time") $ \d -> cell . showTimestamp $ d.startTime
+    -- tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
+    -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
+    -- tcol (hd "Bounding Box") $ \d -> cell . cs . show $ d.boundingBox
+    tcol (hd "On Disk") $ \d -> cell . cs . show $ isOnDisk d.boundingBox
  where
   -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
   -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId

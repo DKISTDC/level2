@@ -42,6 +42,7 @@ toDataset scanDate d = do
       , scanDate = scanDate
       , observingProgramExecutionId = Id d.observingProgramExecutionId
       , instrumentProgramExecutionId = Id d.instrumentProgramExecutionId
+      , boundingBox = boundingBoxNaN d.boundingBox
       , instrument = ins
       , stokesParameters = d.stokesParameters
       , createDate = d.createDate.utc
@@ -60,3 +61,8 @@ toDataset scanDate d = do
   parseRead :: (Read a) => Text -> Text -> Either String a
   parseRead expect input =
     maybe (Left [i|Invalid #{expect}: #{input}|]) Right $ readMaybe $ cs input
+
+  boundingBoxNaN bb =
+    if (isCoordNaN bb.lowerLeft || isCoordNaN bb.upperRight)
+      then Nothing
+      else Just bb

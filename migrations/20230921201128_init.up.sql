@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS datasets (
   primary_proposal_id TEXT NOT NULL,
   input_observe_frames_id TEXT NOT NULL,
   experiment_description TEXT NOT NULL,
-  exposure_time REAL NOT NULL
+  exposure_time REAL NOT NULL,
+  bounding_box TEXT
 );
 
 -- CREATE INDEX idx_datasets_program_id ON datasets(observing_program_id)

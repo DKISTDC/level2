@@ -60,6 +60,7 @@ data Dataset' f = Dataset
   , experimentDescription :: Column f Text
   , exposureTime :: Column f Float
   , inputDatasetObserveFramesPartId :: Column f (Id ObserveFrames)
+  , boundingBox :: Column f (Maybe BoundingBox)
   }
   deriving stock (Generic)
   deriving anyclass (Rel8able)
@@ -89,6 +90,7 @@ datasets =
           , inputDatasetObserveFramesPartId = "input_observe_frames_id"
           , experimentDescription = "experiment_description"
           , exposureTime = "exposure_time"
+          , boundingBox = "bounding_box"
           }
     }
 

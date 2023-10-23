@@ -12,7 +12,7 @@ import Data.Time.Format (FormatTime)
 import Data.Time.Format.ISO8601
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Data.Types (StokesParameters)
+import NSO.Data.Types (BoundingBox, StokesParameters)
 import NSO.Prelude
 
 newtype DateTime = DateTime {utc :: UTCTime}
@@ -39,7 +39,7 @@ data DatasetInventory = DatasetInventory
   , averageDatasetSpatialSampling :: Double
   , averageDatasetSpectralSampling :: Double
   , averageDatasetTemporalSampling :: Double
-  , boundingBox :: Text
+  , boundingBox :: BoundingBox
   , browseMovieObjectKey :: Text
   , browseMovieUrl :: Text
   , bucket :: Text

@@ -30,6 +30,8 @@ executable level2
       App.Page.Scan
       App.Route
       App.Version
+      App.View.DatasetsTable
+      App.View.InstrumentProgramSummary
       Effectful.Debug
       Effectful.Rel8
       Effectful.Request
@@ -38,8 +40,8 @@ executable level2
       Flow.Example
       Flow.Node
       NSO.Data.Dataset
+      NSO.Data.Qualify
       NSO.Data.Scan
-      NSO.Data.Spectral
       NSO.Data.Types
       NSO.Level2
       NSO.Metadata

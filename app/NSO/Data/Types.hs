@@ -9,6 +9,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8
+import Text.Read (readEither)
 import Web.Hyperbole (Param (..), Route)
 
 newtype Id a = Id {fromId :: Text}
@@ -55,3 +56,44 @@ newtype Wavelength a = Wavelength Double
   deriving newtype (Num, Eq, Ord, Show, DBType, Floating, Fractional, RealFloat, RealFrac, Real)
 
 data Nm
+
+newtype Arcseconds = Arcseconds Float
+  deriving newtype (Eq, Show, Read, RealFloat, Floating, RealFrac, Fractional, Real, Num, Ord)
+
+type Coordinate a = (a, a)
+
+data BoundingBox = BoundingBox
+  { upperRight :: Coordinate Arcseconds
+  , lowerLeft :: Coordinate Arcseconds
+  }
+  deriving (Eq)
+
+instance Show BoundingBox where
+  show (BoundingBox ur ll) = show (ur, ll)
+
+-- | Serialize as a tuple, just like from the API
+instance DBType BoundingBox where
+  typeInformation :: TypeInformation BoundingBox
+  typeInformation =
+    parseTypeInformation
+      parseBoundingBox
+      serialize
+      typeInformation
+   where
+    serialize :: BoundingBox -> Text
+    serialize bb = cs $ show (bb.upperRight, bb.lowerLeft)
+
+instance FromJSON BoundingBox where
+  parseJSON = withText "BoundingBox (Upper Left, Lower Right)" $ \t -> do
+    -- the Metadata format is ALMOST a tuple ((x1,y1),(x2,y2)
+    -- "boundingBox": "(-351.85,-375.79),(-468.82,-495.48)",
+    -- so wrap it in parens
+    either (const $ fail $ "no parse: " <> cs t) pure $ parseBoundingBox $ "(" <> t <> ")"
+
+parseBoundingBox :: Text -> Either String BoundingBox
+parseBoundingBox t = do
+  (ur, ll) <- readEither (cs t) :: Either String (Coordinate Arcseconds, Coordinate Arcseconds)
+  pure $ BoundingBox{upperRight = ur, lowerLeft = ll}
+
+isCoordNaN :: Coordinate Arcseconds -> Bool
+isCoordNaN (a, b) = isNaN a || isNaN b

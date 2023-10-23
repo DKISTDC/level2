@@ -10,6 +10,6 @@ import Web.UI
 page :: (Page :> es, Rel8 :> es) => Eff es ()
 page = do
   pageLoad $ do
-    pure $ appLayout Dashboard $ do
-      el_ "DASH"
+    pure $ appLayout Dashboard $ col (pad 20) $ do
+      -- el (fontSize 24 . bold) "Level 2"
       el_ $ text $ cs appVersion

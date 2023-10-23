@@ -2,7 +2,8 @@ module App.Page.Experiments where
 
 import App.Colors
 import App.Route as Route
-import Data.Either (partitionEithers)
+import App.View.DatasetsTable as DatasetsTable
+import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Error.Static
@@ -10,10 +11,8 @@ import Effectful.Rel8 (Rel8)
 import Effectful.Request
 import Effectful.Time (Time)
 import NSO.Data.Dataset as Dataset
-import NSO.Data.Spectral as Spectral
 import NSO.Data.Types
 import NSO.Prelude hiding (truncate)
-import Numeric (showFFloat)
 import Web.Hyperbole as H
 import Web.UI hiding (head)
 
@@ -96,27 +95,6 @@ tableInstrumentPrograms ips = do
     --   button header "Instrument"
     dataRows sorted $ \ip -> do
       liveView (IPRow ip.instrumentProgramId) $ rowInstrumentProgram Expand ip
- where
-
--- header = dataCell . bold
-
-dataRows :: [a] -> (a -> View c ()) -> View c ()
-dataRows as viewRow = forM_ (zip (cycle [True, False]) as) $ \(b, a) ->
-  el (dataRow . alternateColor b) $ viewRow a
- where
-  alternateColor b = if b then bg Light else id
-
-dataCell :: Mod
-dataCell = minWidth 100
-
-dataRow :: Mod
-dataRow = gap 10 . pad (All dataRowPadding)
-
-dataRowPadding :: PxRem
-dataRowPadding = 5
-
-dataRowHeight :: PxRem
-dataRowHeight = 16 + 2 * dataRowPadding
 
 -----------------------------------------------------
 -- IPRow
@@ -148,40 +126,15 @@ handleIPRow (IPRow i) a = do
 rowInstrumentProgram :: IPEvent -> InstrumentProgram -> View IPRow ()
 rowInstrumentProgram onClick ip = el (transition Height 0.5 . height dataRowHeight) $ do
   liveButton onClick id $ row (gap 10) $ do
-    el (dataCell . bg Warning) $ text "Status"
-    el dataCell $ text $ showDate ip.createDate
-    -- el dataCell $ text $ showDate ip.startTime
-    el dataCell $ text $ cs $ show ip.instrument
-    -- not worth showing Stokes in the row. They seem to be present for all VISP
-    -- el dataCell $ text $ cs $ show ip.stokesParameters
-
-    -- TODO: on disk
-    row (dataCell . gap 5 . fontSize 14) $ do
-      let (mids, lns) = partitionEithers $ map identify $ NE.toList ip.datasets
-      mapM_ lineTag lns
-      mapM_ midTag $ sortOn id mids
- where
-  identify :: Dataset -> Either (Wavelength Nm) SpectralLine
-  identify d =
-    case Spectral.identifyLine d.wavelengthMin d.wavelengthMax of
-      Nothing -> Left (midWave d)
-      Just l -> Right l
-
-  midWave :: Dataset -> Wavelength Nm
-  midWave d = d.wavelengthMin + d.wavelengthMax / 2
-
-  lineTag s = tag "pre" (dataTag . bg SecondaryLight) $ text $ cs $ show s
-
-  midTag mid =
-    tag "pre" (pad 2 . color GrayDark) $ text $ cs (showFFloat (Just 0) mid "nm")
-
-  dataTag :: Mod
-  dataTag = pad (XY 6 2) . rounded 3
+    InstrumentProgramSummary.viewRow ip
 
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
-viewInstrumentProgram ip = el (transition Height 0.5 . height 200) $ do
-  col (height 100) $ do
+viewInstrumentProgram ip = do
+  let h = dataRowHeight + 160 + dataRowHeight * (1 + length ip.datasets)
+  el (transition Height 0.5 . height h . truncate) $ do
+    let ds = NE.toList ip.datasets
     rowInstrumentProgram Collapse ip
-    el_ $ text $ cs $ show ip.instrumentProgramId
 
--- liveButton Collapse (bg Primary . color White) "Collapse"
+    InstrumentProgramSummary.viewCriteria ip
+
+    DatasetsTable.datasetsTable ds

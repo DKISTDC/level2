@@ -17,24 +17,29 @@ data AppRoute
 
 appLayout :: AppRoute -> View c () -> View c ()
 appLayout rc content = do
-  layout (color Dark) $ row grow $ do
-    sidebar
+  layout (color Dark) $ el (grow . small flexCol . big flexRow) $ do
+    aside
     col (collapse . grow) content
  where
   nav r =
     link
       (routeUrl r)
-      (border (TRBL 0 0 0 5) . pad 20 . hover |: borderColor White . hover |: color White . if r == rc then current else other)
+      (border (TRBL 0 0 0 5) . pad 20 . small (border (TRBL 0 0 5 0)) . hover (borderColor White . color White) . if r == rc then current else other)
 
   current = bg PrimaryLight . borderColor GrayLight
   other = borderColor Primary
 
-  sidebar = do
-    col (gap 0 . bg Primary . width 400 . color GrayLight) $ do
-      row (pad 20) $ do
+  aside = do
+    tag "aside" (gap 0 . bg Primary . color GrayLight . small topbar . big sidebar) $ do
+      row (pad 20 . small (pad 15)) $ do
         space
-        link "/" (bold . fontSize 32) "Level 2"
+        link "/" (bold . fontSize 32 . small (fontSize 24)) "Level 2"
         space
       -- nav Dashboard "Dashboard"
       nav Experiments "Experiments"
       nav Scan "Scan"
+
+  sidebar = width 400 . flexCol
+  topbar = height 70 . flexRow
+  big = media (MinWidth 1000)
+  small = media (MaxWidth 1000)
