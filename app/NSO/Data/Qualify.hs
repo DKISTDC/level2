@@ -67,11 +67,32 @@ isOnDisk (Just bb) =
 
 qualify :: InstrumentProgram -> Either String ()
 qualify ip = do
+  case (head ip.datasets).instrument of
+    VISP -> qualifyVISP ip
+    VBI -> qualifyVBI ip
+
+qualifyVISP :: InstrumentProgram -> Either String ()
+qualifyVISP ip = do
   let ds = NE.toList ip.datasets
       sls = identifyLines ds
-  check "On Disk" $ all (\d -> isOnDisk d.boundingBox) ds
-  check "VISP" $ all (\d -> d.instrument == VISP) ds
-  check "FeI" $ FeI `elem` sls
-  check "CaII 854" $ CaII CaII_854 `elem` sls
+  check "On Disk" $ qualifyOnDisk ds
+  check "FeI" $ qualifyLine FeI sls
+  check "CaII 854" $ qualifyLine (CaII CaII_854) sls
+  check "Stokes" $ qualifyStokes ds
  where
   check e b = if b then pure () else Left e
+
+qualifyVBI :: InstrumentProgram -> Either String ()
+qualifyVBI _ = Left "VBI Not supported"
+
+qualifyStokes :: [Dataset] -> Bool
+qualifyStokes = all (\d -> d.stokesParameters == StokesParameters [I, Q, U, V])
+
+qualifyOnDisk :: [Dataset] -> Bool
+qualifyOnDisk = all (\d -> isOnDisk d.boundingBox)
+
+qualifyLine :: SpectralLine -> [SpectralLine] -> Bool
+qualifyLine sl sls = sl `elem` sls
+
+isQualified :: InstrumentProgram -> Bool
+isQualified = either (const False) (const True) . qualify

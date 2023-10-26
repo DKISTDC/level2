@@ -12,6 +12,7 @@ import Hasql.Statement
 import NSO.Data.Types
 import NSO.Prelude
 import Rel8
+import Web.Hyperbole
 
 data Proposal
 data Experiment = Experiment
@@ -38,7 +39,7 @@ data InstrumentProgram = InstrumentProgram
 data Instrument
   = VBI
   | VISP
-  deriving (Show, Ord, Eq, Read)
+  deriving (Show, Ord, Eq, Read, Param)
   deriving (DBType) via ReadShow Instrument
 
 type Dataset = Dataset' Identity

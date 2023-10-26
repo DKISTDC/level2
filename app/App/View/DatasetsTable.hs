@@ -11,7 +11,8 @@ datasetsTable :: [Dataset] -> View c ()
 datasetsTable ds = do
   let sorted = ds
 
-  table (pad 2) sorted $ do
+  -- is there a way to do alternating rows here?
+  table (odd (bg White) . even (bg Light)) sorted $ do
     tcol (hd "Id") $ \d -> cell d.datasetId.fromId
     tcol (hd "Create Date") $ \d -> cell . showTimestamp $ d.createDate
     tcol (hd "Start Time") $ \d -> cell . showTimestamp $ d.startTime
@@ -32,7 +33,7 @@ datasetsTable ds = do
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
   hd :: View () () -> View Head ()
-  hd = th (bold . pad 4 . bord)
+  hd = th (bold . pad 4 . bord . bg Light)
 
   cell :: Text -> View Dataset ()
   cell = td (pad 4 . bord) . text

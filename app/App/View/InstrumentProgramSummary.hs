@@ -1,6 +1,8 @@
 module App.View.InstrumentProgramSummary where
 
 import App.Colors
+import App.View.DataRow (dataCell)
+import App.View.Icons as Icons
 import Data.Either (partitionEithers)
 import Data.List.NonEmpty qualified as NE
 import NSO.Data.Dataset
@@ -51,7 +53,7 @@ viewRow ip = do
 
   statusTag =
     case qualify ip of
-      Left _ -> el (dataCell . color GrayDark) $ text "-"
+      Left _ -> el (dataCell . color GrayLight) $ text "-"
       Right _ -> el (dataCell . bg Success) $ text "Invertible"
 
 viewCriteria :: InstrumentProgram -> View c ()
@@ -59,33 +61,29 @@ viewCriteria ip = do
   let ds = NE.toList ip.datasets
   let sls = identifyLines ds
   col (pad 8) $ do
-    criteria "On Disk" $ all (\d -> isOnDisk d.boundingBox) ip.datasets
-    criteria "VISP" $ all (\d -> d.instrument == VISP) ip.datasets
-    criteria "FeI" $ FeI `elem` sls
-    criteria "CaII 854" $ CaII CaII_854 `elem` sls
+    case (head ip.datasets).instrument of
+      VISP -> vispCriteria ds sls
+      VBI -> vbiCriteria
  where
-  criteria msg b =
-    row (gap 6) $ do
-      el (pad 4) $ checkmark b
-      el (pad 4) msg
+  vispCriteria ds sls = do
+    el bold "VISP Criteria"
+    criteria "On Disk" $ qualifyOnDisk ds
+    criteria "Stokes IQUV" $ qualifyStokes ds
+    criteria "Spectra: FeI" $ qualifyLine FeI sls
+    criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
 
-  checkmark True = "✅"
-  checkmark False = "✖"
+  vbiCriteria = do
+    el bold "VBI Criteria"
+    criteria "Not Supported" False
 
-dataRows :: [a] -> (a -> View c ()) -> View c ()
-dataRows as viewRow = forM_ (zip (cycle [True, False]) as) $ \(b, a) ->
-  el (dataRow . alternateColor b) $ viewRow a
+criteria :: Text -> Bool -> View c ()
+criteria msg b =
+  row (gap 6 . color (if b then SuccessDark else GrayDark)) $ do
+    el (pad 4) checkmark
+    el (pad 4) (text msg)
  where
-  alternateColor b = if b then bg Light else id
-
-dataCell :: Mod
-dataCell = minWidth 100
-
-dataRow :: Mod
-dataRow = gap 10 . pad (All dataRowPadding)
-
-dataRowPadding :: PxRem
-dataRowPadding = 5
-
-dataRowHeight :: PxRem
-dataRowHeight = 16 + 2 * dataRowPadding
+  checkmark =
+    el (width 24 . height 24)
+      $ if b
+        then Icons.checkCircle
+        else Icons.xMark

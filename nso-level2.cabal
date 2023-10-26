@@ -30,7 +30,9 @@ executable level2
       App.Page.Scan
       App.Route
       App.Version
+      App.View.DataRow
       App.View.DatasetsTable
+      App.View.Icons
       App.View.InstrumentProgramSummary
       Effectful.Debug
       Effectful.Rel8

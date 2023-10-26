@@ -27,8 +27,7 @@ data PageEvent
   = RunScan
   deriving (Show, Read, Param)
 
-instance LiveView ScanView where
-  type Action ScanView = PageEvent
+instance LiveView ScanView PageEvent
 
 page :: (Page :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Eff es ()
 page = do
