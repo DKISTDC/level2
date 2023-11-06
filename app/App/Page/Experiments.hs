@@ -64,6 +64,12 @@ viewExperiments fs (d : ds') = do
  where
   viewExperiment :: Experiment -> View MainView ()
   viewExperiment e = do
+    let shown = filter applyFilters $ NE.toList e.instrumentPrograms
+    experimentPrograms e shown
+
+  experimentPrograms :: Experiment -> [InstrumentProgram] -> View MainView ()
+  experimentPrograms _ [] = none
+  experimentPrograms e ips = do
     let ds1 = e.instrumentPrograms & head & (.datasets) & head :: Dataset
     col (gap 8 . bg White) $ do
       row (bg GrayLight) $ do
@@ -81,12 +87,9 @@ viewExperiments fs (d : ds') = do
         --   el_ $ text $ showDate ds1.startTime
         link (routeUrl $ Route.Experiment e.experimentId) truncate $ text ds1.experimentDescription
 
-        -- let filters = foldr _ (const True) fs :: InstrumentProgram -> Bool
-        let shown = filter applyFilters $ NE.toList e.instrumentPrograms
+        tableInstrumentPrograms ips
 
-        tableInstrumentPrograms shown
-
-        let ignored = length e.instrumentPrograms - length shown
+        let ignored = length e.instrumentPrograms - length ips
         when (ignored > 0) $ do
           link (routeUrl $ Route.Experiment e.experimentId) (fontSize 14 . color GrayDark) $ do
             text $ cs (show ignored)
@@ -163,13 +166,13 @@ handleIPRow (IPRow i) a = do
     pure $ rowInstrumentProgram Expand ip
 
 rowInstrumentProgram :: IPEvent -> InstrumentProgram -> View IPRow ()
-rowInstrumentProgram onClick ip = el (transition Height 500 . height dataRowHeight) $ do
+rowInstrumentProgram onClick ip = el (transition 500 (Height dataRowHeight)) $ do
   liveButton onClick id $ row (gap 10) $ do
     InstrumentProgramSummary.viewRow ip
 
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
 viewInstrumentProgram ip = do
-  el (transition Height 500 . height 400 . truncate) $ do
+  el (transition 500 (Height 400) . truncate) $ do
     let ds = NE.toList ip.datasets
     rowInstrumentProgram Collapse ip
 

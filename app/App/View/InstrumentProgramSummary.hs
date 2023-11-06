@@ -1,7 +1,7 @@
 module App.View.InstrumentProgramSummary where
 
 import App.Colors
-import App.View.DataRow (dataCell, dataRowHeight)
+import App.View.DataRow (dataCell)
 import App.View.Icons as Icons
 import Data.Either (partitionEithers)
 import Data.List.NonEmpty qualified as NE
