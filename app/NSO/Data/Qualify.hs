@@ -79,6 +79,9 @@ qualifyVISP ip = do
   check "FeI" $ qualifyLine FeI sls
   check "CaII 854" $ qualifyLine (CaII CaII_854) sls
   check "Stokes" $ qualifyStokes ds
+  check "Health" $ qualifyHealth ds
+  check "GOS" $ qualifyGOS ds
+  check "AO" $ qualifyAO ds
  where
   check e b = if b then pure () else Left e
 
@@ -93,6 +96,16 @@ qualifyOnDisk = all (\d -> isOnDisk d.boundingBox)
 
 qualifyLine :: SpectralLine -> [SpectralLine] -> Bool
 qualifyLine sl sls = sl `elem` sls
+
+-- TODO: implement once available
+qualifyHealth :: [Dataset] -> Bool
+qualifyHealth _ = True
+
+qualifyGOS :: [Dataset] -> Bool
+qualifyGOS _ = True
+
+qualifyAO :: [Dataset] -> Bool
+qualifyAO _ = True
 
 isQualified :: InstrumentProgram -> Bool
 isQualified = either (const False) (const True) . qualify

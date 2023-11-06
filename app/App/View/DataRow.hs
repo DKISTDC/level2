@@ -3,6 +3,7 @@ module App.View.DataRow where
 import App.Colors
 import NSO.Prelude
 import Web.UI
+import Web.UI.Types
 
 dataRows :: [a] -> (a -> View c ()) -> View c ()
 dataRows as rw = forM_ (zip (cycle [True, False]) as) $ \(b, a) ->

@@ -2,6 +2,7 @@
 
 module NSO.Data.Dataset where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Int (Int16, Int64)
 import Data.List.NonEmpty as NE
 import Data.Set as S
@@ -62,10 +63,29 @@ data Dataset' f = Dataset
   , exposureTime :: Column f Float
   , inputDatasetObserveFramesPartId :: Column f (Id ObserveFrames)
   , boundingBox :: Column f (Maybe BoundingBox)
+  --   health :: Column f (JSONEncoded Health)
+  -- , gosStatus :: Column f (JSONEncoded GOSStatus)
+  -- , aoLocked :: Column f Int16
   }
   deriving stock (Generic)
   deriving anyclass (Rel8able)
-deriving stock instance (f ~ Result) => Show (Dataset' f)
+
+data Health = Health
+  { good :: Int
+  , bad :: Int
+  , ill :: Int
+  , unknown :: Int
+  }
+  deriving (Show, Generic, ToJSON, FromJSON)
+
+data GOSStatus = GOSStatus
+  { open :: Int
+  , opening :: Int
+  , closed :: Int
+  , closing :: Int
+  , undefined :: Int
+  }
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 datasets :: TableSchema (Dataset' Name)
 datasets =
@@ -92,6 +112,9 @@ datasets =
           , experimentDescription = "experiment_description"
           , exposureTime = "exposure_time"
           , boundingBox = "bounding_box"
+          -- , health = "health"
+          -- , gosStatus = "gos_status"
+          -- , aoLocked = "ao_locked"
           }
     }
 

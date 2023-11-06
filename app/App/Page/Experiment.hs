@@ -39,6 +39,6 @@ viewDatasets (d : ds) = do
 programSummary :: InstrumentProgram -> View c ()
 programSummary ip = do
   col (bg White . gap 10 . pad 10) $ do
-    row (gap 10) $ InstrumentProgramSummary.viewRow ip
+    row (gap 10 . textAlign Center) $ InstrumentProgramSummary.viewRow ip
     InstrumentProgramSummary.viewCriteria ip
     DatasetsTable.datasetsTable $ NE.toList ip.datasets

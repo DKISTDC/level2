@@ -1,7 +1,7 @@
 module App.View.InstrumentProgramSummary where
 
 import App.Colors
-import App.View.DataRow (dataCell)
+import App.View.DataRow (dataCell, dataRowHeight)
 import App.View.Icons as Icons
 import Data.Either (partitionEithers)
 import Data.List.NonEmpty qualified as NE
@@ -67,10 +67,13 @@ viewCriteria ip = do
  where
   vispCriteria ds sls = do
     el bold "VISP Criteria"
-    criteria "On Disk" $ qualifyOnDisk ds
     criteria "Stokes IQUV" $ qualifyStokes ds
+    criteria "On Disk" $ qualifyOnDisk ds
     criteria "Spectra: FeI" $ qualifyLine FeI sls
     criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
+    criteria "Health" $ qualifyHealth ds
+    criteria "GOS Status" $ qualifyGOS ds
+    criteria "AO Lock" $ qualifyAO ds
 
   vbiCriteria = do
     el bold "VBI Criteria"
@@ -78,7 +81,7 @@ viewCriteria ip = do
 
 criteria :: Text -> Bool -> View c ()
 criteria msg b =
-  row (gap 6 . color (if b then SuccessDark else GrayDark)) $ do
+  row (gap 6 . color (if b then SuccessDark else ErrorDark)) $ do
     el (pad 4) checkmark
     el (pad 4) (text msg)
  where

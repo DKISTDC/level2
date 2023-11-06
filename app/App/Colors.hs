@@ -12,6 +12,7 @@ data AppColor
   | Success
   | SuccessDark
   | Error
+  | ErrorDark
   | Warning
   | Primary
   | PrimaryLight
@@ -33,4 +34,5 @@ instance ToColor AppColor where
   colorValue Success = "#D5E6DE"
   colorValue SuccessDark = "#71AA8F"
   colorValue Error = "#F3D8DA"
+  colorValue ErrorDark = "#d95d66"
   colorValue Warning = "#FDF3D1"

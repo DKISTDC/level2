@@ -5,16 +5,16 @@ This document contains all the invertibility requirements, and exact details on 
 * VISP only for now for simplicity
 
 - [ ] WAITING: Han to specify waveband logic, specifics below
+- [ ] WAITING: changes to WCS by Stuart will fix boundingBox
+- [ ] What are the on-disk calculations?
 
 TODO: Update Metadata API
 -------------------------
 The following headers need to be promoted to Metadata GraphQL API
 
-- [x] Implement `health`
-- [x] Implement `gosStatus`
-- [x] Implement `aoLock`
-- [x] Implement `lightLevel`
-- [x] Implement `polarimetricAccuracy`
+- [x] Implement params: `health`, `gosStatus`, `aoLock`, `lightLevel`, `polarimetricAccuracy`, `friedParameter`
+- [ ] Add to existing L1 systems (metadata_graphql_api, search-support-database, etc)
+- [ ] fully implement logic
 
 TELESCOPE
 ---------

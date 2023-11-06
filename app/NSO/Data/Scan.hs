@@ -56,6 +56,10 @@ toDataset scanDate d = do
       , experimentDescription = d.experimentDescription
       , exposureTime = realToFrac d.exposureTime
       , inputDatasetObserveFramesPartId = Id . cs $ show d.inputDatasetObserveFramesPartId
+      -- , -- WARNING: mocked fields
+      --   health = JSONEncoded (Health d.frameCount 0 0 0)
+      -- , gosStatus = JSONEncoded (GOSStatus d.frameCount 0 0 0 0)
+      -- , aoLocked = fromIntegral d.frameCount
       }
  where
   parseRead :: (Read a) => Text -> Text -> Either String a

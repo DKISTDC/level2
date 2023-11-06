@@ -169,8 +169,7 @@ rowInstrumentProgram onClick ip = el (transition Height 500 . height dataRowHeig
 
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
 viewInstrumentProgram ip = do
-  let h = dataRowHeight + 180 + dataRowHeight * (1 + length ip.datasets)
-  el (transition Height 500 . height h . truncate) $ do
+  el (transition Height 500 . height 400 . truncate) $ do
     let ds = NE.toList ip.datasets
     rowInstrumentProgram Collapse ip
 

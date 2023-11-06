@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS datasets (
   experiment_description TEXT NOT NULL,
   exposure_time REAL NOT NULL,
   bounding_box TEXT
+  -- health JSON NOT NULL,
+  -- gos_status JSON NOT NULL,
+  -- ao_locked INTEGER NOT NULL
 );
 
 -- CREATE INDEX idx_datasets_program_id ON datasets(observing_program_id)
