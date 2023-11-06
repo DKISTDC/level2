@@ -11,6 +11,7 @@ import NSO.Data.Types
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.UI
+import Web.UI.Types
 
 viewRow :: InstrumentProgram -> View c ()
 viewRow ip = do
@@ -66,7 +67,7 @@ viewCriteria ip = do
       VBI -> vbiCriteria
  where
   vispCriteria ds sls = do
-    el bold "VISP Criteria"
+    el (bold . height criteriaRowHeight) "VISP Criteria"
     criteria "Stokes IQUV" $ qualifyStokes ds
     criteria "On Disk" $ qualifyOnDisk ds
     criteria "Spectra: FeI" $ qualifyLine FeI sls
@@ -79,9 +80,15 @@ viewCriteria ip = do
     el bold "VBI Criteria"
     criteria "Not Supported" False
 
+summaryHeight :: PxRem
+summaryHeight = 8 * criteriaRowHeight + (8 * 2)
+
+criteriaRowHeight :: PxRem
+criteriaRowHeight = 32
+
 criteria :: Text -> Bool -> View c ()
 criteria msg b =
-  row (gap 6 . color (if b then SuccessDark else ErrorDark)) $ do
+  row (gap 6 . height criteriaRowHeight . color (if b then SuccessDark else ErrorDark)) $ do
     el (pad 4) checkmark
     el (pad 4) (text msg)
  where

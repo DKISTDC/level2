@@ -6,6 +6,10 @@ import NSO.Data.Types
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.UI
+import Web.UI.Types
+
+rowHeight :: PxRem
+rowHeight = 30
 
 datasetsTable :: [Dataset] -> View c ()
 datasetsTable ds = do

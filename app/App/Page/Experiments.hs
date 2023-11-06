@@ -17,6 +17,7 @@ import NSO.Data.Types
 import NSO.Prelude hiding (truncate)
 import Web.Hyperbole as H
 import Web.UI
+import Web.UI.Types
 
 page :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Eff es ()
 page = do
@@ -172,10 +173,15 @@ rowInstrumentProgram onClick ip = el (transition 500 (Height dataRowHeight)) $ d
 
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
 viewInstrumentProgram ip = do
-  el (transition 500 (Height 400) . truncate) $ do
-    let ds = NE.toList ip.datasets
+  let ds = NE.toList ip.datasets
+  el (transition 500 (Height (viewHeight ds)) . truncate) $ do
     rowInstrumentProgram Collapse ip
 
     InstrumentProgramSummary.viewCriteria ip
 
     DatasetsTable.datasetsTable ds
+ where
+  viewHeight ds =
+    dataRowHeight
+      + ((PxRem (length ds) + 1) * DatasetsTable.rowHeight)
+      + InstrumentProgramSummary.summaryHeight
