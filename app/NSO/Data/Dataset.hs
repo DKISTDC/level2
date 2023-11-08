@@ -47,6 +47,7 @@ type Dataset = Dataset' Identity
 data Dataset' f = Dataset
   { datasetId :: Column f (Id Dataset)
   , scanDate :: Column f UTCTime
+  , latest :: Column f Bool
   , observingProgramExecutionId :: Column f (Id ObservingProgram)
   , instrument :: Column f Instrument
   , instrumentProgramExecutionId :: Column f (Id InstrumentProgram)
@@ -69,6 +70,9 @@ data Dataset' f = Dataset
   }
   deriving stock (Generic)
   deriving anyclass (Rel8able)
+
+deriving stock instance (f ~ Result) => Show (Dataset' f)
+deriving stock instance (f ~ Result) => Eq (Dataset' f)
 
 data Health = Health
   { good :: Int
@@ -112,14 +116,18 @@ datasets =
           , experimentDescription = "experiment_description"
           , exposureTime = "exposure_time"
           , boundingBox = "bounding_box"
+          , latest = "latest"
           -- , health = "health"
           -- , gosStatus = "gos_status"
           -- , aoLocked = "ao_locked"
           }
     }
 
-queryAll :: (Rel8 :> es) => Eff es [Dataset]
-queryAll = query () $ select $ each datasets
+queryLatest :: (Rel8 :> es) => Eff es [Dataset]
+queryLatest = query () $ select $ do
+  row <- each datasets
+  where_ (row.latest ==. lit True)
+  return row
 
 queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
 queryExperiment eid = query () $ select $ do
@@ -142,6 +150,18 @@ insertAll ds =
       , onConflict = DoNothing
       , returning = NumberOfRowsAffected
       }
+
+updateOld :: [Id Dataset] -> Statement () Int64
+updateOld ids =
+  let ids' = fmap lit ids
+   in Rel8.update
+        $ Update
+          { target = datasets
+          , set = \_ row -> row{latest = lit False}
+          , updateWhere = \_ row -> row.datasetId `in_` ids'
+          , from = pure ()
+          , returning = NumberOfRowsAffected
+          }
 
 toObservingPrograms :: NonEmpty Dataset -> NonEmpty ObservingProgram
 toObservingPrograms = fmap toProgram . groupSort (.observingProgramExecutionId)

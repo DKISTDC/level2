@@ -37,7 +37,7 @@ dependencies:
   - bytestring
   - effectful
   - text
-  - amqp-worker >= 2.0
+  # - amqp-worker >= 2.0
   - data-diverse >= 4.7
   - tagged
   - lens
@@ -74,6 +74,4 @@ executables:
     - microlens-th
 
     # - scotty
-    - lucid2
-    - lucid2-htmx
 

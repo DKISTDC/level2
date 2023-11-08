@@ -53,7 +53,14 @@ showTimestamp :: UTCTime -> Text
 showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
 
 newtype Wavelength a = Wavelength Double
-  deriving newtype (Num, Eq, Ord, Show, DBType, Floating, Fractional, RealFloat, RealFrac, Real)
+  deriving newtype (Num, Ord, Show, DBType, Floating, Fractional, RealFloat, RealFrac, Real)
+
+instance Eq (Wavelength a) where
+  (Wavelength a) == (Wavelength b) =
+    decimals a == decimals b
+   where
+    decimals :: Double -> Int
+    decimals n = round (n * 100)
 
 data Nm
 

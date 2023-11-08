@@ -1,5 +1,10 @@
 CREATE TABLE IF NOT EXISTS datasets (
-  dataset_id TEXT PRIMARY KEY,
+  _id SERIAL PRIMARY KEY,
+
+  dataset_id TEXT NOT NULL,
+  latest BOOL NOT NULL,
+  scan_date TIMESTAMP NOT NULL,
+
   observing_program_execution_id TEXT NOT NULL,
   instrument_program_execution_id TEXT NOT NULL,
   instrument TEXT NOT NULL,
@@ -7,7 +12,6 @@ CREATE TABLE IF NOT EXISTS datasets (
   create_date TIMESTAMP NOT NULL,
   wavelength_min REAL NOT NULL,
   wavelength_max REAL NOT NULL,
-  scan_date TIMESTAMP NOT NULL,
   start_time TIMESTAMP NOT NULL,
   end_time TIMESTAMP NOT NULL,
   frame_count INTEGER NOT NULL,
@@ -22,4 +26,5 @@ CREATE TABLE IF NOT EXISTS datasets (
   -- ao_locked INTEGER NOT NULL
 );
 
--- CREATE INDEX idx_datasets_program_id ON datasets(observing_program_id)
+CREATE INDEX idx_datasets_latest ON datasets(latest);
+CREATE INDEX idx_datasets_dataset_id ON datasets(dataset_id);

@@ -1,5 +1,6 @@
 module NSO.Data.Scan where
 
+import Data.Map qualified as M
 import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Error.Static
@@ -20,6 +21,19 @@ import Text.Read (readMaybe)
 --   _ <- query () $ insertAll ds
 --   pure ds
 
+data SyncResult
+  = New
+  | Unchanged
+  | Updated
+  deriving (Eq)
+
+data SyncResults = SyncResults
+  { new :: [Dataset]
+  , updated :: [Dataset]
+  , unchanged :: [Dataset]
+  }
+  deriving (Eq)
+
 scanDatasetInventory :: (GraphQL :> es, Error RequestError :> es, Time :> es) => Eff es [Dataset]
 scanDatasetInventory = do
   now <- currentTime
@@ -27,11 +41,38 @@ scanDatasetInventory = do
   let res = mapM (toDataset now) ads.datasetInventories
   either (throwError . ParseError) pure res
 
-syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es) => Eff es [Dataset]
+syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es) => Eff es SyncResults
 syncDatasets = do
-  ds <- scanDatasetInventory
-  _ <- query () $ insertAll ds
-  pure ds
+  -- probably want to make a map of each and compare, no?
+  scan <- scanDatasetInventory
+  old <- indexed <$> queryLatest
+
+  let res = syncResults old scan
+
+  _ <- query () $ insertAll res.new
+
+  _ <- query () $ updateOld $ map (.datasetId) res.updated
+  _ <- query () $ insertAll res.updated
+
+  pure res
+
+syncResults :: Map (Id Dataset) Dataset -> [Dataset] -> SyncResults
+syncResults old scan =
+  let srs = map (syncResult old) scan
+      res = zip srs scan
+      new = results New res
+      updated = results Updated res
+      unchanged = results Unchanged res
+   in SyncResults{new, updated, unchanged}
+ where
+  results r = map snd . filter ((== r) . fst)
+
+syncResult :: Map (Id Dataset) Dataset -> Dataset -> SyncResult
+syncResult old d = fromMaybe New $ do
+  dold <- M.lookup d.datasetId old
+  if d == dold{scanDate = d.scanDate}
+    then pure Unchanged
+    else pure Updated
 
 toDataset :: UTCTime -> DatasetInventory -> Either String Dataset
 toDataset scanDate d = do
@@ -40,6 +81,7 @@ toDataset scanDate d = do
     $ Dataset
       { datasetId = Id d.datasetId
       , scanDate = scanDate
+      , latest = True
       , observingProgramExecutionId = Id d.observingProgramExecutionId
       , instrumentProgramExecutionId = Id d.instrumentProgramExecutionId
       , boundingBox = boundingBoxNaN d.boundingBox
@@ -67,6 +109,9 @@ toDataset scanDate d = do
     maybe (Left [i|Invalid #{expect}: #{input}|]) Right $ readMaybe $ cs input
 
   boundingBoxNaN bb =
-    if (isCoordNaN bb.lowerLeft || isCoordNaN bb.upperRight)
+    if isCoordNaN bb.lowerLeft || isCoordNaN bb.upperRight
       then Nothing
       else Just bb
+
+indexed :: [Dataset] -> Map (Id Dataset) Dataset
+indexed = M.fromList . map (\d -> (d.datasetId, d))

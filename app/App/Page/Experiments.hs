@@ -24,7 +24,7 @@ page = do
   pageAction handle
   pageAction handleIPRow
   pageLoad $ do
-    ds <- Dataset.queryAll
+    ds <- Dataset.queryLatest
     pure $ appLayout Experiments $ liveView MainView $ viewExperiments (Filters Nothing (Just VISP)) ds
 
 loading :: View c ()
@@ -50,7 +50,7 @@ instance LiveView MainView MainEvent
 
 handle :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => MainView -> MainEvent -> Eff es (View MainView ())
 handle _ (Filter fs) = do
-  ds <- Dataset.queryAll
+  ds <- Dataset.queryLatest
   pure $ viewExperiments fs ds
 
 viewExperiments :: Filters -> [Dataset] -> View MainView ()
@@ -74,19 +74,20 @@ viewExperiments fs (d : ds') = do
     let ds1 = e.instrumentPrograms & head & (.datasets) & head :: Dataset
     col (gap 8 . bg White) $ do
       row (bg GrayLight) $ do
-        link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
+        -- link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
+        el (bold . pad 10) $ do
           text "Experiment "
           text e.experimentId.fromId
         space
         el (pad 10) $ do
-          -- text "Started "
           text $ showDate ds1.startTime
 
       col (gap 8 . pad 10) $ do
         -- row (gap 5) $ do
         --   el bold "Start Time:"
         --   el_ $ text $ showDate ds1.startTime
-        link (routeUrl $ Route.Experiment e.experimentId) truncate $ text ds1.experimentDescription
+        -- link (routeUrl $ Route.Experiment e.experimentId) truncate $ text ds1.experimentDescription
+        el truncate $ text ds1.experimentDescription
 
         tableInstrumentPrograms ips
 
@@ -167,9 +168,11 @@ handleIPRow (IPRow i) a = do
     pure $ rowInstrumentProgram Expand ip
 
 rowInstrumentProgram :: IPEvent -> InstrumentProgram -> View IPRow ()
-rowInstrumentProgram onClick ip = el (transition 500 (Height dataRowHeight)) $ do
-  liveButton onClick id $ row (gap 10) $ do
-    InstrumentProgramSummary.viewRow ip
+rowInstrumentProgram _ ip = el (transition 500 (Height dataRowHeight)) $ do
+  -- liveButton onClick id $ do
+  link (routeUrl (Program ip.instrumentProgramId)) id $ do
+    row (gap 10) $ do
+      InstrumentProgramSummary.viewRow ip
 
 viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
 viewInstrumentProgram ip = do

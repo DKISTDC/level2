@@ -35,25 +35,37 @@ page = do
 
   pageLoad $ do
     pure $ appLayout Scan $ do
-      liveView ScanView $ viewScan []
+      liveView ScanView $ viewScan Nothing
 
 pageEvent :: (Page :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
 pageEvent _ RunScan = do
   ds <- syncDatasets
   delay 1000
-  pure $ viewScan ds
+  pure $ viewScan (Just ds)
 
-viewScan :: [Dataset] -> View ScanView ()
-viewScan ds =
+viewScan :: Maybe SyncResults -> View ScanView ()
+viewScan msr =
   onRequest loading $ do
     col (gap 10 . pad 20) $ do
       liveButton RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover (bg PrimaryLight) . color White) "Run Scan"
-      datasetsTable ds
+
+      maybe (pure ()) viewScanResults msr
  where
   loading = row (pad 100 . grow) $ do
     space
     el (width 200 . color PrimaryLight) spinner
     space
+
+viewScanResults :: SyncResults -> View ScanView ()
+viewScanResults sr = do
+  el (bold . fontSize 24) "Updated"
+  datasetsTable sr.updated
+
+  el (bold . fontSize 24) "New"
+  datasetsTable sr.new
+
+  el (bold . fontSize 24) "Unchanged"
+  datasetsTable sr.unchanged
 
 -----------------------------------------------------
 -- Datasets (Debug)
@@ -61,7 +73,7 @@ viewScan ds =
 
 datasetsTable :: [Dataset] -> View ScanView ()
 datasetsTable ds = do
-  let sorted = sortOn (.inputDatasetObserveFramesPartId) ds :: [Dataset]
+  let sorted = sortOn (.datasetId) ds :: [Dataset]
 
   table (border 1 . pad 0) sorted $ do
     -- tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId

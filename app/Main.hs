@@ -1,7 +1,9 @@
 module Main where
 
 import NSO.Prelude
-import TUI
+
+-- import TUI
+import qualified App
 
 -- TODO: Listen for dataset activator message
 --   DONE: AMQP Library
@@ -36,7 +38,7 @@ import TUI
 --   TODO: Notify Han of ready programs
 
 main :: IO ()
-main = TUI.main
+main = App.main
 
 migrate :: IO ()
 migrate = putStrLn "MIGRATE"

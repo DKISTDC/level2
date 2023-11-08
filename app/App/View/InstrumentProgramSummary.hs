@@ -23,7 +23,6 @@ viewRow ip = do
   -- not worth showing Stokes in the row. They seem to be present for all VISP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
-  -- TODO: on disk
   row (dataCell . gap 5 . fontSize 14) $ do
     diskTag ip.datasets
     let (mids, lns) = partitionEithers $ map identify $ NE.toList ip.datasets

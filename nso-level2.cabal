@@ -72,7 +72,6 @@ executable level2
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson ==2.1.2.1
-    , amqp-worker >=2.0
     , base >=4.16.4.0
     , brick
     , bytestring
@@ -82,8 +81,6 @@ executable level2
     , exceptions
     , hasql
     , lens
-    , lucid2
-    , lucid2-htmx
     , microlens
     , microlens-mtl
     , microlens-th
