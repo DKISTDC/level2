@@ -42,6 +42,7 @@ executable level2
       Flow.Example
       Flow.Node
       NSO.Data.Dataset
+      NSO.Data.Provenance
       NSO.Data.Qualify
       NSO.Data.Scan
       NSO.Data.Types

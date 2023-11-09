@@ -2,6 +2,7 @@
 
 module NSO.Data.Dataset where
 
+import Control.Monad (void)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Int (Int16, Int64)
 import Data.List.NonEmpty as NE
@@ -68,8 +69,7 @@ data Dataset' f = Dataset
   -- , gosStatus :: Column f (JSONEncoded GOSStatus)
   -- , aoLocked :: Column f Int16
   }
-  deriving stock (Generic)
-  deriving anyclass (Rel8able)
+  deriving (Generic, Rel8able)
 
 deriving stock instance (f ~ Result) => Show (Dataset' f)
 deriving stock instance (f ~ Result) => Eq (Dataset' f)
@@ -141,9 +141,11 @@ queryProgram ip = query () $ select $ do
   where_ (row.instrumentProgramExecutionId ==. lit ip)
   return row
 
-insertAll :: [Dataset] -> Statement () Int64
+insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
 insertAll ds =
-  Rel8.insert
+  void
+    $ query ()
+    $ Rel8.insert
     $ Insert
       { into = datasets
       , rows = values $ fmap lit ds
@@ -151,17 +153,19 @@ insertAll ds =
       , returning = NumberOfRowsAffected
       }
 
-updateOld :: [Id Dataset] -> Statement () Int64
-updateOld ids =
+updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
+updateOld ids = do
   let ids' = fmap lit ids
-   in Rel8.update
-        $ Update
-          { target = datasets
-          , set = \_ row -> row{latest = lit False}
-          , updateWhere = \_ row -> row.datasetId `in_` ids'
-          , from = pure ()
-          , returning = NumberOfRowsAffected
-          }
+  void
+    $ query ()
+    $ Rel8.update
+    $ Update
+      { target = datasets
+      , set = \_ row -> row{latest = lit False}
+      , updateWhere = \_ row -> row.datasetId `in_` ids'
+      , from = pure ()
+      , returning = NumberOfRowsAffected
+      }
 
 toObservingPrograms :: NonEmpty Dataset -> NonEmpty ObservingProgram
 toObservingPrograms = fmap toProgram . groupSort (.observingProgramExecutionId)

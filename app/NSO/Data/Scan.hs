@@ -49,10 +49,10 @@ syncDatasets = do
 
   let res = syncResults old scan
 
-  _ <- query () $ insertAll res.new
+  insertAll res.new
 
-  _ <- query () $ updateOld $ map (.datasetId) res.updated
-  _ <- query () $ insertAll res.updated
+  updateOld $ map (.datasetId) res.updated
+  insertAll res.updated
 
   pure res
 
