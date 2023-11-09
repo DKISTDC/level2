@@ -12,7 +12,7 @@ import Rel8
 
 type Queued = Queued' Identity
 data Queued' f = Queued
-  { instrumentProgramId :: Column f (Id InstrumentProgram)
+  { programId :: Column f (Id InstrumentProgram)
   , completed :: Column f UTCTime
   }
   deriving (Generic, Rel8able)
@@ -26,14 +26,14 @@ queued =
     , schema = Nothing
     , columns =
         Queued
-          { instrumentProgramId = "instrument_program_id"
+          { programId = "program_id"
           , completed = "completed"
           }
     }
 
 type Inverted = Inverted' Identity
 data Inverted' f = Inverted
-  { instrumentProgramId :: Column f (Id InstrumentProgram)
+  { programId :: Column f (Id InstrumentProgram)
   , completed :: Column f UTCTime
   }
   deriving (Generic, Rel8able)
@@ -47,7 +47,7 @@ inverted =
     , schema = Nothing
     , columns =
         Inverted
-          { instrumentProgramId = "instrument_program_id"
+          { programId = "program_id"
           , completed = "completed"
           }
     }
@@ -69,12 +69,12 @@ loadProvenance ip = do
  where
   queryQueued = query () $ select $ do
     row <- each queued
-    where_ (row.instrumentProgramId ==. lit ip)
+    where_ (row.programId ==. lit ip)
     return row
 
   queryInverted = query () $ select $ do
     row <- each inverted
-    where_ (row.instrumentProgramId ==. lit ip)
+    where_ (row.programId ==. lit ip)
     return row
 
 markQueued :: (Rel8 :> es, Time :> es) => Id InstrumentProgram -> Eff es ()

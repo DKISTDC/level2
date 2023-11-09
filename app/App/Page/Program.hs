@@ -22,8 +22,8 @@ page ipid = do
     pure $ appLayout Experiments $ do
       col (pad 20 . gap 20) $ do
         el (fontSize 24 . bold) $ do
-          text "Instrument Program  "
-          text $ cs $ show ipid
+          text "Instrument Program: "
+          text ipid.fromId
 
         viewDatasets ds
 
