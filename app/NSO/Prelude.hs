@@ -10,6 +10,7 @@ module NSO.Prelude
   , Generic
   , Map
   , Text
+  , UTCTime
 
     -- * List functions
   , module Data.List
@@ -45,6 +46,7 @@ import Data.Proxy (Proxy (..))
 import Data.String (IsString)
 import Data.String.Conversions (cs)
 import Data.Text (Text)
+import Data.Time.Clock (UTCTime)
 import Effectful
 import GHC.Generics (Generic)
 import Prelude hiding (Real, even, head, last, odd, print, putStr, putStrLn, readFile, reverse, writeFile, (!!))

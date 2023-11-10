@@ -8,7 +8,6 @@ import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
 import NSO.Data.Dataset
-import NSO.Data.Types
 import NSO.Metadata
 import NSO.Metadata.Types
 import NSO.Prelude
@@ -82,8 +81,8 @@ toDataset scanDate d = do
       { datasetId = Id d.datasetId
       , scanDate = scanDate
       , latest = True
-      , observingProgramExecutionId = Id d.observingProgramExecutionId
-      , instrumentProgramExecutionId = Id d.instrumentProgramExecutionId
+      , observingProgramId = Id d.observingProgramExecutionId
+      , instrumentProgramId = Id d.instrumentProgramExecutionId
       , boundingBox = boundingBoxNaN d.boundingBox
       , instrument = ins
       , stokesParameters = d.stokesParameters

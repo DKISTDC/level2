@@ -2,30 +2,31 @@ module App.Page.Experiments where
 
 import App.Colors
 import App.Route as Route
-import App.View.DataRow (dataRowHeight, dataRows)
-import App.View.DatasetsTable as DatasetsTable
+import App.View.Common
+import App.View.DataRow (dataRows)
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
-import Data.List.NonEmpty qualified as NE
+import Data.Grouped as G
 import Effectful
 import Effectful.Error.Static
 import Effectful.Rel8 (Rel8)
 import Effectful.Request
 import Effectful.Time (Time)
 import NSO.Data.Dataset as Dataset
-import NSO.Data.Qualify as Qualify
-import NSO.Data.Types
+import NSO.Data.Program as Program
 import NSO.Prelude hiding (truncate)
+import NSO.Types.InstrumentProgram
 import Web.Hyperbole as H
 import Web.UI
-import Web.UI.Types
 
 page :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Eff es ()
 page = do
   pageAction handle
-  pageAction handleIPRow
+  -- pageAction handleIPRow
   pageLoad $ do
-    ds <- Dataset.queryLatest
-    pure $ appLayout Experiments $ liveView MainView $ viewExperiments (Filters Nothing (Just VISP)) ds
+    exs <- Program.loadAllExperiments
+    pure $ appLayout Experiments $ do
+      liveView MainView $ do
+        viewExperiments (Filters Nothing (Just VISP)) exs
 
 loading :: View c ()
 loading = el_ "loading..."
@@ -50,28 +51,26 @@ instance LiveView MainView MainEvent
 
 handle :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => MainView -> MainEvent -> Eff es (View MainView ())
 handle _ (Filter fs) = do
-  ds <- Dataset.queryLatest
-  pure $ viewExperiments fs ds
+  exs <- Program.loadAllExperiments
+  pure $ viewExperiments fs exs
 
-viewExperiments :: Filters -> [Dataset] -> View MainView ()
-viewExperiments _ [] = el_ "No Datasets!"
-viewExperiments fs (d : ds') = do
+-- ok, wait, I need to group them by experiment
+viewExperiments :: Filters -> [Experiment] -> View MainView ()
+viewExperiments fs exs = do
   col (pad 15 . gap 20) $ do
     viewFilters fs
 
     col (gap 40) $ do
-      let exs = reverse $ sortWith (.startTime) $ toExperiments $ d :| ds'
       forM_ exs viewExperiment
  where
   viewExperiment :: Experiment -> View MainView ()
   viewExperiment e = do
-    let shown = filter applyFilters $ NE.toList e.instrumentPrograms
+    let shown = filter applyFilters $ G.toList e.programs
     experimentPrograms e shown
 
   experimentPrograms :: Experiment -> [InstrumentProgram] -> View MainView ()
   experimentPrograms _ [] = none
   experimentPrograms e ips = do
-    let ds1 = e.instrumentPrograms & head & (.datasets) & head :: Dataset
     col (gap 8 . bg White) $ do
       row (bg GrayLight) $ do
         -- link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
@@ -80,18 +79,18 @@ viewExperiments fs (d : ds') = do
           text e.experimentId.fromId
         space
         el (pad 10) $ do
-          text $ showDate ds1.startTime
+          text $ showDate e.startTime
 
       col (gap 8 . pad 10) $ do
         -- row (gap 5) $ do
         --   el bold "Start Time:"
         --   el_ $ text $ showDate ds1.startTime
         -- link (routeUrl $ Route.Experiment e.experimentId) truncate $ text ds1.experimentDescription
-        el truncate $ text ds1.experimentDescription
+        el truncate $ text e.description
 
         tableInstrumentPrograms ips
 
-        let ignored = length e.instrumentPrograms - length ips
+        let ignored = length e.programs - length ips
         when (ignored > 0) $ do
           link (routeUrl $ Route.Experiment e.experimentId) (fontSize 14 . color GrayDark) $ do
             text $ cs (show ignored)
@@ -110,7 +109,8 @@ viewExperiments fs (d : ds') = do
   checkInvertible ip =
     case fs.isInvertible of
       Nothing -> True
-      (Just i) -> i == Qualify.isQualified ip
+      (Just False) -> ip.status == Invalid
+      (Just True) -> ip.status /= Invalid
 
 -- applyFilter :: Filter -> (InstrumentProgram -> Bool) -> (InstrumentProgram -> Bool)
 -- applyFilter Invertible f ip = f ip && Qualify.isQualified ip
@@ -133,58 +133,57 @@ tableInstrumentPrograms :: [InstrumentProgram] -> View MainView ()
 tableInstrumentPrograms ips = do
   let sorted = ips
   col_ $ do
-    -- row dataRow $ do
-    --   el header "Instrument Programs"
-    --   button header "Create Date"
-    --   -- button header "Start Date"
-    --   button header "Instrument"
     dataRows sorted $ \ip -> do
-      liveView (IPRow ip.instrumentProgramId) $ rowInstrumentProgram Expand ip
+      rowInstrumentProgram ip
 
 -----------------------------------------------------
 -- IPRow
 -----------------------------------------------------
 
-newtype IPRow = IPRow (Id InstrumentProgram)
-  deriving newtype (Show, Read, Param)
+-- newtype IPRow = IPRow (Id InstrumentProgram)
+--   deriving newtype (Show, Read, Param)
+--
+-- data IPEvent
+--   = Expand
+--   | Collapse
+--   deriving (Show, Read, Param)
+--
+-- instance LiveView IPRow IPEvent
+--
+-- handleIPRow :: (Page :> es, Rel8 :> es) => IPRow -> IPEvent -> Eff es (View IPRow ())
+-- handleIPRow (IPRow i) a = do
+--   dss <- queryProgram i
+--   ps <- loadProvenance i
+--   case dss of
+--     [] -> pure $ el_ "Mising Datasets!"
+--     (d : ds) -> do
+--       let ip = instrumentProgram (d :| ds)
+--       let psm = programSummary ip ps
+--       action psm a
+--  where
+--   action psm Expand =
+--     pure $ viewInstrumentProgram psm.program
+--   action psm Collapse =
+--     pure $ rowInstrumentProgram Expand psm
 
-data IPEvent
-  = Expand
-  | Collapse
-  deriving (Show, Read, Param)
-
-instance LiveView IPRow IPEvent
-
-handleIPRow :: (Page :> es, Rel8 :> es) => IPRow -> IPEvent -> Eff es (View IPRow ())
-handleIPRow (IPRow i) a = do
-  dss <- queryProgram i
-  case dss of
-    [] -> pure $ el_ "Mising Datasets!"
-    (d : ds) -> action (instrumentProgram (d :| ds)) a
- where
-  action ip Expand =
-    pure $ viewInstrumentProgram ip
-  action ip Collapse =
-    pure $ rowInstrumentProgram Expand ip
-
-rowInstrumentProgram :: IPEvent -> InstrumentProgram -> View IPRow ()
-rowInstrumentProgram _ ip = el (transition 500 (Height dataRowHeight)) $ do
+rowInstrumentProgram :: InstrumentProgram -> View c ()
+rowInstrumentProgram psm = do
   -- liveButton onClick id $ do
-  link (routeUrl (Program ip.instrumentProgramId)) id $ do
+  link (routeUrl (Program psm.programId)) id $ do
     row (gap 10) $ do
-      InstrumentProgramSummary.viewRow ip
+      InstrumentProgramSummary.viewRow psm
 
-viewInstrumentProgram :: InstrumentProgram -> View IPRow ()
-viewInstrumentProgram ip = do
-  let ds = NE.toList ip.datasets
-  el (transition 500 (Height (viewHeight ds)) . truncate) $ do
-    rowInstrumentProgram Collapse ip
-
-    InstrumentProgramSummary.viewCriteria ip
-
-    DatasetsTable.datasetsTable ds
- where
-  viewHeight ds =
-    dataRowHeight
-      + ((PxRem (length ds) + 1) * DatasetsTable.rowHeight)
-      + InstrumentProgramSummary.summaryHeight
+-- viewInstrumentProgram :: ProgramSummary -> View IPRow ()
+-- viewInstrumentProgram psm = do
+--   let ds = NE.toList psm.programm.datasets
+--   el (transition 500 (Height (viewHeight ds)) . truncate) $ do
+--     rowInstrumentProgram Collapse psm
+--
+--     InstrumentProgramSummary.viewCriteria psm
+--
+--     DatasetsTable.datasetsTable ds
+--  where
+--   viewHeight ds =
+--     dataRowHeight
+--       + ((PxRem (length ds) + 1) * DatasetsTable.rowHeight)
+--       + InstrumentProgramSummary.summaryHeight

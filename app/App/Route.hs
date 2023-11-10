@@ -2,8 +2,8 @@ module App.Route where
 
 import App.Colors
 import NSO.Data.Dataset
-import NSO.Data.Types
 import NSO.Prelude
+import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 import Web.UI
 

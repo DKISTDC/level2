@@ -4,17 +4,21 @@ import App.Colors
 import App.Route
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
-import Data.List.NonEmpty qualified as NE
+import Data.Grouped as G
 import Effectful.Rel8
 import NSO.Data.Dataset
-import NSO.Data.Types
+import NSO.Data.Program as Program
+import NSO.Data.Provenance as Provenance
 import NSO.Prelude
+import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 import Web.UI
 
 page :: (Page :> es, Rel8 :> es) => Id Experiment -> Eff es ()
 page eid = do
   ds <- queryExperiment eid
+  pv <- loadAllProvenance
+  let pwds = Program.fromDatasets pv ds
 
   view $ appLayout Experiments $ do
     col (pad 20 . gap 20) $ do
@@ -22,23 +26,27 @@ page eid = do
         text "Experiment  "
         text $ cs $ show eid
 
-      viewDatasets ds
+      viewPrograms pwds
 
 -- DatasetsTable.datasetsTable ds
 
-viewDatasets :: [Dataset] -> View c ()
-viewDatasets [] = el_ "No Datasets?"
-viewDatasets (d : ds) = do
-  let dss = d :| ds
-  let ips = toInstrumentPrograms dss
+-- each InstrumentProgram MUST have datasets
+viewPrograms :: [WithDatasets] -> View c ()
+viewPrograms [] = el_ "Not Found"
+viewPrograms (p : ps) = do
+  let wds = Grouped (p :| ps) :: Grouped Experiment WithDatasets
+  viewExperiment wds
 
-  el_ $ text d.experimentDescription
+viewExperiment :: Grouped Experiment WithDatasets -> View c ()
+viewExperiment gx = do
+  let wd = sample gx
+  el_ $ text wd.program.experimentDescription
+  mapM_ programSummary gx
 
-  mapM_ programSummary ips
-
-programSummary :: InstrumentProgram -> View c ()
-programSummary ip = do
+programSummary :: WithDatasets -> View c ()
+programSummary wdp = do
   col (bg White . gap 10 . pad 10) $ do
-    row (gap 10 . textAlign Center) $ InstrumentProgramSummary.viewRow ip
-    InstrumentProgramSummary.viewCriteria ip
-    DatasetsTable.datasetsTable $ NE.toList ip.datasets
+    row (gap 10 . textAlign Center) $ InstrumentProgramSummary.viewRow wdp.program
+    -- :: Grouped InstrumentProgram Dataset
+    InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
+    DatasetsTable.datasetsTable $ G.toList wdp.datasets

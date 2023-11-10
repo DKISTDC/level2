@@ -7,12 +7,11 @@ module NSO.Metadata.Types where
 import Data.Aeson (FromJSON)
 import Data.List qualified as L
 import Data.Morpheus.Client hiding (fetch)
-import Data.Time.Clock (UTCTime)
 import Data.Time.Format (FormatTime)
 import Data.Time.Format.ISO8601
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Data.Types (BoundingBox, StokesParameters)
+import NSO.Data.Dataset
 import NSO.Prelude
 
 newtype DateTime = DateTime {utc :: UTCTime}

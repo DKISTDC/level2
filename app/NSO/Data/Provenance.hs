@@ -5,61 +5,65 @@ module NSO.Data.Provenance where
 import Control.Monad (void)
 import Effectful.Rel8
 import Effectful.Time
-import NSO.Data.Dataset
-import NSO.Data.Types
 import NSO.Prelude
+import NSO.Types.Common
+import NSO.Types.InstrumentProgram
 import Rel8
 
-type Queued = Queued' Identity
-data Queued' f = Queued
+data QueuedRow f = QueuedRow
   { programId :: Column f (Id InstrumentProgram)
   , completed :: Column f UTCTime
   }
   deriving (Generic, Rel8able)
 
-deriving stock instance (f ~ Result) => Eq (Queued' f)
+deriving stock instance (f ~ Result) => Eq (QueuedRow f)
 
-queued :: TableSchema (Queued' Name)
+queued :: TableSchema (QueuedRow Name)
 queued =
   TableSchema
     { name = "provenance_queued"
     , schema = Nothing
     , columns =
-        Queued
+        QueuedRow
           { programId = "program_id"
           , completed = "completed"
           }
     }
 
-type Inverted = Inverted' Identity
-data Inverted' f = Inverted
+data InvertedRow f = InvertedRow
   { programId :: Column f (Id InstrumentProgram)
   , completed :: Column f UTCTime
   }
   deriving (Generic, Rel8able)
 
-deriving stock instance (f ~ Result) => Eq (Inverted' f)
+deriving stock instance (f ~ Result) => Eq (InvertedRow f)
 
-inverted :: TableSchema (Inverted' Name)
+inverted :: TableSchema (InvertedRow Name)
 inverted =
   TableSchema
     { name = "provenance_inverted"
     , schema = Nothing
     , columns =
-        Inverted
+        InvertedRow
           { programId = "program_id"
           , completed = "completed"
           }
     }
 
 data ProvenanceEntry
-  = WasInverted Inverted
-  | WasQueued Queued
+  = WasInverted (InvertedRow Identity)
+  | WasQueued (QueuedRow Identity)
   deriving (Eq)
 
 completed :: ProvenanceEntry -> UTCTime
 completed (WasInverted p) = p.completed
 completed (WasQueued p) = p.completed
+
+isProgram :: Id InstrumentProgram -> ProvenanceEntry -> Bool
+isProgram ip pe = programId pe == ip
+ where
+  programId (WasInverted p) = p.programId
+  programId (WasQueued p) = p.programId
 
 loadProvenance :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [ProvenanceEntry]
 loadProvenance ip = do
@@ -77,16 +81,23 @@ loadProvenance ip = do
     where_ (row.programId ==. lit ip)
     return row
 
+-- | Loads the entire database for sorting later. Use `isProgram` above
+loadAllProvenance :: (Rel8 :> es) => Eff es AllProvenance
+loadAllProvenance = do
+  qus <- query () $ select $ each queued
+  inv <- query () $ select $ each inverted
+  pure $ AllProvenance $ map WasInverted inv <> map WasQueued qus
+
 markQueued :: (Rel8 :> es, Time :> es) => Id InstrumentProgram -> Eff es ()
 markQueued ip = do
   now <- currentTime
-  let qd = Queued ip now
+  let qd = QueuedRow ip now
   mark queued [lit qd]
 
 markInverted :: (Rel8 :> es, Time :> es) => Id InstrumentProgram -> Eff es ()
 markInverted ip = do
   now <- currentTime
-  let iv = Inverted ip now
+  let iv = InvertedRow ip now
   mark inverted [lit iv]
 
 mark :: (Rel8 :> es, Rel8able f) => TableSchema (f Name) -> [f Expr] -> Eff es ()
@@ -100,3 +111,6 @@ mark table as = do
       , onConflict = DoNothing
       , returning = NumberOfRowsAffected
       }
+
+-- | Provenance of EVERY program
+newtype AllProvenance = AllProvenance [ProvenanceEntry]

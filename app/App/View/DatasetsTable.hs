@@ -1,8 +1,8 @@
 module App.View.DatasetsTable where
 
 import App.Colors
+import App.View.Common (showTimestamp)
 import NSO.Data.Dataset
-import NSO.Data.Types
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.UI

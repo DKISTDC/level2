@@ -1,21 +1,23 @@
 module App.View.InstrumentProgramSummary where
 
 import App.Colors
+import App.View.Common
 import App.View.DataRow (dataCell)
 import App.View.Icons as Icons
-import Data.Either (partitionEithers)
-import Data.List.NonEmpty qualified as NE
+import Data.Grouped
 import NSO.Data.Dataset
-import NSO.Data.Qualify as Qualify
-import NSO.Data.Types
+import NSO.Data.Program
+import NSO.Data.Qualify
 import NSO.Prelude
+import NSO.Types.InstrumentProgram
+import NSO.Types.Wavelength
 import Numeric (showFFloat)
 import Web.UI
 import Web.UI.Types
 
 viewRow :: InstrumentProgram -> View c ()
 viewRow ip = do
-  statusTag
+  statusTag ip.status
 
   el dataCell $ text $ showDate ip.createDate
   -- el dataCell $ text $ showDate ip.startTime
@@ -24,26 +26,14 @@ viewRow ip = do
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
   row (dataCell . gap 5 . fontSize 14) $ do
-    diskTag ip.datasets
-    let (mids, lns) = partitionEithers $ map identify $ NE.toList ip.datasets
-    mapM_ lineTag lns
-    mapM_ midTag $ sortOn id mids
+    if ip.onDisk then diskTag else none
+    mapM_ lineTag ip.spectralLines
+    mapM_ midTag $ sortOn id ip.otherWavelengths
  where
-  identify :: Dataset -> Either (Wavelength Nm) SpectralLine
-  identify d =
-    case Qualify.identifyLine d.wavelengthMin d.wavelengthMax of
-      Nothing -> Left (midWave d)
-      Just l -> Right l
-
-  midWave :: Dataset -> Wavelength Nm
-  midWave d = d.wavelengthMin + d.wavelengthMax / 2
-
+  lineTag :: SpectralLine -> View c ()
   lineTag s = tag "pre" (dataTag . bg SecondaryLight) $ text $ cs $ show s
 
-  diskTag ds =
-    if all (\d -> isOnDisk d.boundingBox) ds
-      then el (dataTag . bg Success) "On Disk"
-      else none
+  diskTag = el (dataTag . bg Success) "On Disk"
 
   midTag mid =
     tag "pre" (pad 2 . color GrayDark) $ text $ cs (showFFloat (Just 0) mid "nm")
@@ -51,20 +41,19 @@ viewRow ip = do
   dataTag :: Mod
   dataTag = pad (XY 6 2) . rounded 3
 
-  statusTag =
-    case qualify ip of
-      Left _ -> el (dataCell . color GrayLight) $ text "-"
-      Right _ -> el (dataCell . bg Success) $ text "Invertible"
+  statusTag Invalid = el (dataCell . color GrayLight) $ text "-"
+  statusTag Qualified = el (dataCell . bg Success) $ text "Qualified"
+  statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
+  statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
 
-viewCriteria :: InstrumentProgram -> View c ()
-viewCriteria ip = do
-  let ds = NE.toList ip.datasets
-  let sls = identifyLines ds
+viewCriteria :: InstrumentProgram -> Grouped InstrumentProgram Dataset -> View c ()
+viewCriteria ip gd = do
   col (pad 8) $ do
-    case (head ip.datasets).instrument of
-      VISP -> vispCriteria ds sls
+    case ip.instrument of
+      VISP -> vispCriteria gd ip.spectralLines
       VBI -> vbiCriteria
  where
+  vispCriteria :: Grouped InstrumentProgram Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
     el (bold . height criteriaRowHeight) "VISP Criteria"
     criteria "Stokes IQUV" $ qualifyStokes ds

@@ -1,30 +1,20 @@
 {-# LANGUAGE DerivingVia #-}
 
-module NSO.Data.Types where
+module NSO.Types.Dataset where
 
-import Data.Aeson (FromJSON (..), withText)
+import Data.Aeson
 import Data.List qualified as L
-import Data.Time.Clock (UTCTime)
-import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8
 import Text.Read (readEither)
-import Web.Hyperbole (Param (..), Route)
+import Web.Hyperbole (Param)
 
-newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Read, Eq, Ord, DBType, FromJSON, Route, DBEq)
-  deriving (Generic)
-
-instance Param (Id a) where
-  toParam (Id t) = t
-  parseParam t = pure $ Id t
+data ObserveFrames
 
 data Stokes = I | Q | U | V
   deriving (Show, Read, Eq)
   deriving (DBType) via ReadShow Stokes
-
-data ObserveFrames
 
 newtype StokesParameters = StokesParameters [Stokes]
   deriving newtype (DBType, Eq, Monoid)
@@ -46,28 +36,19 @@ instance FromJSON StokesParameters where
 instance Semigroup StokesParameters where
   (StokesParameters a) <> (StokesParameters b) = StokesParameters . L.nub $ a <> b
 
-showDate :: UTCTime -> Text
-showDate = cs . formatTime defaultTimeLocale "%F"
+data ObservingProgram
+data Proposal
 
-showTimestamp :: UTCTime -> Text
-showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
+data Instrument
+  = VBI
+  | VISP
+  deriving (Show, Ord, Eq, Read, Param)
+  deriving (DBType) via ReadShow Instrument
 
-newtype Wavelength a = Wavelength Double
-  deriving newtype (Num, Ord, Show, DBType, Floating, Fractional, RealFloat, RealFrac, Real)
-
-instance Eq (Wavelength a) where
-  (Wavelength a) == (Wavelength b) =
-    decimals a == decimals b
-   where
-    decimals :: Double -> Int
-    decimals n = round (n * 100)
-
-data Nm
+type Coordinate a = (a, a)
 
 newtype Arcseconds = Arcseconds Float
   deriving newtype (Eq, Show, Read, RealFloat, Floating, RealFrac, Fractional, Real, Num, Ord)
-
-type Coordinate a = (a, a)
 
 data BoundingBox = BoundingBox
   { upperRight :: Coordinate Arcseconds

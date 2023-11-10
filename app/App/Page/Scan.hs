@@ -2,6 +2,7 @@ module App.Page.Scan where
 
 import App.Colors
 import App.Route
+import App.View.Common
 import Data.String.Interpolate
 import Effectful.Debug
 import Effectful.Error.Static
@@ -11,7 +12,6 @@ import Effectful.Time
 import NSO.Data.Dataset
 import NSO.Data.Qualify (isOnDisk)
 import NSO.Data.Scan
-import NSO.Data.Types
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.Hyperbole

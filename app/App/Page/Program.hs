@@ -4,34 +4,37 @@ import App.Colors
 import App.Route
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
-import Data.List.NonEmpty qualified as NE
+import Data.Grouped as G
 import Effectful.Rel8
+import Effectful.Time
 import NSO.Data.Dataset
-import NSO.Data.Types
+import NSO.Data.Program
+import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import Web.Hyperbole
 import Web.UI
 
-page :: (Page :> es, Rel8 :> es) => Id InstrumentProgram -> Eff es ()
-page ipid = do
+page :: (Page :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Eff es ()
+page ip = do
   pageAction statusAction
 
   pageLoad $ do
-    ds <- queryProgram ipid
+    ds <- queryProgram ip
+    ps <- Provenance.loadProvenance ip
 
     pure $ appLayout Experiments $ do
       col (pad 20 . gap 20) $ do
         el (fontSize 24 . bold) $ do
           text "Instrument Program: "
-          text ipid.fromId
+          text ip.fromId
 
-        viewDatasets ds
+        viewDatasets ds ps
 
-viewDatasets :: [Dataset] -> View c ()
-viewDatasets [] = el_ "No Datasets?"
-viewDatasets (d : ds) = do
-  let dss = d :| ds
-  let ip = instrumentProgram dss
+viewDatasets :: [Dataset] -> [ProvenanceEntry] -> View c ()
+viewDatasets [] _ = el_ "No Datasets?"
+viewDatasets (d : ds) ps = do
+  let gd = Grouped (d :| ds) :: Grouped InstrumentProgram Dataset
+  let ip = instrumentProgram gd ps
   el_ $ text d.experimentDescription
 
   col (bg White . gap 10) $ do
@@ -39,12 +42,12 @@ viewDatasets (d : ds) = do
       InstrumentProgramSummary.viewRow ip
 
     col (gap 10 . pad 10) $ do
-      liveView Status $ statusView
-      InstrumentProgramSummary.viewCriteria ip
-      DatasetsTable.datasetsTable $ NE.toList ip.datasets
+      liveView (Status ip.programId) statusView
+      InstrumentProgramSummary.viewCriteria ip gd
+      DatasetsTable.datasetsTable $ G.toList gd
 
-data Status = Status
-  deriving (Show, Read, Param)
+newtype Status = Status (Id InstrumentProgram)
+  deriving newtype (Show, Read, Param)
 
 data StatusAction
   = Queue
@@ -53,11 +56,14 @@ data StatusAction
 
 instance LiveView Status StatusAction
 
-statusAction :: (Page :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
-statusAction _ Queue = do
+statusAction :: (Time :> es, Page :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
+statusAction (Status ip) Queue = do
+  -- TODO: higher level: mark an ip as queued but check to make sure it its valid first?
+  Provenance.markQueued ip
   pure $ el_ "Queued!"
-statusAction _ Complete = do
-  pure $ el_ "Completed!"
+statusAction (Status ip) Complete = do
+  Provenance.markInverted ip
+  pure $ el_ "Inverted!"
 
 statusView :: View Status ()
 statusView = do
