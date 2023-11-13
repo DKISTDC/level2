@@ -2,6 +2,7 @@ module App.Page.Program where
 
 import App.Colors
 import App.Route
+import App.View.Common (showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.Grouped as G
@@ -41,10 +42,24 @@ viewDatasets (d : ds) ps = do
     row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
       InstrumentProgramSummary.viewRow ip
 
-    col (gap 10 . pad 10) $ do
+    col (pad 10 . gap 10 . pad 10) $ do
       liveView (Status ip.programId) statusView
+
+      el bold "Provenance"
+      mapM_ viewProvenanceEntry ps
+
       InstrumentProgramSummary.viewCriteria ip gd
       DatasetsTable.datasetsTable $ G.toList gd
+
+viewProvenanceEntry :: ProvenanceEntry -> View c ()
+viewProvenanceEntry (WasInverted p) = do
+  row (gap 10) $ do
+    el_ "Inverted"
+    text $ showTimestamp p.completed
+viewProvenanceEntry (WasQueued p) = do
+  row (gap 10) $ do
+    el_ "Queued"
+    text $ showTimestamp p.completed
 
 newtype Status = Status (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)

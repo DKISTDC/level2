@@ -42,19 +42,25 @@ scanDatasetInventory = do
 
 syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es) => Eff es SyncResults
 syncDatasets = do
-  -- probably want to make a map of each and compare, no?
   scan <- scanDatasetInventory
   old <- indexed <$> queryLatest
 
   let res = syncResults old scan
 
+  -- Insert any new datasets
   insertAll res.new
 
+  -- Update any old datasets
   updateOld $ map (.datasetId) res.updated
   insertAll res.updated
 
+  -- Ignore any unchanged
   pure res
 
+-- TODO: if a dataset is updated (there exists more than one?)
+-- no, updated means that the provenance was run against an older version
+-- the instrument program is the same! What's different?
+-- I need to be able to see the differences
 syncResults :: Map (Id Dataset) Dataset -> [Dataset] -> SyncResults
 syncResults old scan =
   let srs = map (syncResult old) scan
@@ -87,6 +93,7 @@ toDataset scanDate d = do
       , instrument = ins
       , stokesParameters = d.stokesParameters
       , createDate = d.createDate.utc
+      , updateDate = d.updateDate.utc
       , wavelengthMin = Wavelength d.wavelengthMin
       , wavelengthMax = Wavelength d.wavelengthMax
       , startTime = d.startTime.utc
@@ -96,7 +103,7 @@ toDataset scanDate d = do
       , primaryProposalId = Id d.primaryProposalId
       , experimentDescription = d.experimentDescription
       , exposureTime = realToFrac d.exposureTime
-      , inputDatasetObserveFramesPartId = Id . cs $ show d.inputDatasetObserveFramesPartId
+      -- , inputDatasetObserveFramesPartId = Id . cs $ show d.inputDatasetObserveFramesPartId
       -- , -- WARNING: mocked fields
       --   health = JSONEncoded (Health d.frameCount 0 0 0)
       -- , gosStatus = JSONEncoded (GOSStatus d.frameCount 0 0 0 0)

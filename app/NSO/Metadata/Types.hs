@@ -34,58 +34,58 @@ newtype JSONString = JSONString Text
 declareGlobalTypes "deps/metadata.graphql"
 
 data DatasetInventory = DatasetInventory
-  { asdfObjectKey :: Text
-  , averageDatasetSpatialSampling :: Double
-  , averageDatasetSpectralSampling :: Double
-  , averageDatasetTemporalSampling :: Double
-  , boundingBox :: BoundingBox
-  , browseMovieObjectKey :: Text
-  , browseMovieUrl :: Text
-  , bucket :: Text
-  , calibrationDocumentationUrl :: Text
-  , contributingExperimentIds :: [Text]
-  , contributingProposalIds :: [Text]
-  , createDate :: DateTime
+  -- { asdfObjectKey :: Text
+  -- , averageDatasetSpatialSampling :: Double
+  -- , averageDatasetSpectralSampling :: Double
+  -- , averageDatasetTemporalSampling :: Double
+  { boundingBox :: BoundingBox
+  , -- , browseMovieObjectKey :: Text
+    -- , browseMovieUrl :: Text
+    -- , bucket :: Text
+    -- calibrationDocumentationUrl :: Text
+    -- , contributingExperimentIds :: [Text]
+    -- contributingProposalIds :: [Text]
+    createDate :: DateTime
   , datasetId :: Text
-  , datasetInventoryId :: Int
-  , datasetSize :: Int
-  , endTime :: DateTime
+  , -- , datasetInventoryId :: Int
+    -- , datasetSize :: Int
+    endTime :: DateTime
   , experimentDescription :: Text
   , exposureTime :: Double
   , frameCount :: Int
-  , hasAllStokes :: Bool
-  , hasSpectralAxis :: Bool
-  , hasTemporalAxis :: Bool
-  , headerDataUnitCreationDate :: DateTime
-  , headerDocumentationUrl :: Text
-  , headerVersion :: Text
-  , highLevelSoftwareVersion :: Text
-  , infoUrl :: Text
-  , -- , inputDatasetCalibrationFramesPartId :: Int
-    inputDatasetObserveFramesPartId :: Int
-  , inputDatasetParametersPartId :: Int
-  , instrumentName :: Text
+  , -- , hasAllStokes :: Bool
+    -- , hasSpectralAxis :: Bool
+    -- , hasTemporalAxis :: Bool
+    -- , headerDataUnitCreationDate :: DateTime
+    -- , headerDocumentationUrl :: Text
+    -- , headerVersion :: Text
+    -- , highLevelSoftwareVersion :: Text
+    -- , infoUrl :: Text
+    -- , inputDatasetCalibrationFramesPartId :: Int
+    -- inputDatasetObserveFramesPartId :: Int
+    -- , inputDatasetParametersPartId :: Int
+    instrumentName :: Text
   , instrumentProgramExecutionId :: Text
-  , isActive :: Bool
-  , isEmbargoed :: Bool
-  , observingProgramExecutionId :: Text
-  , originalFrameCount :: Int
-  , primaryExperimentId :: Text
+  , -- , isActive :: Bool
+    -- , isEmbargoed :: Bool
+    observingProgramExecutionId :: Text
+  , -- , originalFrameCount :: Int
+    primaryExperimentId :: Text
   , primaryProposalId :: Text
-  , qualityAverageFriedParameter :: Double
-  , qualityAveragePolarimetricAccuracy :: Double
-  , qualityReportObjectKey :: Text
-  , recipeId :: Int
-  , recipeInstanceId :: Int
-  , recipeRunId :: Int
-  , startTime :: DateTime
+  , -- , qualityAverageFriedParameter :: Double
+    -- , qualityAveragePolarimetricAccuracy :: Double
+    -- , qualityReportObjectKey :: Text
+    -- , recipeId :: Int
+    -- , recipeInstanceId :: Int
+    -- , recipeRunId :: Int
+    startTime :: DateTime
   , stokesParameters :: StokesParameters
-  , targetTypes :: [Text]
-  , updateDate :: DateTime
+  , -- , targetTypes :: [Text]
+    updateDate :: DateTime
   , wavelengthMax :: Double
   , wavelengthMin :: Double
-  , workflowName :: Text
-  , workflowVersion :: Text
+  -- , workflowName :: Text
+  -- , workflowVersion :: Text
   }
   deriving (Generic, Show, Eq, FromJSON)
 

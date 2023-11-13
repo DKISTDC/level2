@@ -37,6 +37,7 @@ data Dataset' f = Dataset
   , instrumentProgramId :: Column f (Id InstrumentProgram)
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
+  , updateDate :: Column f UTCTime
   , wavelengthMin :: Column f (Wavelength Nm)
   , wavelengthMax :: Column f (Wavelength Nm)
   , startTime :: Column f UTCTime
@@ -46,11 +47,12 @@ data Dataset' f = Dataset
   , primaryProposalId :: Column f (Id Proposal)
   , experimentDescription :: Column f Text
   , exposureTime :: Column f Float
-  , inputDatasetObserveFramesPartId :: Column f (Id ObserveFrames)
-  , boundingBox :: Column f (Maybe BoundingBox)
-  --   health :: Column f (JSONEncoded Health)
-  -- , gosStatus :: Column f (JSONEncoded GOSStatus)
-  -- , aoLocked :: Column f Int16
+  , -- , inputDatasetObserveFramesPartId :: Column f (Id ObserveFrames)
+    boundingBox :: Column f (Maybe BoundingBox)
+    -- , updateDate
+    --   health :: Column f (JSONEncoded Health)
+    -- , gosStatus :: Column f (JSONEncoded GOSStatus)
+    -- , aoLocked :: Column f Int16
   }
   deriving (Generic, Rel8able)
 
@@ -88,6 +90,7 @@ datasets =
           , scanDate = "scan_date"
           , stokesParameters = "stokes_parameters"
           , createDate = "create_date"
+          , updateDate = "update_date"
           , wavelengthMin = "wavelength_min"
           , wavelengthMax = "wavelength_max"
           , startTime = "start_time"
@@ -95,8 +98,8 @@ datasets =
           , frameCount = "frame_count"
           , primaryExperimentId = "primary_experiment_id"
           , primaryProposalId = "primary_proposal_id"
-          , inputDatasetObserveFramesPartId = "input_observe_frames_id"
-          , experimentDescription = "experiment_description"
+          , -- , inputDatasetObserveFramesPartId = "input_observe_frames_id"
+            experimentDescription = "experiment_description"
           , exposureTime = "exposure_time"
           , boundingBox = "bounding_box"
           , latest = "latest"
@@ -120,6 +123,7 @@ queryExperiment eid = query () $ select $ do
 
 queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
 queryProgram ip = query () $ select $ do
+  -- note that this DOESN'T limit by latest
   row <- each datasets
   where_ (row.instrumentProgramId ==. lit ip)
   return row

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS datasets (
   instrument TEXT NOT NULL,
   stokes_parameters TEXT[] NOT NULL,
   create_date TIMESTAMP NOT NULL,
+  update_date TIMESTAMP NOT NULL,
   wavelength_min REAL NOT NULL,
   wavelength_max REAL NOT NULL,
   start_time TIMESTAMP NOT NULL,
@@ -17,7 +18,6 @@ CREATE TABLE IF NOT EXISTS datasets (
   frame_count INTEGER NOT NULL,
   primary_experiment_id TEXT NOT NULL,
   primary_proposal_id TEXT NOT NULL,
-  input_observe_frames_id TEXT NOT NULL,
   experiment_description TEXT NOT NULL,
   exposure_time REAL NOT NULL,
   bounding_box TEXT
