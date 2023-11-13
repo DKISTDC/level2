@@ -46,7 +46,7 @@ viewExperiment gx = do
 programSummary :: WithDatasets -> View c ()
 programSummary wdp = do
   col (bg White . gap 10 . pad 10) $ do
-    row (gap 10 . textAlign Center) $ InstrumentProgramSummary.viewRow wdp.program
+    InstrumentProgramSummary.viewRow wdp.program
     -- :: Grouped InstrumentProgram Dataset
     InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
     DatasetsTable.datasetsTable $ G.toList wdp.datasets

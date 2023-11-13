@@ -170,8 +170,7 @@ rowInstrumentProgram :: InstrumentProgram -> View c ()
 rowInstrumentProgram psm = do
   -- liveButton onClick id $ do
   link (routeUrl (Program psm.programId)) id $ do
-    row (gap 10) $ do
-      InstrumentProgramSummary.viewRow psm
+    InstrumentProgramSummary.viewRow psm
 
 -- viewInstrumentProgram :: ProgramSummary -> View IPRow ()
 -- viewInstrumentProgram psm = do

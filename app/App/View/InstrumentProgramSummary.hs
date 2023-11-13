@@ -16,7 +16,7 @@ import Web.UI
 import Web.UI.Types
 
 viewRow :: InstrumentProgram -> View c ()
-viewRow ip = do
+viewRow ip = row (gap 10 . textAlign Center) $ do
   statusTag ip.status
 
   el dataCell $ text $ showDate ip.createDate
