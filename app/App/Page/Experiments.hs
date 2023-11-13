@@ -74,7 +74,7 @@ viewExperiments fs exs = do
     col (gap 8 . bg White) $ do
       row (bg GrayLight) $ do
         -- link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
-        el (bold . pad 10) $ do
+        link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
           text "Experiment "
           text e.experimentId.fromId
         space
@@ -85,7 +85,6 @@ viewExperiments fs exs = do
         -- row (gap 5) $ do
         --   el bold "Start Time:"
         --   el_ $ text $ showDate ds1.startTime
-        -- link (routeUrl $ Route.Experiment e.experimentId) truncate $ text ds1.experimentDescription
         el truncate $ text e.description
 
         tableInstrumentPrograms ips
