@@ -29,27 +29,32 @@ page ip = do
           text "Instrument Program: "
           text ip.fromId
 
-        viewDatasets ds ps
+        description ds
+
+        col (bg White . gap 10) $ do
+          viewDatasets (filter (.latest) ds) ps
+          el (pad 10) $ DatasetsTable.datasetsTable ds
+ where
+  description :: [Dataset] -> View c ()
+  description [] = none
+  description (d : _) = text d.experimentDescription
 
 viewDatasets :: [Dataset] -> [ProvenanceEntry] -> View c ()
-viewDatasets [] _ = el_ "No Datasets?"
+viewDatasets [] _ = none
 viewDatasets (d : ds) ps = do
-  let gd = Grouped (d :| ds) :: Grouped InstrumentProgram Dataset
+  let gd = Grouped (d :| ds)
   let ip = instrumentProgram gd ps
-  el_ $ text d.experimentDescription
 
-  col (bg White . gap 10) $ do
-    row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
-      InstrumentProgramSummary.viewRow ip
+  row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
+    InstrumentProgramSummary.viewRow ip
 
-    col (pad 10 . gap 10 . pad 10) $ do
-      liveView (Status ip.programId) statusView
+  col (pad 10 . gap 10 . pad 10) $ do
+    liveView (Status ip.programId) statusView
 
-      el bold "Provenance"
-      mapM_ viewProvenanceEntry ps
+    el bold "Provenance"
+    mapM_ viewProvenanceEntry ps
 
-      InstrumentProgramSummary.viewCriteria ip gd
-      DatasetsTable.datasetsTable $ G.toList gd
+    InstrumentProgramSummary.viewCriteria ip gd
 
 viewProvenanceEntry :: ProvenanceEntry -> View c ()
 viewProvenanceEntry (WasInverted p) = do

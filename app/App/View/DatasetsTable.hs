@@ -3,6 +3,7 @@ module App.View.DatasetsTable where
 import App.Colors
 import App.View.Common (showTimestamp)
 import App.View.Icons as Icons
+import Data.Ord (Down (..))
 import NSO.Data.Dataset
 import NSO.Prelude
 import Numeric (showFFloat)
@@ -14,7 +15,7 @@ rowHeight = 30
 
 datasetsTable :: [Dataset] -> View c ()
 datasetsTable ds = do
-  let sorted = ds
+  let sorted = sortOn (Down . (.updateDate)) ds
 
   -- is there a way to do alternating rows here?
   table (odd (bg White) . even (bg Light)) sorted $ do
