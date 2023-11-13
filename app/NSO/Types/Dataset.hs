@@ -88,10 +88,10 @@ isCoordNaN :: Coordinate Arcseconds -> Bool
 isCoordNaN (a, b) = isNaN a || isNaN b
 
 data Health = Health
-  { good :: Int
-  , bad :: Int
-  , ill :: Int
-  , unknown :: Int
+  { good :: Maybe Int
+  , bad :: Maybe Int
+  , ill :: Maybe Int
+  , unknown :: Maybe Int
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
@@ -99,11 +99,11 @@ instance DBType Health where
   typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation
 
 data GOSStatus = GOSStatus
-  { open :: Int
-  , opening :: Int
-  , closed :: Int
-  , closing :: Int
-  , undefined :: Int
+  { open :: Maybe Int
+  , opening :: Maybe Int
+  , closed :: Maybe Int
+  , closing :: Maybe Int
+  , undefined :: Maybe Int
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 

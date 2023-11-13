@@ -31,8 +31,8 @@ datasetsTable ds = do
     -- tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
     -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     tcol (hd "Frame Count") $ \d -> cell $ text . cs . show $ d.frameCount
-    tcol (hd "Health Good") $ \d -> cell $ text . cs . show $ d.health.good
-    tcol (hd "GOS Open") $ \d -> cell $ text . cs . show $ d.gosStatus.open
+    tcol (hd "Health Good") $ \d -> cell $ text . cs . show $ fromMaybe 0 d.health.good
+    tcol (hd "GOS Open") $ \d -> cell $ text . cs . show $ fromMaybe 0 d.gosStatus.open
     tcol (hd "AOLocked") $ \d -> cell $ text . cs . show $ d.aoLocked
  where
   -- tcol (hd "On Disk") $ \d -> cell . cs . show $ isOnDisk d.boundingBox

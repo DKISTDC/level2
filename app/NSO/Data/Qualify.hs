@@ -61,12 +61,12 @@ qualifyHealth :: Grouped InstrumentProgram Dataset -> Bool
 qualifyHealth = all (hasPctGood 0.75)
  where
   hasPctGood :: Float -> Dataset -> Bool
-  hasPctGood p d = (fromIntegral d.health.good / fromIntegral d.frameCount) >= p
+  hasPctGood p d = (fromIntegral (fromMaybe 0 d.health.good) / fromIntegral d.frameCount) >= p
 
 qualifyGOS :: Grouped InstrumentProgram Dataset -> Bool
 qualifyGOS g = all allOpen g.items
  where
-  allOpen d = d.gosStatus.open == fromIntegral d.frameCount
+  allOpen d = (fromMaybe 0 d.gosStatus.open) == fromIntegral d.frameCount
 
 qualifyAO :: Grouped InstrumentProgram Dataset -> Bool
 qualifyAO = all (hasPctLocked 0.75)
