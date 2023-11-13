@@ -84,8 +84,11 @@ data DatasetInventory = DatasetInventory
     updateDate :: DateTime
   , wavelengthMax :: Double
   , wavelengthMin :: Double
-  -- , workflowName :: Text
-  -- , workflowVersion :: Text
+  , -- , workflowName :: Text
+    -- , workflowVersion :: Text
+    health :: Health
+  , gosStatus :: GOSStatus
+  , aoLocked :: Int
   }
   deriving (Generic, Show, Eq, FromJSON)
 

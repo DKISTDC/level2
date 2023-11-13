@@ -16,7 +16,6 @@ module NSO.Data.Dataset
 where
 
 import Control.Monad (void)
-import Data.Aeson (FromJSON, ToJSON)
 import Data.Int (Int16)
 import Effectful
 import Effectful.Rel8
@@ -47,34 +46,15 @@ data Dataset' f = Dataset
   , primaryProposalId :: Column f (Id Proposal)
   , experimentDescription :: Column f Text
   , exposureTime :: Column f Float
-  , -- , inputDatasetObserveFramesPartId :: Column f (Id ObserveFrames)
-    boundingBox :: Column f (Maybe BoundingBox)
-    -- , updateDate
-    --   health :: Column f (JSONEncoded Health)
-    -- , gosStatus :: Column f (JSONEncoded GOSStatus)
-    -- , aoLocked :: Column f Int16
+  , boundingBox :: Column f (Maybe BoundingBox)
+  , health :: Column f Health
+  , gosStatus :: Column f GOSStatus
+  , aoLocked :: Column f Int16
   }
   deriving (Generic, Rel8able)
 
 deriving stock instance (f ~ Result) => Show (Dataset' f)
 deriving stock instance (f ~ Result) => Eq (Dataset' f)
-
-data Health = Health
-  { good :: Int
-  , bad :: Int
-  , ill :: Int
-  , unknown :: Int
-  }
-  deriving (Show, Generic, ToJSON, FromJSON)
-
-data GOSStatus = GOSStatus
-  { open :: Int
-  , opening :: Int
-  , closed :: Int
-  , closing :: Int
-  , undefined :: Int
-  }
-  deriving (Show, Generic, ToJSON, FromJSON)
 
 datasets :: TableSchema (Dataset' Name)
 datasets =
@@ -98,14 +78,13 @@ datasets =
           , frameCount = "frame_count"
           , primaryExperimentId = "primary_experiment_id"
           , primaryProposalId = "primary_proposal_id"
-          , -- , inputDatasetObserveFramesPartId = "input_observe_frames_id"
-            experimentDescription = "experiment_description"
+          , experimentDescription = "experiment_description"
           , exposureTime = "exposure_time"
           , boundingBox = "bounding_box"
           , latest = "latest"
-          -- , health = "health"
-          -- , gosStatus = "gos_status"
-          -- , aoLocked = "ao_locked"
+          , health = "health"
+          , gosStatus = "gos_status"
+          , aoLocked = "ao_locked"
           }
     }
 

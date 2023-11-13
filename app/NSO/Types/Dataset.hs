@@ -3,6 +3,7 @@
 module NSO.Types.Dataset where
 
 import Data.Aeson
+import Data.Aeson.Types (parseEither)
 import Data.List qualified as L
 import GHC.Real (Real)
 import NSO.Prelude
@@ -85,3 +86,26 @@ parseBoundingBox t = do
 
 isCoordNaN :: Coordinate Arcseconds -> Bool
 isCoordNaN (a, b) = isNaN a || isNaN b
+
+data Health = Health
+  { good :: Int
+  , bad :: Int
+  , ill :: Int
+  , unknown :: Int
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+instance DBType Health where
+  typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation
+
+data GOSStatus = GOSStatus
+  { open :: Int
+  , opening :: Int
+  , closed :: Int
+  , closing :: Int
+  , undefined :: Int
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+instance DBType GOSStatus where
+  typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation

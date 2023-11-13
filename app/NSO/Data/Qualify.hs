@@ -57,12 +57,19 @@ qualifyOnDisk g = all (\d -> isOnDisk d.boundingBox) g.items
 qualifyLine :: SpectralLine -> [SpectralLine] -> Bool
 qualifyLine sl sls = sl `elem` sls
 
--- TODO: implement once available
 qualifyHealth :: Grouped InstrumentProgram Dataset -> Bool
-qualifyHealth _ = True
+qualifyHealth = all (hasPctGood 0.75)
+ where
+  hasPctGood :: Float -> Dataset -> Bool
+  hasPctGood p d = (fromIntegral d.health.good / fromIntegral d.frameCount) >= p
 
 qualifyGOS :: Grouped InstrumentProgram Dataset -> Bool
-qualifyGOS _ = True
+qualifyGOS g = all allOpen g.items
+ where
+  allOpen d = d.gosStatus.open == fromIntegral d.frameCount
 
 qualifyAO :: Grouped InstrumentProgram Dataset -> Bool
-qualifyAO _ = True
+qualifyAO = all (hasPctLocked 0.75)
+ where
+  hasPctLocked :: Float -> Dataset -> Bool
+  hasPctLocked p d = (fromIntegral d.aoLocked / fromIntegral d.frameCount) >= p

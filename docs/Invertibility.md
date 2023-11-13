@@ -5,16 +5,17 @@ This document contains all the invertibility requirements, and exact details on 
 * VISP only for now for simplicity
 
 - [ ] WAITING: Han to specify waveband logic, specifics below
-- [ ] WAITING: changes to WCS by Stuart will fix boundingBox
 - [ ] What are the on-disk calculations?
+- [ ] AOLocked: do you mean 75% of total frames are locked, or each dataset needs 75% locked or better?
 
 TODO: Update Metadata API
 -------------------------
 The following headers need to be promoted to Metadata GraphQL API
 
 - [x] Implement params: `health`, `gosStatus`, `aoLock`, `lightLevel`, `polarimetricAccuracy`, `friedParameter`
-- [ ] Add to existing L1 systems (metadata_graphql_api, search-support-database, etc)
+- [x] Add to existing L1 systems (metadata_graphql_api, search-support-database, etc)
 - [ ] fully implement logic
+- [x] changes to WCS by Stuart will fix boundingBox
 
 TELESCOPE
 ---------
@@ -26,8 +27,6 @@ L1 doesn't reject any data based on quality measurements. It simply provides a r
 | Health     | *health* | `[*Health]` | [DSHEALTH](https://tinyurl.com/dkist-spec-214#dkist-operations-keywords) | GOOD, BAD, ILL, UNKNOWN |
 | GOS Status | *gosStatus* | `[*GosStatus]` | [GOS_STAT](https://tinyurl.com/dkist-spec-214#polarization-analysis-and-calibration-keywords) | open, opening, closed, closing, undefined |
 | AO Locked  | *aoLocked*  | `[*AoLocked]` | [AO_LOCK](https://tinyurl.com/dkist-spec-213#adaptive-optics-keywords) | True, False |
-
-- `*Value:` a set of *unique* values. If there are 30 GOOD frames and 1 ILL frame, the value of `health` will be `["GOOD","ILL"]`
 
 Criteria
 - Health: ~75% of frames should be `GOOD`
