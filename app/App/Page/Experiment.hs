@@ -49,4 +49,5 @@ programSummary wdp = do
     InstrumentProgramSummary.viewRow wdp.program
     -- :: Grouped InstrumentProgram Dataset
     InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
-    DatasetsTable.datasetsTable $ G.toList wdp.datasets
+    liveView (ProgramDatasets wdp.program.programId) $ do
+      DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets

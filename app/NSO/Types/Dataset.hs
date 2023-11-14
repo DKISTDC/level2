@@ -14,11 +14,11 @@ import Web.Hyperbole (Param)
 data ObserveFrames
 
 data Stokes = I | Q | U | V
-  deriving (Show, Read, Eq)
+  deriving (Show, Read, Eq, Ord)
   deriving (DBType) via ReadShow Stokes
 
 newtype StokesParameters = StokesParameters [Stokes]
-  deriving newtype (DBType, Eq, Monoid)
+  deriving newtype (DBType, Eq, Ord, Monoid)
 
 instance Show StokesParameters where
   show (StokesParameters ss) = mconcat $ fmap show ss

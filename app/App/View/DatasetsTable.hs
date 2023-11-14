@@ -4,29 +4,55 @@ import App.Colors
 import App.View.Common (showTimestamp)
 import App.View.Icons as Icons
 import Data.Ord (Down (..))
-import NSO.Data.Dataset
+import Effectful.Rel8
+import NSO.Data.Dataset as Dataset
 import NSO.Prelude
+import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
+import Web.Hyperbole
 import Web.UI
 import Web.UI.Types
 
 rowHeight :: PxRem
 rowHeight = 30
 
-datasetsTable :: [Dataset] -> View c ()
-datasetsTable ds = do
-  let sorted = sortOn (Down . (.updateDate)) ds
+newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
+  deriving stock (Show, Read)
+  deriving anyclass (Param)
+
+data SortField
+  = DatasetId
+  | Latest
+  | CreateDate
+  | UpdateDate
+  | StartTime
+  | Instrument
+  | Stokes
+  | WaveMin
+  | WaveMax
+  deriving (Show, Read, Param)
+
+instance LiveView ProgramDatasets SortField
+
+actionSort :: (Rel8 :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
+actionSort (ProgramDatasets i) s = do
+  ds <- Dataset.queryProgram i
+  pure $ datasetsTable s ds
+
+datasetsTable :: SortField -> [Dataset] -> View ProgramDatasets ()
+datasetsTable s ds = do
+  let sorted = sortField s ds
 
   -- is there a way to do alternating rows here?
   table (odd (bg White) . even (bg Light)) sorted $ do
-    tcol (hd "Id") $ \d -> cell $ text . cs $ d.datasetId.fromId
-    tcol (hd "Latest") $ \d -> cell $ latest d.latest
-    tcol (hd "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
-    tcol (hd "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
-    tcol (hd "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
-    tcol (hd "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
-    tcol (hd "Wave Min") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMin ""
-    tcol (hd "Wave Max") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMax ""
+    tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ latest d.latest
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ text . cs $ d.datasetId.fromId
+    tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
+    tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
+    tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
+    tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
+    tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMin ""
+    tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMax ""
     tcol (hd "Bounding Box") $ \d -> cell $ text . cs $ maybe "" show d.boundingBox
     -- tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
     -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
@@ -42,7 +68,11 @@ datasetsTable ds = do
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
-  hd :: View () () -> View Head ()
+  sortBtn :: SortField -> Text -> View ProgramDatasets ()
+  sortBtn st t =
+    liveButton st (color Primary . hover (bg PrimaryLight)) (text t)
+
+  hd :: View ProgramDatasets () -> View (Head ProgramDatasets) ()
   hd = th (pad 4 . bord . bold . bg Light)
 
   cell :: View () () -> View Dataset ()
@@ -53,3 +83,14 @@ datasetsTable ds = do
   latest False = none
   latest True = do
     el (width 24 . height 24) Icons.checkCircle
+
+  sortField :: SortField -> ([Dataset] -> [Dataset])
+  sortField DatasetId = sortOn (Down . (.datasetId))
+  sortField Latest = sortOn (Down . (.latest))
+  sortField CreateDate = sortOn (Down . (.createDate))
+  sortField UpdateDate = sortOn (Down . (.updateDate))
+  sortField StartTime = sortOn (Down . (.startTime))
+  sortField Instrument = sortOn (Down . (.instrument))
+  sortField Stokes = sortOn (Down . (.stokesParameters))
+  sortField WaveMin = sortOn (Down . (.wavelengthMin))
+  sortField WaveMax = sortOn (Down . (.wavelengthMax))

@@ -18,6 +18,7 @@ import Web.UI
 page :: (Page :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Eff es ()
 page ip = do
   pageAction statusAction
+  pageAction DatasetsTable.actionSort
 
   pageLoad $ do
     ds <- queryProgram ip
@@ -33,7 +34,7 @@ page ip = do
 
         col (bg White . gap 10) $ do
           viewDatasets (filter (.latest) ds) ps
-          el (pad 10) $ DatasetsTable.datasetsTable ds
+          el (pad 10) $ liveView (ProgramDatasets ip) $ DatasetsTable.datasetsTable UpdateDate ds
  where
   description :: [Dataset] -> View c ()
   description [] = none

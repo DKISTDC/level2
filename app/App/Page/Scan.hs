@@ -96,7 +96,7 @@ datasetsTable ds = do
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
-  hd :: View () () -> View Head ()
+  hd :: View ScanView () -> View (Head ScanView) ()
   hd = th (bold . bg GrayLight . pad 4 . border 1)
 
   cell :: Text -> View Dataset ()
