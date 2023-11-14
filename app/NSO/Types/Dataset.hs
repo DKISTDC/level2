@@ -109,3 +109,15 @@ data GOSStatus = GOSStatus
 
 instance DBType GOSStatus where
   typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation
+
+data Distribution = Distribution
+  { min :: Float
+  , p25 :: Float
+  , med :: Float
+  , p75 :: Float
+  , max :: Float
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+instance DBType Distribution where
+  typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation

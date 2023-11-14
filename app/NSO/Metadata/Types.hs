@@ -89,6 +89,9 @@ data DatasetInventory = DatasetInventory
     health :: Health
   , gosStatus :: GOSStatus
   , aoLocked :: Int
+  , -- , polarimetricAccuracy :: Distribution
+    lightLevel :: Distribution
+  , friedParameter :: Distribution
   }
   deriving (Generic, Show, Eq, FromJSON)
 

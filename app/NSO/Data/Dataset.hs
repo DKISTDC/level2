@@ -50,6 +50,9 @@ data Dataset' f = Dataset
   , health :: Column f Health
   , gosStatus :: Column f GOSStatus
   , aoLocked :: Column f Int16
+  , lightLevel :: Column f Distribution
+  , polarimetricAccuracy :: Column f Distribution
+  , friedParameter :: Column f Distribution
   }
   deriving (Generic, Rel8able)
 
@@ -85,6 +88,9 @@ datasets =
           , health = "health"
           , gosStatus = "gos_status"
           , aoLocked = "ao_locked"
+          , friedParameter = "fried_parameter"
+          , polarimetricAccuracy = "polarimetric_accuracy"
+          , lightLevel = "light_level"
           }
     }
 

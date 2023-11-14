@@ -59,7 +59,7 @@ instance RequestType AllDatasets where
 
 mockRequest :: Text -> ByteString -> IO ByteString
 mockRequest "http://internal-api-gateway.service.prod.consul/graphql" _ =
-  L.readFile "deps/datasets2.json"
+  L.readFile "deps/datasets3.json"
 mockRequest url _ = do
   error $ "URL Not Mocked: " <> show url
 

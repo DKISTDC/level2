@@ -57,10 +57,6 @@ syncDatasets = do
   -- Ignore any unchanged
   pure res
 
--- TODO: if a dataset is updated (there exists more than one?)
--- no, updated means that the provenance was run against an older version
--- the instrument program is the same! What's different?
--- I need to be able to see the differences
 syncResults :: Map (Id Dataset) Dataset -> [Dataset] -> SyncResults
 syncResults old scan =
   let srs = map (syncResult old) scan
@@ -103,10 +99,12 @@ toDataset scanDate d = do
       , primaryProposalId = Id d.primaryProposalId
       , experimentDescription = d.experimentDescription
       , exposureTime = realToFrac d.exposureTime
-      , -- , inputDatasetObserveFramesPartId = Id . cs $ show d.inputDatasetObserveFramesPartId
-        health = d.health
+      , health = d.health
       , gosStatus = d.gosStatus
       , aoLocked = fromIntegral d.aoLocked
+      , friedParameter = d.friedParameter
+      , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
+      , lightLevel = d.lightLevel
       }
  where
   parseRead :: (Read a) => Text -> Text -> Either String a

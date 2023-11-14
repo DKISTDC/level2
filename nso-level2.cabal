@@ -59,7 +59,6 @@ executable level2
       NSO.Types.Dataset
       NSO.Types.InstrumentProgram
       NSO.Types.Wavelength
-      TUI
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
@@ -77,11 +76,10 @@ executable level2
       LambdaCase
       NoImplicitPrelude
       NoFieldSelectors
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall
   build-depends:
       aeson ==2.1.2.1
     , base >=4.16.4.0
-    , brick
     , bytestring
     , containers
     , data-diverse >=4.7
@@ -89,14 +87,10 @@ executable level2
     , exceptions
     , hasql
     , lens
-    , microlens
-    , microlens-mtl
-    , microlens-th
     , modern-uri
     , morpheus-graphql >=0.27
     , morpheus-graphql-client >=0.27
     , morpheus-graphql-core
-    , mtl
     , rel8
     , req
     , string-conversions
@@ -104,7 +98,6 @@ executable level2
     , tagged
     , text
     , time
-    , vty
     , wai-extra
     , web-ui
   default-language: GHC2021
