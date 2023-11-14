@@ -24,6 +24,7 @@ executable level2
       App
       App.Colors
       App.Page.Dashboard
+      App.Page.Dataset
       App.Page.Experiment
       App.Page.Experiments
       App.Page.Program

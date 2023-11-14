@@ -1,6 +1,7 @@
 module App.View.DatasetsTable where
 
 import App.Colors
+import App.Route as Route
 import App.View.Common (showTimestamp)
 import App.View.Icons as Icons
 import Data.Ord (Down (..))
@@ -44,9 +45,9 @@ datasetsTable s ds = do
   let sorted = sortField s ds
 
   -- is there a way to do alternating rows here?
-  table (odd (bg White) . even (bg Light)) sorted $ do
+  table (odd (bg White) . even (bg Light) . textAlign Center) sorted $ do
     tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ latest d.latest
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ text . cs $ d.datasetId.fromId
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (routeUrl $ Route.Dataset d.datasetId) (color Primary) $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
@@ -80,10 +81,6 @@ datasetsTable s ds = do
 
   bord = border 1 . borderColor GrayLight
 
-  latest False = none
-  latest True = do
-    el (width 24 . height 24) Icons.checkCircle
-
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (Down . (.datasetId))
   sortField Latest = sortOn (Down . (.latest))
@@ -94,3 +91,10 @@ datasetsTable s ds = do
   sortField Stokes = sortOn (Down . (.stokesParameters))
   sortField WaveMin = sortOn (Down . (.wavelengthMin))
   sortField WaveMax = sortOn (Down . (.wavelengthMax))
+
+latest :: Bool -> View c ()
+latest False = none
+latest True = row_ $ do
+  space
+  el (width 24 . height 24) Icons.checkCircle
+  space

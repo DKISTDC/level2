@@ -10,6 +10,7 @@ module NSO.Data.Dataset
   , queryLatest
   , queryExperiment
   , queryProgram
+  , queryById
   , insertAll
   , updateOld
   )
@@ -111,6 +112,12 @@ queryProgram ip = query () $ select $ do
   -- note that this DOESN'T limit by latest
   row <- each datasets
   where_ (row.instrumentProgramId ==. lit ip)
+  return row
+
+queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
+queryById i = query () $ select $ do
+  row <- each datasets
+  where_ (row.datasetId ==. lit i)
   return row
 
 insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()

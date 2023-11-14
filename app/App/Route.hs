@@ -13,6 +13,7 @@ data AppRoute
   | Experiments
   | Experiment (Id Experiment)
   | Program (Id InstrumentProgram)
+  | Dataset (Id Dataset)
   deriving (Show, Generic, Eq, Route)
 
 appLayout :: AppRoute -> View c () -> View c ()

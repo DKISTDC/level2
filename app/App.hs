@@ -1,6 +1,7 @@
 module App where
 
 import App.Page.Dashboard qualified as Dashboard
+import App.Page.Dataset qualified as Dataset
 import App.Page.Experiment qualified as Experiment
 import App.Page.Experiments qualified as Experiments
 import App.Page.Program qualified as Program
@@ -43,6 +44,7 @@ app conn = waiApplication document (runApp . router)
   router Experiments = Experiments.page
   router (Experiment eid) = Experiment.page eid
   router (Program pid) = Program.page pid
+  router (Dataset di) = Dataset.page di
   router Scan = Scan.page
 
   runApp =
