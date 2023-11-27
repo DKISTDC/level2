@@ -16,6 +16,7 @@ instance Eq (Wavelength a) where
     decimals :: Double -> Int
     decimals n = round (n * 100)
 
+-- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py
 data SpectralLine
   = HeI
   | Ha

@@ -5,13 +5,14 @@ import NSO.Data.Dataset
 import NSO.Prelude
 import NSO.Types.Wavelength
 
+-- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py
 identifyLine :: Wavelength Nm -> Wavelength Nm -> Maybe SpectralLine
 identifyLine mn mx = find matchesLine allLines
  where
   allLines = [HeI, Ha, FeI] <> fmap CaII [minBound .. maxBound]
 
   midPoint :: SpectralLine -> Wavelength Nm
-  midPoint HeI = Wavelength 108.30
+  midPoint HeI = Wavelength 1083.0
   midPoint Ha = Wavelength 656.2
   midPoint FeI = Wavelength 630.2
   midPoint (CaII CaII_849) = Wavelength 849.8
