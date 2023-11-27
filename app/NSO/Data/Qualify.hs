@@ -7,28 +7,19 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
--- TODO: Rigorously. 2D cartesian plane. Pythagorean triangle. That can be more than 900
--- TODO: send Frazer a bad one
--- BUG: 596 isn't real. There's a bug with the way I'm calculating the tags
---
---
--- up to 8-10 spectral lines with the VISP at this point
--- 946-948nm
--- 596nm
 isOnDisk :: Maybe BoundingBox -> Bool
 isOnDisk Nothing = False
 isOnDisk (Just bb) =
-  let (xu, yu) = bb.upperRight
-      (xl, yl) = bb.lowerLeft
-   in not
-        $ (xl < -radius)
-        || (yl < -radius)
-        || (xu > radius)
-        || (yu > radius)
+  all isCoordOnDisk $ boundingPoints bb
  where
   -- rough radius of the sun in arcseconds
   -- https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html
-  radius = 900
+
+  radius :: Coordinate Arcseconds -> Arcseconds
+  radius (x, y) = sqrt (x ** 2 + y ** 2) :: Arcseconds
+
+  isCoordOnDisk :: Coordinate Arcseconds -> Bool
+  isCoordOnDisk c = radius c < 900
 
 isQualified :: Grouped InstrumentProgram Dataset -> Bool
 isQualified = either (const False) (const True) . qualify

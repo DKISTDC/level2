@@ -57,6 +57,15 @@ data BoundingBox = BoundingBox
   }
   deriving (Eq)
 
+-- | Gives all 4 points of the box
+boundingPoints :: BoundingBox -> [Coordinate Arcseconds]
+boundingPoints bb =
+  let (xu, yu) = bb.upperRight
+      (xl, yl) = bb.lowerLeft
+      upperLeft = (xl, yu)
+      lowerRight = (xu, yl)
+   in [bb.upperRight, upperLeft, bb.lowerLeft, lowerRight]
+
 instance Show BoundingBox where
   show (BoundingBox ur ll) = show (ur, ll)
 
@@ -73,7 +82,7 @@ instance DBType BoundingBox where
     serialize bb = cs $ show (bb.upperRight, bb.lowerLeft)
 
 instance FromJSON BoundingBox where
-  parseJSON = withText "BoundingBox (Upper Left, Lower Right)" $ \t -> do
+  parseJSON = withText "BoundingBox (Upper Right, Lower Left)" $ \t -> do
     -- the Metadata format is ALMOST a tuple ((x1,y1),(x2,y2)
     -- "boundingBox": "(-351.85,-375.79),(-468.82,-495.48)",
     -- so wrap it in parens
