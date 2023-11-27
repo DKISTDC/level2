@@ -7,6 +7,14 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
+-- TODO: Rigorously. 2D cartesian plane. Pythagorean triangle. That can be more than 900
+-- TODO: send Frazer a bad one
+-- BUG: 596 isn't real. There's a bug with the way I'm calculating the tags
+--
+--
+-- up to 8-10 spectral lines with the VISP at this point
+-- 946-948nm
+-- 596nm
 isOnDisk :: Maybe BoundingBox -> Bool
 isOnDisk Nothing = False
 isOnDisk (Just bb) =
@@ -57,6 +65,7 @@ qualifyOnDisk g = all (\d -> isOnDisk d.boundingBox) g.items
 qualifyLine :: SpectralLine -> [SpectralLine] -> Bool
 qualifyLine sl sls = sl `elem` sls
 
+-- Frazer: metric have to meet. Have to meet in each of the wavelength channels. As opposed to the set combined.
 qualifyHealth :: Grouped InstrumentProgram Dataset -> Bool
 qualifyHealth = all (hasPctGood 0.75)
  where
@@ -66,7 +75,7 @@ qualifyHealth = all (hasPctGood 0.75)
 qualifyGOS :: Grouped InstrumentProgram Dataset -> Bool
 qualifyGOS g = all allOpen g.items
  where
-  allOpen d = (fromMaybe 0 d.gosStatus.open) == fromIntegral d.frameCount
+  allOpen d = fromMaybe 0 d.gosStatus.open == fromIntegral d.frameCount
 
 qualifyAO :: Grouped InstrumentProgram Dataset -> Bool
 qualifyAO = all (hasPctLocked 0.75)

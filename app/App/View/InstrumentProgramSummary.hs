@@ -11,7 +11,6 @@ import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
-import Numeric (showFFloat)
 import Web.View
 import Web.View.Style (Align (Center))
 
@@ -36,7 +35,7 @@ viewRow ip = row (gap 10 . textAlign Center) $ do
   diskTag = el (dataTag . bg Success) "On Disk"
 
   midTag mid =
-    tag "pre" (pad 2 . color GrayDark) $ text $ cs (showFFloat (Just 0) mid "nm")
+    tag "pre" (pad 2 . color GrayDark) $ text $ cs (show (round mid :: Integer) <> "nm")
 
   dataTag :: Mod
   dataTag = pad (XY 6 2) . rounded 3

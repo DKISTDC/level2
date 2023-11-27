@@ -93,7 +93,7 @@ instrumentProgram gd pv =
         }
  where
   midWave :: Dataset -> Wavelength Nm
-  midWave d = d.wavelengthMin + d.wavelengthMax / 2
+  midWave d = (d.wavelengthMin + d.wavelengthMax) / 2
 
   identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
   identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d.wavelengthMin d.wavelengthMax
