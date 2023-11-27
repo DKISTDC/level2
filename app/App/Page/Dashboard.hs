@@ -5,11 +5,11 @@ import App.Version
 import Effectful.Rel8
 import NSO.Prelude
 import Web.Hyperbole
-import Web.UI
+import Web.View
 
-page :: (Page :> es, Rel8 :> es) => Eff es ()
+page :: (Hyperbole :> es, Rel8 :> es) => Page es ()
 page = do
-  pageLoad $ do
+  load $ do
     pure $ appLayout Dashboard $ col (pad 20) $ do
       -- el (fontSize 24 . bold) "Level 2"
       el_ $ text $ cs appVersion

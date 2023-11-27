@@ -39,13 +39,13 @@ initialize = do
 app :: Rel8.Connection -> Application
 app conn = waiApplication document (runApp . router)
  where
-  -- router :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => AppRoute -> Eff es ()
-  router Dashboard = Dashboard.page
-  router Experiments = Experiments.page
-  router (Experiment eid) = Experiment.page eid
-  router (Program pid) = Program.page pid
-  router (Dataset di) = Dataset.page di
-  router Scan = Scan.page
+  -- router :: (Hyperbole :> es, Rel8 :> es, Debug :> es, GraphQL :> es, Error RequestError :> es) => AppRoute -> Eff es ()
+  router Dashboard = page Dashboard.page
+  router Experiments = page Experiments.page
+  router (Experiment eid) = page $ Experiment.page eid
+  router (Program pid) = page $ Program.page pid
+  router (Dataset di) = page $ Dataset.page di
+  router Scan = page Scan.page
 
   runApp =
     runTime
@@ -53,7 +53,7 @@ app conn = waiApplication document (runApp . router)
       . runErrorNoCallStackWith @RequestError onRequestError
       . runRel8 conn
       . runRequestMock Metadata.mockRequest -- .runRequest
-      . runPageWai
+      . runHyperbole
       . runDebugIO
       . runGraphQL
 

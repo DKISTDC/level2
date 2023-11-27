@@ -15,29 +15,28 @@ import NSO.Data.Scan
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.UI
+import Web.View hiding (button)
+import Web.View.Element (TableHead)
 
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
 data ScanView = ScanView
-  deriving (Show, Read, Param)
+  deriving (Show, Read, Param, HyperView PageEvent)
 
 data PageEvent
   = RunScan
   deriving (Show, Read, Param)
 
-instance LiveView ScanView PageEvent
-
-page :: (Page :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Eff es ()
+page :: (Hyperbole :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Page es ()
 page = do
-  pageAction pageEvent
+  hyper pageEvent
 
-  pageLoad $ do
+  load $ do
     pure $ appLayout Scan $ do
-      liveView ScanView $ viewScan Nothing
+      viewId ScanView $ viewScan Nothing
 
-pageEvent :: (Page :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
+pageEvent :: (Hyperbole :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
 pageEvent _ RunScan = do
   ds <- syncDatasets
   delay 1000
@@ -47,7 +46,7 @@ viewScan :: Maybe SyncResults -> View ScanView ()
 viewScan msr =
   onRequest loading $ do
     col (gap 10 . pad 20) $ do
-      liveButton RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover (bg PrimaryLight) . color White) "Run Scan"
+      button RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover (bg PrimaryLight) . color White) "Run Scan"
 
       maybe (pure ()) viewScanResults msr
  where
@@ -96,7 +95,7 @@ datasetsTable ds = do
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
-  hd :: View ScanView () -> View (Head ScanView) ()
+  hd :: View ScanView () -> View (TableHead ScanView) ()
   hd = th (bold . bg GrayLight . pad 4 . border 1)
 
   cell :: Text -> View Dataset ()

@@ -11,15 +11,17 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.UI
-import Web.UI.Types
+import Web.View hiding (button)
+import Web.View.Element (TableHead)
+import Web.View.Style (Align (..))
+import Web.View.Types
 
 rowHeight :: PxRem
 rowHeight = 30
 
 newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
   deriving stock (Show, Read)
-  deriving anyclass (Param)
+  deriving anyclass (Param, HyperView SortField)
 
 data SortField
   = DatasetId
@@ -33,8 +35,6 @@ data SortField
   | WaveMax
   deriving (Show, Read, Param)
 
-instance LiveView ProgramDatasets SortField
-
 actionSort :: (Rel8 :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
 actionSort (ProgramDatasets i) s = do
   ds <- Dataset.queryProgram i
@@ -47,7 +47,7 @@ datasetsTable s ds = do
   -- is there a way to do alternating rows here?
   table (odd (bg White) . even (bg Light) . textAlign Center) sorted $ do
     tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ latest d.latest
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (routeUrl $ Route.Dataset d.datasetId) (color Primary) $ text . cs $ d.datasetId.fromId
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) lnk $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
@@ -71,9 +71,9 @@ datasetsTable s ds = do
 
   sortBtn :: SortField -> Text -> View ProgramDatasets ()
   sortBtn st t =
-    liveButton st (color Primary . hover (bg PrimaryLight)) (text t)
+    button st lnk (text t)
 
-  hd :: View ProgramDatasets () -> View (Head ProgramDatasets) ()
+  hd :: View ProgramDatasets () -> View (TableHead ProgramDatasets) ()
   hd = th (pad 4 . bord . bold . bg Light)
 
   cell :: View () () -> View Dataset ()
@@ -81,20 +81,22 @@ datasetsTable s ds = do
 
   bord = border 1 . borderColor GrayLight
 
+  lnk = color Primary . hover (color PrimaryLight)
+
   sortField :: SortField -> ([Dataset] -> [Dataset])
-  sortField DatasetId = sortOn (Down . (.datasetId))
-  sortField Latest = sortOn (Down . (.latest))
+  sortField DatasetId = sortOn (.datasetId)
+  sortField Latest = sortOn (.latest)
   sortField CreateDate = sortOn (Down . (.createDate))
   sortField UpdateDate = sortOn (Down . (.updateDate))
   sortField StartTime = sortOn (Down . (.startTime))
-  sortField Instrument = sortOn (Down . (.instrument))
-  sortField Stokes = sortOn (Down . (.stokesParameters))
-  sortField WaveMin = sortOn (Down . (.wavelengthMin))
-  sortField WaveMax = sortOn (Down . (.wavelengthMax))
+  sortField Instrument = sortOn (.instrument)
+  sortField Stokes = sortOn (.stokesParameters)
+  sortField WaveMin = sortOn (.wavelengthMin)
+  sortField WaveMax = sortOn (.wavelengthMax)
 
 latest :: Bool -> View c ()
 latest False = none
-latest True = row_ $ do
+latest True = row id $ do
   space
   el (width 24 . height 24) Icons.checkCircle
   space

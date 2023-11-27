@@ -1,7 +1,7 @@
 module App.Colors where
 
 import NSO.Prelude
-import Web.UI
+import Web.View
 
 data AppColor
   = White

@@ -53,7 +53,8 @@ dependencies:
   - containers
   - string-conversions
   - rel8
-  - web-ui
+  - web-view >= 0.2.3
+  - hyperbole
   - wai-extra
 
 

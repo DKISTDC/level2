@@ -87,6 +87,7 @@ executable level2
     , effectful
     , exceptions
     , hasql
+    , hyperbole
     , lens
     , modern-uri
     , morpheus-graphql >=0.27
@@ -100,5 +101,5 @@ executable level2
     , text
     , time
     , wai-extra
-    , web-ui
+    , web-view >=0.2.3
   default-language: GHC2021

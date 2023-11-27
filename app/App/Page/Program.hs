@@ -13,14 +13,15 @@ import NSO.Data.Program
 import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import Web.Hyperbole
-import Web.UI
+import Web.View hiding (button)
+import Web.View.Style (Align (Center))
 
-page :: (Page :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Eff es ()
+page :: (Hyperbole :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Page es ()
 page ip = do
-  pageAction statusAction
-  pageAction DatasetsTable.actionSort
+  hyper statusAction
+  hyper DatasetsTable.actionSort
 
-  pageLoad $ do
+  load $ do
     ds <- queryProgram ip
     ps <- Provenance.loadProvenance ip
 
@@ -34,7 +35,7 @@ page ip = do
 
         col (bg White . gap 10) $ do
           viewDatasets (filter (.latest) ds) ps
-          el (pad 10) $ liveView (ProgramDatasets ip) $ DatasetsTable.datasetsTable UpdateDate ds
+          el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable UpdateDate ds
  where
   description :: [Dataset] -> View c ()
   description [] = none
@@ -49,8 +50,8 @@ viewDatasets (d : ds) ps = do
   row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
     InstrumentProgramSummary.viewRow ip
 
-  col (pad 10 . gap 10 . pad 10) $ do
-    liveView (Status ip.programId) statusView
+  col (pad 10 . gap 10) $ do
+    viewId (Status ip.programId) statusView
 
     el bold "Provenance"
     mapM_ viewProvenanceEntry ps
@@ -67,17 +68,18 @@ viewProvenanceEntry (WasQueued p) = do
     el_ "Queued"
     text $ showTimestamp p.completed
 
+-- Status -----------------------------------------------
+
 newtype Status = Status (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)
+  deriving anyclass (HyperView StatusAction)
 
 data StatusAction
   = Queue
   | Complete
   deriving (Show, Read, Param)
 
-instance LiveView Status StatusAction
-
-statusAction :: (Time :> es, Page :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
+statusAction :: (Time :> es, Hyperbole :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
 statusAction (Status ip) Queue = do
   -- TODO: higher level: mark an ip as queued but check to make sure it its valid first?
   Provenance.markQueued ip
@@ -89,7 +91,7 @@ statusAction (Status ip) Complete = do
 statusView :: View Status ()
 statusView = do
   row (gap 10) $ do
-    liveButton Queue btn "Queue"
-    liveButton Complete btn "Complete"
+    button Queue btn "Queue"
+    button Complete btn "Complete"
  where
   btn = color White . pad (XY 15 10) . bg Secondary . hover (bg SecondaryLight)

@@ -16,16 +16,17 @@ import NSO.Data.Program as Program
 import NSO.Prelude hiding (truncate)
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole as H
-import Web.UI
+import Web.View
+import Web.View.Style (truncate)
 
-page :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Eff es ()
+page :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Page es ()
 page = do
-  pageAction handle
+  hyper experiments
   -- pageAction handleIPRow
-  pageLoad $ do
+  load $ do
     exs <- Program.loadAllExperiments
     pure $ appLayout Experiments $ do
-      liveView MainView $ do
+      viewId ExView $ do
         viewExperiments (Filters Nothing (Just VISP)) exs
 
 loading :: View c ()
@@ -35,10 +36,10 @@ loading = el_ "loading..."
 -- Experiments --------------------------------------
 -----------------------------------------------------
 
-data MainView = MainView
-  deriving (Show, Read, Param)
+data ExView = ExView
+  deriving (Show, Read, Param, HyperView ExEvent)
 
-data MainEvent = Filter Filters
+data ExEvent = Filter Filters
   deriving (Show, Read, Param)
 
 data Filters = Filters
@@ -47,15 +48,13 @@ data Filters = Filters
   }
   deriving (Show, Read)
 
-instance LiveView MainView MainEvent
-
-handle :: (Page :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => MainView -> MainEvent -> Eff es (View MainView ())
-handle _ (Filter fs) = do
+experiments :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => ExView -> ExEvent -> Eff es (View ExView ())
+experiments _ (Filter fs) = do
   exs <- Program.loadAllExperiments
   pure $ viewExperiments fs exs
 
 -- ok, wait, I need to group them by experiment
-viewExperiments :: Filters -> [Experiment] -> View MainView ()
+viewExperiments :: Filters -> [Experiment] -> View ExView ()
 viewExperiments fs exs = do
   col (pad 15 . gap 20) $ do
     viewFilters fs
@@ -63,18 +62,18 @@ viewExperiments fs exs = do
     col (gap 40) $ do
       forM_ exs viewExperiment
  where
-  viewExperiment :: Experiment -> View MainView ()
+  viewExperiment :: Experiment -> View ExView ()
   viewExperiment e = do
     let shown = filter applyFilters $ G.toList e.programs
     experimentPrograms e shown
 
-  experimentPrograms :: Experiment -> [InstrumentProgram] -> View MainView ()
+  experimentPrograms :: Experiment -> [InstrumentProgram] -> View ExView ()
   experimentPrograms _ [] = none
   experimentPrograms e ips = do
     col (gap 8 . bg White) $ do
       row (bg GrayLight) $ do
         -- link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
-        link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
+        link (Route.Experiment e.experimentId) (bold . pad 10) $ do
           text "Experiment "
           text e.experimentId.fromId
         space
@@ -91,7 +90,7 @@ viewExperiments fs exs = do
 
         let ignored = length e.programs - length ips
         when (ignored > 0) $ do
-          link (routeUrl $ Route.Experiment e.experimentId) (fontSize 14 . color GrayDark) $ do
+          link (Route.Experiment e.experimentId) (fontSize 14 . color GrayDark) $ do
             text $ cs (show ignored)
             text "Hidden Instrument Programs"
 
@@ -115,23 +114,23 @@ viewExperiments fs exs = do
 -- applyFilter Invertible f ip = f ip && Qualify.isQualified ip
 -- applyFilter (IsInstrument i) f ip = f ip && ip.instrument == i
 
-viewFilters :: Filters -> View MainView ()
+viewFilters :: Filters -> View ExView ()
 viewFilters fs = do
   row (gap 10) $ do
-    liveSelect (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
+    dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
       option Nothing id ""
       option (Just VISP) id "VISP"
       option (Just VBI) id "VBI"
 
-    liveSelect (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) $ do
+    dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) $ do
       option Nothing id ""
       option (Just True) id "Invertible"
       option (Just False) id "Not Invertible"
 
-tableInstrumentPrograms :: [InstrumentProgram] -> View MainView ()
+tableInstrumentPrograms :: [InstrumentProgram] -> View ExView ()
 tableInstrumentPrograms ips = do
   let sorted = ips
-  col_ $ do
+  col id $ do
     dataRows sorted $ \ip -> do
       rowInstrumentProgram ip
 
@@ -168,7 +167,7 @@ tableInstrumentPrograms ips = do
 rowInstrumentProgram :: InstrumentProgram -> View c ()
 rowInstrumentProgram psm = do
   -- liveButton onClick id $ do
-  link (routeUrl (Program psm.programId)) id $ do
+  link (Program psm.programId) id $ do
     InstrumentProgramSummary.viewRow psm
 
 -- viewInstrumentProgram :: ProgramSummary -> View IPRow ()

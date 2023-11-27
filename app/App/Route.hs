@@ -5,7 +5,7 @@ import NSO.Data.Dataset
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
-import Web.UI
+import Web.View
 
 data AppRoute
   = Dashboard
@@ -22,7 +22,7 @@ appLayout rc content = do
     nav (gap 0 . bg Primary . color GrayLight . small topbar . big sidebar) $ do
       row (pad 20 . small (pad 15)) $ do
         space
-        link "/" (bold . fontSize 32 . small (fontSize 24)) "Level 2"
+        link Dashboard (bold . fontSize 32 . small (fontSize 24)) "Level 2"
         space
       -- nav Dashboard "Dashboard"
       item Experiments "Experiments"
@@ -32,7 +32,7 @@ appLayout rc content = do
  where
   item r =
     link
-      (routeUrl r)
+      r
       (border (TRBL 0 0 0 5) . pad 20 . small (border (TRBL 0 0 5 0)) . hover (borderColor White . color White) . if r == rc then current else other)
 
   current = bg PrimaryLight . borderColor GrayLight

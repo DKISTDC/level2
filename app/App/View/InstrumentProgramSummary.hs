@@ -12,8 +12,8 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 import Numeric (showFFloat)
-import Web.UI
-import Web.UI.Types
+import Web.View
+import Web.View.Style (Align (Center))
 
 viewRow :: InstrumentProgram -> View c ()
 viewRow ip = row (gap 10 . textAlign Center) $ do

@@ -4,7 +4,7 @@ module App.View.Icons where
 
 import Data.String.Interpolate
 import NSO.Prelude
-import Web.UI
+import Web.View
 
 checkCircle :: View c ()
 checkCircle = raw $ do
