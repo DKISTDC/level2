@@ -10,13 +10,18 @@ import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Rel8
 
+
+-- TODO: needs to track the datasets it operated on in an operation
+
 data QueuedRow f = QueuedRow
   { programId :: Column f (Id InstrumentProgram)
   , completed :: Column f UTCTime
   }
   deriving (Generic, Rel8able)
 
+
 deriving stock instance (f ~ Result) => Eq (QueuedRow f)
+
 
 queued :: TableSchema (QueuedRow Name)
 queued =
@@ -30,13 +35,16 @@ queued =
           }
     }
 
+
 data InvertedRow f = InvertedRow
   { programId :: Column f (Id InstrumentProgram)
   , completed :: Column f UTCTime
   }
   deriving (Generic, Rel8able)
 
+
 deriving stock instance (f ~ Result) => Eq (InvertedRow f)
+
 
 inverted :: TableSchema (InvertedRow Name)
 inverted =
@@ -50,20 +58,24 @@ inverted =
           }
     }
 
+
 data ProvenanceEntry
   = WasInverted (InvertedRow Identity)
   | WasQueued (QueuedRow Identity)
   deriving (Eq)
 
+
 completed :: ProvenanceEntry -> UTCTime
 completed (WasInverted p) = p.completed
 completed (WasQueued p) = p.completed
+
 
 isProgram :: Id InstrumentProgram -> ProvenanceEntry -> Bool
 isProgram ip pe = programId pe == ip
  where
   programId (WasInverted p) = p.programId
   programId (WasQueued p) = p.programId
+
 
 loadProvenance :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [ProvenanceEntry]
 loadProvenance ip = do
@@ -81,6 +93,7 @@ loadProvenance ip = do
     where_ (row.programId ==. lit ip)
     return row
 
+
 -- | Loads the entire database for sorting later. Use `isProgram` above
 loadAllProvenance :: (Rel8 :> es) => Eff es AllProvenance
 loadAllProvenance = do
@@ -88,17 +101,20 @@ loadAllProvenance = do
   inv <- query () $ select $ each inverted
   pure $ AllProvenance $ map WasInverted inv <> map WasQueued qus
 
+
 markQueued :: (Rel8 :> es, Time :> es) => Id InstrumentProgram -> Eff es ()
 markQueued ip = do
   now <- currentTime
   let qd = QueuedRow ip now
   mark queued [lit qd]
 
+
 markInverted :: (Rel8 :> es, Time :> es) => Id InstrumentProgram -> Eff es ()
 markInverted ip = do
   now <- currentTime
   let iv = InvertedRow ip now
   mark inverted [lit iv]
+
 
 mark :: (Rel8 :> es, Rel8able f) => TableSchema (f Name) -> [f Expr] -> Eff es ()
 mark table as = do
@@ -111,6 +127,7 @@ mark table as = do
       , onConflict = DoNothing
       , returning = NumberOfRowsAffected
       }
+
 
 -- | Provenance of EVERY program
 newtype AllProvenance = AllProvenance [ProvenanceEntry]

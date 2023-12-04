@@ -14,24 +14,30 @@ import GHC.TypeLits
 import NSO.Data.Dataset
 import NSO.Prelude
 
+
 newtype DateTime = DateTime {utc :: UTCTime}
   deriving (Show, Eq, Generic)
   deriving newtype (ISO8601, FormatTime)
 
+
 instance EncodeScalar DateTime where
   encodeScalar (DateTime x) = String $ cs $ iso8601Show x
+
 
 instance DecodeScalar DateTime where
   -- dates do not have the UTC suffix
   decodeScalar (String s) = iso8601ParseM $ cs $ s <> "Z"
   decodeScalar _ = Left "Cannot decode DateTime"
 
+
 newtype JSONString = JSONString Text
   deriving (Show, Eq, Generic)
   deriving newtype (EncodeScalar, DecodeScalar)
 
+
 -- | this only defines a few basic types
 declareGlobalTypes "deps/metadata.graphql"
+
 
 data DatasetInventory = DatasetInventory
   -- { asdfObjectKey :: Text
@@ -50,8 +56,8 @@ data DatasetInventory = DatasetInventory
   , -- , datasetInventoryId :: Int
     -- , datasetSize :: Int
     endTime :: DateTime
-  , experimentDescription :: Text
-  , exposureTime :: Double
+  , -- , experimentDescription :: Text
+    exposureTime :: Double
   , frameCount :: Int
   , -- , hasAllStokes :: Bool
     -- , hasSpectralAxis :: Bool
@@ -67,8 +73,9 @@ data DatasetInventory = DatasetInventory
     instrumentName :: Text
   , instrumentProgramExecutionId :: Text
   , -- , isActive :: Bool
-    -- , isEmbargoed :: Bool
-    observingProgramExecutionId :: Text
+    isEmbargoed :: Bool
+  , embargoEndDate :: Maybe DateTime
+  , observingProgramExecutionId :: Text
   , -- , originalFrameCount :: Int
     primaryExperimentId :: Text
   , primaryProposalId :: Text
@@ -95,20 +102,33 @@ data DatasetInventory = DatasetInventory
   }
   deriving (Generic, Show, Eq, FromJSON)
 
+
+data ExperimentDescription = ExperimentDescription
+  { experimentId :: Text
+  , experimentDescription :: Text
+  }
+  deriving (Generic, Show, Eq, FromJSON)
+
+
 data NestedFields = NestedFields String [NestedFields]
+
 
 -- | Return the field names for a given object by proxy
 class FieldNames f where
   fieldNames :: Proxy f -> [NestedFields]
 
+
 instance (FieldNames f, FieldNames g) => FieldNames (f :*: g) where
   fieldNames _ = fieldNames (Proxy :: Proxy f) ++ fieldNames (Proxy :: Proxy g)
+
 
 instance (FieldNames f, FieldNames g) => FieldNames (f :+: g) where
   fieldNames _ = fieldNames (Proxy :: Proxy f) ++ fieldNames (Proxy :: Proxy g)
 
+
 instance (KnownSymbol name, FieldNames f) => FieldNames (M1 S ('MetaSel ('Just name) _1 _2 _3) f) where
   fieldNames _ = [NestedFields (symbolVal (Proxy :: Proxy name)) []]
+
 
 -- instance (KnownSymbol name, FieldNames f) => FieldNames (M1 S ('MetaSel ('Just name) _1 _2 _3) f) where
 --   fieldNames _ = [NestedFields (symbolVal (Proxy :: Proxy name)) (fieldNames @f Proxy)]
@@ -116,14 +136,18 @@ instance (KnownSymbol name, FieldNames f) => FieldNames (M1 S ('MetaSel ('Just n
 instance (FieldNames f) => FieldNames (M1 D meta f) where
   fieldNames _ = fieldNames (Proxy :: Proxy f)
 
+
 instance (FieldNames f) => FieldNames (M1 C meta f) where
   fieldNames _ = fieldNames (Proxy :: Proxy f)
+
 
 instance FieldNames U1 where
   fieldNames _ = []
 
+
 instance FieldNames (K1 R f) where
   fieldNames _ = []
+
 
 -- class DataName f where
 --   dataName :: Proxy f -> String

@@ -1,5 +1,6 @@
 module NSO.Data.Scan where
 
+import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
 import Effectful
@@ -12,6 +13,7 @@ import NSO.Metadata
 import NSO.Metadata.Types
 import NSO.Prelude
 import Text.Read (readMaybe)
+
 
 -- scanDatasets :: (Time :> es, GraphQL :> es, Rel8 :> es, Error RequestError :> es) => Eff es [Dataset]
 -- scanDatasets = do
@@ -26,6 +28,7 @@ data SyncResult
   | Updated
   deriving (Eq)
 
+
 data SyncResults = SyncResults
   { new :: [Dataset]
   , updated :: [Dataset]
@@ -33,12 +36,15 @@ data SyncResults = SyncResults
   }
   deriving (Eq)
 
+
 scanDatasetInventory :: (GraphQL :> es, Error RequestError :> es, Time :> es) => Eff es [Dataset]
 scanDatasetInventory = do
   now <- currentTime
   ads <- fetch @AllDatasets metadata ()
-  let res = mapM (toDataset now) ads.datasetInventories
+  exs <- fetch @AllExperiments metadata ()
+  let res = mapM (toDataset now exs) ads.datasetInventories
   either (throwError . ParseError) pure res
+
 
 syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es) => Eff es SyncResults
 syncDatasets = do
@@ -57,6 +63,7 @@ syncDatasets = do
   -- Ignore any unchanged
   pure res
 
+
 syncResults :: Map (Id Dataset) Dataset -> [Dataset] -> SyncResults
 syncResults old scan =
   let srs = map (syncResult old) scan
@@ -68,6 +75,7 @@ syncResults old scan =
  where
   results r = map snd . filter ((== r) . fst)
 
+
 syncResult :: Map (Id Dataset) Dataset -> Dataset -> SyncResult
 syncResult old d = fromMaybe New $ do
   dold <- M.lookup d.datasetId old
@@ -75,9 +83,11 @@ syncResult old d = fromMaybe New $ do
     then pure Unchanged
     else pure Updated
 
-toDataset :: UTCTime -> DatasetInventory -> Either String Dataset
-toDataset scanDate d = do
+
+toDataset :: UTCTime -> AllExperiments -> DatasetInventory -> Either String Dataset
+toDataset scanDate (AllExperiments exs) d = do
   ins <- parseRead "Instrument" d.instrumentName
+  exd <- parseExperiment d.primaryExperimentId
   pure
     $ Dataset
       { datasetId = Id d.datasetId
@@ -97,7 +107,7 @@ toDataset scanDate d = do
       , frameCount = fromIntegral d.frameCount
       , primaryExperimentId = Id d.primaryExperimentId
       , primaryProposalId = Id d.primaryProposalId
-      , experimentDescription = d.experimentDescription
+      , experimentDescription = exd
       , exposureTime = realToFrac d.exposureTime
       , health = d.health
       , gosStatus = d.gosStatus
@@ -107,6 +117,12 @@ toDataset scanDate d = do
       , lightLevel = d.lightLevel
       }
  where
+  parseExperiment :: Text -> Either String Text
+  parseExperiment eid =
+    case L.find (\e -> e.experimentId == eid) exs of
+      Nothing -> fail "Experiment Description"
+      (Just e) -> pure e.experimentDescription
+
   parseRead :: (Read a) => Text -> Text -> Either String a
   parseRead expect input =
     maybe (Left [i|Invalid #{expect}: #{input}|]) Right $ readMaybe $ cs input
@@ -115,6 +131,7 @@ toDataset scanDate d = do
     if isCoordNaN bb.lowerLeft || isCoordNaN bb.upperRight
       then Nothing
       else Just bb
+
 
 indexed :: [Dataset] -> Map (Id Dataset) Dataset
 indexed = M.fromList . map (\d -> (d.datasetId, d))
