@@ -2,7 +2,7 @@ module App.View.DatasetsTable where
 
 import App.Colors
 import App.Route as Route
-import App.View.Common (showTimestamp)
+import App.View.Common (showDate, showTimestamp)
 import App.View.Icons as Icons
 import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Ord (Down (..))
@@ -15,12 +15,15 @@ import Web.Hyperbole
 import Web.View.Element (TableHead)
 import Web.View.Style (Align (..))
 
+
 rowHeight :: PxRem
 rowHeight = 30
+
 
 newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
   deriving stock (Show, Read)
   deriving anyclass (Param)
+
 
 data SortField
   = DatasetId
@@ -34,13 +37,16 @@ data SortField
   | WaveMax
   deriving (Show, Read, Param)
 
+
 instance HyperView ProgramDatasets where
   type Action ProgramDatasets = SortField
+
 
 actionSort :: (Rel8 :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
 actionSort (ProgramDatasets i) s = do
   ds <- Dataset.queryProgram i
   pure $ datasetsTable s ds
+
 
 datasetsTable :: SortField -> [Dataset] -> View ProgramDatasets ()
 datasetsTable s ds = do
@@ -52,6 +58,7 @@ datasetsTable s ds = do
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) lnk $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
+    tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
     tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
     tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMin ""
@@ -72,6 +79,12 @@ datasetsTable s ds = do
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
+  embargo :: Dataset -> Text
+  embargo d =
+    case d.embargo of
+      (Just utc) -> showDate utc
+      Nothing -> "-"
+
   sortBtn :: SortField -> Text -> View ProgramDatasets ()
   sortBtn st t =
     button st lnk (text t)
@@ -88,7 +101,7 @@ datasetsTable s ds = do
 
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (.datasetId)
-  sortField Latest = sortOn (.latest)
+  sortField Latest = sortOn (Down . (.scanDate))
   sortField CreateDate = sortOn (Down . (.createDate))
   sortField UpdateDate = sortOn (Down . (.updateDate))
   sortField StartTime = sortOn (Down . (.startTime))
@@ -96,6 +109,7 @@ datasetsTable s ds = do
   sortField Stokes = sortOn (.stokesParameters)
   sortField WaveMin = sortOn (.wavelengthMin)
   sortField WaveMax = sortOn (.wavelengthMax)
+
 
 latest :: Bool -> View c ()
 latest False = none

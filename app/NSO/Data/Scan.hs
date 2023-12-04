@@ -88,6 +88,7 @@ toDataset :: UTCTime -> AllExperiments -> DatasetInventory -> Either String Data
 toDataset scanDate (AllExperiments exs) d = do
   ins <- parseRead "Instrument" d.instrumentName
   exd <- parseExperiment d.primaryExperimentId
+  emb <- parseEmbargo
   pure
     $ Dataset
       { datasetId = Id d.datasetId
@@ -115,6 +116,7 @@ toDataset scanDate (AllExperiments exs) d = do
       , friedParameter = d.friedParameter
       , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
       , lightLevel = d.lightLevel
+      , embargo = emb
       }
  where
   parseExperiment :: Text -> Either String Text
@@ -122,6 +124,18 @@ toDataset scanDate (AllExperiments exs) d = do
     case L.find (\e -> e.experimentId == eid) exs of
       Nothing -> fail "Experiment Description"
       (Just e) -> pure e.experimentDescription
+
+  parseEmbargo :: Either String (Maybe UTCTime)
+  parseEmbargo =
+    if d.isEmbargoed
+      then do
+        utc <- required "Embargo End Date" $ (.utc) <$> d.embargoEndDate
+        pure (Just utc)
+      else pure Nothing
+
+  required :: String -> Maybe a -> Either String a
+  required n Nothing = fail ("Missing Required: " <> n)
+  required _ (Just v) = pure v
 
   parseRead :: (Read a) => Text -> Text -> Either String a
   parseRead expect input =

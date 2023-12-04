@@ -15,8 +15,9 @@ import Numeric (showFFloat)
 import Web.View
 import Web.View.Style (Align (Center))
 
-viewRow :: InstrumentProgram -> View c ()
-viewRow ip = row (gap 10 . textAlign Center) $ do
+
+viewRow :: UTCTime -> InstrumentProgram -> View c ()
+viewRow now ip = row (gap 10 . textAlign Center) $ do
   statusTag ip.status
 
   el dataCell $ text $ showDate ip.createDate
@@ -26,6 +27,7 @@ viewRow ip = row (gap 10 . textAlign Center) $ do
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
   row (dataCell . gap 5 . fontSize 14) $ do
+    maybe none embargoTag ip.embargo
     if ip.onDisk then diskTag else none
     mapM_ lineTag ip.spectralLines
     mapM_ midTag $ sortOn id ip.otherWavelengths
@@ -34,6 +36,11 @@ viewRow ip = row (gap 10 . textAlign Center) $ do
   lineTag s = tag "pre" (dataTag . bg SecondaryLight) $ text $ cs $ show s
 
   diskTag = el (dataTag . bg Success) "On Disk"
+
+  embargoTag utc =
+    if utc > now
+      then el (dataTag . bg Warning) "Embargoed"
+      else none
 
   midTag mid =
     tag "pre" (pad 2 . color GrayDark) $ text $ cs (show (round mid :: Integer) <> "nm")
@@ -45,6 +52,7 @@ viewRow ip = row (gap 10 . textAlign Center) $ do
   statusTag Qualified = el (dataCell . bg Success) $ text "Qualified"
   statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
   statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
+
 
 viewCriteria :: InstrumentProgram -> Grouped InstrumentProgram Dataset -> View c ()
 viewCriteria ip gd = do
@@ -68,11 +76,14 @@ viewCriteria ip gd = do
     el bold "VBI Criteria"
     criteria "Not Supported" False
 
+
 summaryHeight :: PxRem
 summaryHeight = 8 * criteriaRowHeight + (8 * 2)
 
+
 criteriaRowHeight :: PxRem
 criteriaRowHeight = 32
+
 
 criteria :: Text -> Bool -> View c ()
 criteria msg b =
@@ -86,6 +97,7 @@ criteria msg b =
         then Icons.checkCircle
         else Icons.xMark
 
+
 radiusBoundingBox :: Maybe BoundingBox -> View c ()
 radiusBoundingBox Nothing = none
 radiusBoundingBox (Just b) = row (gap 5) $ do
@@ -93,6 +105,7 @@ radiusBoundingBox (Just b) = row (gap 5) $ do
   forM_ (boundingPoints b) $ \c ->
     code . cs $ showFFloat (Just 0) (boxRadius c) ""
   space
+
 
 code :: Text -> View c ()
 code = pre (fontSize 14)

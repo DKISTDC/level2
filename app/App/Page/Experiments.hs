@@ -10,7 +10,7 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.Rel8 (Rel8)
 import Effectful.Request
-import Effectful.Time (Time)
+import Effectful.Time
 import NSO.Data.Dataset as Dataset
 import NSO.Data.Program as Program
 import NSO.Prelude hiding (truncate)
@@ -18,18 +18,22 @@ import NSO.Types.InstrumentProgram
 import Web.Hyperbole as H
 import Web.View.Style (truncate)
 
+
 page :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Page es ()
 page = do
   hyper experiments
   -- pageAction handleIPRow
   load $ do
     exs <- Program.loadAllExperiments
+    now <- currentTime
     pure $ appLayout Experiments $ do
       viewId ExView $ do
-        viewExperiments (Filters Nothing (Just VISP)) exs
+        viewExperiments now (Filters Nothing (Just VISP)) exs
+
 
 loading :: View c ()
 loading = el_ "loading..."
+
 
 -----------------------------------------------------
 -- Experiments --------------------------------------
@@ -38,11 +42,14 @@ loading = el_ "loading..."
 data ExView = ExView
   deriving (Show, Read, Param)
 
+
 data ExEvent = Filter Filters
   deriving (Show, Read, Param)
 
+
 instance HyperView ExView where
   type Action ExView = ExEvent
+
 
 data Filters = Filters
   { isInvertible :: Maybe Bool
@@ -50,14 +57,17 @@ data Filters = Filters
   }
   deriving (Show, Read)
 
+
 experiments :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => ExView -> ExEvent -> Eff es (View ExView ())
 experiments _ (Filter fs) = do
   exs <- Program.loadAllExperiments
-  pure $ viewExperiments fs exs
+  now <- currentTime
+  pure $ viewExperiments now fs exs
+
 
 -- ok, wait, I need to group them by experiment
-viewExperiments :: Filters -> [Experiment] -> View ExView ()
-viewExperiments fs exs = do
+viewExperiments :: UTCTime -> Filters -> [Experiment] -> View ExView ()
+viewExperiments now fs exs = do
   col (pad 15 . gap 20) $ do
     viewFilters fs
 
@@ -88,7 +98,7 @@ viewExperiments fs exs = do
         --   el_ $ text $ showDate ds1.startTime
         el truncate $ text e.description
 
-        tableInstrumentPrograms ips
+        tableInstrumentPrograms now ips
 
         let ignored = length e.programs - length ips
         when (ignored > 0) $ do
@@ -112,6 +122,7 @@ viewExperiments fs exs = do
       (Just False) -> ip.status == Invalid
       (Just True) -> ip.status /= Invalid
 
+
 -- applyFilter :: Filter -> (InstrumentProgram -> Bool) -> (InstrumentProgram -> Bool)
 -- applyFilter Invertible f ip = f ip && Qualify.isQualified ip
 -- applyFilter (IsInstrument i) f ip = f ip && ip.instrument == i
@@ -129,12 +140,14 @@ viewFilters fs = do
       option (Just True) id "Invertible"
       option (Just False) id "Not Invertible"
 
-tableInstrumentPrograms :: [InstrumentProgram] -> View ExView ()
-tableInstrumentPrograms ips = do
+
+tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View ExView ()
+tableInstrumentPrograms now ips = do
   let sorted = ips
   col id $ do
     dataRows sorted $ \ip -> do
-      rowInstrumentProgram ip
+      rowInstrumentProgram now ip
+
 
 -----------------------------------------------------
 -- IPRow
@@ -166,11 +179,11 @@ tableInstrumentPrograms ips = do
 --   action psm Collapse =
 --     pure $ rowInstrumentProgram Expand psm
 
-rowInstrumentProgram :: InstrumentProgram -> View c ()
-rowInstrumentProgram psm = do
+rowInstrumentProgram :: UTCTime -> InstrumentProgram -> View c ()
+rowInstrumentProgram now psm = do
   -- liveButton onClick id $ do
   link (Program psm.programId) id $ do
-    InstrumentProgramSummary.viewRow psm
+    InstrumentProgramSummary.viewRow now psm
 
 -- viewInstrumentProgram :: ProgramSummary -> View IPRow ()
 -- viewInstrumentProgram psm = do

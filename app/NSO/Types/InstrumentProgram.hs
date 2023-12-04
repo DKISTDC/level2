@@ -6,6 +6,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.Wavelength
 
+
 -- These do NOT have datasets
 data InstrumentProgram = InstrumentProgram
   { programId :: Id InstrumentProgram
@@ -19,7 +20,9 @@ data InstrumentProgram = InstrumentProgram
   , spectralLines :: [SpectralLine]
   , otherWavelengths :: [Wavelength Nm]
   , status :: ProgramStatus
+  , embargo :: Maybe UTCTime
   }
+
 
 data Experiment = Experiment
   { experimentId :: Id Experiment
@@ -27,6 +30,7 @@ data Experiment = Experiment
   , startTime :: UTCTime
   , programs :: Grouped Experiment InstrumentProgram
   }
+
 
 data ProgramStatus
   = Invalid

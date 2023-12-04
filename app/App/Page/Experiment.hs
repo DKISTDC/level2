@@ -6,6 +6,7 @@ import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.Grouped as G
 import Effectful.Rel8
+import Effectful.Time
 import NSO.Data.Dataset
 import NSO.Data.Program as Program
 import NSO.Data.Provenance as Provenance
@@ -13,13 +14,15 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
-page :: (Hyperbole :> es, Rel8 :> es) => Id Experiment -> Page es ()
+
+page :: (Hyperbole :> es, Time :> es, Rel8 :> es) => Id Experiment -> Page es ()
 page eid = do
   hyper DatasetsTable.actionSort
 
   load $ do
     ds <- queryExperiment eid
     pv <- loadAllProvenance
+    now <- currentTime
     let pwds = Program.fromDatasets pv ds
 
     pure $ appLayout Experiments $ do
@@ -28,28 +31,31 @@ page eid = do
           text "Experiment  "
           text $ cs $ show eid
 
-        viewPrograms pwds
+        viewPrograms now pwds
+
 
 -- DatasetsTable.datasetsTable ds
 
 -- each InstrumentProgram MUST have datasets
-viewPrograms :: [WithDatasets] -> View c ()
-viewPrograms [] = el_ "Not Found"
-viewPrograms (p : ps) = do
+viewPrograms :: UTCTime -> [WithDatasets] -> View c ()
+viewPrograms _ [] = el_ "Not Found"
+viewPrograms now (p : ps) = do
   let wds = Grouped (p :| ps) :: Grouped Experiment WithDatasets
-  viewExperiment wds
+  viewExperiment now wds
 
-viewExperiment :: Grouped Experiment WithDatasets -> View c ()
-viewExperiment gx = do
+
+viewExperiment :: UTCTime -> Grouped Experiment WithDatasets -> View c ()
+viewExperiment now gx = do
   let wd = sample gx
   el_ $ text wd.program.experimentDescription
-  mapM_ programSummary gx
+  mapM_ (programSummary now) gx
 
-programSummary :: WithDatasets -> View c ()
-programSummary wdp = do
+
+programSummary :: UTCTime -> WithDatasets -> View c ()
+programSummary now wdp = do
   col (bg White . gap 10 . pad 10) $ do
     row id $ do
-      InstrumentProgramSummary.viewRow wdp.program
+      InstrumentProgramSummary.viewRow now wdp.program
       space
       link (Program wdp.program.programId) (color Primary . bold) $ do
         text wdp.program.programId.fromId

@@ -2,18 +2,22 @@ module App.Page.Dataset where
 
 import App.Colors
 import App.Route
-import App.View.Common (showTimestamp)
+import App.View.Common (showDate, showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Aeson (ToJSON, encode)
+import Data.Ord (Down (..))
 import Effectful.Rel8
 import NSO.Data.Dataset as Dataset
 import NSO.Prelude
 import Web.Hyperbole
 
+
 page :: (Hyperbole :> es, Rel8 :> es) => Id Dataset -> Page es ()
 page di = load $ do
   ds <- Dataset.queryById di
+
+  let sorted = sortOn (Down . (.scanDate)) ds
 
   pure $ appLayout Experiments $ do
     col (pad 20 . gap 20) $ do
@@ -21,13 +25,15 @@ page di = load $ do
         text "Dataset: "
         text di.fromId
 
-      mapM_ viewDataset ds
+      mapM_ viewDataset sorted
+
 
 viewDataset :: Dataset -> View c ()
 viewDataset d =
   col (bg White . gap 10 . pad 10) $ do
     field "Latest" $ DatasetsTable.latest d.latest
     field "Scan Date" $ text $ showTimestamp d.scanDate
+    field "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
     field "Instrument" $ text $ cs $ show d.instrument
     field "Instrument Program Id" $ link (Program d.instrumentProgramId) lnk $ text d.instrumentProgramId.fromId
     field "Experiment Id" $ link (Experiment d.primaryExperimentId) lnk $ text d.primaryExperimentId.fromId
@@ -52,6 +58,7 @@ viewDataset d =
  where
   lnk = color Primary . hover (color PrimaryLight)
 
+
 field :: Text -> View c () -> View c ()
 field nm cnt =
   row (gap 10) $ do
@@ -60,12 +67,15 @@ field nm cnt =
       label bold (text nm)
     el_ cnt
 
+
 boundingBox :: Maybe BoundingBox -> View c ()
 boundingBox Nothing = none
 boundingBox (Just b) = code $ cs $ show b
 
+
 json :: (ToJSON a) => a -> View c ()
 json a = code $ cs $ encode a
+
 
 code :: Text -> View c ()
 code = pre (fontSize 14)

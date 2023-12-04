@@ -27,6 +27,7 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 import Rel8
 
+
 type Dataset = Dataset' Identity
 data Dataset' f = Dataset
   { datasetId :: Column f (Id Dataset)
@@ -54,11 +55,14 @@ data Dataset' f = Dataset
   , lightLevel :: Column f Distribution
   , polarimetricAccuracy :: Column f Distribution
   , friedParameter :: Column f Distribution
+  , embargo :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)
 
+
 deriving stock instance (f ~ Result) => Show (Dataset' f)
 deriving stock instance (f ~ Result) => Eq (Dataset' f)
+
 
 datasets :: TableSchema (Dataset' Name)
 datasets =
@@ -92,8 +96,10 @@ datasets =
           , friedParameter = "fried_parameter"
           , polarimetricAccuracy = "polarimetric_accuracy"
           , lightLevel = "light_level"
+          , embargo = "embargo"
           }
     }
+
 
 queryLatest :: (Rel8 :> es) => Eff es [Dataset]
 queryLatest = query () $ select $ do
@@ -101,11 +107,13 @@ queryLatest = query () $ select $ do
   where_ (row.latest ==. lit True)
   return row
 
+
 queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
 queryExperiment eid = query () $ select $ do
   row <- each datasets
   where_ (row.primaryExperimentId ==. lit eid)
   return row
+
 
 queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
 queryProgram ip = query () $ select $ do
@@ -114,11 +122,13 @@ queryProgram ip = query () $ select $ do
   where_ (row.instrumentProgramId ==. lit ip)
   return row
 
+
 queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
 queryById i = query () $ select $ do
   row <- each datasets
   where_ (row.datasetId ==. lit i)
   return row
+
 
 insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
 insertAll ds =
@@ -131,6 +141,7 @@ insertAll ds =
       , onConflict = DoNothing
       , returning = NumberOfRowsAffected
       }
+
 
 updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
 updateOld ids = do

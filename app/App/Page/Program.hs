@@ -15,6 +15,7 @@ import NSO.Prelude
 import Web.Hyperbole
 import Web.View.Style (Align (Center))
 
+
 page :: (Hyperbole :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Page es ()
 page ip = do
   hyper statusAction
@@ -23,6 +24,7 @@ page ip = do
   load $ do
     ds <- queryProgram ip
     ps <- Provenance.loadProvenance ip
+    now <- currentTime
 
     pure $ appLayout Experiments $ do
       col (pad 20 . gap 20) $ do
@@ -33,21 +35,22 @@ page ip = do
         description ds
 
         col (bg White . gap 10) $ do
-          viewDatasets (filter (.latest) ds) ps
-          el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable UpdateDate ds
+          viewDatasets now (filter (.latest) ds) ps
+          el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest ds
  where
   description :: [Dataset] -> View c ()
   description [] = none
   description (d : _) = text d.experimentDescription
 
-viewDatasets :: [Dataset] -> [ProvenanceEntry] -> View c ()
-viewDatasets [] _ = none
-viewDatasets (d : ds) ps = do
+
+viewDatasets :: UTCTime -> [Dataset] -> [ProvenanceEntry] -> View c ()
+viewDatasets _ [] _ = none
+viewDatasets now (d : ds) ps = do
   let gd = Grouped (d :| ds)
   let ip = instrumentProgram gd ps
 
   row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
-    InstrumentProgramSummary.viewRow ip
+    InstrumentProgramSummary.viewRow now ip
 
   col (pad 10 . gap 10) $ do
     viewId (Status ip.programId) statusView
@@ -56,6 +59,7 @@ viewDatasets (d : ds) ps = do
     mapM_ viewProvenanceEntry ps
 
     InstrumentProgramSummary.viewCriteria ip gd
+
 
 viewProvenanceEntry :: ProvenanceEntry -> View c ()
 viewProvenanceEntry (WasInverted p) = do
@@ -67,18 +71,22 @@ viewProvenanceEntry (WasQueued p) = do
     el_ "Queued"
     text $ showTimestamp p.completed
 
+
 -- Status -----------------------------------------------
 
 newtype Status = Status (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)
+
 
 data StatusAction
   = Queue
   | Complete
   deriving (Show, Read, Param)
 
+
 instance HyperView Status where
   type Action Status = StatusAction
+
 
 statusAction :: (Time :> es, Hyperbole :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
 statusAction (Status ip) Queue = do
@@ -88,6 +96,7 @@ statusAction (Status ip) Queue = do
 statusAction (Status ip) Complete = do
   Provenance.markInverted ip
   pure $ el_ "Inverted!"
+
 
 statusView :: View Status ()
 statusView = do

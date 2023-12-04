@@ -23,6 +23,7 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
+
 -- import NSO.Data.Provenance hiding (Inverted, Queued)
 -- import NSO.Data.Qualify
 
@@ -39,14 +40,17 @@ programStatus gd ps = either id id $ do
   wasInverted (WasInverted _) = True
   wasInverted _ = False
 
+
 loadAll :: (Rel8 :> es) => Eff es [InstrumentProgram]
 loadAll = do
   ds <- queryLatest
   pv <- loadAllProvenance
   pure $ fmap (.program) $ fromDatasets pv ds
 
+
 loadAllExperiments :: (Rel8 :> es) => Eff es [Experiment]
 loadAllExperiments = toExperiments <$> loadAll
+
 
 fromDatasets :: AllProvenance -> [Dataset] -> [WithDatasets]
 fromDatasets pv ds =
@@ -55,14 +59,17 @@ fromDatasets pv ds =
       ips = zipWith instrumentProgram gds pvs
    in zipWith WithDatasets ips gds
 
+
 programProvenance :: AllProvenance -> Grouped InstrumentProgram Dataset -> [ProvenanceEntry]
 programProvenance (AllProvenance pv) gd =
   let d = sample gd
    in filter (Provenance.isProgram d.instrumentProgramId) pv
 
+
 toExperiments :: [InstrumentProgram] -> [Experiment]
 toExperiments ips =
   map toExperiment $ grouped (.experimentId) ips
+
 
 toExperiment :: Grouped Experiment InstrumentProgram -> Experiment
 toExperiment g =
@@ -73,6 +80,7 @@ toExperiment g =
         , startTime = ip.startTime
         , programs = Grouped g.items
         }
+
 
 instrumentProgram :: Grouped InstrumentProgram Dataset -> [ProvenanceEntry] -> InstrumentProgram
 instrumentProgram gd pv =
@@ -90,6 +98,7 @@ instrumentProgram gd pv =
         , spectralLines = rights ls
         , otherWavelengths = lefts ls
         , status = programStatus gd pv
+        , embargo = d.embargo
         }
  where
   midWave :: Dataset -> Wavelength Nm
@@ -97,6 +106,7 @@ instrumentProgram gd pv =
 
   identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
   identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d.wavelengthMin d.wavelengthMax
+
 
 data WithDatasets = WithDatasets
   { program :: InstrumentProgram
