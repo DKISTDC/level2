@@ -13,7 +13,6 @@ import NSO.Data.Program
 import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import Web.Hyperbole
-import Web.View hiding (button)
 import Web.View.Style (Align (Center))
 
 page :: (Hyperbole :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Page es ()
@@ -72,12 +71,14 @@ viewProvenanceEntry (WasQueued p) = do
 
 newtype Status = Status (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)
-  deriving anyclass (HyperView StatusAction)
 
 data StatusAction
   = Queue
   | Complete
   deriving (Show, Read, Param)
+
+instance HyperView Status where
+  type Action Status = StatusAction
 
 statusAction :: (Time :> es, Hyperbole :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
 statusAction (Status ip) Queue = do

@@ -5,7 +5,6 @@ import NSO.Data.Dataset
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
-import Web.View
 
 data AppRoute
   = Dashboard

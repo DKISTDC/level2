@@ -15,18 +15,20 @@ import NSO.Data.Scan
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.View hiding (button)
 import Web.View.Element (TableHead)
 
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
 data ScanView = ScanView
-  deriving (Show, Read, Param, HyperView PageEvent)
+  deriving (Show, Read, Param)
 
 data PageEvent
   = RunScan
   deriving (Show, Read, Param)
+
+instance HyperView ScanView where
+  type Action ScanView = PageEvent
 
 page :: (Hyperbole :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Page es ()
 page = do

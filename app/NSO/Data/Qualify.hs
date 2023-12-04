@@ -14,12 +14,14 @@ isOnDisk (Just bb) =
  where
   -- rough radius of the sun in arcseconds
   -- https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html
-
-  radius :: Coordinate Arcseconds -> Arcseconds
-  radius (x, y) = sqrt (x ** 2 + y ** 2) :: Arcseconds
+  -- http://localhost:3000/program/id.107813.329344 - goes up to 970 in current data. Han said all datasets should be on disk so far
+  --
 
   isCoordOnDisk :: Coordinate Arcseconds -> Bool
-  isCoordOnDisk c = radius c < 900
+  isCoordOnDisk c = boxRadius c < 980
+
+boxRadius :: Coordinate Arcseconds -> Arcseconds
+boxRadius (x, y) = sqrt (x ** 2 + y ** 2) :: Arcseconds
 
 isQualified :: Grouped InstrumentProgram Dataset -> Bool
 isQualified = either (const False) (const True) . qualify

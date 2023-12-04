@@ -5,7 +5,6 @@ import App.Version
 import Effectful.Rel8
 import NSO.Prelude
 import Web.Hyperbole
-import Web.View
 
 page :: (Hyperbole :> es, Rel8 :> es) => Page es ()
 page = do

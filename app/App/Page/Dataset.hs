@@ -4,12 +4,12 @@ import App.Colors
 import App.Route
 import App.View.Common (showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
+import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Aeson (ToJSON, encode)
 import Effectful.Rel8
 import NSO.Data.Dataset as Dataset
 import NSO.Prelude
 import Web.Hyperbole
-import Web.View
 
 page :: (Hyperbole :> es, Rel8 :> es) => Id Dataset -> Page es ()
 page di = load $ do
@@ -42,6 +42,7 @@ viewDataset d =
     field "Frame Count" $ text $ cs $ show d.frameCount
     field "Exposure Time" $ text $ cs $ show d.exposureTime
     field "Bounding Box" $ boundingBox d.boundingBox
+    field "Bounding Box Radius" $ radiusBoundingBox d.boundingBox
     field "AO Locked" $ text $ cs $ show d.aoLocked
     field "Health" $ json d.health
     field "GOS Status" $ json d.gosStatus

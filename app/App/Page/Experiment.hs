@@ -12,7 +12,6 @@ import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
-import Web.View
 
 page :: (Hyperbole :> es, Rel8 :> es) => Id Experiment -> Page es ()
 page eid = do

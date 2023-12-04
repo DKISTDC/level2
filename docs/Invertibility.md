@@ -5,17 +5,11 @@ This document contains all the invertibility requirements, and exact details on 
 * VISP only for now for simplicity
 
 - [ ] WAITING: Han to specify waveband logic, specifics below
-- [ ] What are the on-disk calculations?
-- [ ] AOLocked: do you mean 75% of total frames are locked, or each dataset needs 75% locked or better?
+- [ ] HAN: What are the exact on-disk calculations?
+- [ ] HAN: AOLocked: do you mean 75% of total frames are locked, or each dataset needs 75% locked or better?
+- [ ] BLOCKED (Scott?): polarimetricAccuracy is null everywhere. Wait for fix and next update. We need to pass it through to the dataset view
 
-TODO: Update Metadata API
--------------------------
-The following headers need to be promoted to Metadata GraphQL API
 
-- [x] Implement params: `health`, `gosStatus`, `aoLock`, `lightLevel`, `polarimetricAccuracy`, `friedParameter`
-- [x] Add to existing L1 systems (metadata_graphql_api, search-support-database, etc)
-- [ ] fully implement logic
-- [x] changes to WCS by Stuart will fix boundingBox
 
 TELESCOPE
 ---------

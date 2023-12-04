@@ -4,6 +4,7 @@ import App.Colors
 import App.Route as Route
 import App.View.Common (showTimestamp)
 import App.View.Icons as Icons
+import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Ord (Down (..))
 import Effectful.Rel8
 import NSO.Data.Dataset as Dataset
@@ -11,17 +12,15 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.View hiding (button)
 import Web.View.Element (TableHead)
 import Web.View.Style (Align (..))
-import Web.View.Types
 
 rowHeight :: PxRem
 rowHeight = 30
 
 newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
   deriving stock (Show, Read)
-  deriving anyclass (Param, HyperView SortField)
+  deriving anyclass (Param)
 
 data SortField
   = DatasetId
@@ -34,6 +33,9 @@ data SortField
   | WaveMin
   | WaveMax
   deriving (Show, Read, Param)
+
+instance HyperView ProgramDatasets where
+  type Action ProgramDatasets = SortField
 
 actionSort :: (Rel8 :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
 actionSort (ProgramDatasets i) s = do
@@ -54,7 +56,8 @@ datasetsTable s ds = do
     tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
     tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMin ""
     tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMax ""
-    tcol (hd "Bounding Box") $ \d -> cell $ text . cs $ maybe "" show d.boundingBox
+    -- tcol (hd "Bounding Box") $ \d -> cell $ text . cs $ maybe "" show d.boundingBox
+    tcol (hd "Bounding Box Radius") $ \d -> cell $ radiusBoundingBox d.boundingBox
     -- tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
     -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     tcol (hd "Frame Count") $ \d -> cell $ text . cs . show $ d.frameCount

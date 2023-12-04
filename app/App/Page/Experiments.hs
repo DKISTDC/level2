@@ -16,7 +16,6 @@ import NSO.Data.Program as Program
 import NSO.Prelude hiding (truncate)
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole as H
-import Web.View
 import Web.View.Style (truncate)
 
 page :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Page es ()
@@ -37,10 +36,13 @@ loading = el_ "loading..."
 -----------------------------------------------------
 
 data ExView = ExView
-  deriving (Show, Read, Param, HyperView ExEvent)
+  deriving (Show, Read, Param)
 
 data ExEvent = Filter Filters
   deriving (Show, Read, Param)
+
+instance HyperView ExView where
+  type Action ExView = ExEvent
 
 data Filters = Filters
   { isInvertible :: Maybe Bool

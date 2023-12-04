@@ -11,6 +11,7 @@ import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
+import Numeric (showFFloat)
 import Web.View
 import Web.View.Style (Align (Center))
 
@@ -84,3 +85,14 @@ criteria msg b =
       $ if b
         then Icons.checkCircle
         else Icons.xMark
+
+radiusBoundingBox :: Maybe BoundingBox -> View c ()
+radiusBoundingBox Nothing = none
+radiusBoundingBox (Just b) = row (gap 5) $ do
+  space
+  forM_ (boundingPoints b) $ \c ->
+    code . cs $ showFFloat (Just 0) (boxRadius c) ""
+  space
+
+code :: Text -> View c ()
+code = pre (fontSize 14)
