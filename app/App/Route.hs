@@ -6,6 +6,7 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
+
 data AppRoute
   = Dashboard
   | Scan
@@ -15,29 +16,27 @@ data AppRoute
   | Dataset (Id Dataset)
   deriving (Show, Generic, Eq, Route)
 
+
 appLayout :: AppRoute -> View c () -> View c ()
 appLayout rc content = do
-  layout (color Dark . small flexCol . big flexRow) $ do
-    nav (gap 0 . bg Primary . color GrayLight . small topbar . big sidebar) $ do
-      row (pad 20 . small (pad 15)) $ do
+  layout (color Dark . flexCol) $ do
+    nav (gap 0 . bg Primary . color GrayLight . topbar) $ do
+      row (pad 15) $ do
         space
-        link Dashboard (bold . fontSize 32 . small (fontSize 24)) "Level 2"
+        link Dashboard (bold . fontSize 24 . pad (XY 20 0)) "Level 2"
         space
       -- nav Dashboard "Dashboard"
       item Experiments "Experiments"
       item Scan "Scan"
 
-    col (collapse . grow . scroll) content
+    col (grow . scroll) content
  where
   item r =
     link
       r
-      (border (TRBL 0 0 0 5) . pad 20 . small (border (TRBL 0 0 5 0)) . hover (borderColor White . color White) . if r == rc then current else other)
+      (pad 20 . hover (borderColor White . color White) . if r == rc then current else other)
 
   current = bg PrimaryLight . borderColor GrayLight
   other = borderColor Primary
 
-  sidebar = width 400 . flexCol
   topbar = height 70 . flexRow
-  big = media (MinWidth 1000)
-  small = media (MaxWidth 1000)

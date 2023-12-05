@@ -77,10 +77,6 @@ viewCriteria ip gd = do
     criteria "Not Supported" False
 
 
-summaryHeight :: PxRem
-summaryHeight = 8 * criteriaRowHeight + (8 * 2)
-
-
 criteriaRowHeight :: PxRem
 criteriaRowHeight = 32
 

@@ -68,12 +68,17 @@ experiments _ (Filter fs) = do
 -- ok, wait, I need to group them by experiment
 viewExperiments :: UTCTime -> Filters -> [Experiment] -> View ExView ()
 viewExperiments now fs exs = do
-  col (pad 15 . gap 20) $ do
-    viewFilters fs
+  el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
+    row (big aside . bg Error . gap 15) $ do
+      viewFilters fs
 
-    col (gap 40) $ do
+    col (gap 40 . bg Warning . grow . collapse) $ do
       forM_ exs viewExperiment
  where
+  aside = width 250 . flexCol
+  big = media (MinWidth 1000)
+  small = media (MaxWidth 1000)
+
   viewExperiment :: Experiment -> View ExView ()
   viewExperiment e = do
     let shown = filter applyFilters $ G.toList e.programs
@@ -129,16 +134,17 @@ viewExperiments now fs exs = do
 
 viewFilters :: Filters -> View ExView ()
 viewFilters fs = do
-  row (gap 10) $ do
-    dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
-      option Nothing id ""
-      option (Just VISP) id "VISP"
-      option (Just VBI) id "VBI"
+  el bold "Instrument"
+  dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
+    option Nothing id ""
+    option (Just VISP) id "VISP"
+    option (Just VBI) id "VBI"
 
-    dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) $ do
-      option Nothing id ""
-      option (Just True) id "Invertible"
-      option (Just False) id "Not Invertible"
+  el bold "Status"
+  dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) $ do
+    option Nothing id ""
+    option (Just True) id "Invertible"
+    option (Just False) id "Not Invertible"
 
 
 tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View ExView ()
