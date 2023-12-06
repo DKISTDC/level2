@@ -1,2 +1,2 @@
 ALTER TABLE datasets
-  DROP COLUMN IF EXISTS embargo,
+  DROP COLUMN IF EXISTS embargo;
