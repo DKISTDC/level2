@@ -27,7 +27,7 @@ import Web.Hyperbole
 
 main :: IO ()
 main = do
-  putStrLn "NSO Level 2!"
+  putStrLn "NSO Level 2 - here we go"
   (conn, port) <- initialize
   putStrLn $ "Starting on :" <> show port
   Warp.run port

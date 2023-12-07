@@ -23,10 +23,9 @@ RUN cabal build --only-dependencies
 
 # Copy in code and compile
 COPY *.md .
-COPY app app
-COPY migrations migrations
 COPY deps/metadata.graphql deps/metadata.graphql
-RUN cabal build
+COPY migrations migrations
+COPY app app
 RUN cabal install
 
 
@@ -36,10 +35,16 @@ FROM ubuntu:22.04
 RUN mkdir -p /opt/app
 WORKDIR /opt/app
 
+# these will all be cached even if a previous stage has changes
 RUN apt-get update -y
-RUN apt-get install -y libpq-dev ca-certificates
+RUN apt-get install -y libpq-dev ca-certificates openssl pkg-config
+RUN apt-get install -y cargo
+RUN cargo install sqlx-cli
+
+COPY image/entrypoint.sh ./entrypoint.sh
 
 COPY --from=build /root/.cabal/bin/level2 .
+COPY --from=build /opt/build/migrations ./migrations
 
-ENTRYPOINT ./level2
+ENTRYPOINT ./entrypoint.sh
 CMD []
