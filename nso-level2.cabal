@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.3.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -12,9 +12,10 @@ homepage:       https://github.com/DKISTDC/Level2
 author:         Sean Hess
 maintainer:     shess@nso.edu
 license:        BSD-3-Clause
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
+    deps/metadata.graphql
+extra-doc-files:
     README.md
     DEVELOPMENT.md
 
@@ -84,16 +85,16 @@ executable level2
     , bytestring
     , containers
     , data-diverse >=4.7
-    , effectful
+    , effectful ==2.3.0.0
     , exceptions
     , hasql
-    , hyperbole
+    , hyperbole ==0.1.1
     , lens
     , modern-uri
-    , morpheus-graphql >=0.27
-    , morpheus-graphql-client >=0.27
-    , morpheus-graphql-core
-    , rel8
+    , morpheus-graphql ==0.27.3
+    , morpheus-graphql-client ==0.27.3
+    , morpheus-graphql-core ==0.27.3
+    , rel8 ==1.4.1.0
     , req
     , string-conversions
     , string-interpolate
@@ -101,5 +102,6 @@ executable level2
     , text
     , time
     , wai-extra
+    , warp ==3.3.31
     , web-view >=0.2.3
   default-language: GHC2021

@@ -3,14 +3,17 @@ version:            0.1.0
 synopsis:           NSO Level 2 Data Processing
 homepage:           https://github.com/DKISTDC/Level2
 license:            BSD-3-Clause
-license-file:       LICENSE
 author:             Sean Hess
 maintainer:         shess@nso.edu
 category:           System, Science
 
-extra-source-files:
+
+extra-doc-files:
   - README.md
   - DEVELOPMENT.md
+
+extra-source-files:
+  - deps/metadata.graphql
 
 language: GHC2021
 
@@ -35,7 +38,7 @@ dependencies:
   - base >=4.16.4.0
   - aeson == 2.1.2.1
   - bytestring
-  - effectful
+  - effectful == 2.3.0.0
   - text
   # - amqp-worker >= 2.0
   - data-diverse >= 4.7
@@ -45,16 +48,17 @@ dependencies:
   - time
   - exceptions
   - string-interpolate
-  - morpheus-graphql-client >= 0.27
-  - morpheus-graphql-core
-  - morpheus-graphql >= 0.27
+  - morpheus-graphql-client == 0.27.3
+  - morpheus-graphql-core == 0.27.3
+  - morpheus-graphql == 0.27.3
   - modern-uri
   - req
   - containers
   - string-conversions
-  - rel8
+  - rel8 == 1.4.1.0
   - web-view >= 0.2.3
-  - hyperbole
+  - hyperbole == 0.1.1
+  - warp == 3.3.31
   - wai-extra
 
 

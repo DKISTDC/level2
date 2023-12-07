@@ -31,40 +31,40 @@ page di = load $ do
 viewDataset :: Dataset -> View c ()
 viewDataset d =
   col (bg White . gap 10 . pad 10) $ do
-    field "Latest" $ DatasetsTable.latest d.latest
-    field "Scan Date" $ text $ showTimestamp d.scanDate
-    field "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
-    field "Instrument" $ text $ cs $ show d.instrument
-    field "Instrument Program Id" $ link (Program d.instrumentProgramId) lnk $ text d.instrumentProgramId.fromId
-    field "Experiment Id" $ link (Experiment d.primaryExperimentId) lnk $ text d.primaryExperimentId.fromId
-    field "Proposal Id" $ text d.primaryProposalId.fromId
-    field "Stokes Parameters" $ text $ cs $ show d.stokesParameters
-    field "Create Date" $ text $ showTimestamp d.createDate
-    field "Update Date" $ text $ showTimestamp d.updateDate
-    field "Wavelength Min" $ text $ cs $ show d.wavelengthMin
-    field "Wavelength Max" $ text $ cs $ show d.wavelengthMax
-    field "Start Time" $ text $ showTimestamp d.startTime
-    field "End Time" $ text $ showTimestamp d.endTime
-    field "Frame Count" $ text $ cs $ show d.frameCount
-    field "Exposure Time" $ text $ cs $ show d.exposureTime
-    field "Bounding Box" $ boundingBox d.boundingBox
-    field "Bounding Box Radius" $ radiusBoundingBox d.boundingBox
-    field "AO Locked" $ text $ cs $ show d.aoLocked
-    field "Health" $ json d.health
-    field "GOS Status" $ json d.gosStatus
-    field "Light Level" $ json d.lightLevel
-    -- field "Polarimetric Accuracy" $ json d.polarimetricAccuracy
-    field "friedParameter" $ json d.friedParameter
+    dataField "Latest" $ DatasetsTable.latest d.latest
+    dataField "Scan Date" $ text $ showTimestamp d.scanDate
+    dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
+    dataField "Instrument" $ text $ cs $ show d.instrument
+    dataField "Instrument Program Id" $ link (Program d.instrumentProgramId) lnk $ text d.instrumentProgramId.fromId
+    dataField "Experiment Id" $ link (Experiment d.primaryExperimentId) lnk $ text d.primaryExperimentId.fromId
+    dataField "Proposal Id" $ text d.primaryProposalId.fromId
+    dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
+    dataField "Create Date" $ text $ showTimestamp d.createDate
+    dataField "Update Date" $ text $ showTimestamp d.updateDate
+    dataField "Wavelength Min" $ text $ cs $ show d.wavelengthMin
+    dataField "Wavelength Max" $ text $ cs $ show d.wavelengthMax
+    dataField "Start Time" $ text $ showTimestamp d.startTime
+    dataField "End Time" $ text $ showTimestamp d.endTime
+    dataField "Frame Count" $ text $ cs $ show d.frameCount
+    dataField "Exposure Time" $ text $ cs $ show d.exposureTime
+    dataField "Bounding Box" $ boundingBox d.boundingBox
+    dataField "Bounding Box Radius" $ radiusBoundingBox d.boundingBox
+    dataField "AO Locked" $ text $ cs $ show d.aoLocked
+    dataField "Health" $ json d.health
+    dataField "GOS Status" $ json d.gosStatus
+    dataField "Light Level" $ json d.lightLevel
+    -- dataField "Polarimetric Accuracy" $ json d.polarimetricAccuracy
+    dataField "friedParameter" $ json d.friedParameter
  where
   lnk = color Primary . hover (color PrimaryLight)
 
 
-field :: Text -> View c () -> View c ()
-field nm cnt =
+dataField :: Text -> View c () -> View c ()
+dataField nm cnt =
   row (gap 10) $ do
     row (width 180) $ do
       space
-      label bold (text nm)
+      el bold (text nm)
     el_ cnt
 
 

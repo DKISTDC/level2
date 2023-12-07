@@ -19,22 +19,29 @@ import Effectful.Request
 import Effectful.Time (runTime)
 import NSO.Metadata qualified as Metadata
 import NSO.Prelude
+import Network.Wai.Handler.Warp as Warp (Port, run)
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.Environment (getEnv)
 import Web.Hyperbole
 
+
 main :: IO ()
 main = do
-  putStrLn "Starting on :3000"
-  conn <- initialize
-  run 3000
+  putStrLn "NSO Level 2!"
+  (conn, port) <- initialize
+  putStrLn $ "Starting on :" <> show port
+  Warp.run port
     $ addHeaders [("app-version", cs appVersion)]
     $ app conn
 
-initialize :: IO Rel8.Connection
+
+initialize :: IO (Rel8.Connection, Port)
 initialize = do
+  port <- read <$> getEnv "PORT"
   postgres <- getEnv "DATABASE_URL"
-  runEff . runErrorNoCallStackWith @Rel8Error onRel8Error $ Rel8.connect $ cs postgres
+  conn <- runEff . runErrorNoCallStackWith @Rel8Error onRel8Error $ Rel8.connect $ cs postgres
+  pure (conn, port)
+
 
 app :: Rel8.Connection -> Application
 app conn = waiApplication document (runApp . router)
@@ -57,15 +64,18 @@ app conn = waiApplication document (runApp . router)
       . runDebugIO
       . runGraphQL
 
+
 onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
 onRel8Error e = do
   putStrLn "CAUGHT"
   liftIO $ throwM e
 
+
 onRequestError :: (IOE :> es) => RequestError -> Eff es a
 onRequestError e = do
   putStrLn "CAUGHT"
   liftIO $ throwM e
+
 
 -- handle (Contacts rt) = Contacts.routes rt
 

@@ -1,0 +1,15 @@
+cabal-version: 2.4
+name:           dependencies
+version:        0.1.0
+library
+  build-depends:
+      base >= 4.16.4.0
+    , aeson == 2.1.2.1
+    , rel8 == 1.4.1.0
+    , morpheus-graphql-client == 0.27.3
+    , morpheus-graphql-core == 0.27.3
+    , morpheus-graphql == 0.27.3
+    , effectful == 2.3.0.0
+    , req == 3.13.1
+    , warp == 3.3.31
+  default-language: GHC2021
