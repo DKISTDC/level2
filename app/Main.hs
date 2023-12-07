@@ -1,10 +1,12 @@
 module Main where
 
-import NSO.Prelude
-
--- import TUI
 import App qualified
+import NSO.Prelude
+import System.IO
 
 
 main :: IO ()
-main = App.main
+main = do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
+  App.main

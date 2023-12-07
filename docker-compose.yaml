@@ -19,7 +19,7 @@ services:
     depends_on:
       - postgres
     environment:
-      DATABSE_URL: postgres://guest:guest@127.0.0.1:5432/level2
+      DATABASE_URL: "postgres://guest:guest@postgres:5432/level2"
       PORT: "8080"
     ports:
       - "8080:8080"
