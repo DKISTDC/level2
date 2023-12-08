@@ -21,11 +21,17 @@ WORKDIR /opt/build
 COPY cabal.project nso-level2.cabal .
 RUN cabal build --only-dependencies
 
-# Copy in code and compile
+# Copy in code
 COPY *.md .
 COPY deps/metadata.graphql deps/metadata.graphql
 COPY migrations migrations
 COPY app app
+COPY test test
+
+# Run tests
+RUN cabal test
+
+# Install
 RUN cabal install
 
 

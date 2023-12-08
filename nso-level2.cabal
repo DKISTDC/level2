@@ -79,7 +79,7 @@ executable level2
       LambdaCase
       NoImplicitPrelude
       NoFieldSelectors
-  ghc-options: -Wall
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson ==2.1.2.1
     , base >=4.16.4.0
@@ -105,4 +105,56 @@ executable level2
     , wai-extra
     , warp ==3.3.31
     , web-view >=0.2.3
+  default-language: GHC2021
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_nso_level2
+  autogen-modules:
+      Paths_nso_level2
+  hs-source-dirs:
+      test/
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      OverloadedStrings
+      QuasiQuotes
+      DuplicateRecordFields
+      LambdaCase
+      NoImplicitPrelude
+      NoFieldSelectors
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-tool-depends:
+      sydtest-discover:sydtest-discover
+  build-depends:
+      aeson ==2.1.2.1
+    , base >=4.16.4.0
+    , bytestring
+    , containers
+    , data-diverse >=4.7
+    , effectful ==2.3.0.0
+    , exceptions
+    , hasql
+    , hyperbole ==0.1.1
+    , lens
+    , modern-uri
+    , morpheus-graphql ==0.27.3
+    , morpheus-graphql-client ==0.27.3
+    , morpheus-graphql-core ==0.27.3
+    , rel8 ==1.4.1.0
+    , req
+    , string-conversions
+    , string-interpolate
+    , sydtest >=0.15
+    , tagged
+    , text
+    , time
+    , wai-extra
+    , warp ==3.3.31
+    , web-view
   default-language: GHC2021
