@@ -1,11 +1,12 @@
 module App.Page.Scan where
 
 import App.Colors
+import App.Config
 import App.Route
 import App.View.Common
 import Data.String.Interpolate
-import Effectful.Debug
 import Effectful.Error.Static
+import Effectful.Reader.Static
 import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
@@ -17,20 +18,24 @@ import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View.Element (TableHead)
 
+
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
 data ScanView = ScanView
   deriving (Show, Read, Param)
 
+
 data PageEvent
   = RunScan
   deriving (Show, Read, Param)
 
+
 instance HyperView ScanView where
   type Action ScanView = PageEvent
 
-page :: (Hyperbole :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => Page es ()
+
+page :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => Page es ()
 page = do
   hyper pageEvent
 
@@ -38,11 +43,12 @@ page = do
     pure $ appLayout Scan $ do
       viewId ScanView $ viewScan Nothing
 
-pageEvent :: (Hyperbole :> es, Debug :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
+
+pageEvent :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
 pageEvent _ RunScan = do
   ds <- syncDatasets
-  delay 1000
   pure $ viewScan (Just ds)
+
 
 viewScan :: Maybe SyncResults -> View ScanView ()
 viewScan msr =
@@ -57,6 +63,7 @@ viewScan msr =
     el (width 200 . color PrimaryLight) spinner
     space
 
+
 viewScanResults :: SyncResults -> View ScanView ()
 viewScanResults sr = do
   el (bold . fontSize 24) "Updated"
@@ -67,6 +74,7 @@ viewScanResults sr = do
 
   el (bold . fontSize 24) "Unchanged"
   datasetsTable sr.unchanged
+
 
 -----------------------------------------------------
 -- Datasets (Debug)
@@ -102,6 +110,7 @@ datasetsTable ds = do
 
   cell :: Text -> View Dataset ()
   cell = td (pad 4 . border 1) . text
+
 
 spinner :: View c ()
 spinner =

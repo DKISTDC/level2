@@ -8,12 +8,13 @@ import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client hiding (fetch)
 import Data.Morpheus.Client.CodeGen.Internal (OperationType (..))
 import Data.String.Interpolate
-import Effectful.Request
 import GHC.Generics
 import NSO.Metadata.Types
 import NSO.Prelude
-import Network.HTTP.Req
 
+
+-- import Effectful.Request
+-- import Network.HTTP.Req
 
 newtype AllDatasets = AllDatasets {datasetInventories :: [DatasetInventory]}
   deriving (Show, Eq, Generic)
@@ -63,7 +64,3 @@ parseRequest r = do
 data GraphQLRequest = GraphQLRequest
   {operationName :: Text}
   deriving (Generic, FromJSON)
-
-
-metadata :: Service
-metadata = Service $ http "internal-api-gateway.service.prod.consul" /: "graphql"

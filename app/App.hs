@@ -1,5 +1,6 @@
 module App where
 
+import App.Config
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Experiment qualified as Experiment
@@ -14,9 +15,10 @@ import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Debug (runDebugIO)
 import Effectful.Error.Static
+import Effectful.Reader.Static
 import Effectful.Rel8 as Rel8
 import Effectful.Request
-import Effectful.Time (runTime)
+import Effectful.Time
 import NSO.Metadata qualified as Metadata
 import NSO.Prelude
 import Network.Wai.Handler.Warp as Warp (Port, run)
@@ -27,12 +29,13 @@ import Web.Hyperbole
 
 main :: IO ()
 main = do
-  putStrLn "NSO Level 2 - here we go"
+  putStrLn "NSO Level 2"
   (conn, port) <- initialize
+  (services, isMock) <- initServices
   putStrLn $ "Starting on :" <> show port
   Warp.run port
     $ addHeaders [("app-version", cs appVersion)]
-    $ app conn
+    $ app conn services isMock
 
 
 initialize :: IO (Rel8.Connection, Port)
@@ -43,10 +46,10 @@ initialize = do
   pure (conn, port)
 
 
-app :: Rel8.Connection -> Application
-app conn = waiApplication document (runApp . router)
+app :: Rel8.Connection -> Services -> IsMock -> Application
+app conn services isMock = waiApplication document (runApp . router)
  where
-  -- router :: (Hyperbole :> es, Rel8 :> es, Debug :> es, GraphQL :> es, Error RequestError :> es) => AppRoute -> Eff es ()
+  router :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router (Experiment eid) = page $ Experiment.page eid
@@ -58,11 +61,15 @@ app conn = waiApplication document (runApp . router)
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @RequestError onRequestError
+      . runReader services
       . runRel8 conn
-      . runRequestMock Metadata.mockRequest -- .runRequest
+      . runRequest' isMock
       . runHyperbole
       . runDebugIO
       . runGraphQL
+
+  runRequest' True = runRequestMock Metadata.mockRequest
+  runRequest' False = runRequest
 
 
 onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
