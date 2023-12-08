@@ -19,8 +19,9 @@ services:
     depends_on:
       - postgres
     environment:
-      DATABASE_URL: "postgres://guest:guest@postgres:5432/level2"
       PORT: "8080"
+      DATABASE_URL: postgres://guest:guest@postgres:5432/level2
+      METADATA_API: http://internal-api-gateway.service.prod.consul/graphql
     ports:
       - "8080:8080"
 
