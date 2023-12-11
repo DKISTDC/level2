@@ -1,0 +1,28 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      VERSION: $VERSION_PREFIX.$(date +%s)
+      IMAGE_NAME: $DOCKER_HUB_URL/level2:$VERSION
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Docker check
+      run: docker version
+    - name: Docker login
+      run: docker login dkistdc-docker.jfrog.io --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+    - name: Docker Build
+      run: docker build . --tag $IMAGE_NAME
+    - name: Docker Push
+      run: docker push -a $IMAGE_NAME

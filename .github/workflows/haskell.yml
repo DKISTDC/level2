@@ -37,9 +37,9 @@ jobs:
       uses: actions/cache@v3
       env:
         # increment this when you want to rebuild the cache
-        cache-name: cache-cabal-v2
+        cache-name: cache-cabal-v3
       with:
-        path: $HOME/.config/cabal
+        path: $HOME/.cabal
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
@@ -58,4 +58,4 @@ jobs:
     - name: Check Cache
       run: |
         ls $HOME/.config/cabal
-        ls $HOME/.config/cabal/store/ghc-9.4.7
+        ls $HOME/.cabal/store
