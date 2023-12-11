@@ -46,20 +46,11 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    # cabal user-config update
-    - name: Fast Test
+    - name: Install dependencies
       run: |
-        pwd
         cabal update
-        echo $HOME
-        echo $CABAL_CONFIG
-        ls ~/.config/cabal
-
-    # - name: Install dependencies
-    #   run: |
-    #     cabal update
-    #     cabal build --only-dependencies --enable-tests --enable-benchmarks
-    # - name: Build
-    #   run: cabal build --enable-tests --enable-benchmarks all
-    # - name: Run tests
-    #   run: cabal test all
+        cabal build --only-dependencies --enable-tests --enable-benchmarks
+    - name: Build
+      run: cabal build --enable-tests --enable-benchmarks all
+    - name: Run tests
+      run: cabal test all
