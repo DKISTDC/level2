@@ -51,7 +51,7 @@ jobs:
       run: |
         cabal update
         ls $HOME/.config/cabal
-        cal $HOME/.config/cabal/config
+        cat $HOME/.config/cabal/config
     # - name: Install dependencies
     #   run: |
     #     cabal update

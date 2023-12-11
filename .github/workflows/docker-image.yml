@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      VERSION: ${{secrets.VERSION_PREFIX}}.$(date +%s)
-      IMAGE_NAME: ${{secrets.ARTIFACTORY_URL}}/level2:$VERSION
+      VERSION: 
+      IMAGE_NAME: ${{secrets.ARTIFACTORY_URL}}/level2:${{secrets.VERSION_PREFIX}}.$(date +%s)
       ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
