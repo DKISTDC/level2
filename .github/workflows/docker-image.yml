@@ -14,7 +14,7 @@ jobs:
 
     env:
       VERSION: 
-      IMAGE_NAME: ${{secrets.ARTIFACTORY_URL}}/level2:${{secrets.VERSION_PREFIX}}.$(date +%s)
+      IMAGE_NAME: "$ARTIFACTORY_URL/level2:$VERSION_PREFIX.$(date +%s)"
       ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
