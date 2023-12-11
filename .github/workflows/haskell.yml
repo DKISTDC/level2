@@ -48,7 +48,10 @@ jobs:
           ${{ runner.os }}-
 
     - name: Test
-      run: cat $HOME/.config/cabal
+      run: |
+        cabal update
+        ls $HOME/.config
+        cat $HOME/.config/cabal
     # - name: Install dependencies
     #   run: |
     #     cabal update
