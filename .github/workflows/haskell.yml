@@ -58,4 +58,4 @@ jobs:
     - name: Check Cache
       run: |
         ls $HOME/.config/cabal
-        ls $HOME/.cabal/store/ghc-9.4.7
+        ls $HOME/.config/cabal/store/ghc-9.4.7
