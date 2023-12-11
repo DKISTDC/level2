@@ -39,7 +39,7 @@ jobs:
         # increment this when you want to rebuild the cache
         cache-name: cache-cabal-v3
       with:
-        path: $HOME/.cabal
+        path: $HOME/.cache/cabal
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
@@ -47,20 +47,20 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    - name: Test
-      run: |
-        cabal update
-        ls $HOME/.config/cabal
-        cat $HOME/.config/cabal/config
-    # - name: Install dependencies
+    # - name: Test
     #   run: |
     #     cabal update
-    #     cabal build --only-dependencies --enable-tests --enable-benchmarks
-    # - name: Build
-    #   run: cabal build --enable-tests --enable-benchmarks all
-    # - name: Run tests
-    #   run: cabal test all
-    # - name: Check Cache
-    #   run: |
     #     ls $HOME/.config/cabal
-    #     ls $HOME/.cabal/store
+    #     cat $HOME/.config/cabal/config
+    - name: Install dependencies
+      run: |
+        cabal update
+        cabal build --only-dependencies --enable-tests --enable-benchmarks
+    - name: Build
+      run: cabal build --enable-tests --enable-benchmarks all
+    - name: Run tests
+      run: cabal test all
+    - name: Check Cache
+      run: |
+        ls $HOME/.config/cabal
+        ls $HOME/.cache/cabal
