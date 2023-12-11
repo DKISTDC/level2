@@ -38,7 +38,7 @@ jobs:
       env:
         cache-name: cache-cabal
       with:
-        path: ~/.cabal
+        path: ~/.config/cabal
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
@@ -53,7 +53,7 @@ jobs:
         cabal update
         echo $HOME
         echo $CABAL_CONFIG
-        ls ~/.cabal
+        ls ~/.config/cabal
 
     # - name: Install dependencies
     #   run: |
