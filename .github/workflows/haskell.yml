@@ -14,23 +14,23 @@ jobs:
 
     strategy:
       matrix:
-        os: [ ubuntu-20.04, ubuntu-22.04]
-        haskel: [ 9.4.7 ]
+        os: [ ubuntu-22.04 ]
+        haskell: [ 9.4.7 ]
 
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Check Haskel version
+    - name: Check Haskell version
       run: |
         ghcup --version
         ghc --version
-    - name: Install Haskel ${{ matrix.haskel }}
+    - name: Install Haskell ${{ matrix.haskell }}
       run: |
-        ghcup install ghc ${{ matrix.haskel }}
-        ghcup set ghc ${{ matrix.haskel }}
-    - name: Check Haskel version
+        ghcup install ghc ${{ matrix.haskell }}
+        ghcup set ghc ${{ matrix.haskell }}
+    - name: Check Haskell version
       run: ghc --version
 
     - name: Cache
