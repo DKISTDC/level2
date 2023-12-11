@@ -39,7 +39,7 @@ jobs:
         # increment this when you want to rebuild the cache
         cache-name: cache-cabal-v2
       with:
-        path: ~/.config/cabal
+        path: $HOME/.config/cabal
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
@@ -55,3 +55,7 @@ jobs:
       run: cabal build --enable-tests --enable-benchmarks all
     - name: Run tests
       run: cabal test all
+    - name: Check Cache
+      run: |
+        ls $HOME/.config/cabal
+        ls $HOME/.cabal/store/ghc-9.4.7
