@@ -4,7 +4,6 @@ Level 2 Inversion
 See [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 
-
 Questions
 --------
 
