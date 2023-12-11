@@ -50,8 +50,8 @@ jobs:
     - name: Test
       run: |
         cabal update
-        ls $HOME/.config
-        cat $HOME/.config/cabal
+        ls $HOME/.config/cabal
+        cal $HOME/.config/cabal/config
     # - name: Install dependencies
     #   run: |
     #     cabal update

@@ -13,13 +13,17 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      VERSION: $VERSION_PREFIX.$(date +%s)
-      IMAGE_NAME: $ARTIFACTORY_URL/level2:$VERSION
+      VERSION: ${{secrets.VERSION_PREFIX}}.$(date +%s)
+      IMAGE_NAME: ${{secrets.ARTIFACTORY_URL}}/level2:$VERSION
+      ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
     steps:
     - uses: actions/checkout@v3
-    - name: Docker check
-      run: docker version
+    - name: Check
+      run: |
+        echo "IMAGE_NAME=$IMAGE_NAME"
+        echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
     - name: Docker login
       run: docker login dkistdc-docker.jfrog.io --username $ARTIFACTORY_USER --password $ARTIFACTORY_PASSWORD
     - name: Docker Build
