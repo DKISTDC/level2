@@ -46,10 +46,13 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
+    # cabal user-config update
     - name: Fast Test
       run: |
-        ls
         pwd
+        cabal update
+        echo $HOME
+        echo $CABAL_CONFIG
         ls ~/.cabal
 
     # - name: Install dependencies
