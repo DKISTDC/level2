@@ -12,8 +12,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # https://docs.github.com/en/actions/learn-github-actions/contexts
     env:
-      IMAGE_NAME: "${{env.ARTIFACTORY_URL}}/level2:${{env.VERSION_PREFIX}}.${{env.branch}}.${GITHUB_SHA::6}"
+      IMAGE_NAME: "${{vars.ARTIFACTORY_URL}}/level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.${GITHUB_SHA::6}"
       ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
@@ -21,7 +22,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: Check
       run: |
-        echo "CHECK $VERSION_PREFIX"
         echo "IMAGE_NAME=$IMAGE_NAME"
         echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
     - name: Docker login
