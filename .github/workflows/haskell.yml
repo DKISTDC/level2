@@ -37,9 +37,9 @@ jobs:
       uses: actions/cache@v3
       env:
         # increment this when you want to rebuild the cache
-        cache-name: cache-cabal-v4
+        cache-name: cache-cabal-v5
       with:
-        path: $HOME/.cache
+        path: $HOME/.cabal
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
@@ -61,5 +61,6 @@ jobs:
     - name: Run tests
       run: cabal test all
     - name: Check Cache
-      run: find $HOME -type d -name "9.4.7"
+      # run: find $HOME -type d -name "9.4.7"
+      run: find $HOME -type d -name "*9.4.7*"
 
