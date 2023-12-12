@@ -41,6 +41,6 @@ executable fake
       NoFieldSelectors
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.16.4.0
-    , text
+      array
+    , base >=4.16.4.0
   default-language: GHC2021

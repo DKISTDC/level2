@@ -36,10 +36,11 @@ default-extensions:
 
 dependencies:
   - base >=4.16.4.0
+  - array
   # - aeson == 2.1.2.1
   # - bytestring
   # - effectful == 2.3.0.0
-  - text
+  # - text
   # - amqp-worker >= 2.0
   # - data-diverse >= 4.7
   # - tagged
