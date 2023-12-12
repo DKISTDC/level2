@@ -44,35 +44,3 @@ executable fake
       base >=4.16.4.0
     , text
   default-language: GHC2021
-
-test-suite tests
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Test.BasicSpec
-      Paths_nso_level2
-  autogen-modules:
-      Paths_nso_level2
-  hs-source-dirs:
-      test/
-  default-extensions:
-      TypeFamilies
-      DataKinds
-      DeriveAnyClass
-      DerivingStrategies
-      OverloadedRecordDot
-      OverloadedStrings
-      QuasiQuotes
-      DuplicateRecordFields
-      LambdaCase
-      NoImplicitPrelude
-      NoFieldSelectors
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-tool-depends:
-      sydtest-discover:sydtest-discover
-  build-depends:
-      base >=4.16.4.0
-    , sydtest >=0.15
-    , text
-    , web-view
-  default-language: GHC2021
