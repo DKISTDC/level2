@@ -33,7 +33,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Login to Artifactory
-      run: docker login dkistdc-docker.jfrog.io --username ${{ secrets.ARTIFACTORY_USER}} --password ${{ secrets.ARTIFACTORY_PASSWORD}}
+      run: docker login ${{ vars.ARTIFACTORY_URL }} --username ${{ secrets.ARTIFACTORY_USER}} --password ${{ secrets.ARTIFACTORY_PASSWORD}}
 
     - name: Build and Push
       id: docker_build
