@@ -19,54 +19,14 @@ extra-doc-files:
     README.md
     DEVELOPMENT.md
 
-executable level2
+executable fake
   main-is: Main.hs
   other-modules:
-      App
-      App.Colors
-      App.Config
-      App.Page.Dashboard
-      App.Page.Dataset
-      App.Page.Experiment
-      App.Page.Experiments
-      App.Page.Program
-      App.Page.Scan
-      App.Route
-      App.Version
-      App.View.Common
-      App.View.DataRow
-      App.View.DatasetsTable
-      App.View.Icons
-      App.View.InstrumentProgramSummary
-      Data.Grouped
-      Effectful.Debug
-      Effectful.Rel8
-      Effectful.Request
-      Effectful.Time
-      Flow
-      Flow.Example
-      Flow.Node
-      NSO.Data.Dataset
-      NSO.Data.Program
-      NSO.Data.Provenance
-      NSO.Data.Qualify
-      NSO.Data.Scan
-      NSO.Data.Spectra
-      NSO.Level2
-      NSO.Metadata
-      NSO.Metadata.Parse
-      NSO.Metadata.Types
-      NSO.Prelude
-      NSO.Steps
-      NSO.Types.Common
-      NSO.Types.Dataset
-      NSO.Types.InstrumentProgram
-      NSO.Types.Wavelength
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
   hs-source-dirs:
-      app
+      fake
   default-extensions:
       TypeFamilies
       DataKinds
@@ -81,30 +41,8 @@ executable level2
       NoFieldSelectors
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson ==2.1.2.1
-    , base >=4.16.4.0
-    , bytestring
-    , containers
-    , data-diverse >=4.7
-    , effectful ==2.3.0.0
-    , exceptions
-    , hasql
-    , hyperbole ==0.1.1
-    , lens
-    , modern-uri
-    , morpheus-graphql ==0.27.3
-    , morpheus-graphql-client ==0.27.3
-    , morpheus-graphql-core ==0.27.3
-    , rel8 ==1.4.1.0
-    , req
-    , string-conversions
-    , string-interpolate
-    , tagged
+      base >=4.16.4.0
     , text
-    , time
-    , wai-extra
-    , warp ==3.3.31
-    , web-view >=0.2.3
   default-language: GHC2021
 
 test-suite tests
@@ -133,29 +71,8 @@ test-suite tests
   build-tool-depends:
       sydtest-discover:sydtest-discover
   build-depends:
-      aeson ==2.1.2.1
-    , base >=4.16.4.0
-    , bytestring
-    , containers
-    , data-diverse >=4.7
-    , effectful ==2.3.0.0
-    , exceptions
-    , hasql
-    , hyperbole ==0.1.1
-    , lens
-    , modern-uri
-    , morpheus-graphql ==0.27.3
-    , morpheus-graphql-client ==0.27.3
-    , morpheus-graphql-core ==0.27.3
-    , rel8 ==1.4.1.0
-    , req
-    , string-conversions
-    , string-interpolate
+      base >=4.16.4.0
     , sydtest >=0.15
-    , tagged
     , text
-    , time
-    , wai-extra
-    , warp ==3.3.31
     , web-view
   default-language: GHC2021
