@@ -29,7 +29,7 @@ import Web.Hyperbole
 
 main :: IO ()
 main = do
-  putStrLn "NSO Level 2!"
+  putStrLn "NSO Level 2"
   (conn, port) <- initialize
   (services, isMock) <- initServices
   putStrLn $ "Starting on :" <> show port
