@@ -64,5 +64,5 @@ jobs:
       run: cabal run
     # - name: Check Cache
       # run: find $HOME -type d -name "9.4.7"
-      # run: find $HOME -type d -name "*9.4.7*"
+      run: find $HOME -type d -name "*9.4.7*"
 
