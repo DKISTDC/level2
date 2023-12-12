@@ -14,13 +14,16 @@ jobs:
 
     # https://docs.github.com/en/actions/learn-github-actions/contexts
     env:
-      IMAGE_NAME: "${{vars.ARTIFACTORY_URL}}level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.${{github.sha::6}}"
       ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
     steps:
     - uses: actions/checkout@v3
-    - name: Check
+    - name: Add Variables
+      run: |
+        SHORT_SHA=`git rev-parse --short HEAD`
+        echo "IMAGE_NAME=${{vars.ARTIFACTORY_URL}}level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.$SHORT_SHA >> $GITHUB_ENV
+    - name: Variables
       run: |
         echo "IMAGE_NAME=$IMAGE_NAME"
         echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
