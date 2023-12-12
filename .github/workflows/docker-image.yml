@@ -35,7 +35,8 @@ jobs:
     - name: Login to Artifactory
       uses: docker/login-action@v3
       with:
-        registry: ${{ vars.ARTIFACTORY_URL }}
+        # TODO: turn back to variable
+        registry: dkistdc.jfrog.io
         username: ${{ secrets.ARTIFACTORY_USER }}
         password: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
