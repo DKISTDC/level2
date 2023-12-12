@@ -41,7 +41,7 @@ jobs:
         # increment this when you want to rebuild the cache
         cache-name: cache-cabal-v5
       with:
-        path: $HOME/.local
+        path: /home/runner/.local/state/cabal
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
