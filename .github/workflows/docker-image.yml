@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      image: level2
+      IMAGE: level2
 
     # https://docs.github.com/en/actions/learn-github-actions/contexts
     steps:
@@ -46,6 +46,6 @@ jobs:
       with:
         context: .
         # push: true
-        tags: ${{vars.ARTIFACTORY}}/${{env.image}}:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.$SHA_SHORT
+        tags: ${{vars.ARTIFACTORY}}/${{env.IMAGE}}:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.${{env.SHA_SHORT}}
         cache-from: type=gha
         cache-to: type=gha,mode=max
