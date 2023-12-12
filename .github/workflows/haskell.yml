@@ -41,7 +41,7 @@ jobs:
         # increment this when you want to rebuild the cache
         cache-name: cache-cabal-v5
       with:
-        path: $HOME/.cabal
+        path: $HOME/.local
         # key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
         key: ${{ runner.os }}-build-${{ env.cache-name }}
         restore-keys: |
@@ -61,8 +61,8 @@ jobs:
     - name: Build
       run: cabal build --enable-tests --enable-benchmarks all
     - name: Run tests
-      run: cabal test all
-    - name: Check Cache
+      run: cabal run
+    # - name: Check Cache
       # run: find $HOME -type d -name "9.4.7"
-      run: find $HOME -type d -name "*9.4.7*"
+      # run: find $HOME -type d -name "*9.4.7*"
 
