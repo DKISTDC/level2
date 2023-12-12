@@ -14,7 +14,7 @@ jobs:
 
     # https://docs.github.com/en/actions/learn-github-actions/contexts
     env:
-      IMAGE_NAME: "${{vars.ARTIFACTORY_URL}}/level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.${GITHUB_SHA::6}"
+      IMAGE_NAME: "${{vars.ARTIFACTORY_URL}}level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.${{github.sha::6}}"
       ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
