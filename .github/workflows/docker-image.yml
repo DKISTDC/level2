@@ -22,7 +22,7 @@ jobs:
     - name: Add Variables
       run: |
         SHORT_SHA=$(git rev-parse --short HEAD)
-        echo "IMAGE_NAME=${{vars.ARTIFACTORY_URL}}level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.$SHORT_SHA >> $GITHUB_ENV
+        echo "IMAGE_NAME=${{vars.ARTIFACTORY_URL}}level2:${{vars.VERSION_PREFIX}}.${{github.ref_name}}.$SHORT_SHA" >> $GITHUB_ENV
     - name: Variables
       run: |
         echo "IMAGE_NAME=$IMAGE_NAME"
