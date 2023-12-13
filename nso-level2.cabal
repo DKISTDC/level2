@@ -89,7 +89,7 @@ executable level2
     , effectful ==2.3.0.0
     , exceptions
     , hasql
-    , hyperbole ==0.1.1
+    , hyperbole ==0.2.0
     , lens
     , modern-uri
     , morpheus-graphql ==0.27.3
@@ -141,7 +141,7 @@ test-suite tests
     , effectful ==2.3.0.0
     , exceptions
     , hasql
-    , hyperbole ==0.1.1
+    , hyperbole ==0.2.0
     , lens
     , modern-uri
     , morpheus-graphql ==0.27.3

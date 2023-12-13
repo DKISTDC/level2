@@ -26,9 +26,12 @@ page = do
   load $ do
     exs <- Program.loadAllExperiments
     now <- currentTime
+
+    let fs = Filters{isVBI = False, isVISP = True, isInvertible = Nothing}
+
     pure $ appLayout Experiments $ do
       viewId ExView $ do
-        viewExperiments now (Filters Nothing (Just VISP)) exs
+        viewExperiments now fs exs
 
 
 loading :: View c ()
@@ -53,7 +56,8 @@ instance HyperView ExView where
 
 data Filters = Filters
   { isInvertible :: Maybe Bool
-  , isInstrument :: Maybe Instrument
+  , isVISP :: Bool
+  , isVBI :: Bool
   }
   deriving (Show, Read)
 
@@ -69,10 +73,10 @@ experiments _ (Filter fs) = do
 viewExperiments :: UTCTime -> Filters -> [Experiment] -> View ExView ()
 viewExperiments now fs exs = do
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
-    row (big aside . bg Error . gap 15) $ do
+    row (big aside . gap 5) $ do
       viewFilters fs
 
-    col (gap 40 . bg Warning . grow . collapse) $ do
+    col (gap 40 . grow . collapse) $ do
       forM_ exs viewExperiment
  where
   aside = width 250 . flexCol
@@ -116,9 +120,9 @@ viewExperiments now fs exs = do
 
   checkInstrument :: InstrumentProgram -> Bool
   checkInstrument ip =
-    case fs.isInstrument of
-      Nothing -> True
-      (Just i) -> i == ip.instrument
+    case ip.instrument of
+      VBI -> fs.isVBI
+      VISP -> fs.isVISP
 
   checkInvertible :: InstrumentProgram -> Bool
   checkInvertible ip =
@@ -134,17 +138,31 @@ viewExperiments now fs exs = do
 
 viewFilters :: Filters -> View ExView ()
 viewFilters fs = do
-  el bold "Instrument"
-  dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
-    option Nothing id ""
-    option (Just VISP) id "VISP"
-    option (Just VBI) id "VBI"
+  el (item . bold) "Instrument"
 
-  el bold "Status"
-  dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) $ do
-    option Nothing id ""
-    option (Just True) id "Invertible"
-    option (Just False) id "Not Invertible"
+  row (gap 5) $ do
+    toggle (Filter fs{isVISP = not fs.isVISP}) fs.isVISP id "VISP"
+    toggle (Filter fs{isVBI = not fs.isVBI}) fs.isVBI id "VBI"
+
+  -- dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
+  --   option Nothing id ""
+  --   option (Just VISP) id "VISP"
+  --   option (Just VBI) id "VBI"
+
+  el (item . bold) "Status"
+  dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) (item . pad 5) $ do
+    option Nothing "Any"
+    option (Just True) "Invertible"
+    option (Just False) "Not Invertible"
+ where
+  toggle action sel f =
+    button action (f . item . pad (XY 10 5) . border 1 . if sel then on else off)
+
+  item = pad (XY 0 5)
+
+  on = bg Primary . hover (bg PrimaryLight) . color White . borderColor White
+
+  off = bg GrayLight . borderColor GrayDark
 
 
 tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View ExView ()

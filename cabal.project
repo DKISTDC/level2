@@ -1,3 +1,3 @@
 packages:
   .
-  https://hackage.haskell.org/package/hyperbole-0.1.1/candidate/hyperbole-0.1.1.tar.gz
+  ../hyperbole/
