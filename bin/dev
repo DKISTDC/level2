@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TEST_FUNCTION=${1-App.main}
-
 # Kill any background jobs when this script is killed
 cleanup() {
 	# kill all processes whose parent is this process
@@ -24,4 +22,4 @@ watchexec -e hs,yaml hpack &
 
 # Autoreload on save. Show errors and warnings
 # run even if warnings
-ghcid -T $TEST_FUNCTION -W
+ghcid -W -r

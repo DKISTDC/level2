@@ -46,7 +46,8 @@ page = do
 
 pageEvent :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
 pageEvent _ RunScan = do
-  ds <- syncDatasets
+  services <- ask @Services
+  ds <- syncDatasets services.metadata
   pure $ viewScan (Just ds)
 
 

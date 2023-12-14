@@ -1,12 +1,10 @@
 module NSO.Data.Scan where
 
-import App.Config
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Error.Static
-import Effectful.Reader.Static
 import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
@@ -39,19 +37,18 @@ data SyncResults = SyncResults
   deriving (Eq)
 
 
-scanDatasetInventory :: (GraphQL :> es, Error RequestError :> es, Time :> es, Reader Services :> es) => Eff es [Dataset]
-scanDatasetInventory = do
-  services <- ask @Services
+scanDatasetInventory :: (GraphQL :> es, Error RequestError :> es, Time :> es) => Service -> Eff es [Dataset]
+scanDatasetInventory metadata = do
   now <- currentTime
-  ads <- fetch @AllDatasets services.metadata ()
-  exs <- fetch @AllExperiments services.metadata ()
+  ads <- fetch @AllDatasets metadata ()
+  exs <- fetch @AllExperiments metadata ()
   let res = mapM (toDataset now exs) ads.datasetInventories
   either (throwError . ParseError) pure res
 
 
-syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es, Reader Services :> es) => Eff es SyncResults
-syncDatasets = do
-  scan <- scanDatasetInventory
+syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es) => Service -> Eff es SyncResults
+syncDatasets metadata = do
+  scan <- scanDatasetInventory metadata
   old <- indexed <$> queryLatest
 
   let res = syncResults old scan

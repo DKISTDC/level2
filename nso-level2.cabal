@@ -19,9 +19,8 @@ extra-doc-files:
     README.md
     DEVELOPMENT.md
 
-executable level2
-  main-is: Main.hs
-  other-modules:
+library
+  exposed-modules:
       App
       App.Colors
       App.Config
@@ -62,6 +61,55 @@ executable level2
       NSO.Types.Dataset
       NSO.Types.InstrumentProgram
       NSO.Types.Wavelength
+  other-modules:
+      Paths_nso_level2
+  autogen-modules:
+      Paths_nso_level2
+  hs-source-dirs:
+      src
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      OverloadedStrings
+      QuasiQuotes
+      DuplicateRecordFields
+      LambdaCase
+      NoImplicitPrelude
+      NoFieldSelectors
+  ghc-options: -Wall
+  build-depends:
+      aeson ==2.1.2.1
+    , base >=4.16.4.0
+    , bytestring
+    , containers
+    , data-diverse >=4.7
+    , effectful ==2.3.0.0
+    , exceptions
+    , hasql
+    , hyperbole ==0.2.0
+    , lens
+    , modern-uri
+    , morpheus-graphql ==0.27.3
+    , morpheus-graphql-client ==0.27.3
+    , morpheus-graphql-core ==0.27.3
+    , rel8 ==1.4.1.0
+    , req
+    , string-conversions
+    , string-interpolate
+    , tagged
+    , text
+    , time
+    , wai-extra
+    , warp ==3.3.31
+    , web-view >=0.2.3
+  default-language: GHC2021
+
+executable level2
+  main-is: Main.hs
+  other-modules:
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
@@ -95,6 +143,7 @@ executable level2
     , morpheus-graphql ==0.27.3
     , morpheus-graphql-client ==0.27.3
     , morpheus-graphql-core ==0.27.3
+    , nso-level2
     , rel8 ==1.4.1.0
     , req
     , string-conversions
@@ -112,6 +161,7 @@ test-suite tests
   main-is: Spec.hs
   other-modules:
       Test.BasicSpec
+      Test.QualifySpec
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
@@ -147,6 +197,7 @@ test-suite tests
     , morpheus-graphql ==0.27.3
     , morpheus-graphql-client ==0.27.3
     , morpheus-graphql-core ==0.27.3
+    , nso-level2
     , rel8 ==1.4.1.0
     , req
     , string-conversions
