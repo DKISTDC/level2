@@ -29,6 +29,7 @@ COPY migrations migrations
 COPY app app
 COPY src src
 COPY test test
+COPY deps deps
 
 # Run tests
 RUN cabal test
