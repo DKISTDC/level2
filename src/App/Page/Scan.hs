@@ -11,7 +11,7 @@ import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
 import NSO.Data.Dataset
-import NSO.Data.Qualify (isOnDisk)
+import NSO.Data.Qualify (dayOfYear, isOnDisk)
 import NSO.Data.Scan
 import NSO.Prelude
 import Numeric (showFFloat)
@@ -99,7 +99,7 @@ datasetsTable ds = do
     -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     -- tcol (hd "Bounding Box") $ \d -> cell . cs . show $ d.boundingBox
-    tcol (hd "On Disk") $ \d -> cell . cs . show $ isOnDisk d.boundingBox
+    tcol (hd "On Disk") $ \d -> cell . cs $ fromMaybe "" $ show . isOnDisk (dayOfYear d.startTime) <$> d.boundingBox
  where
   -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
   -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
