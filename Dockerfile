@@ -27,6 +27,7 @@ COPY *.md .
 COPY deps/metadata.graphql deps/metadata.graphql
 COPY migrations migrations
 COPY app app
+COPY src src
 COPY test test
 
 # Run tests
