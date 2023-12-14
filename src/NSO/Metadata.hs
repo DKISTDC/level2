@@ -49,7 +49,7 @@ mockRequest "http://internal-api-gateway.service.prod.consul/graphql" r = do
   rq <- parseRequest r
   putStrLn $ "MOCK Graphql: " <> cs rq.operationName
   case rq.operationName of
-    "AllDatasets" -> L.readFile "deps/datasets4.json"
+    "AllDatasets" -> L.readFile "deps/datasets.json"
     "AllExperiments" -> L.readFile "deps/experiments.json"
     op -> fail $ "GraphQL Request not mocked: " <> cs op
 mockRequest url _ = do

@@ -53,7 +53,6 @@ library
       NSO.Data.Spectra
       NSO.Level2
       NSO.Metadata
-      NSO.Metadata.Parse
       NSO.Metadata.Types
       NSO.Prelude
       NSO.Steps
@@ -89,7 +88,7 @@ library
     , effectful ==2.3.0.0
     , exceptions
     , hasql
-    , hyperbole ==0.2.0
+    , hyperbole ==0.1.2
     , lens
     , modern-uri
     , morpheus-graphql ==0.27.3
@@ -137,7 +136,7 @@ executable level2
     , effectful ==2.3.0.0
     , exceptions
     , hasql
-    , hyperbole ==0.2.0
+    , hyperbole ==0.1.2
     , lens
     , modern-uri
     , morpheus-graphql ==0.27.3
@@ -160,7 +159,7 @@ test-suite tests
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.BasicSpec
+      Test.ParseSpec
       Test.QualifySpec
       Paths_nso_level2
   autogen-modules:
@@ -191,7 +190,7 @@ test-suite tests
     , effectful ==2.3.0.0
     , exceptions
     , hasql
-    , hyperbole ==0.2.0
+    , hyperbole ==0.1.2
     , lens
     , modern-uri
     , morpheus-graphql ==0.27.3

@@ -6,6 +6,7 @@ import App.View.Common
 import App.View.DataRow (dataRows)
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.Grouped as G
+import Data.Ord (Down (..))
 import Effectful
 import Effectful.Error.Static
 import Effectful.Rel8 (Rel8)
@@ -72,12 +73,13 @@ experiments _ (Filter fs) = do
 -- ok, wait, I need to group them by experiment
 viewExperiments :: UTCTime -> Filters -> [Experiment] -> View ExView ()
 viewExperiments now fs exs = do
+  let sorted = sortOn (Down . (.experimentId)) exs
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
     row (big aside . gap 5) $ do
       viewFilters fs
 
     col (gap 40 . grow . collapse) $ do
-      forM_ exs viewExperiment
+      forM_ sorted viewExperiment
  where
   aside = width 250 . flexCol
   big = media (MinWidth 1000)
@@ -152,7 +154,7 @@ viewFilters fs = do
   el (item . bold) "Status"
   dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) (item . pad 5) $ do
     option Nothing "Any"
-    option (Just True) "Invertible"
+    option (Just True) "Qualified"
     option (Just False) "Not Invertible"
  where
   toggle action sel f =

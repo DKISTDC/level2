@@ -57,7 +57,7 @@ dependencies:
   - string-conversions
   - rel8 == 1.4.1.0
   - web-view >= 0.2.3
-  - hyperbole == 0.2.0
+  - hyperbole == 0.1.2
   - warp == 3.3.31
   - wai-extra
 
