@@ -19,6 +19,7 @@ WORKDIR /opt/build
 
 # Build and cache dependencies not listed above
 COPY cabal.project nso-level2.cabal .
+RUN cabal update
 RUN cabal build --only-dependencies
 
 # Copy in code
