@@ -4,9 +4,6 @@ Invertibility
 This document contains all the invertibility requirements, and exact details on how they are to be obtained
 * VISP only for now for simplicity
 
-- [ ] WAITING: Han to specify waveband logic, specifics below
-- [ ] HAN: What are the exact on-disk calculations?
-- [ ] HAN: AOLocked: do you mean 75% of total frames are locked, or each dataset needs 75% locked or better?
 - [ ] BLOCKED (Scott?): polarimetricAccuracy is null everywhere. Wait for fix and next update. We need to pass it through to the dataset view
 
 
@@ -69,7 +66,8 @@ SPATIAL
 | ~~Slit Horizon Azimuth~~ |         |        |               |
 
 - Off-disk is when they block the sun's light and measure just to the side of it, to isolate atmosphere
-- `boundingBox` is in coordinates from the sun's center. Can calculate on/off by knowing how many arcseconds the sun's radius is
+- `boundingBox` is in coordinates from the sun's center.
+- radius of the sun changes depending on the time of year
 
 
 SPECTRAL
@@ -91,7 +89,6 @@ Inversion is possible only when certain spectral lines are observed
 | Spec LN  |  | | [SPECLN<sl>](https://tinyurl.com/dkist-spec-214#datacenter-keywords) | |
 
 - Wait N days for datasets to become available before processing, hoping CaII 8498 becomes available
-- Dataset must include the entire band (min and max) to be counted
-- [ ] HAN will confirm the min/max ranges of these bands
+- Data must contain midpoint to continue
 
 [spec_214]: https://tinyurl.com/dkist-spec-214

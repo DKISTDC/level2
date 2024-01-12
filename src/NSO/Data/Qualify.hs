@@ -20,8 +20,8 @@ isOnDisk' radius bb =
   all isCoordOnDisk $ boundingPoints bb
  where
   -- https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html
-  -- http://localhost:3000/program/id.107813.329344 - goes up to 970 in current data. Han said all datasets should be on disk so far
-
+  -- http://localhost:3000/program/id.107813.329344 - goes up to 970 in current data.
+  -- Han said all datasets should be on disk so far
   isCoordOnDisk :: Coordinate Arcseconds -> Bool
   isCoordOnDisk c = boxRadius c < radius
 

@@ -46,7 +46,7 @@ WORKDIR /opt/app
 
 # these will all be cached even if a previous stage has changes
 RUN apt-get update -y
-RUN apt-get install -y libpq-dev ca-certificates openssl pkg-config
+RUN apt-get install -y libpq-dev ca-certificates openssl pkg-config cargo
 RUN apt-get install -y cargo
 RUN cargo install sqlx-cli
 

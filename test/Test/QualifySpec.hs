@@ -20,9 +20,13 @@ spec = do
       round (solarRadiusDay dayOfAphelion) `shouldBe` (944 :: Int)
 
   describe "Qualify" $ do
-    it "should be on disk" $ do
-      let bb = BoundingBox (-817.11, 255.01) (-870.28, 179.45)
-      isOnDisk dayOfPerihelion bb `shouldBe` True
+    describe "bounding box near edge" $ do
+      let bb = BoundingBox (-57.56, -901.62) (-61.91, -963.33)
+      it "should be on disk on Perihelion" $ do
+        isOnDisk dayOfPerihelion bb `shouldBe` True
+
+      it "should be off disk on Alphelion" $ do
+        isOnDisk dayOfAphelion bb `shouldBe` False
 
     it "should catch off disk" $ do
       let bb = BoundingBox (59.93, -872.63) (-56.05, -991.35)
