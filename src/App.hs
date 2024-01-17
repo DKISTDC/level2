@@ -47,7 +47,7 @@ initialize = do
 
 
 app :: Rel8.Connection -> Services -> IsMock -> Application
-app conn services isMock = waiApplication document (runApp . router)
+app conn services isMock = application document (runApp . router)
  where
   router :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
@@ -64,7 +64,6 @@ app conn services isMock = waiApplication document (runApp . router)
       . runReader services
       . runRel8 conn
       . runRequest' isMock
-      . runHyperbole
       . runDebugIO
       . runGraphQL
 
