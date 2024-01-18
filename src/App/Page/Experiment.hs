@@ -26,10 +26,10 @@ page eid = do
     let pwds = Program.fromDatasets pv ds
 
     pure $ appLayout Experiments $ do
-      col (pad 20 . gap 20) $ do
+      col (pad 20 . gap 25) $ do
         el (fontSize 24 . bold) $ do
           text "Experiment  "
-          text $ cs $ show eid
+          text eid.fromId
 
         viewPrograms now pwds
 
@@ -53,13 +53,21 @@ viewExperiment now gx = do
 
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
-  col (bg White . gap 10 . pad 10) $ do
-    row id $ do
-      InstrumentProgramSummary.viewRow now wdp.program
-      space
-      link (Program wdp.program.programId) (color Primary . bold) $ do
+  col (gap 10) $ do
+    el (fontSize 18 . bold) $ do
+      text "Instrument Program "
+      link (Program wdp.program.programId) lnk $ do
         text wdp.program.programId.fromId
-    -- :: Grouped InstrumentProgram Dataset
-    InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
-    viewId (ProgramDatasets wdp.program.programId) $ do
-      DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets
+
+    col (bg White . gap 10 . pad 10) $ do
+      row id $ do
+        InstrumentProgramSummary.viewRow now wdp.program
+      -- space
+      -- link (Program wdp.program.programId) (color Primary . bold) $ do
+      --   text wdp.program.programId.fromId
+      -- :: Grouped InstrumentProgram Dataset
+      InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
+      viewId (ProgramDatasets wdp.program.programId) $ do
+        DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets
+ where
+  lnk = color Primary . hover (color PrimaryLight)

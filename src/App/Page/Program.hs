@@ -6,6 +6,8 @@ import App.View.Common (showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.Grouped as G
+import Data.List (nub)
+import Data.List.NonEmpty qualified as NE
 import Effectful.Rel8
 import Effectful.Time
 import NSO.Data.Dataset
@@ -22,25 +24,49 @@ page ip = do
   hyper DatasetsTable.actionSort
 
   load $ do
-    ds <- queryProgram ip
+    ds' <- queryProgram ip
+    ds <- expectFound ds'
+    let d = head ds
+
+    dse <- queryExperiment d.primaryExperimentId
     ps <- Provenance.loadProvenance ip
     now <- currentTime
 
     pure $ appLayout Experiments $ do
-      col (pad 20 . gap 20) $ do
+      col (pad 20 . gap 25) $ do
         el (fontSize 24 . bold) $ do
-          text "Instrument Program: "
-          text ip.fromId
+          text "Experiment "
+          link (Experiment d.primaryExperimentId) lnk $ do
+            text d.primaryExperimentId.fromId
 
-        description ds
+        text d.experimentDescription
 
-        col (bg White . gap 10) $ do
-          viewDatasets now (filter (.latest) ds) ps
-          el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest ds
+        col (gap 10) $ do
+          el (fontSize 18 . bold) $ do
+            text "Instrument Program "
+            text ip.fromId
+
+          col (bg White . gap 10) $ do
+            viewDatasets now (NE.filter (.latest) ds) ps
+            el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
+
+        case instrumentProgramIds dse of
+          [] -> none
+          [_] -> none
+          ips -> do
+            link (Experiment d.primaryExperimentId) lnk $ do
+              text "View "
+              text $ cs $ show (length ips - 1)
+              text " other Instrument Programs"
  where
-  description :: [Dataset] -> View c ()
-  description [] = none
-  description (d : _) = text d.experimentDescription
+  lnk = color Primary . hover (color PrimaryLight)
+
+  instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
+  instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
+
+  expectFound :: (Hyperbole :> es) => [a] -> Eff es (NonEmpty a)
+  expectFound [] = notFound
+  expectFound (a : as) = pure $ a :| as
 
 
 viewDatasets :: UTCTime -> [Dataset] -> [ProvenanceEntry] -> View c ()

@@ -20,7 +20,7 @@ viewRow :: UTCTime -> InstrumentProgram -> View c ()
 viewRow now ip = row (gap 10 . textAlign Center) $ do
   statusTag ip.status
 
-  el dataCell $ text $ showDate ip.createDate
+  el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
   el dataCell $ text $ cs $ show ip.instrument
   -- not worth showing Stokes in the row. They seem to be present for all VISP

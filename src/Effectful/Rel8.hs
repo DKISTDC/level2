@@ -41,7 +41,7 @@ connect
 connect settings = do
   er <- liftIO $ Connection.acquire settings
   either (throwError . Rel8ErrConn) pure er
-  
+ 
 query :: Rel8 :> es => params -> Statement params result -> Eff es result
 query par stmt = send $ RunQuery par stmt
 
