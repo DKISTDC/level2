@@ -2,6 +2,7 @@ module App.Page.Experiments where
 
 import App.Colors
 import App.Route as Route
+import App.Style qualified as Style
 import App.View.Common
 import App.View.DataRow (dataRows)
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
@@ -95,10 +96,10 @@ viewExperiments now fs exs = do
   experimentPrograms e ips = do
     col (gap 8 . bg White) $ do
       row (bg GrayLight) $ do
-        -- link (routeUrl $ Route.Experiment e.experimentId) (bold . pad 10) $ do
-        link (Route.Experiment e.experimentId) (bold . pad 10) $ do
+        el (bold . pad 10) $ do
           text "Experiment "
-          text e.experimentId.fromId
+          link (Route.Experiment e.experimentId) Style.link $ do
+            text e.experimentId.fromId
         space
         el (pad 10) $ do
           text $ showDate e.startTime

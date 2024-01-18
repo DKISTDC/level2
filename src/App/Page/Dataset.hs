@@ -2,6 +2,7 @@ module App.Page.Dataset where
 
 import App.Colors
 import App.Route
+import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary (radiusBoundingBox)
@@ -20,8 +21,8 @@ page di = load $ do
   let sorted = sortOn (Down . (.scanDate)) ds
 
   pure $ appLayout Experiments $ do
-    col (pad 20 . gap 20) $ do
-      el (fontSize 24 . bold) $ do
+    col Style.page $ do
+      el Style.header $ do
         text "Dataset: "
         text di.fromId
 
@@ -35,8 +36,8 @@ viewDataset d =
     dataField "Scan Date" $ text $ showTimestamp d.scanDate
     dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
     dataField "Instrument" $ text $ cs $ show d.instrument
-    dataField "Instrument Program Id" $ link (Program d.instrumentProgramId) lnk $ text d.instrumentProgramId.fromId
-    dataField "Experiment Id" $ link (Experiment d.primaryExperimentId) lnk $ text d.primaryExperimentId.fromId
+    dataField "Instrument Program Id" $ link (Program d.instrumentProgramId) Style.link $ text d.instrumentProgramId.fromId
+    dataField "Experiment Id" $ link (Experiment d.primaryExperimentId) Style.link $ text d.primaryExperimentId.fromId
     dataField "Proposal Id" $ text d.primaryProposalId.fromId
     dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
     dataField "Create Date" $ text $ showTimestamp d.createDate
@@ -55,8 +56,6 @@ viewDataset d =
     dataField "Light Level" $ json d.lightLevel
     -- dataField "Polarimetric Accuracy" $ json d.polarimetricAccuracy
     dataField "friedParameter" $ json d.friedParameter
- where
-  lnk = color Primary . hover (color PrimaryLight)
 
 
 dataField :: Text -> View c () -> View c ()

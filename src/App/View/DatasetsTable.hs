@@ -2,6 +2,7 @@ module App.View.DatasetsTable where
 
 import App.Colors
 import App.Route as Route
+import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
 import App.View.Icons as Icons
 import App.View.InstrumentProgramSummary (radiusBoundingBox)
@@ -55,7 +56,7 @@ datasetsTable s ds = do
   -- is there a way to do alternating rows here?
   table (odd (bg White) . even (bg Light) . textAlign Center) sorted $ do
     tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ latest d.latest
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) lnk $ text . cs $ d.datasetId.fromId
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
@@ -87,7 +88,7 @@ datasetsTable s ds = do
 
   sortBtn :: SortField -> Text -> View ProgramDatasets ()
   sortBtn st t =
-    button st lnk (text t)
+    button st Style.link (text t)
 
   hd :: View ProgramDatasets () -> View (TableHead ProgramDatasets) ()
   hd = th (pad 4 . bord . bold . bg Light)
@@ -96,8 +97,6 @@ datasetsTable s ds = do
   cell = td (pad 4 . bord)
 
   bord = border 1 . borderColor GrayLight
-
-  lnk = color Primary . hover (color PrimaryLight)
 
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (.datasetId)

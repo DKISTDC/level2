@@ -2,6 +2,7 @@ module App.Page.Program where
 
 import App.Colors
 import App.Route
+import App.Style qualified as Style
 import App.View.Common (showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
@@ -33,16 +34,16 @@ page ip = do
     now <- currentTime
 
     pure $ appLayout Experiments $ do
-      col (pad 20 . gap 25) $ do
-        el (fontSize 24 . bold) $ do
+      col Style.page $ do
+        el Style.header $ do
           text "Experiment "
-          link (Experiment d.primaryExperimentId) lnk $ do
+          link (Experiment d.primaryExperimentId) Style.link $ do
             text d.primaryExperimentId.fromId
 
         text d.experimentDescription
 
         col (gap 10) $ do
-          el (fontSize 18 . bold) $ do
+          el Style.subheader $ do
             text "Instrument Program "
             text ip.fromId
 
@@ -54,13 +55,11 @@ page ip = do
           [] -> none
           [_] -> none
           ips -> do
-            link (Experiment d.primaryExperimentId) lnk $ do
+            link (Experiment d.primaryExperimentId) Style.link $ do
               text "View "
               text $ cs $ show (length ips - 1)
               text " other Instrument Programs"
  where
-  lnk = color Primary . hover (color PrimaryLight)
-
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
 

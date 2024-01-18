@@ -2,6 +2,7 @@ module App.Page.Experiment where
 
 import App.Colors
 import App.Route
+import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.Grouped as G
@@ -26,8 +27,8 @@ page eid = do
     let pwds = Program.fromDatasets pv ds
 
     pure $ appLayout Experiments $ do
-      col (pad 20 . gap 25) $ do
-        el (fontSize 24 . bold) $ do
+      col Style.page $ do
+        el Style.header $ do
           text "Experiment  "
           text eid.fromId
 
@@ -54,9 +55,9 @@ viewExperiment now gx = do
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
   col (gap 10) $ do
-    el (fontSize 18 . bold) $ do
+    el Style.subheader $ do
       text "Instrument Program "
-      link (Program wdp.program.programId) lnk $ do
+      link (Program wdp.program.programId) Style.link $ do
         text wdp.program.programId.fromId
 
     col (bg White . gap 10 . pad 10) $ do
@@ -69,5 +70,3 @@ programSummary now wdp = do
       InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
       viewId (ProgramDatasets wdp.program.programId) $ do
         DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets
- where
-  lnk = color Primary . hover (color PrimaryLight)
