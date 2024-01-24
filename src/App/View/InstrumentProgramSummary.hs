@@ -5,8 +5,8 @@ import App.View.Common
 import App.View.DataRow (dataCell)
 import App.View.Icons as Icons
 import Data.Grouped
-import NSO.Data.Dataset
-import NSO.Data.Program
+import NSO.Data.Datasets
+import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.InstrumentProgram

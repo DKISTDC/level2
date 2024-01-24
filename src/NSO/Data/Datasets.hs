@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingVia #-}
 
-module NSO.Data.Dataset
+module NSO.Data.Datasets
   ( Dataset
   , Dataset' (..)
   , module NSO.Types.Dataset

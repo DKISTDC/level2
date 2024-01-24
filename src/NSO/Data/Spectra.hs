@@ -1,7 +1,7 @@
 module NSO.Data.Spectra where
 
 import Data.List.NonEmpty qualified as NE
-import NSO.Data.Dataset
+import NSO.Data.Datasets
 import NSO.Prelude
 import NSO.Types.Wavelength
 

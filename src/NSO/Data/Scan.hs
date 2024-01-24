@@ -8,7 +8,7 @@ import Effectful.Error.Static
 import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
-import NSO.Data.Dataset
+import NSO.Data.Datasets
 import NSO.Metadata
 import NSO.Metadata.Types
 import NSO.Prelude

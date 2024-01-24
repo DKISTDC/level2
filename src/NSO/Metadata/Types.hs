@@ -11,7 +11,7 @@ import Data.Time.Format (FormatTime)
 import Data.Time.Format.ISO8601
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Data.Dataset
+import NSO.Data.Datasets
 import NSO.Prelude
 
 

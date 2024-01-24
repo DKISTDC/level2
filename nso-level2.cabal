@@ -46,8 +46,8 @@ library
       Flow
       Flow.Example
       Flow.Node
-      NSO.Data.Dataset
-      NSO.Data.Program
+      NSO.Data.Datasets
+      NSO.Data.Programs
       NSO.Data.Provenance
       NSO.Data.Qualify
       NSO.Data.Scan

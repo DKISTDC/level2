@@ -8,7 +8,7 @@ import App.View.Icons as Icons
 import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Ord (Down (..))
 import Effectful.Rel8
-import NSO.Data.Dataset as Dataset
+import NSO.Data.Datasets as Datasets
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
@@ -45,7 +45,7 @@ instance HyperView ProgramDatasets where
 
 actionSort :: (Rel8 :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
 actionSort (ProgramDatasets i) s = do
-  ds <- Dataset.queryProgram i
+  ds <- Datasets.queryProgram i
   pure $ datasetsTable s ds
 
 

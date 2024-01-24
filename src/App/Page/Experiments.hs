@@ -13,8 +13,8 @@ import Effectful.Error.Static
 import Effectful.Rel8 (Rel8)
 import Effectful.Request
 import Effectful.Time
-import NSO.Data.Dataset as Dataset
-import NSO.Data.Program as Program
+import NSO.Data.Datasets as Datasets
+import NSO.Data.Programs as Programs
 import NSO.Prelude hiding (truncate)
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole as H
@@ -26,7 +26,7 @@ page = do
   hyper experiments
   -- pageAction handleIPRow
   load $ do
-    exs <- Program.loadAllExperiments
+    exs <- Programs.loadAllExperiments
     now <- currentTime
 
     let fs = Filters{isVBI = False, isVISP = True, isInvertible = Nothing}
@@ -66,7 +66,7 @@ data Filters = Filters
 
 experiments :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => ExView -> ExEvent -> Eff es (View ExView ())
 experiments _ (Filter fs) = do
-  exs <- Program.loadAllExperiments
+  exs <- Programs.loadAllExperiments
   now <- currentTime
   pure $ viewExperiments now fs exs
 

@@ -10,7 +10,7 @@ import Effectful.Reader.Static
 import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
-import NSO.Data.Dataset
+import NSO.Data.Datasets
 import NSO.Data.Qualify (dayOfYear, isOnDisk)
 import NSO.Data.Scan
 import NSO.Prelude

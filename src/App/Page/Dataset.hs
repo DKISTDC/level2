@@ -9,14 +9,14 @@ import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
 import Effectful.Rel8
-import NSO.Data.Dataset as Dataset
+import NSO.Data.Datasets as Datasets
 import NSO.Prelude
 import Web.Hyperbole
 
 
 page :: (Hyperbole :> es, Rel8 :> es) => Id Dataset -> Page es ()
 page di = load $ do
-  ds <- Dataset.queryById di
+  ds <- Datasets.queryById di
 
   let sorted = sortOn (Down . (.scanDate)) ds
 

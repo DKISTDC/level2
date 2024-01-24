@@ -8,8 +8,8 @@ import App.View.InstrumentProgramSummary as InstrumentProgramSummary
 import Data.Grouped as G
 import Effectful.Rel8
 import Effectful.Time
-import NSO.Data.Dataset
-import NSO.Data.Program as Program
+import NSO.Data.Datasets
+import NSO.Data.Programs as Programs
 import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -24,7 +24,7 @@ page eid = do
     ds <- queryExperiment eid
     pv <- loadAllProvenance
     now <- currentTime
-    let pwds = Program.fromDatasets pv ds
+    let pwds = Programs.fromDatasets pv ds
 
     pure $ appLayout Experiments $ do
       col Style.page $ do

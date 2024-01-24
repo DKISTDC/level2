@@ -3,7 +3,7 @@ module NSO.Data.Qualify where
 import Data.Grouped
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (DayOfYear, toOrdinalDate)
-import NSO.Data.Dataset
+import NSO.Data.Datasets
 import NSO.Data.Spectra
 import NSO.Prelude
 import NSO.Types.Common

@@ -11,8 +11,8 @@ import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
 import Effectful.Rel8
 import Effectful.Time
-import NSO.Data.Dataset
-import NSO.Data.Program
+import NSO.Data.Datasets
+import NSO.Data.Programs
 import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import Web.Hyperbole
