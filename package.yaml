@@ -60,6 +60,7 @@ dependencies:
   - hyperbole == 0.2.0
   - warp == 3.3.31
   - wai-extra
+  - data-diverse
 
 
 library:

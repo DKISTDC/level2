@@ -1,9 +1,10 @@
 module NSO.Types.Common where
 
 import Data.Aeson
+import Data.Aeson.Types (parseEither)
 import GHC.Real (Real)
 import NSO.Prelude
-import Rel8 (DBEq, DBType)
+import Rel8 (DBEq, DBType, TypeInformation, parseTypeInformation, typeInformation)
 import Web.Hyperbole (Param (..), Route)
 
 
@@ -20,7 +21,7 @@ instance Param (Id a) where
 type Coordinate a = (a, a)
 
 
-newtype Kilometers = Kilometers { value :: Double}
+newtype Kilometers = Kilometers {value :: Double}
   deriving newtype (Eq, Show, Read, RealFloat, Floating, RealFrac, Fractional, Real, Num, Ord)
 
 
@@ -34,3 +35,7 @@ newtype Radians = Radians Double
 
 radiansToArcseconds :: Radians -> Arcseconds
 radiansToArcseconds (Radians r) = Arcseconds $ r * 206265
+
+
+jsonTypeInfo :: (FromJSON a, ToJSON a) => TypeInformation a
+jsonTypeInfo = parseTypeInformation (parseEither parseJSON) toJSON typeInformation

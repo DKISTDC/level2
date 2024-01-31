@@ -47,6 +47,7 @@ library
       Flow.Example
       Flow.Node
       NSO.Data.Datasets
+      NSO.Data.Inversions
       NSO.Data.Programs
       NSO.Data.Provenance
       NSO.Data.Qualify
@@ -85,7 +86,7 @@ library
     , base >=4.16.4.0
     , bytestring
     , containers
-    , data-diverse >=4.7
+    , data-diverse
     , effectful ==2.3.0.0
     , exceptions
     , hasql
@@ -133,7 +134,7 @@ executable level2
     , base >=4.16.4.0
     , bytestring
     , containers
-    , data-diverse >=4.7
+    , data-diverse
     , effectful ==2.3.0.0
     , exceptions
     , hasql
@@ -187,7 +188,7 @@ test-suite tests
     , base >=4.16.4.0
     , bytestring
     , containers
-    , data-diverse >=4.7
+    , data-diverse
     , effectful ==2.3.0.0
     , exceptions
     , hasql

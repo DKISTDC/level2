@@ -114,10 +114,8 @@ data Health = Health
   , unknown :: Maybe Int
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-
 instance DBType Health where
-  typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation
+  typeInformation = jsonTypeInfo
 
 
 data GOSStatus = GOSStatus
@@ -128,10 +126,8 @@ data GOSStatus = GOSStatus
   , undefined :: Maybe Int
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-
 instance DBType GOSStatus where
-  typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation
+  typeInformation = jsonTypeInfo
 
 
 data Distribution = Distribution
@@ -142,7 +138,5 @@ data Distribution = Distribution
   , max :: Float
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-
 instance DBType Distribution where
-  typeInformation = parseTypeInformation (parseEither parseJSON) toJSON typeInformation
+  typeInformation = jsonTypeInfo
