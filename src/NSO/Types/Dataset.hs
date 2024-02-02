@@ -3,7 +3,6 @@
 module NSO.Types.Dataset where
 
 import Data.Aeson
-import Data.Aeson.Types (parseEither)
 import Data.List qualified as L
 import NSO.Prelude
 import NSO.Types.Common

@@ -3,22 +3,18 @@ module App.View.DatasetsTable where
 import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
-import App.View.Common (showDate, showTimestamp)
+import App.View.Common (code, showDate, showTimestamp)
 import App.View.Icons as Icons
-import App.View.InstrumentProgramSummary (radiusBoundingBox)
 import Data.Ord (Down (..))
 import Effectful.Rel8
 import NSO.Data.Datasets as Datasets
+import NSO.Data.Qualify (boxRadius)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View.Element (TableHead)
 import Web.View.Style (Align (..))
-
-
-rowHeight :: PxRem
-rowHeight = 30
 
 
 newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
@@ -55,7 +51,7 @@ datasetsTable s ds = do
 
   -- is there a way to do alternating rows here?
   table (odd (bg White) . even (bg Light) . textAlign Center) sorted $ do
-    tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ latest d.latest
+    tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ datasetLatest d.latest
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
@@ -110,9 +106,21 @@ datasetsTable s ds = do
   sortField WaveMax = sortOn (.wavelengthMax)
 
 
-latest :: Bool -> View c ()
-latest False = none
-latest True = row id $ do
+datasetLatest :: Bool -> View c ()
+datasetLatest False = none
+datasetLatest True = row id $ do
   space
   el (width 24 . height 24) Icons.checkCircle
   space
+
+
+radiusBoundingBox :: Maybe BoundingBox -> View c ()
+radiusBoundingBox Nothing = none
+radiusBoundingBox (Just b) = row (gap 5) $ do
+  space
+  forM_ (boundingPoints b) $ \c ->
+    code . cs $ showFFloat (Just 0) (boxRadius c) ""
+  space
+
+-- rowHeight :: PxRem
+-- rowHeight = 30

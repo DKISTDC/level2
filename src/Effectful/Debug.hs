@@ -29,3 +29,4 @@ dump msg a = send $ Dump msg a
 
 delay :: (Debug :> es) => Milliseconds -> Eff es ()
 delay = send . Delay
+

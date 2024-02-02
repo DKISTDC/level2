@@ -4,8 +4,7 @@ import App.Colors
 import App.Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
-import App.View.DatasetsTable as DatasetsTable
-import App.View.InstrumentProgramSummary (radiusBoundingBox)
+import App.View.DatasetsTable (datasetLatest, radiusBoundingBox)
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
 import Effectful.Rel8
@@ -32,7 +31,7 @@ page di = load $ do
 viewDataset :: Dataset -> View c ()
 viewDataset d =
   col (bg White . gap 10 . pad 10) $ do
-    dataField "Latest" $ DatasetsTable.latest d.latest
+    dataField "Latest" $ datasetLatest d.latest
     dataField "Scan Date" $ text $ showTimestamp d.scanDate
     dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
     dataField "Instrument" $ text $ cs $ show d.instrument

@@ -5,7 +5,7 @@ import App.Route
 import App.Style qualified as Style
 import App.View.Common (showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
-import App.View.InstrumentProgramSummary as InstrumentProgramSummary
+import App.View.ExperimentDetails
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
@@ -40,7 +40,7 @@ page ip = do
           link (Experiment d.primaryExperimentId) Style.link $ do
             text d.primaryExperimentId.fromId
 
-        text d.experimentDescription
+        viewExperimentDescription d.experimentDescription
 
         col (gap 10) $ do
           el Style.subheader $ do
@@ -75,7 +75,7 @@ viewDatasets now (d : ds) ps = do
   let ip = instrumentProgram gd ps
 
   row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
-    InstrumentProgramSummary.viewRow now ip
+    viewProgramRow now ip
 
   col (pad 10 . gap 10) $ do
     viewId (Status ip.programId) statusView
@@ -83,7 +83,7 @@ viewDatasets now (d : ds) ps = do
     el bold "Provenance"
     mapM_ viewProvenanceEntry ps
 
-    InstrumentProgramSummary.viewCriteria ip gd
+    viewCriteria ip gd
 
 
 viewProvenanceEntry :: ProvenanceEntry -> View c ()

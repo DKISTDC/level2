@@ -3,7 +3,6 @@ module NSO.Data.Inversions where
 import App.Error
 import Data.Aeson
 import Data.Diverse.Many hiding (select)
-import Data.Tagged
 import Effectful.Error.Dynamic
 import Effectful.Rel8
 import NSO.Prelude
@@ -11,8 +10,6 @@ import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Rel8
 
-
--- https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/ManySpec.hs
 
 -- The database definition is flattened. Needs validation on return from DB!
 data InversionRow f = InversionRow
@@ -76,8 +73,7 @@ instance DBType Published where
   typeInformation = jsonTypeInfo
 
 
--- Each step depends on the previous step being completed
--- it'll be useful to pass these around
+-- Data Diverse Many: https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/ManySpec.hs
 type StepStarted = '[Started]
 type StepDownloaded = Downloaded : StepStarted
 type StepCalibrated = Calibrated : StepDownloaded
@@ -95,12 +91,10 @@ data InversionStep
   | StepPublished (Many StepPublished)
 
 
--- I could use effects instead of this?
 inversion :: InversionRow Identity -> Either String Inversion
 inversion row = maybe err pure $ do
   stp <-
-    Nothing
-      <|> (StepPublished <$> published)
+    (StepPublished <$> published)
       <|> (StepProcessed <$> processed)
       <|> (StepInverted <$> inverted)
       <|> (StepCalibrated <$> calibrated)
@@ -121,7 +115,6 @@ inversion row = maybe err pure $ do
     a <- ma
     pure $ a ./ mp
 
-  -- this isn't right! Where/s my error?
   started :: Maybe (Many StepStarted)
   started = do
     pure $ row.started ./ nil
@@ -174,21 +167,13 @@ test = do
   putStrLn "HELLO"
 
 
--- ok, this works well!
-woot :: Many '[Int, Tagged "hello" Char]
-woot = (5 :: Int) ./ Tagged @"hello" 'A' ./ nil
-
-
--- I *could* handle it all in the serialization step, but no, a recursive strucure would be obnoxious to work with
-
-queryInstrumentProgram :: (Rel8 :> es, Error AppError :> es) => Eff es [Inversion]
-queryInstrumentProgram = do
+queryInstrumentProgram :: (Rel8 :> es, Error AppError :> es) => Id InstrumentProgram -> Eff es [Inversion]
+queryInstrumentProgram ip = do
   irs <- query () $ select $ do
     row <- each inversions
-    where_ (row.latest ==. lit True)
+    where_ (row.instrumentProgramId ==. lit ip)
     return row
 
   case traverse inversion irs of
-    -- invalid! throw error!
-    Left err -> fail err
+    Left err -> throwError $ ValidationError err
     Right ivs -> pure ivs

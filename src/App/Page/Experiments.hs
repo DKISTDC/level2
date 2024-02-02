@@ -5,7 +5,7 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common
 import App.View.DataRow (dataRows)
-import App.View.InstrumentProgramSummary as InstrumentProgramSummary
+import App.View.ExperimentDetails (viewProgramRow)
 import Data.Grouped as G
 import Data.Ord (Down (..))
 import Effectful
@@ -210,7 +210,7 @@ rowInstrumentProgram :: UTCTime -> InstrumentProgram -> View c ()
 rowInstrumentProgram now psm = do
   -- liveButton onClick id $ do
   link (Program psm.programId) id $ do
-    InstrumentProgramSummary.viewRow now psm
+    viewProgramRow now psm
 
 -- viewInstrumentProgram :: ProgramSummary -> View IPRow ()
 -- viewInstrumentProgram psm = do

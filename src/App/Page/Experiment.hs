@@ -4,8 +4,9 @@ import App.Colors
 import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
-import App.View.InstrumentProgramSummary as InstrumentProgramSummary
+import App.View.ExperimentDetails
 import Data.Grouped as G
+import Effectful.Debug
 import Effectful.Rel8
 import Effectful.Time
 import NSO.Data.Datasets
@@ -16,7 +17,7 @@ import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Time :> es, Rel8 :> es) => Id Experiment -> Page es ()
+page :: (Hyperbole :> es, Time :> es, Rel8 :> es, Debug :> es) => Id Experiment -> Page es ()
 page eid = do
   hyper DatasetsTable.actionSort
 
@@ -48,7 +49,7 @@ viewPrograms now (p : ps) = do
 viewExperiment :: UTCTime -> Grouped Experiment WithDatasets -> View c ()
 viewExperiment now gx = do
   let wd = sample gx
-  el_ $ text wd.program.experimentDescription
+  viewExperimentDescription wd.program.experimentDescription
   mapM_ (programSummary now) gx
 
 
@@ -62,11 +63,11 @@ programSummary now wdp = do
 
     col (bg White . gap 10 . pad 10) $ do
       row id $ do
-        InstrumentProgramSummary.viewRow now wdp.program
+        viewProgramRow now wdp.program
       -- space
       -- link (Program wdp.program.programId) (color Primary . bold) $ do
       --   text wdp.program.programId.fromId
       -- :: Grouped InstrumentProgram Dataset
-      InstrumentProgramSummary.viewCriteria wdp.program wdp.datasets
+      viewCriteria wdp.program wdp.datasets
       viewId (ProgramDatasets wdp.program.programId) $ do
         DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets

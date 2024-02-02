@@ -1,23 +1,34 @@
-module App.View.InstrumentProgramSummary where
+module App.View.ExperimentDetails
+  ( viewExperimentDescription
+  , viewProgramRow
+  , viewCriteria
+  ) where
 
 import App.Colors
 import App.View.Common
 import App.View.DataRow (dataCell)
 import App.View.Icons as Icons
 import Data.Grouped
+import Data.Text qualified as Text
 import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
-import Numeric (showFFloat)
 import Web.View
 import Web.View.Style (Align (Center))
 
 
-viewRow :: UTCTime -> InstrumentProgram -> View c ()
-viewRow now ip = row (gap 10 . textAlign Center) $ do
+viewExperimentDescription :: Text -> View c ()
+viewExperimentDescription t = do
+  let ps = Text.splitOn "\\n" t
+  col (gap 10) $ do
+    mapM_ (el_ . text) ps
+
+
+viewProgramRow :: UTCTime -> InstrumentProgram -> View c ()
+viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
   statusTag ip.status
 
   el dataCell $ text $ showDate ip.startTime
@@ -76,32 +87,17 @@ viewCriteria ip gd = do
     el bold "VBI Criteria"
     criteria "Not Supported" False
 
+  criteriaRowHeight :: PxRem
+  criteriaRowHeight = 32
 
-criteriaRowHeight :: PxRem
-criteriaRowHeight = 32
-
-
-criteria :: Text -> Bool -> View c ()
-criteria msg b =
-  row (gap 6 . height criteriaRowHeight . color (if b then SuccessDark else ErrorDark)) $ do
-    el (pad 4) checkmark
-    el (pad 4) (text msg)
- where
-  checkmark =
-    el (width 24 . height 24)
-      $ if b
-        then Icons.checkCircle
-        else Icons.xMark
-
-
-radiusBoundingBox :: Maybe BoundingBox -> View c ()
-radiusBoundingBox Nothing = none
-radiusBoundingBox (Just b) = row (gap 5) $ do
-  space
-  forM_ (boundingPoints b) $ \c ->
-    code . cs $ showFFloat (Just 0) (boxRadius c) ""
-  space
-
-
-code :: Text -> View c ()
-code = pre (fontSize 14)
+  criteria :: Text -> Bool -> View c ()
+  criteria msg b =
+    row (gap 6 . height criteriaRowHeight . color (if b then SuccessDark else ErrorDark)) $ do
+      el (pad 4) checkmark
+      el (pad 4) (text msg)
+   where
+    checkmark =
+      el (width 24 . height 24)
+        $ if b
+          then Icons.checkCircle
+          else Icons.xMark

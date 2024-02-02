@@ -1,6 +1,7 @@
 module App where
 
 import App.Config
+import App.Error
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Experiment qualified as Experiment
@@ -13,7 +14,7 @@ import Control.Monad.Catch
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
 import Effectful
-import Effectful.Debug (runDebugIO)
+import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Error.Static
 import Effectful.Reader.Static
 import Effectful.Rel8 as Rel8
@@ -49,7 +50,7 @@ initialize = do
 app :: Rel8.Connection -> Services -> IsMock -> Application
 app conn services isMock = application document (runApp . router)
  where
-  router :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => AppRoute -> Eff es ()
+  router :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Error AppError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router (Experiment eid) = page $ Experiment.page eid
@@ -61,6 +62,7 @@ app conn services isMock = application document (runApp . router)
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @RequestError onRequestError
+      . runErrorNoCallStackWith @AppError onAppError
       . runReader services
       . runRel8 conn
       . runRequest' isMock
@@ -79,6 +81,12 @@ onRel8Error e = do
 
 onRequestError :: (IOE :> es) => RequestError -> Eff es a
 onRequestError e = do
+  putStrLn "CAUGHT"
+  liftIO $ throwM e
+
+
+onAppError :: (IOE :> es) => AppError -> Eff es a
+onAppError e = do
   putStrLn "CAUGHT"
   liftIO $ throwM e
 

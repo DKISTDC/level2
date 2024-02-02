@@ -24,6 +24,7 @@ library
       App
       App.Colors
       App.Config
+      App.Error
       App.Page.Dashboard
       App.Page.Dataset
       App.Page.Experiment
@@ -36,8 +37,8 @@ library
       App.View.Common
       App.View.DataRow
       App.View.DatasetsTable
+      App.View.ExperimentDetails
       App.View.Icons
-      App.View.InstrumentProgramSummary
       Data.Grouped
       Effectful.Debug
       Effectful.Rel8
