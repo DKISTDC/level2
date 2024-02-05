@@ -36,31 +36,32 @@ default-extensions:
 
 dependencies:
   - base >=4.16.4.0
-  - aeson == 2.1.2.1
-  - bytestring
-  - effectful == 2.3.0.0
-  - text
-  # - amqp-worker >= 2.0
-  - data-diverse >= 4.7
-  - tagged
-  - lens
-  - hasql
-  - time
-  - exceptions
-  - string-interpolate
-  - morpheus-graphql-client == 0.27.3
-  - morpheus-graphql-core == 0.27.3
-  - morpheus-graphql == 0.27.3
-  - modern-uri
-  - req
-  - containers
-  - string-conversions
-  - rel8 == 1.4.1.0
   - web-view >= 0.2.3
-  - hyperbole == 0.2.0
   - warp == 3.3.31
   - wai-extra
+  - time
+  - text
+  - tagged
+  - string-interpolate
+  - string-conversions
+  - req
+  - rel8 == 1.4.1.0
+  - random
+  - morpheus-graphql-core == 0.27.3
+  - morpheus-graphql-client == 0.27.3
+  - morpheus-graphql == 0.27.3
+  - modern-uri
+  - lens
+  - hyperbole == 0.2.0
+  - hasql
+  - exceptions
+  - effectful == 2.3.0.0
+  - data-diverse >= 4.7
   - data-diverse
+  - containers
+  - bytestring
+  - aeson == 2.1.2.1
+  # - amqp-worker >= 2.0
 
 
 library:

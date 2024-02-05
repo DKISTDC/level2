@@ -1,9 +1,19 @@
-module NSO.Data.Inversions where
+module NSO.Data.Inversions
+  ( Inversion (..)
+  , inversion
+  , queryInstrumentProgram
+  , queryAll
+  , create
+  , AllInversions (..)
+  ) where
 
 import App.Error
+import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
 import Effectful.Error.Static
+import Effectful.GenRandom
 import Effectful.Rel8
+import Effectful.Time
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -131,6 +141,71 @@ queryAll = do
     each inversions
   AllInversions <$> toInversions irs
 
+
+empty :: (Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
+empty ip = do
+  now <- currentTime
+  i <- randomId
+  let start = Started now :: Started
+  pure
+    $ Inversion
+      { inversionId = i
+      , programId = ip
+      , step = StepStarted (start ./ nil)
+      }
+
+
+create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
+create ip = do
+  inv <- empty ip
+  void
+    $ query ()
+    $ Rel8.insert
+    $ Insert
+      { into = inversions
+      , rows = values [lit (emptyRow inv)]
+      , onConflict = DoNothing
+      , returning = NumberOfRowsAffected
+      }
+  pure inv
+ where
+  emptyRow :: Inversion -> InversionRow Identity
+  emptyRow inv =
+    let Started time = stepStarted inv.step
+     in InversionRow
+          { inversionId = inv.inversionId
+          , programId = inv.programId
+          , created = time
+          , download = Nothing
+          , calibration = Nothing
+          , calibrationUrl = Nothing
+          , inversion = Nothing
+          , inversionSoftware = Nothing
+          , postProcess = Nothing
+          , publish = Nothing
+          }
+
+  stepStarted :: InversionStep -> Started
+  stepStarted (StepStarted m) = grab @Started m
+  stepStarted (StepDownloaded m) = grab @Started m
+  stepStarted (StepCalibrated m) = grab @Started m
+  stepStarted (StepInverted m) = grab @Started m
+  stepStarted (StepProcessed m) = grab @Started m
+  stepStarted (StepPublished m) = grab @Started m
+
+
+-- insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
+-- insertAll ds =
+--   void
+--     $ query ()
+--     $ Rel8.insert
+--     $ Insert
+--       { into = datasets
+--       , rows = values $ fmap lit ds
+--       , onConflict = DoNothing
+--       , returning = NumberOfRowsAffected
+--       }
+--
 
 toInversions :: (Error AppError :> es) => [InversionRow Identity] -> Eff es [Inversion]
 toInversions irs = do

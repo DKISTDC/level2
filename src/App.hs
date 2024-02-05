@@ -16,6 +16,7 @@ import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Error.Static
+import Effectful.GenRandom
 import Effectful.Reader.Static
 import Effectful.Rel8 as Rel8
 import Effectful.Request
@@ -50,7 +51,7 @@ initialize = do
 app :: Rel8.Connection -> Services -> IsMock -> Application
 app conn services isMock = application document (runApp . router)
  where
-  router :: (Hyperbole :> es, Time :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Error AppError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
+  router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Rel8 :> es, GraphQL :> es, Error RequestError :> es, Error AppError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router (Experiment eid) = page $ Experiment.page eid
@@ -64,6 +65,7 @@ app conn services isMock = application document (runApp . router)
       . runErrorNoCallStackWith @RequestError onRequestError
       . runErrorNoCallStackWith @AppError onAppError
       . runReader services
+      . runGenRandom
       . runRel8 conn
       . runRequest' isMock
       . runDebugIO

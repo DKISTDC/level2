@@ -1,2 +1,0 @@
-ALTER TABLE datasets
-  ADD COLUMN embargo TIMESTAMP;

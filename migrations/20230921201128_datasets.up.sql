@@ -19,11 +19,16 @@ CREATE TABLE IF NOT EXISTS datasets (
   primary_experiment_id TEXT NOT NULL,
   primary_proposal_id TEXT NOT NULL,
   experiment_description TEXT NOT NULL,
+  embargo TIMESTAMP,
   exposure_time REAL NOT NULL,
-  bounding_box TEXT
-  -- health JSON NOT NULL,
-  -- gos_status JSON NOT NULL,
-  -- ao_locked INTEGER NOT NULL
+  bounding_box TEXT,
+ 
+  ao_locked INTEGER NOT NULL,
+  health JSON NOT NULL,
+  gos_status JSON NOT NULL,
+  polarimetric_accuracy JSON NOT NULL,
+  fried_parameter JSON NOT NULL,
+  light_level JSON NOT NULL
 );
 
 CREATE INDEX idx_datasets_latest ON datasets(latest);

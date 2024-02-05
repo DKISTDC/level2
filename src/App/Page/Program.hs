@@ -9,24 +9,25 @@ import App.View.ExperimentDetails
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
+import Data.String.Interpolate (i)
 import Effectful.Error.Static
+import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
-import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import Web.Hyperbole
 import Web.View.Style (Align (Center))
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Rel8 :> es, Error AppError :> es)
+  :: (Hyperbole :> es, Time :> es, Rel8 :> es, GenRandom :> es, Error AppError :> es)
   => Id InstrumentProgram
   -> Page es ()
 page ip = do
-  hyper statusAction
+  hyper inversions
   hyper DatasetsTable.actionSort
 
   load $ do
@@ -45,26 +46,15 @@ page ip = do
             text "Instrument Program: "
             text ip.fromId
 
-          el_ $ do
-            text "Experiment: "
-            link (Experiment d.primaryExperimentId) Style.link $ do
-              text d.primaryExperimentId.fromId
+          experimentLink d (numOtherIps dse)
 
         -- viewExperimentDescription d.experimentDescription
 
-        col (gap 10) $ do
-          col (bg White . gap 10) $ do
-            viewDatasets now (NE.filter (.latest) ds) is
-            el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
+        viewId (Inversions ip) $ viewInversions is
 
-        case instrumentProgramIds dse of
-          [] -> none
-          [_] -> none
-          ips -> do
-            link (Experiment d.primaryExperimentId) Style.link $ do
-              text "View "
-              text $ cs $ show (length ips - 1)
-              text " other Instrument Programs in this Experiment"
+        col (bg White . gap 10) $ do
+          viewDatasets now (NE.filter (.latest) ds) is
+          el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -72,6 +62,20 @@ page ip = do
   expectFound :: (Hyperbole :> es) => [a] -> Eff es (NonEmpty a)
   expectFound [] = notFound
   expectFound (a : as) = pure $ a :| as
+
+  numOtherIps :: [Dataset] -> Int
+  numOtherIps dse = length (instrumentProgramIds dse) - 1
+
+  experimentLink :: Dataset -> Int -> View c ()
+  experimentLink d n = do
+    el_ $ do
+      text "Experiment: "
+      link (Experiment d.primaryExperimentId) Style.link $ do
+        text d.primaryExperimentId.fromId
+      text
+        $ if n > 0
+          then [i|(#{n} other Instrument Programs)|]
+          else ""
 
 
 viewDatasets :: UTCTime -> [Dataset] -> [Inversion] -> View c ()
@@ -84,7 +88,7 @@ viewDatasets now (d : ds) is = do
     viewProgramRow now ip
 
   col (pad 10 . gap 10) $ do
-    viewId (Status ip.programId) statusView
+    -- viewId (Status ip.programId) statusView
 
     -- el bold "Provenance"
     -- mapM_ viewProvenanceEntry ps
@@ -104,34 +108,43 @@ viewDatasets now (d : ds) is = do
 
 -- Status -----------------------------------------------
 
-newtype Status = Status (Id InstrumentProgram)
+newtype Inversions = Inversions (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)
 
 
-data StatusAction
-  = Queue
-  | Complete
+data InversionsAction
+  = CreateInversion
   deriving (Show, Read, Param)
 
 
-instance HyperView Status where
-  type Action Status = StatusAction
+instance HyperView Inversions where
+  type Action Inversions = InversionsAction
 
 
-statusAction :: (Time :> es, Hyperbole :> es, Rel8 :> es) => Status -> StatusAction -> Eff es (View Status ())
-statusAction (Status ip) Queue = do
-  -- TODO: higher level: mark an ip as queued but check to make sure it its valid first?
-  Provenance.markQueued ip
-  pure $ el_ "Queued!"
-statusAction (Status ip) Complete = do
-  Provenance.markInverted ip
-  pure $ el_ "Inverted!"
+inversions :: (Hyperbole :> es, Rel8 :> es, Time :> es, GenRandom :> es) => Inversions -> InversionsAction -> Eff es (View Inversions ())
+inversions (Inversions ip) CreateInversion = do
+  inv <- Inversions.create ip
+  pure $ viewInversion inv
 
 
-statusView :: View Status ()
-statusView = do
-  row (gap 10) $ do
-    button Queue btn "Queue"
-    button Complete btn "Complete"
- where
-  btn = color White . pad (XY 15 10) . bg Secondary . hover (bg SecondaryLight)
+viewInversions :: [Inversion] -> View Inversions ()
+viewInversions [] = do
+  button CreateInversion Style.btn "Create Inversion"
+viewInversions is = mapM_ viewInversion is
+
+
+viewInversion :: Inversion -> View Inversions ()
+viewInversion inv = do
+  col (bg White . gap 10) $ do
+    el_ "INVERSION: "
+    el_ $ text inv.inversionId.fromId
+
+--
+--
+-- statusView :: View Status ()
+-- statusView = do
+--   row (gap 10) $ do
+--     button Queue btn "Queue"
+--     button Complete btn "Complete"
+--  where
+--   btn = color White . pad (XY 15 10) . bg Secondary . hover (bg SecondaryLight)

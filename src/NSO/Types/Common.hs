@@ -1,7 +1,9 @@
 module NSO.Types.Common where
 
+import Control.Monad (replicateM)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
+import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBEq, DBType, TypeInformation, parseTypeInformation, typeInformation)
@@ -11,6 +13,13 @@ import Web.Hyperbole (Param (..), Route)
 newtype Id a = Id {fromId :: Text}
   deriving newtype (Show, Read, Eq, Ord, DBType, FromJSON, Route, DBEq)
   deriving (Generic)
+
+
+randomId :: (GenRandom :> es) => Eff es (Id a)
+randomId = do
+  let chars = ['A' .. 'Z'] ++ ['0' .. '9']
+  sid <- replicateM 6 (randomFromList chars)
+  pure $ Id (cs sid)
 
 
 instance Param (Id a) where

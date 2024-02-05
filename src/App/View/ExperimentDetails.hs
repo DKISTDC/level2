@@ -61,7 +61,8 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
 
   statusTag StatusInvalid = el (dataCell . color GrayLight) $ text "-"
   statusTag StatusQualified = el (dataCell . bg Success) $ text "Qualified"
-  statusTag (StatusInversion _) = el (dataCell . bg Success) $ text "Inversion"
+  statusTag (StatusInversion (StepStarted _)) = el (dataCell . bg Secondary . color White) $ text "Started"
+  statusTag (StatusInversion _) = el (dataCell . bg Secondary . color White) $ text "Inversion"
 
 
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"

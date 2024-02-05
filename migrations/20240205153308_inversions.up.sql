@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS inversions (
-  inversion_id SERIAL PRIMARY KEY,
+  inversion_id TEXT PRIMARY KEY,
+
   program_id TEXT NOT NULL,
   created TIMESTAMP NOT NULL,
 
