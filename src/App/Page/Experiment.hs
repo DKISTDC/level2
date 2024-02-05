@@ -1,31 +1,36 @@
 module App.Page.Experiment where
 
 import App.Colors
+import App.Error
 import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
 import Data.Grouped as G
 import Effectful.Debug
+import Effectful.Error.Static
 import Effectful.Rel8
 import Effectful.Time
 import NSO.Data.Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
-import NSO.Data.Provenance as Provenance
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Time :> es, Rel8 :> es, Debug :> es) => Id Experiment -> Page es ()
+page
+  :: (Hyperbole :> es, Time :> es, Rel8 :> es, Debug :> es, Error AppError :> es)
+  => Id Experiment
+  -> Page es ()
 page eid = do
   hyper DatasetsTable.actionSort
 
   load $ do
     ds <- queryExperiment eid
-    pv <- loadAllProvenance
+    ai <- Inversions.queryAll
     now <- currentTime
-    let pwds = Programs.fromDatasets pv ds
+    let pwds = Programs.fromDatasets ai ds
 
     pure $ appLayout Experiments $ do
       col Style.page $ do
@@ -50,24 +55,25 @@ viewExperiment :: UTCTime -> Grouped Experiment WithDatasets -> View c ()
 viewExperiment now gx = do
   let wd = sample gx
   viewExperimentDescription wd.program.experimentDescription
+  el Style.subheader $ do
+    text "Instrument Programs"
   mapM_ (programSummary now) gx
 
 
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
   col (gap 10) $ do
-    el Style.subheader $ do
-      text "Instrument Program "
-      link (Program wdp.program.programId) Style.link $ do
-        text wdp.program.programId.fromId
+    link (Program wdp.program.programId) Style.link $ do
+      text wdp.program.programId.fromId
 
     col (bg White . gap 10 . pad 10) $ do
       row id $ do
         viewProgramRow now wdp.program
-      -- space
-      -- link (Program wdp.program.programId) (color Primary . bold) $ do
-      --   text wdp.program.programId.fromId
-      -- :: Grouped InstrumentProgram Dataset
-      viewCriteria wdp.program wdp.datasets
-      viewId (ProgramDatasets wdp.program.programId) $ do
-        DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets
+
+-- -- space
+-- -- link (Program wdp.program.programId) (color Primary . bold) $ do
+-- --   text wdp.program.programId.fromId
+-- -- :: Grouped InstrumentProgram Dataset
+-- viewCriteria wdp.program wdp.datasets
+-- viewId (ProgramDatasets wdp.program.programId) $ do
+--   DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets

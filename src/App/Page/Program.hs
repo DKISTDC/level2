@@ -1,17 +1,19 @@
 module App.Page.Program where
 
 import App.Colors
+import App.Error
 import App.Route
 import App.Style qualified as Style
-import App.View.Common (showTimestamp)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
+import Effectful.Error.Static
 import Effectful.Rel8
 import Effectful.Time
-import NSO.Data.Datasets
+import NSO.Data.Datasets as Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
 import NSO.Data.Provenance as Provenance
 import NSO.Prelude
@@ -19,7 +21,10 @@ import Web.Hyperbole
 import Web.View.Style (Align (Center))
 
 
-page :: (Hyperbole :> es, Time :> es, Rel8 :> es) => Id InstrumentProgram -> Page es ()
+page
+  :: (Hyperbole :> es, Time :> es, Rel8 :> es, Error AppError :> es)
+  => Id InstrumentProgram
+  -> Page es ()
 page ip = do
   hyper statusAction
   hyper DatasetsTable.actionSort
@@ -29,26 +34,27 @@ page ip = do
     ds <- expectFound ds'
     let d = head ds
 
-    dse <- queryExperiment d.primaryExperimentId
-    ps <- Provenance.loadProvenance ip
+    dse <- Datasets.queryExperiment d.primaryExperimentId
+    is <- Inversions.queryInstrumentProgram ip
     now <- currentTime
 
     pure $ appLayout Experiments $ do
       col Style.page $ do
-        el Style.header $ do
-          text "Experiment "
-          link (Experiment d.primaryExperimentId) Style.link $ do
-            text d.primaryExperimentId.fromId
-
-        viewExperimentDescription d.experimentDescription
-
-        col (gap 10) $ do
-          el Style.subheader $ do
-            text "Instrument Program "
+        col (gap 5) $ do
+          el Style.header $ do
+            text "Instrument Program: "
             text ip.fromId
 
+          el_ $ do
+            text "Experiment: "
+            link (Experiment d.primaryExperimentId) Style.link $ do
+              text d.primaryExperimentId.fromId
+
+        -- viewExperimentDescription d.experimentDescription
+
+        col (gap 10) $ do
           col (bg White . gap 10) $ do
-            viewDatasets now (NE.filter (.latest) ds) ps
+            viewDatasets now (NE.filter (.latest) ds) is
             el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
 
         case instrumentProgramIds dse of
@@ -58,7 +64,7 @@ page ip = do
             link (Experiment d.primaryExperimentId) Style.link $ do
               text "View "
               text $ cs $ show (length ips - 1)
-              text " other Instrument Programs"
+              text " other Instrument Programs in this Experiment"
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -68,11 +74,11 @@ page ip = do
   expectFound (a : as) = pure $ a :| as
 
 
-viewDatasets :: UTCTime -> [Dataset] -> [ProvenanceEntry] -> View c ()
+viewDatasets :: UTCTime -> [Dataset] -> [Inversion] -> View c ()
 viewDatasets _ [] _ = none
-viewDatasets now (d : ds) ps = do
+viewDatasets now (d : ds) is = do
   let gd = Grouped (d :| ds)
-  let ip = instrumentProgram gd ps
+  let ip = instrumentProgram gd is
 
   row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
     viewProgramRow now ip
@@ -80,22 +86,21 @@ viewDatasets now (d : ds) ps = do
   col (pad 10 . gap 10) $ do
     viewId (Status ip.programId) statusView
 
-    el bold "Provenance"
-    mapM_ viewProvenanceEntry ps
+    -- el bold "Provenance"
+    -- mapM_ viewProvenanceEntry ps
 
     viewCriteria ip gd
 
 
-viewProvenanceEntry :: ProvenanceEntry -> View c ()
-viewProvenanceEntry (WasInverted p) = do
-  row (gap 10) $ do
-    el_ "Inverted"
-    text $ showTimestamp p.completed
-viewProvenanceEntry (WasQueued p) = do
-  row (gap 10) $ do
-    el_ "Queued"
-    text $ showTimestamp p.completed
-
+-- viewProvenanceEntry :: ProvenanceEntry -> View c ()
+-- viewProvenanceEntry (WasInverted p) = do
+--   row (gap 10) $ do
+--     el_ "Inverted"
+--     text $ showTimestamp p.completed
+-- viewProvenanceEntry (WasQueued p) = do
+--   row (gap 10) $ do
+--     el_ "Queued"
+--     text $ showTimestamp p.completed
 
 -- Status -----------------------------------------------
 

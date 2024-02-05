@@ -1,6 +1,7 @@
 module App.Page.Experiments where
 
 import App.Colors
+import App.Error
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common
@@ -17,11 +18,14 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Programs as Programs
 import NSO.Prelude hiding (truncate)
 import NSO.Types.InstrumentProgram
+import NSO.Types.Status
 import Web.Hyperbole as H
 import Web.View.Style (truncate)
 
 
-page :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => Page es ()
+page
+  :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es, Error AppError :> es)
+  => Page es ()
 page = do
   hyper experiments
   -- pageAction handleIPRow
@@ -64,7 +68,11 @@ data Filters = Filters
   deriving (Show, Read)
 
 
-experiments :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es) => ExView -> ExEvent -> Eff es (View ExView ())
+experiments
+  :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es, Error AppError :> es)
+  => ExView
+  -> ExEvent
+  -> Eff es (View ExView ())
 experiments _ (Filter fs) = do
   exs <- Programs.loadAllExperiments
   now <- currentTime
@@ -131,8 +139,8 @@ viewExperiments now fs exs = do
   checkInvertible ip =
     case fs.isInvertible of
       Nothing -> True
-      (Just False) -> ip.status == Invalid
-      (Just True) -> ip.status /= Invalid
+      (Just False) -> ip.status == StatusInvalid
+      (Just True) -> ip.status /= StatusInvalid
 
 
 -- applyFilter :: Filter -> (InstrumentProgram -> Bool) -> (InstrumentProgram -> Bool)

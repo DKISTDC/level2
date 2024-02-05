@@ -14,7 +14,7 @@ import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
-import NSO.Types.InstrumentProgram
+import NSO.Types.Status
 import NSO.Types.Wavelength
 import Web.View
 import Web.View.Style (Align (Center))
@@ -59,11 +59,13 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
   dataTag :: Mod
   dataTag = pad (XY 6 2) . rounded 3
 
-  statusTag Invalid = el (dataCell . color GrayLight) $ text "-"
-  statusTag Qualified = el (dataCell . bg Success) $ text "Qualified"
-  statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
-  statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
+  statusTag StatusInvalid = el (dataCell . color GrayLight) $ text "-"
+  statusTag StatusQualified = el (dataCell . bg Success) $ text "Qualified"
+  statusTag (StatusInversion _) = el (dataCell . bg Success) $ text "Inversion"
 
+
+-- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
+-- statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
 
 viewCriteria :: InstrumentProgram -> Grouped InstrumentProgram Dataset -> View c ()
 viewCriteria ip gd = do

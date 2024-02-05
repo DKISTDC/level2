@@ -4,6 +4,7 @@ import Data.Grouped
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
+import NSO.Types.Status
 import NSO.Types.Wavelength
 
 
@@ -30,11 +31,3 @@ data Experiment = Experiment
   , startTime :: UTCTime
   , programs :: Grouped Experiment InstrumentProgram
   }
-
-
-data ProgramStatus
-  = Invalid
-  | Qualified
-  | Queued
-  | Inverted
-  deriving (Eq)

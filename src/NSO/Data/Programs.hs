@@ -2,7 +2,7 @@ module NSO.Data.Programs
   ( InstrumentProgram (..)
   , WithDatasets (..)
   , programStatus
-  , programProvenance
+  , programInversions
   , instrumentProgram
   , toExperiment
   , toExperiments
@@ -11,59 +11,59 @@ module NSO.Data.Programs
   , loadAll
   ) where
 
+import App.Error
 import Data.Either (lefts, rights)
 import Data.Grouped as G
 import Data.List.NonEmpty qualified as NE
+import Effectful.Error.Static
 import Effectful.Rel8
 import NSO.Data.Datasets
-import NSO.Data.Provenance as Provenance
+import NSO.Data.Inversions
 import NSO.Data.Qualify
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import NSO.Types.Status
 import NSO.Types.Wavelength
 
 
 -- import NSO.Data.Provenance hiding (Inverted, Queued)
 -- import NSO.Data.Qualify
 
-programStatus :: Grouped InstrumentProgram Dataset -> [ProvenanceEntry] -> ProgramStatus
-programStatus gd ps = either id id $ do
-  when (any wasInverted ps) $ Left Inverted
-  when (any wasQueued ps) $ Left Queued
-  when (isQualified gd) $ Left Qualified
-  pure Invalid
- where
-  wasQueued (WasQueued _) = True
-  wasQueued _ = False
-
-  wasInverted (WasInverted _) = True
-  wasInverted _ = False
+programStatus :: Grouped InstrumentProgram Dataset -> [Inversion] -> ProgramStatus
+programStatus gd [] =
+  if isQualified gd
+    then StatusQualified
+    else StatusInvalid
+programStatus _ (i : _) = do
+  -- TODO: find latest inversion
+  StatusInversion i.step
 
 
-loadAll :: (Rel8 :> es) => Eff es [InstrumentProgram]
+loadAll :: (Rel8 :> es, Error AppError :> es) => Eff es [InstrumentProgram]
 loadAll = do
   ds <- queryLatest
-  pv <- loadAllProvenance
-  pure $ fmap (.program) $ fromDatasets pv ds
+  ai <- queryAll
+  pure $ fmap (.program) $ fromDatasets ai ds
 
 
-loadAllExperiments :: (Rel8 :> es) => Eff es [Experiment]
+loadAllExperiments :: (Rel8 :> es, Error AppError :> es) => Eff es [Experiment]
 loadAllExperiments = toExperiments <$> loadAll
 
 
-fromDatasets :: AllProvenance -> [Dataset] -> [WithDatasets]
-fromDatasets pv ds =
+fromDatasets :: AllInversions -> [Dataset] -> [WithDatasets]
+fromDatasets ai ds =
   let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
-      pvs = fmap (programProvenance pv) gds :: [[ProvenanceEntry]]
+      pvs = fmap (programInversions ai) gds :: [[Inversion]]
       ips = zipWith instrumentProgram gds pvs
    in zipWith WithDatasets ips gds
 
 
-programProvenance :: AllProvenance -> Grouped InstrumentProgram Dataset -> [ProvenanceEntry]
-programProvenance (AllProvenance pv) gd =
+-- | All inversions for the given program
+programInversions :: AllInversions -> Grouped InstrumentProgram Dataset -> [Inversion]
+programInversions (AllInversions ivs) gd =
   let d = sample gd
-   in filter (Provenance.isProgram d.instrumentProgramId) pv
+   in filter (\i -> i.programId == d.instrumentProgramId) ivs
 
 
 toExperiments :: [InstrumentProgram] -> [Experiment]
@@ -82,8 +82,9 @@ toExperiment g =
         }
 
 
-instrumentProgram :: Grouped InstrumentProgram Dataset -> [ProvenanceEntry] -> InstrumentProgram
-instrumentProgram gd pv =
+-- No, it *might* have inversions, it might not
+instrumentProgram :: Grouped InstrumentProgram Dataset -> [Inversion] -> InstrumentProgram
+instrumentProgram gd ivs =
   let d = sample gd
       ls = NE.toList $ fmap identifyLine gd.items
    in InstrumentProgram
@@ -97,7 +98,7 @@ instrumentProgram gd pv =
         , onDisk = qualifyOnDisk gd
         , spectralLines = rights ls
         , otherWavelengths = lefts ls
-        , status = programStatus gd pv
+        , status = programStatus gd ivs
         , embargo = d.embargo
         }
  where

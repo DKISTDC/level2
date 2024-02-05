@@ -1,147 +1,98 @@
 module NSO.Data.Inversions where
 
 import App.Error
-import Data.Aeson
 import Data.Diverse.Many hiding (select)
-import Effectful.Error.Dynamic
+import Effectful.Error.Static
 import Effectful.Rel8
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Status
 import Rel8
 
 
 -- The database definition is flattened. Needs validation on return from DB!
 data InversionRow f = InversionRow
   { inversionId :: Column f (Id Inversion)
-  , instrumentProgramId :: Column f (Id InstrumentProgram)
-  , started :: Column f Started
-  , downloaded :: Column f (Maybe Downloaded)
-  , calibrated :: Column f (Maybe Calibrated)
-  , inverted :: Column f (Maybe Inverted)
-  , processed :: Column f (Maybe Processed)
-  , published :: Column f (Maybe Published)
+  , programId :: Column f (Id InstrumentProgram)
+  , created :: Column f UTCTime
+  , download :: Column f (Maybe UTCTime)
+  , calibration :: Column f (Maybe UTCTime)
+  , calibrationUrl :: Column f (Maybe Url)
+  , inversion :: Column f (Maybe UTCTime)
+  , inversionSoftware :: Column f (Maybe InversionSoftware)
+  , postProcess :: Column f (Maybe UTCTime)
+  , publish :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)
 
 
 data Inversion = Inversion
   { inversionId :: Id Inversion
-  , instrumentProgramId :: Id InstrumentProgram
+  , programId :: Id InstrumentProgram
   , step :: InversionStep
   }
 
 
-type Url = String
-newtype InversionSoftware = InversionSoftware String
-  deriving newtype (Show, Eq, ToJSON, FromJSON)
-
-
-data Started = Started {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Started where
-  typeInformation = jsonTypeInfo
-
-
-data Downloaded = Downloaded {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Downloaded where
-  typeInformation = jsonTypeInfo
-
-
-data Calibrated = Calibrated {timestamp :: UTCTime, calibrationUrl :: Url}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Calibrated where
-  typeInformation = jsonTypeInfo
-
-
-data Inverted = Inverted {timestamp :: UTCTime, inversionSoftware :: InversionSoftware}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Inverted where
-  typeInformation = jsonTypeInfo
-
-
-data Processed = Processed {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Processed where
-  typeInformation = jsonTypeInfo
-
-
-data Published = Published {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Published where
-  typeInformation = jsonTypeInfo
-
-
--- Data Diverse Many: https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/ManySpec.hs
-type StepStarted = '[Started]
-type StepDownloaded = Downloaded : StepStarted
-type StepCalibrated = Calibrated : StepDownloaded
-type StepInverted = Inverted : StepCalibrated
-type StepProcessed = Processed : StepInverted
-type StepPublished = Published : StepProcessed
-
-
-data InversionStep
-  = StepStarted (Many StepStarted)
-  | StepDownloaded (Many StepDownloaded)
-  | StepCalibrated (Many StepCalibrated)
-  | StepInverted (Many StepInverted)
-  | StepProcessed (Many StepProcessed)
-  | StepPublished (Many StepPublished)
-
-
 inversion :: InversionRow Identity -> Either String Inversion
 inversion row = maybe err pure $ do
-  stp <-
+  -- Parse each step. Try the last one first
+  stp <- step
+  pure
+    $ Inversion
+      { inversionId = row.inversionId
+      , programId = row.programId
+      , step = stp
+      }
+ where
+  err = Left $ "Bad Step: " <> cs row.inversionId.fromId
+
+  -- go through each possibility in reverse order. If published exists, load all previous steps
+  -- if any are missing skip
+  step =
     (StepPublished <$> published)
       <|> (StepProcessed <$> processed)
       <|> (StepInverted <$> inverted)
       <|> (StepCalibrated <$> calibrated)
       <|> (StepDownloaded <$> downloaded)
       <|> (StepStarted <$> started)
-  pure
-    $ Inversion
-      { inversionId = row.inversionId
-      , instrumentProgramId = row.instrumentProgramId
-      , step = stp
-      }
- where
-  err = Left $ "Bad Step: " <> cs row.inversionId.fromId
-
-  step :: Maybe a -> Maybe (Many previous) -> Maybe (Many (a : previous))
-  step ma mmp = do
-    mp <- mmp
-    a <- ma
-    pure $ a ./ mp
 
   started :: Maybe (Many StepStarted)
   started = do
-    pure $ row.started ./ nil
+    pure $ Started row.created ./ nil
 
   downloaded :: Maybe (Many StepDownloaded)
-  downloaded = step row.downloaded started
+  downloaded = do
+    prev <- started
+    down <- row.download
+    pure $ Downloaded down ./ prev
 
   calibrated :: Maybe (Many StepCalibrated)
-  calibrated = step row.calibrated downloaded
+  calibrated = do
+    prev <- downloaded
+    cal <- row.calibration
+    url <- row.calibrationUrl
+    pure $ Calibrated cal url ./ prev
 
   inverted :: Maybe (Many StepInverted)
-  inverted = step row.inverted calibrated
+  inverted = do
+    prev <- calibrated
+    inv <- row.inversion
+    sft <- row.inversionSoftware
+    pure $ Inverted inv sft ./ prev
 
   processed :: Maybe (Many StepProcessed)
-  processed = step row.processed inverted
+  processed = do
+    prev <- inverted
+    proc <- row.postProcess
+    pure $ Processed proc ./ prev
 
   published :: Maybe (Many StepPublished)
-  published = step row.published processed
+  published = do
+    prev <- processed
+    publ <- row.publish
+    pure $ Published publ ./ prev
 
-
--- data Step
---   = StepStarted (Many '[Started])
---   | StepDownloaded (Many '[Started, Downloaded])
---   | StepCalibrated (Many '[Started, Downloaded, Calibrated])
---   | StepInverted (Many '[Started, Downloaded, Calibrated, Inverted])
---   | StepProcessed (Many '[Started, Downloaded, Calibrated, Inverted, Processed])
---   | StepPublished (Many '[Started, Downloaded, Calibrated, Inverted, Processed, Published])
 
 inversions :: TableSchema (InversionRow Name)
 inversions =
@@ -151,29 +102,42 @@ inversions =
     , columns =
         InversionRow
           { inversionId = "inversion_id"
-          , instrumentProgramId = "instrument_program_id"
-          , started = "started"
-          , downloaded = "downloaded"
-          , calibrated = "calibrated"
-          , inverted = "inverted"
-          , processed = "processed"
-          , published = "published"
+          , programId = "program_id"
+          , created = "created"
+          , download = "download"
+          , calibration = "calibration"
+          , calibrationUrl = "calibration_url"
+          , inversion = "inversion"
+          , inversionSoftware = "inversion_software"
+          , postProcess = "post_process"
+          , publish = "publish"
           }
     }
-
-
-test :: IO ()
-test = do
-  putStrLn "HELLO"
 
 
 queryInstrumentProgram :: (Rel8 :> es, Error AppError :> es) => Id InstrumentProgram -> Eff es [Inversion]
 queryInstrumentProgram ip = do
   irs <- query () $ select $ do
     row <- each inversions
-    where_ (row.instrumentProgramId ==. lit ip)
+    where_ (row.programId ==. lit ip)
     return row
+  toInversions irs
 
+
+-- TODO: only return the "latest" inversion for each instrument program
+queryAll :: (Rel8 :> es, Error AppError :> es) => Eff es AllInversions
+queryAll = do
+  irs <- query () $ select $ do
+    each inversions
+  AllInversions <$> toInversions irs
+
+
+toInversions :: (Error AppError :> es) => [InversionRow Identity] -> Eff es [Inversion]
+toInversions irs = do
   case traverse inversion irs of
     Left err -> throwError $ ValidationError err
     Right ivs -> pure ivs
+
+
+-- | Provenance of EVERY Instrument Program
+newtype AllInversions = AllInversions [Inversion]

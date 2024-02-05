@@ -62,6 +62,7 @@ library
       NSO.Types.Common
       NSO.Types.Dataset
       NSO.Types.InstrumentProgram
+      NSO.Types.Status
       NSO.Types.Wavelength
   other-modules:
       Paths_nso_level2
