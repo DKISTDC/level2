@@ -63,7 +63,7 @@ viewExperiment now gx = do
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
   col (gap 10) $ do
-    link (Program wdp.program.programId) Style.link $ do
+    link (Program wdp.program.programId) (Style.link . bold) $ do
       text wdp.program.programId.fromId
 
     col (bg White . gap 10 . pad 10) $ do

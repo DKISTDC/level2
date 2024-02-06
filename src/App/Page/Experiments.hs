@@ -4,7 +4,7 @@ import App.Colors
 import App.Error
 import App.Route as Route
 import App.Style qualified as Style
-import App.View.Common
+import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.ExperimentDetails (viewProgramRow)
 import Data.Grouped as G
@@ -102,7 +102,7 @@ viewExperiments now fs exs = do
   experimentPrograms :: Experiment -> [InstrumentProgram] -> View ExView ()
   experimentPrograms _ [] = none
   experimentPrograms e ips = do
-    col (gap 15 . pad 15 . Style.card) $ do
+    col (Style.card . gap 15 . pad 15) $ do
       row id $ do
         el bold $ do
           text "Experiment "
@@ -112,7 +112,7 @@ viewExperiments now fs exs = do
         el_ $ do
           text $ showDate e.startTime
 
-      tag "hr" (color Gray) none
+      View.hr (color Gray)
 
       col (gap 10) $ do
         -- row (gap 5) $ do

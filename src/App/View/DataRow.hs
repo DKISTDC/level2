@@ -3,6 +3,8 @@ module App.View.DataRow where
 import App.Colors
 import NSO.Prelude
 import Web.View
+import Web.View.Element (TableHead)
+import Web.View.Style (Align (..))
 
 
 dataRows :: [a] -> (a -> View c ()) -> View c ()
@@ -26,3 +28,19 @@ dataRowPadding = 5
 
 dataRowHeight :: PxRem
 dataRowHeight = 16 + 2 * dataRowPadding
+
+
+table :: Mod
+table = odd (bg White) . even (bg (light Light)) . textAlign Center
+
+
+hd :: View id () -> View (TableHead id) ()
+hd = th (pad 4 . bord . bold . bg Light)
+
+
+cell :: View () () -> View dat ()
+cell = td (pad 4 . bord)
+
+
+bord :: Mod
+bord = border 1 . borderColor (light Light)

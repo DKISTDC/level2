@@ -15,3 +15,7 @@ showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
 
 code :: Text -> View c ()
 code = pre (fontSize 14)
+
+
+hr :: Mod -> View c ()
+hr f = tag "hr" f none

@@ -5,6 +5,7 @@ import App.Config
 import App.Route
 import App.Style qualified as Style
 import App.View.Common
+import App.View.DataRow qualified as View
 import Data.String.Interpolate
 import Effectful.Error.Static
 import Effectful.Reader.Static
@@ -17,7 +18,6 @@ import NSO.Data.Scan
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.View.Element (TableHead)
 
 
 -- import NSO.Data.Dataset
@@ -55,7 +55,7 @@ pageEvent _ RunScan = do
 viewScan :: Maybe SyncResults -> View ScanView ()
 viewScan msr =
   onRequest loading $ do
-    col (gap 10 . pad 20) $ do
+    col Style.page $ do
       button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary) "Run Scan"
 
       maybe (pure ()) viewScanResults msr
@@ -68,14 +68,19 @@ viewScan msr =
 
 viewScanResults :: SyncResults -> View ScanView ()
 viewScanResults sr = do
-  el (bold . fontSize 24) "Updated"
-  datasetsTable sr.updated
+  col section $ do
+    el (bold . fontSize 24) "Updated"
+    datasetsTable sr.updated
 
-  el (bold . fontSize 24) "New"
-  datasetsTable sr.new
+  col section $ do
+    el (bold . fontSize 24) "New"
+    datasetsTable sr.new
 
-  el (bold . fontSize 24) "Unchanged"
-  datasetsTable sr.unchanged
+  col section $ do
+    el (bold . fontSize 24) "Unchanged"
+    datasetsTable sr.unchanged
+ where
+  section = Style.card . gap 15 . pad 15
 
 
 -----------------------------------------------------
@@ -83,10 +88,11 @@ viewScanResults sr = do
 -----------------------------------------------------
 
 datasetsTable :: [Dataset] -> View ScanView ()
+datasetsTable [] = none
 datasetsTable ds = do
   let sorted = sortOn (.datasetId) ds :: [Dataset]
 
-  table (border 1 . pad 0) sorted $ do
+  table View.table sorted $ do
     -- tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
     tcol (hd "Id") $ \d -> cell d.datasetId.fromId
     -- tcol (hd "Obs Prog Id") $ \d -> cell d.observingProgramExecutionId.fromId
@@ -100,19 +106,16 @@ datasetsTable ds = do
     -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
     -- tcol (hd "Bounding Box") $ \d -> cell . cs . show $ d.boundingBox
-    tcol (hd "On Disk") $ \d -> cell . cs $ fromMaybe "" $ show . isOnDisk (dayOfYear d.startTime) <$> d.boundingBox
+    tcol (hd "On Disk") $ \d -> cell . cs $ maybe "" (show . isOnDisk (dayOfYear d.startTime)) d.boundingBox
  where
-  -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
-  -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
-  -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
-  -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
+  hd = View.hd
+  cell = View.cell . text
 
-  hd :: View ScanView () -> View (TableHead ScanView) ()
-  hd = th (bold . bg Light . pad 4 . border 1)
 
-  cell :: Text -> View Dataset ()
-  cell = td (pad 4 . border 1) . text
-
+-- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
+-- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
+-- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
+-- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
 spinner :: View c ()
 spinner =

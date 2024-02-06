@@ -4,6 +4,7 @@ import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (code, showDate, showTimestamp)
+import App.View.DataRow qualified as View
 import App.View.Icons as Icons
 import Data.Ord (Down (..))
 import Effectful.Rel8
@@ -50,7 +51,7 @@ datasetsTable s ds = do
   let sorted = sortField s ds
 
   -- is there a way to do alternating rows here?
-  table (odd (bg White) . even (bg (light Light)) . textAlign Center) sorted $ do
+  table View.table sorted $ do
     tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ datasetLatest d.latest
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
@@ -86,13 +87,8 @@ datasetsTable s ds = do
   sortBtn st t =
     button st Style.link (text t)
 
-  hd :: View ProgramDatasets () -> View (TableHead ProgramDatasets) ()
-  hd = th (pad 4 . bord . bold . bg Light)
-
-  cell :: View () () -> View Dataset ()
-  cell = td (pad 4 . bord)
-
-  bord = border 1 . borderColor (light Light)
+  hd = View.hd
+  cell = View.cell
 
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (.datasetId)

@@ -72,7 +72,7 @@ contrast Info = colorValue White
 contrast Success = colorValue White
 contrast Warning = colorValue White
 contrast Danger = colorValue White
-contrast Gray = colorValue Black
+contrast Gray = colorValue White
 
 
 instance ToColor AppColor where

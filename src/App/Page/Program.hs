@@ -4,8 +4,10 @@ import App.Colors
 import App.Error
 import App.Route
 import App.Style qualified as Style
+import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
+import App.View.Icons as Icons
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
@@ -19,7 +21,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
 import NSO.Prelude
 import Web.Hyperbole
-import Web.View.Style (Align (Center))
+import Web.View.Style
 
 
 page
@@ -40,7 +42,7 @@ page ip = do
     now <- currentTime
 
     pure $ appLayout Experiments $ do
-      col Style.page $ do
+      col (Style.page . gap 30) $ do
         col (gap 5) $ do
           el Style.header $ do
             text "Instrument Program: "
@@ -52,9 +54,11 @@ page ip = do
 
         viewId (Inversions ip) $ viewInversions is
 
-        col (bg White . gap 10) $ do
-          viewDatasets now (NE.filter (.latest) ds) is
-          el (pad 10) $ viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
+        col Style.card $ do
+          el (Style.cardHeader Secondary) "Instrument Program Details"
+          col (gap 15 . pad 15) $ do
+            viewDatasets now (NE.filter (.latest) ds) is
+            viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -84,16 +88,12 @@ viewDatasets now (d : ds) is = do
   let gd = Grouped (d :| ds)
   let ip = instrumentProgram gd is
 
-  row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor (light Secondary)) $ do
+  row (textAlign Center) $ do
     viewProgramRow now ip
 
-  col (pad 10 . gap 10) $ do
-    -- viewId (Status ip.programId) statusView
+  View.hr (color Gray)
 
-    -- el bold "Provenance"
-    -- mapM_ viewProvenanceEntry ps
-
-    viewCriteria ip gd
+  viewCriteria ip gd
 
 
 -- viewProvenanceEntry :: ProvenanceEntry -> View c ()
@@ -135,12 +135,41 @@ viewInversions is = mapM_ viewInversion is
 
 viewInversion :: Inversion -> View Inversions ()
 viewInversion inv = do
-  col (bg White . gap 10) $ do
-    el_ "INVERSION: "
-    el_ $ text inv.inversionId.fromId
+  col (Style.card . gap 15) $ do
+    el (Style.cardHeader Info) "Inversion"
+    col (gap 15 . pad 15) $ do
+      invProgress
+      el_ $ text inv.inversionId.fromId
+ where
+  invProgress :: View c ()
+  invProgress = do
+    row (gap 10) $ do
+      step Success "DOWNLOAD" Icons.check
+      line Success grow
+      step Info "INVERSION" "2"
+      line Gray grow
+      step Gray "POST PROCESS" "3"
+      line Gray grow
+      step Gray "PUBLISH" "4"
 
---
---
+  circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
+
+  step clr t icon = col (color clr . gap 4) $ do
+    row id $ do
+      space
+      el (circle . bg clr) icon
+      space
+    el (fontSize 12 . textAlign Center) (text t)
+
+  line c f = col f $ do
+    el (border (TRBL 0 0 2 0) . height 20 . borderColor c) ""
+
+-- moveDown =
+--   addClass
+--     $ cls "move-down"
+--     & prop @Text "position" "relative"
+--     & prop @Text "top" "50px"
+
 -- statusView :: View Status ()
 -- statusView = do
 --   row (gap 10) $ do
