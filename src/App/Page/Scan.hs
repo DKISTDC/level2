@@ -3,6 +3,7 @@ module App.Page.Scan where
 import App.Colors
 import App.Config
 import App.Route
+import App.Style qualified as Style
 import App.View.Common
 import Data.String.Interpolate
 import Effectful.Error.Static
@@ -55,13 +56,13 @@ viewScan :: Maybe SyncResults -> View ScanView ()
 viewScan msr =
   onRequest loading $ do
     col (gap 10 . pad 20) $ do
-      button RunScan (pad 10 . bold . fontSize 24 . bg Primary . hover (bg PrimaryLight) . color White) "Run Scan"
+      button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary) "Run Scan"
 
       maybe (pure ()) viewScanResults msr
  where
   loading = row (pad 100 . grow) $ do
     space
-    el (width 200 . color PrimaryLight) spinner
+    el (width 200 . color (light Primary)) spinner
     space
 
 
@@ -107,7 +108,7 @@ datasetsTable ds = do
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
   hd :: View ScanView () -> View (TableHead ScanView) ()
-  hd = th (bold . bg GrayLight . pad 4 . border 1)
+  hd = th (bold . bg Light . pad 4 . border 1)
 
   cell :: Text -> View Dataset ()
   cell = td (pad 4 . border 1) . text

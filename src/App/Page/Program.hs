@@ -84,7 +84,7 @@ viewDatasets now (d : ds) is = do
   let gd = Grouped (d :| ds)
   let ip = instrumentProgram gd is
 
-  row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor GrayLight) $ do
+  row (pad 10 . gap 10 . textAlign Center . border (TRBL 0 0 1 0) . borderColor (light Secondary)) $ do
     viewProgramRow now ip
 
   col (pad 10 . gap 10) $ do
@@ -129,7 +129,7 @@ inversions (Inversions ip) CreateInversion = do
 
 viewInversions :: [Inversion] -> View Inversions ()
 viewInversions [] = do
-  button CreateInversion Style.btn "Create Inversion"
+  button CreateInversion (Style.btn Primary) "Create Inversion"
 viewInversions is = mapM_ viewInversion is
 
 

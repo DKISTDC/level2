@@ -6,7 +6,7 @@ import Web.View
 
 
 link :: Mod
-link = color Primary . hover (color PrimaryLight)
+link = color Primary . hover (color (light Primary))
 
 
 page :: Mod
@@ -21,5 +21,15 @@ subheader :: Mod
 subheader = fontSize 18 . bold
 
 
-btn :: Mod
-btn = color White . pad (XY 15 10) . bg Secondary . hover (bg SecondaryLight)
+card :: Mod
+card = bg White . rounded 4
+
+
+btn :: AppColor -> Mod
+btn c =
+  base
+    . color (contrast c)
+    . bg c
+    . hover (bg (light c))
+ where
+  base = pad (XY 15 10)

@@ -5,7 +5,6 @@ module App.View.ExperimentDetails
   ) where
 
 import App.Colors
-import App.View.Common
 import App.View.DataRow (dataCell)
 import App.View.Icons as Icons
 import Data.Grouped
@@ -31,7 +30,7 @@ viewProgramRow :: UTCTime -> InstrumentProgram -> View c ()
 viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
   statusTag ip.status
 
-  el dataCell $ text $ showDate ip.startTime
+  -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
   el dataCell $ text $ cs $ show ip.instrument
   -- not worth showing Stokes in the row. They seem to be present for all VISP
@@ -44,25 +43,27 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
     mapM_ midTag $ sortOn id ip.otherWavelengths
  where
   lineTag :: SpectralLine -> View c ()
-  lineTag s = tag "pre" (dataTag . bg SecondaryLight) $ text $ cs $ show s
+  lineTag s = tag "pre" (dataTag . bg Gray) $ text $ cs $ show s
 
-  diskTag = el (dataTag . bg Success) "On Disk"
+  diskTag = el (dataTag . bg (light Primary) . color (contrast Success)) "On Disk"
 
   embargoTag utc =
     if utc > now
-      then el (dataTag . bg Warning) "Embargoed"
+      then el (dataTag . bg Warning . color (contrast Warning)) "Embargoed"
       else none
 
   midTag mid =
-    tag "pre" (pad 2 . color GrayDark) $ text $ cs (show (round mid :: Integer) <> "nm")
+    tag "pre" (pad 2 . color (light Secondary)) $ text $ cs (show (round mid :: Integer) <> "nm")
 
   dataTag :: Mod
   dataTag = pad (XY 6 2) . rounded 3
 
-  statusTag StatusInvalid = el (dataCell . color GrayLight) $ text "-"
-  statusTag StatusQualified = el (dataCell . bg Success) $ text "Qualified"
-  statusTag (StatusInversion (StepStarted _)) = el (dataCell . bg Secondary . color White) $ text "Started"
-  statusTag (StatusInversion _) = el (dataCell . bg Secondary . color White) $ text "Inversion"
+  statusTag StatusInvalid = el (dataCell . color (light Secondary)) $ text "-"
+  statusTag StatusQualified = el (stat Primary) $ text "Qualified"
+  statusTag (StatusInversion (StepStarted _)) = el (stat Info) $ text "Started"
+  statusTag (StatusInversion _) = el (stat Danger) $ text "Inversion"
+
+  stat c = dataCell . bg c . color White
 
 
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
@@ -95,7 +96,7 @@ viewCriteria ip gd = do
 
   criteria :: Text -> Bool -> View c ()
   criteria msg b =
-    row (gap 6 . height criteriaRowHeight . color (if b then SuccessDark else ErrorDark)) $ do
+    row (gap 6 . height criteriaRowHeight . color (if b then Success else Danger)) $ do
       el (pad 4) checkmark
       el (pad 4) (text msg)
    where

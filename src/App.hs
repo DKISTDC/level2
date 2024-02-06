@@ -102,7 +102,7 @@ document cnt =
       <title>Level2</title>
       <script type="text/javascript">#{scriptEmbed}</script>
       <style type="text/css">#{cssResetEmbed}</style>
-      <style type="text/css">body { background-color: \#F2F2F3 }</style>
+      <style type="text/css">body { background-color: \#d3dceb }</style>
     </head>
     <body>#{cnt}</body>
   </html>|]

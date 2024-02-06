@@ -50,7 +50,7 @@ datasetsTable s ds = do
   let sorted = sortField s ds
 
   -- is there a way to do alternating rows here?
-  table (odd (bg White) . even (bg Light) . textAlign Center) sorted $ do
+  table (odd (bg White) . even (bg (light Light)) . textAlign Center) sorted $ do
     tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ datasetLatest d.latest
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
@@ -92,7 +92,7 @@ datasetsTable s ds = do
   cell :: View () () -> View Dataset ()
   cell = td (pad 4 . bord)
 
-  bord = border 1 . borderColor GrayLight
+  bord = border 1 . borderColor (light Light)
 
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (.datasetId)

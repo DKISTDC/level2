@@ -102,17 +102,19 @@ viewExperiments now fs exs = do
   experimentPrograms :: Experiment -> [InstrumentProgram] -> View ExView ()
   experimentPrograms _ [] = none
   experimentPrograms e ips = do
-    col (gap 8 . bg White) $ do
-      row (bg GrayLight) $ do
-        el (bold . pad 10) $ do
+    col (gap 15 . pad 15 . Style.card) $ do
+      row id $ do
+        el bold $ do
           text "Experiment "
           link (Route.Experiment e.experimentId) Style.link $ do
             text e.experimentId.fromId
         space
-        el (pad 10) $ do
+        el_ $ do
           text $ showDate e.startTime
 
-      col (gap 8 . pad 10) $ do
+      tag "hr" (color Gray) none
+
+      col (gap 10) $ do
         -- row (gap 5) $ do
         --   el bold "Start Time:"
         --   el_ $ text $ showDate ds1.startTime
@@ -122,7 +124,7 @@ viewExperiments now fs exs = do
 
         let ignored = length e.programs - length ips
         when (ignored > 0) $ do
-          link (Route.Experiment e.experimentId) (fontSize 14 . color GrayDark) $ do
+          link (Route.Experiment e.experimentId) (fontSize 14 . color Black) $ do
             text $ cs (show ignored)
             text "Hidden Instrument Programs"
 
@@ -167,13 +169,12 @@ viewFilters fs = do
     option (Just False) "Not Invertible"
  where
   toggle action sel f =
-    button action (f . item . pad (XY 10 5) . border 1 . if sel then on else off)
+    button action (f . item . pad (XY 10 5) . Style.btn (if sel then on else off))
 
   item = pad (XY 0 5)
 
-  on = bg Primary . hover (bg PrimaryLight) . color White . borderColor White
-
-  off = bg GrayLight . borderColor GrayDark
+  on = Primary
+  off = Gray
 
 
 tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View ExView ()

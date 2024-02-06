@@ -19,8 +19,8 @@ data AppRoute
 
 appLayout :: AppRoute -> View c () -> View c ()
 appLayout rc content = do
-  layout (color Dark . flexCol) $ do
-    nav (gap 0 . bg Primary . color GrayLight . topbar) $ do
+  layout (color Black . flexCol) $ do
+    nav (gap 0 . bg Primary . color White . topbar) $ do
       row (pad 15) $ do
         space
         link Dashboard (bold . fontSize 24 . pad (XY 20 0)) "Level 2"
@@ -36,7 +36,6 @@ appLayout rc content = do
       r
       (pad 20 . hover (borderColor White . color White) . if r == rc then current else other)
 
-  current = bg PrimaryLight . borderColor GrayLight
+  current = bg (light Primary) . borderColor Primary
   other = borderColor Primary
-
   topbar = height 70 . flexRow
