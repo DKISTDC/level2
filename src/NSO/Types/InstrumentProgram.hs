@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module NSO.Types.InstrumentProgram where
 
 import Data.Grouped

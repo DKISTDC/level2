@@ -1,4 +1,6 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE StrictData #-}
+{-# OPTIONS_GHC -Wno-ambiguous-fields #-}
 
 module NSO.Types.Dataset where
 
@@ -9,7 +11,6 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 import Rel8
 import Text.Read (readEither)
-import Web.Hyperbole (Param)
 
 
 data Dataset = Dataset

@@ -33,6 +33,7 @@ default-extensions:
   - LambdaCase
   - NoImplicitPrelude
   - NoFieldSelectors
+  - StrictData
 
 dependencies:
   - base >=4.16.4.0

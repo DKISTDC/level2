@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module NSO.Types.Status where
 
 import Data.Aeson

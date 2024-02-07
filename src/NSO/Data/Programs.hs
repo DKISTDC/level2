@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module NSO.Data.Programs
   ( InstrumentProgram (..)
   , WithDatasets (..)
@@ -11,19 +13,18 @@ module NSO.Data.Programs
   , loadAll
   ) where
 
-import App.Error
 import Data.Either (lefts, rights)
 import Data.Grouped as G
 import Data.List.NonEmpty qualified as NE
-import Effectful.Error.Static
-import Effectful.Rel8
+import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets
 import NSO.Data.Inversions
 import NSO.Data.Qualify
 import NSO.Data.Spectra qualified as Spectra
+import NSO.DataStore.Datasets as Datasets
+import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
-import NSO.Types.Status
 import NSO.Types.Wavelength
 
 
@@ -40,14 +41,14 @@ programStatus _ (i : _) = do
   StatusInversion i.step
 
 
-loadAll :: (Rel8 :> es, Error AppError :> es) => Eff es [InstrumentProgram]
+loadAll :: (Datasets :> es, Inversions :> es) => Eff es [InstrumentProgram]
 loadAll = do
-  ds <- queryLatest
-  ai <- queryAll
+  ds <- send $ Datasets.Query Latest
+  ai <- send Inversions.All
   pure $ fmap (.program) $ fromDatasets ai ds
 
 
-loadAllExperiments :: (Rel8 :> es, Error AppError :> es) => Eff es [Experiment]
+loadAllExperiments :: (Datasets :> es, Inversions :> es) => Eff es [Experiment]
 loadAllExperiments = toExperiments <$> loadAll
 
 

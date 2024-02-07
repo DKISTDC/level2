@@ -1,6 +1,7 @@
 module Main where
 
 import App qualified
+import App.Mock (mockApp)
 import NSO.Prelude
 import System.IO
 

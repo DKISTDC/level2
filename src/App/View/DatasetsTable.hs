@@ -7,9 +7,10 @@ import App.View.Common (code, showDate, showTimestamp)
 import App.View.DataRow qualified as View
 import App.View.Icons as Icons
 import Data.Ord (Down (..))
-import Effectful.Rel8
+import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify (boxRadius)
+import NSO.DataStore.Datasets
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
@@ -23,7 +24,7 @@ newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
 
 data SortField
   = DatasetId
-  | Latest
+  | ByLatest
   | CreateDate
   | UpdateDate
   | StartTime
@@ -38,9 +39,9 @@ instance HyperView ProgramDatasets where
   type Action ProgramDatasets = SortField
 
 
-actionSort :: (Rel8 :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
+actionSort :: (Datasets :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
 actionSort (ProgramDatasets i) s = do
-  ds <- Datasets.queryProgram i
+  ds <- send $ Query (ByProgram i)
   pure $ datasetsTable s ds
 
 
@@ -50,7 +51,7 @@ datasetsTable s ds = do
 
   -- is there a way to do alternating rows here?
   table View.table sorted $ do
-    tcol (hd $ sortBtn Latest "Latest") $ \d -> cell $ datasetLatest d.latest
+    tcol (hd $ sortBtn ByLatest "Latest") $ \d -> cell $ datasetLatest d.latest
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ link (Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
@@ -90,7 +91,7 @@ datasetsTable s ds = do
 
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (.datasetId)
-  sortField Latest = sortOn (Down . (.scanDate))
+  sortField ByLatest = sortOn (Down . (.scanDate))
   sortField CreateDate = sortOn (Down . (.createDate))
   sortField UpdateDate = sortOn (Down . (.updateDate))
   sortField StartTime = sortOn (Down . (.startTime))

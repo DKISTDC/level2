@@ -7,15 +7,14 @@ import App.View.Common (showDate, showTimestamp)
 import App.View.DatasetsTable (datasetLatest, radiusBoundingBox)
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
-import Effectful.Rel8
-import NSO.Data.Datasets as Datasets
+import NSO.DataStore.Datasets as Datasets
 import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Rel8 :> es) => Id Dataset -> Page es ()
+page :: (Hyperbole :> es, Datasets :> es) => Id Dataset -> Page es ()
 page di = load $ do
-  ds <- Datasets.queryById di
+  ds <- send $ Datasets.Query (ById di)
 
   let sorted = sortOn (Down . (.scanDate)) ds
 

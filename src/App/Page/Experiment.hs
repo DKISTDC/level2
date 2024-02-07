@@ -1,34 +1,30 @@
 module App.Page.Experiment where
 
 import App.Colors
-import App.Error
 import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
 import Data.Grouped as G
-import Effectful.Debug
-import Effectful.Error.Static
-import Effectful.Rel8
 import Effectful.Time
-import NSO.Data.Datasets
-import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
+import NSO.DataStore.Datasets as Datasets
+import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Rel8 :> es, Debug :> es, Error AppError :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es)
   => Id Experiment
   -> Page es ()
 page eid = do
   hyper DatasetsTable.actionSort
 
   load $ do
-    ds <- queryExperiment eid
-    ai <- Inversions.queryAll
+    ds <- send $ Datasets.Query (ByExperiment eid)
+    ai <- send Inversions.All
     now <- currentTime
     let pwds = Programs.fromDatasets ai ds
 

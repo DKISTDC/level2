@@ -1,7 +1,6 @@
 module App.Page.Program where
 
 import App.Colors
-import App.Error
 import App.Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -12,20 +11,19 @@ import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
 import Data.String.Interpolate (i)
-import Effectful.Error.Static
-import Effectful.GenRandom
-import Effectful.Rel8
+import Effectful.Dispatch.Dynamic
 import Effectful.Time
-import NSO.Data.Datasets as Datasets
-import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
+import NSO.DataStore.Datasets as Datasets
+import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import Web.Hyperbole
+
+
 -- import Web.View.Style
 
-
 page
-  :: (Hyperbole :> es, Time :> es, Rel8 :> es, GenRandom :> es, Error AppError :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es)
   => Id InstrumentProgram
   -> Page es ()
 page ip = do
@@ -33,12 +31,12 @@ page ip = do
   hyper DatasetsTable.actionSort
 
   load $ do
-    ds' <- queryProgram ip
+    ds' <- send $ Datasets.Query (Datasets.ByProgram ip)
     ds <- expectFound ds'
     let d = head ds
 
-    dse <- Datasets.queryExperiment d.primaryExperimentId
-    is <- Inversions.queryInstrumentProgram ip
+    dse <- send $ Datasets.Query (ByExperiment d.primaryExperimentId)
+    is <- send $ Inversions.ByProgram ip
     now <- currentTime
 
     pure $ appLayout Experiments $ do
@@ -52,13 +50,13 @@ page ip = do
 
         -- viewExperimentDescription d.experimentDescription
 
-        viewId (Inversions ip) $ viewInversions is
+        viewId (InversionStatus ip) $ viewInversions is
 
         col Style.card $ do
           el (Style.cardHeader Secondary) "Instrument Program Details"
           col (gap 15 . pad 15) $ do
             viewDatasets now (NE.filter (.latest) ds) is
-            viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable Latest (NE.toList ds)
+            viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -76,8 +74,8 @@ page ip = do
       text "Experiment: "
       link (Experiment d.primaryExperimentId) Style.link $ do
         text d.primaryExperimentId.fromId
-      text
-        $ if n > 0
+      text $
+        if n > 0
           then [i|(#{n} other Instrument Programs)|]
           else ""
 
@@ -108,7 +106,7 @@ viewDatasets now (d : ds) is = do
 
 -- Status -----------------------------------------------
 
-newtype Inversions = Inversions (Id InstrumentProgram)
+newtype InversionStatus = InversionStatus (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)
 
 
@@ -117,23 +115,23 @@ data InversionsAction
   deriving (Show, Read, Param)
 
 
-instance HyperView Inversions where
-  type Action Inversions = InversionsAction
+instance HyperView InversionStatus where
+  type Action InversionStatus = InversionsAction
 
 
-inversions :: (Hyperbole :> es, Rel8 :> es, Time :> es, GenRandom :> es) => Inversions -> InversionsAction -> Eff es (View Inversions ())
-inversions (Inversions ip) CreateInversion = do
-  inv <- Inversions.create ip
+inversions :: (Hyperbole :> es, Inversions :> es) => InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
+inversions (InversionStatus ip) CreateInversion = do
+  inv <- send $ Inversions.Create ip
   pure $ viewInversion inv
 
 
-viewInversions :: [Inversion] -> View Inversions ()
+viewInversions :: [Inversion] -> View InversionStatus ()
 viewInversions [] = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
 viewInversions is = mapM_ viewInversion is
 
 
-viewInversion :: Inversion -> View Inversions ()
+viewInversion :: Inversion -> View InversionStatus ()
 viewInversion inv = do
   col (Style.card . gap 15) $ do
     el (Style.cardHeader Info) "Inversion"

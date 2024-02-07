@@ -1,7 +1,6 @@
 module App.Page.Experiments where
 
 import App.Colors
-import App.Error
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -10,21 +9,18 @@ import App.View.ExperimentDetails (viewProgramRow)
 import Data.Grouped as G
 import Data.Ord (Down (..))
 import Effectful
-import Effectful.Error.Static
-import Effectful.Rel8 (Rel8)
-import Effectful.Request
 import Effectful.Time
-import NSO.Data.Datasets as Datasets
 import NSO.Data.Programs as Programs
+import NSO.DataStore.Datasets as Datasets
+import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
-import NSO.Types.Status
 import Web.Hyperbole as H
 
 
 page
-  :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es, Error AppError :> es)
+  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es)
   => Page es ()
 page = do
   hyper experiments
@@ -69,7 +65,7 @@ data Filters = Filters
 
 
 experiments
-  :: (Hyperbole :> es, Rel8 :> es, GraphQL :> es, Time :> es, Error RequestError :> es, Error AppError :> es)
+  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es)
   => ExView
   -> ExEvent
   -> Eff es (View ExView ())

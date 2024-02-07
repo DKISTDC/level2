@@ -3,12 +3,12 @@ module NSO.Data.Scan where
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
-import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Rel8
 import Effectful.Request
 import Effectful.Time
 import NSO.Data.Datasets
+import NSO.DataStore.Datasets
 import NSO.Metadata
 import NSO.Metadata.Types
 import NSO.Prelude
@@ -46,19 +46,19 @@ scanDatasetInventory metadata = do
   either (throwError . ParseError) pure res
 
 
-syncDatasets :: (GraphQL :> es, Error RequestError :> es, Rel8 :> es, Time :> es) => Service -> Eff es SyncResults
+syncDatasets :: (Datasets :> es, GraphQL :> es, Error RequestError :> es, Time :> es) => Service -> Eff es SyncResults
 syncDatasets metadata = do
   scan <- scanDatasetInventory metadata
-  old <- indexed <$> queryLatest
+  old <- indexed <$> send (Query Latest)
 
   let res = syncResults old scan
 
   -- Insert any new datasets
-  insertAll res.new
+  send $ Create res.new
 
   -- Update any old datasets
-  updateOld $ map (.datasetId) res.updated
-  insertAll res.updated
+  send $ Modify SetOld $ map (.datasetId) res.updated
+  send $ Create res.updated
 
   -- Ignore any unchanged
   pure res

@@ -1,26 +1,23 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StrictData #-}
 
 module NSO.Data.Datasets
-  ( Dataset
-  , Dataset' (..)
+  ( Dataset' (..)
   , module NSO.Types.Dataset
   , Id (..)
   , Wavelength (..)
   , Nm
-  , queryLatest
-  , queryExperiment
-  , queryProgram
-  , queryById
-  , insertAll
-  , updateOld
+  , runDataDatasets
   )
 where
 
 import Control.Monad (void)
 import Data.Int (Int16)
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.Rel8
+import NSO.DataStore.Datasets
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -60,125 +57,134 @@ data Dataset' f = Dataset'
   deriving (Generic, Rel8able)
 
 
--- deriving stock instance (f ~ Result) => Show (Dataset' f)
--- deriving stock instance (f ~ Result) => Eq (Dataset' f)
-
-datasets :: TableSchema (Dataset' Name)
-datasets =
-  TableSchema
-    { name = "datasets"
-    , schema = Nothing
-    , columns =
-        Dataset'
-          { datasetId = "dataset_id"
-          , observingProgramId = "observing_program_id"
-          , instrumentProgramId = "instrument_program_id"
-          , instrument = "instrument"
-          , scanDate = "scan_date"
-          , stokesParameters = "stokes_parameters"
-          , createDate = "create_date"
-          , updateDate = "update_date"
-          , wavelengthMin = "wavelength_min"
-          , wavelengthMax = "wavelength_max"
-          , startTime = "start_time"
-          , endTime = "end_time"
-          , frameCount = "frame_count"
-          , primaryExperimentId = "primary_experiment_id"
-          , primaryProposalId = "primary_proposal_id"
-          , experimentDescription = "experiment_description"
-          , exposureTime = "exposure_time"
-          , boundingBox = "bounding_box"
-          , latest = "latest"
-          , health = "health"
-          , gosStatus = "gos_status"
-          , aoLocked = "ao_locked"
-          , friedParameter = "fried_parameter"
-          , polarimetricAccuracy = "polarimetric_accuracy"
-          , lightLevel = "light_level"
-          , embargo = "embargo"
-          }
-    }
-
-
-toDataset :: Dataset' Result -> Dataset
-toDataset Dataset'{..} =
-  Dataset
-    { datasetId
-    }
-
-
-fromDataset :: Dataset -> Dataset' Identity
-fromDataset Dataset{..} =
-  Dataset'
-    { datasetId
-    }
-
-
-queryLatest :: (Rel8 :> es) => Eff es [Dataset]
-queryLatest = do
-  ds <- query () $ select $ do
-    row <- each datasets
-    where_ (row.latest ==. lit True)
-    return row
-  pure $ fmap toDataset ds
-
-
-queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
-queryExperiment eid = do
-  ds <- query () $ select $ do
-    row <- each datasets
-    where_ (row.primaryExperimentId ==. lit eid)
-    return row
-  pure $ fmap toDataset ds
-
-
--- pure $ fmap dataset ds
-
-queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
-queryProgram ip = do
-  ds <- query () $ select $ do
-    -- note that this DOESN'T limit by latest
-    row <- each datasets
-    where_ (row.instrumentProgramId ==. lit ip)
-    return row
-  pure $ fmap toDataset ds
-
-
-queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
-queryById i = do
-  ds <- query () $ select $ do
-    row <- each datasets
-    where_ (row.datasetId ==. lit i)
-    return row
-  pure $ fmap toDataset ds
-
-
-insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
-insertAll ds =
-  void $
-    query () $
-      Rel8.insert $
-        Insert
-          { into = datasets
-          , rows = values $ fmap (lit . fromDataset) ds
-          , onConflict = DoNothing
-          , returning = NumberOfRowsAffected
-          }
-
-
-updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
-updateOld ids = do
-  let ids' = fmap lit ids
-  void $
-    query () $
-      Rel8.update $
-        Update
-          { target = datasets
-          , set = \_ row -> setOld row
-          , updateWhere = \_ row -> row.datasetId `in_` ids'
-          , from = pure ()
-          , returning = NumberOfRowsAffected
-          }
+runDataDatasets
+  :: (IOE :> es, Rel8 :> es)
+  => Eff (Datasets : es) a
+  -> Eff es a
+runDataDatasets = interpret $ \_ -> \case
+  Query Latest -> queryLatest
+  Query (ByExperiment eid) -> queryExperiment eid
+  Query (ByProgram pid) -> queryProgram pid
+  Query (ById did) -> queryById did
+  Create ds -> insertAll ds
+  Modify SetOld ids -> updateOld ids
  where
-  setOld :: Dataset' Expr -> Dataset' Expr
-  setOld row = row{latest = lit False}
+  queryLatest :: (Rel8 :> es) => Eff es [Dataset]
+  queryLatest = do
+    ds <- query () $ select $ do
+      row <- each datasets
+      where_ (row.latest ==. lit True)
+      return row
+    pure $ fmap toDataset ds
+
+  queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
+  queryExperiment eid = do
+    ds <- query () $ select $ do
+      row <- each datasets
+      where_ (row.primaryExperimentId ==. lit eid)
+      return row
+    pure $ fmap toDataset ds
+
+  -- pure $ fmap dataset ds
+
+  queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
+  queryProgram ip = do
+    ds <- query () $ select $ do
+      -- note that this DOESN'T limit by latest
+      row <- each datasets
+      where_ (row.instrumentProgramId ==. lit ip)
+      return row
+    pure $ fmap toDataset ds
+
+  queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
+  queryById i = do
+    ds <- query () $ select $ do
+      row <- each datasets
+      where_ (row.datasetId ==. lit i)
+      return row
+    pure $ fmap toDataset ds
+
+  insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
+  insertAll ds =
+    void $
+      query () $
+        Rel8.insert $
+          Insert
+            { into = datasets
+            , rows = values $ fmap (lit . fromDataset) ds
+            , onConflict = DoNothing
+            , returning = NumberOfRowsAffected
+            }
+
+  updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
+  updateOld ids = do
+    let ids' = fmap lit ids
+    void $
+      query () $
+        Rel8.update $
+          Update
+            { target = datasets
+            , set = \_ row -> setOld row
+            , updateWhere = \_ row -> row.datasetId `in_` ids'
+            , from = pure ()
+            , returning = NumberOfRowsAffected
+            }
+   where
+    setOld :: Dataset' Expr -> Dataset' Expr
+    setOld row = row{latest = lit False}
+
+  toDataset :: Dataset' Result -> Dataset
+  toDataset d@Dataset'{..} =
+    let frameCount' = fromIntegral d.frameCount
+        aoLocked' = fromIntegral d.aoLocked
+     in Dataset
+          { frameCount = frameCount'
+          , aoLocked = aoLocked'
+          , ..
+          }
+
+  fromDataset :: Dataset -> Dataset' Identity
+  fromDataset d@Dataset{..} =
+    let frameCount' = fromIntegral d.frameCount
+        aoLocked' = fromIntegral d.aoLocked
+     in Dataset'
+          { frameCount = frameCount'
+          , aoLocked = aoLocked'
+          , ..
+          }
+
+  datasets :: TableSchema (Dataset' Name)
+  datasets =
+    TableSchema
+      { name = "datasets"
+      , schema = Nothing
+      , columns =
+          Dataset'
+            { datasetId = "dataset_id"
+            , observingProgramId = "observing_program_id"
+            , instrumentProgramId = "instrument_program_id"
+            , instrument = "instrument"
+            , scanDate = "scan_date"
+            , stokesParameters = "stokes_parameters"
+            , createDate = "create_date"
+            , updateDate = "update_date"
+            , wavelengthMin = "wavelength_min"
+            , wavelengthMax = "wavelength_max"
+            , startTime = "start_time"
+            , endTime = "end_time"
+            , frameCount = "frame_count"
+            , primaryExperimentId = "primary_experiment_id"
+            , primaryProposalId = "primary_proposal_id"
+            , experimentDescription = "experiment_description"
+            , exposureTime = "exposure_time"
+            , boundingBox = "bounding_box"
+            , latest = "latest"
+            , health = "health"
+            , gosStatus = "gos_status"
+            , aoLocked = "ao_locked"
+            , friedParameter = "fried_parameter"
+            , polarimetricAccuracy = "polarimetric_accuracy"
+            , lightLevel = "light_level"
+            , embargo = "embargo"
+            }
+      }

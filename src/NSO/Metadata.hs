@@ -2,7 +2,7 @@
 
 module NSO.Metadata where
 
-import Data.Aeson (FromJSON, eitherDecode)
+import Data.Aeson (FromJSON (..), Options (..), defaultOptions, eitherDecode, genericParseJSON)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.Morpheus.Client hiding (fetch)
@@ -45,15 +45,13 @@ instance RequestType AllExperiments where
 
 
 mockRequest :: Text -> ByteString -> IO ByteString
-mockRequest "http://internal-api-gateway.service.prod.consul/graphql" r = do
+mockRequest _ r = do
   rq <- parseRequest r
   putStrLn $ "MOCK Graphql: " <> cs rq.operationName
   case rq.operationName of
     "AllDatasets" -> L.readFile "deps/datasets.json"
     "AllExperiments" -> L.readFile "deps/experiments.json"
     op -> fail $ "GraphQL Request not mocked: " <> cs op
-mockRequest url _ = do
-  error $ "URL Not Mocked: " <> show url
 
 
 parseRequest :: ByteString -> IO GraphQLRequest
@@ -64,3 +62,28 @@ parseRequest r = do
 data GraphQLRequest = GraphQLRequest
   {operationName :: Text}
   deriving (Generic, FromJSON)
+
+
+data DataResponse a = DataResponse
+  { _data :: a
+  }
+  deriving (Generic)
+
+
+instance (FromJSON a) => FromJSON (DataResponse a) where
+  parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = drop 1}
+
+-- mockDatasetInventories :: IO [DatasetInventory]
+-- mockDatasetInventories = do
+--   bs <- L.readFile "deps/datasets.json"
+--   case (eitherDecode bs :: Either String (DataResponse AllDatasets)) of
+--     Left e -> fail e
+--     Right (DataResponse d) -> pure d.datasetInventories
+--
+--
+-- mockExperiments :: IO [ExperimentDescription]
+-- mockExperiments = do
+--   bs <- L.readFile "deps/experiments.json"
+--   case (eitherDecode bs :: Either String (DataResponse AllExperiments)) of
+--     Left e -> fail e
+--     Right (DataResponse d) -> pure d.experimentDescriptions
