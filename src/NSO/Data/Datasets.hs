@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module NSO.Data.Datasets
   ( Dataset
@@ -28,8 +29,7 @@ import NSO.Types.Wavelength
 import Rel8
 
 
-type Dataset = Dataset' Identity
-data Dataset' f = Dataset
+data Dataset' f = Dataset'
   { datasetId :: Column f (Id Dataset)
   , scanDate :: Column f UTCTime
   , latest :: Column f Bool
@@ -60,9 +60,8 @@ data Dataset' f = Dataset
   deriving (Generic, Rel8able)
 
 
-deriving stock instance (f ~ Result) => Show (Dataset' f)
-deriving stock instance (f ~ Result) => Eq (Dataset' f)
-
+-- deriving stock instance (f ~ Result) => Show (Dataset' f)
+-- deriving stock instance (f ~ Result) => Eq (Dataset' f)
 
 datasets :: TableSchema (Dataset' Name)
 datasets =
@@ -70,7 +69,7 @@ datasets =
     { name = "datasets"
     , schema = Nothing
     , columns =
-        Dataset
+        Dataset'
           { datasetId = "dataset_id"
           , observingProgramId = "observing_program_id"
           , instrumentProgramId = "instrument_program_id"
@@ -101,58 +100,85 @@ datasets =
     }
 
 
+toDataset :: Dataset' Result -> Dataset
+toDataset Dataset'{..} =
+  Dataset
+    { datasetId
+    }
+
+
+fromDataset :: Dataset -> Dataset' Identity
+fromDataset Dataset{..} =
+  Dataset'
+    { datasetId
+    }
+
+
 queryLatest :: (Rel8 :> es) => Eff es [Dataset]
-queryLatest = query () $ select $ do
-  row <- each datasets
-  where_ (row.latest ==. lit True)
-  return row
+queryLatest = do
+  ds <- query () $ select $ do
+    row <- each datasets
+    where_ (row.latest ==. lit True)
+    return row
+  pure $ fmap toDataset ds
 
 
 queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
-queryExperiment eid = query () $ select $ do
-  row <- each datasets
-  where_ (row.primaryExperimentId ==. lit eid)
-  return row
+queryExperiment eid = do
+  ds <- query () $ select $ do
+    row <- each datasets
+    where_ (row.primaryExperimentId ==. lit eid)
+    return row
+  pure $ fmap toDataset ds
 
+
+-- pure $ fmap dataset ds
 
 queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
-queryProgram ip = query () $ select $ do
-  -- note that this DOESN'T limit by latest
-  row <- each datasets
-  where_ (row.instrumentProgramId ==. lit ip)
-  return row
+queryProgram ip = do
+  ds <- query () $ select $ do
+    -- note that this DOESN'T limit by latest
+    row <- each datasets
+    where_ (row.instrumentProgramId ==. lit ip)
+    return row
+  pure $ fmap toDataset ds
 
 
 queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
-queryById i = query () $ select $ do
-  row <- each datasets
-  where_ (row.datasetId ==. lit i)
-  return row
+queryById i = do
+  ds <- query () $ select $ do
+    row <- each datasets
+    where_ (row.datasetId ==. lit i)
+    return row
+  pure $ fmap toDataset ds
 
 
 insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
 insertAll ds =
-  void
-    $ query ()
-    $ Rel8.insert
-    $ Insert
-      { into = datasets
-      , rows = values $ fmap lit ds
-      , onConflict = DoNothing
-      , returning = NumberOfRowsAffected
-      }
+  void $
+    query () $
+      Rel8.insert $
+        Insert
+          { into = datasets
+          , rows = values $ fmap (lit . fromDataset) ds
+          , onConflict = DoNothing
+          , returning = NumberOfRowsAffected
+          }
 
 
 updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
 updateOld ids = do
   let ids' = fmap lit ids
-  void
-    $ query ()
-    $ Rel8.update
-    $ Update
-      { target = datasets
-      , set = \_ row -> row{latest = lit False}
-      , updateWhere = \_ row -> row.datasetId `in_` ids'
-      , from = pure ()
-      , returning = NumberOfRowsAffected
-      }
+  void $
+    query () $
+      Rel8.update $
+        Update
+          { target = datasets
+          , set = \_ row -> setOld row
+          , updateWhere = \_ row -> row.datasetId `in_` ids'
+          , from = pure ()
+          , returning = NumberOfRowsAffected
+          }
+ where
+  setOld :: Dataset' Expr -> Dataset' Expr
+  setOld row = row{latest = lit False}

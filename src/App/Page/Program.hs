@@ -21,7 +21,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
 import NSO.Prelude
 import Web.Hyperbole
-import Web.View.Style
+-- import Web.View.Style
 
 
 page

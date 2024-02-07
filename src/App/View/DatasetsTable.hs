@@ -1,6 +1,6 @@
 module App.View.DatasetsTable where
 
-import App.Colors
+-- import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (code, showDate, showTimestamp)
@@ -14,8 +14,6 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.View.Element (TableHead)
-import Web.View.Style (Align (..))
 
 
 newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)

@@ -3,8 +3,6 @@ module App.View.DataRow where
 import App.Colors
 import NSO.Prelude
 import Web.View
-import Web.View.Element (TableHead)
-import Web.View.Style (Align (..))
 
 
 dataRows :: [a] -> (a -> View c ()) -> View c ()

@@ -16,11 +16,11 @@ import Effectful.Request
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Programs as Programs
-import NSO.Prelude hiding (truncate)
+import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Status
 import Web.Hyperbole as H
-import Web.View.Style (truncate)
 
 
 page

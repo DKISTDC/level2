@@ -79,7 +79,7 @@ syncResults old scan =
 syncResult :: Map (Id Dataset) Dataset -> Dataset -> SyncResult
 syncResult old d = fromMaybe New $ do
   dold <- M.lookup d.datasetId old
-  if d == dold{scanDate = d.scanDate}
+  if d == (dold :: Dataset){scanDate = d.scanDate}
     then pure Unchanged
     else pure Updated
 
@@ -89,8 +89,8 @@ toDataset scanDate (AllExperiments exs) d = do
   ins <- parseRead "Instrument" d.instrumentName
   exd <- parseExperiment d.primaryExperimentId
   emb <- parseEmbargo
-  pure
-    $ Dataset
+  pure $
+    Dataset
       { datasetId = Id d.datasetId
       , scanDate = scanDate
       , latest = True

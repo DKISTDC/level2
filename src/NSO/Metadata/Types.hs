@@ -13,6 +13,7 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Data.Datasets
 import NSO.Prelude
+import NSO.Types.Common
 
 
 newtype DateTime = DateTime {utc :: UTCTime}

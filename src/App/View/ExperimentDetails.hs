@@ -13,10 +13,10 @@ import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.Status
 import NSO.Types.Wavelength
 import Web.View
-import Web.View.Style (Align (Center))
 
 
 viewExperimentDescription :: Text -> View c ()
@@ -101,7 +101,7 @@ viewCriteria ip gd = do
       el (pad 4) (text msg)
    where
     checkmark =
-      el (width 24 . height 24)
-        $ if b
+      el (width 24 . height 24) $
+        if b
           then Icons.checkCircle
           else Icons.xMark

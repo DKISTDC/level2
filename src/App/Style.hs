@@ -3,7 +3,6 @@ module App.Style where
 import App.Colors
 import NSO.Prelude
 import Web.View
-import Web.View.Style as Style (Align (..), truncate)
 
 
 link :: Mod
@@ -23,7 +22,7 @@ subheader = fontSize 18 . bold
 
 
 card :: Mod
-card = bg White . rounded 4 . Style.truncate
+card = bg White . rounded 4 . truncate
 
 
 cardHeader :: AppColor -> Mod

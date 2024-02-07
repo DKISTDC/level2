@@ -49,7 +49,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Effectful
 import GHC.Generics (Generic)
-import Prelude hiding (Real, even, head, last, odd, print, putStr, putStrLn, readFile, reverse, writeFile, (!!))
+import Prelude hiding (Real, even, head, last, odd, print, putStr, putStrLn, readFile, reverse, writeFile, (!!), truncate)
 import Prelude qualified
 
 identity :: a -> a

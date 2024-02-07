@@ -3,7 +3,6 @@ module NSO.Types.InstrumentProgram where
 import Data.Grouped
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset
 import NSO.Types.Status
 import NSO.Types.Wavelength
 

@@ -3,55 +3,51 @@
 module NSO.Types.Dataset where
 
 import Data.Aeson
-import Data.List qualified as L
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.InstrumentProgram
+import NSO.Types.Wavelength
 import Rel8
 import Text.Read (readEither)
 import Web.Hyperbole (Param)
 
 
+data Dataset = Dataset
+  { datasetId :: Id Dataset
+  , scanDate :: UTCTime
+  , latest :: Bool
+  , observingProgramId :: Id ObservingProgram
+  , instrument :: Instrument
+  , instrumentProgramId :: Id InstrumentProgram
+  , stokesParameters :: StokesParameters
+  , createDate :: UTCTime
+  , updateDate :: UTCTime
+  , wavelengthMin :: Wavelength Nm
+  , wavelengthMax :: Wavelength Nm
+  , startTime :: UTCTime
+  , endTime :: UTCTime
+  , frameCount :: Int
+  , primaryExperimentId :: Id Experiment
+  , primaryProposalId :: Id Proposal
+  , experimentDescription :: Text
+  , exposureTime :: Float
+  , boundingBox :: Maybe BoundingBox
+  , health :: Health
+  , gosStatus :: GOSStatus
+  , aoLocked :: Int
+  , lightLevel :: Distribution
+  , polarimetricAccuracy :: Distribution
+  , friedParameter :: Distribution
+  , embargo :: Maybe UTCTime
+  }
+  deriving (Show, Eq)
+
+
 data ObserveFrames
-
-
-data Stokes = I | Q | U | V
-  deriving (Show, Read, Eq, Ord)
-  deriving (DBType) via ReadShow Stokes
-
-
-newtype StokesParameters = StokesParameters [Stokes]
-  deriving newtype (DBType, Eq, Ord, Monoid)
-
-
-instance Show StokesParameters where
-  show (StokesParameters ss) = mconcat $ fmap show ss
-
-
-instance FromJSON StokesParameters where
-  parseJSON = withText "Stokes Params" $ \t -> do
-    sps <- mapM parseChar $ cs t
-    pure $ StokesParameters sps
-   where
-    parseChar 'I' = pure I
-    parseChar 'Q' = pure Q
-    parseChar 'U' = pure U
-    parseChar 'V' = pure V
-    parseChar c = fail $ "Expected Stokes param (IQUV) but got: " <> [c]
-
-
-instance Semigroup StokesParameters where
-  (StokesParameters a) <> (StokesParameters b) = StokesParameters . L.nub $ a <> b
 
 
 data ObservingProgram
 data Proposal
-
-
-data Instrument
-  = VBI
-  | VISP
-  deriving (Show, Ord, Eq, Read, Param)
-  deriving (DBType) via ReadShow Instrument
 
 
 data BoundingBox = BoundingBox
