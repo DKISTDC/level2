@@ -1,10 +1,10 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE StrictData #-}
 {-# OPTIONS_GHC -Wno-ambiguous-fields #-}
 
 module NSO.Types.Dataset where
 
 import Data.Aeson
+import Data.Int (Int16)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -13,35 +13,36 @@ import Rel8
 import Text.Read (readEither)
 
 
-data Dataset = Dataset
-  { datasetId :: Id Dataset
-  , scanDate :: UTCTime
-  , latest :: Bool
-  , observingProgramId :: Id ObservingProgram
-  , instrument :: Instrument
-  , instrumentProgramId :: Id InstrumentProgram
-  , stokesParameters :: StokesParameters
-  , createDate :: UTCTime
-  , updateDate :: UTCTime
-  , wavelengthMin :: Wavelength Nm
-  , wavelengthMax :: Wavelength Nm
-  , startTime :: UTCTime
-  , endTime :: UTCTime
-  , frameCount :: Int
-  , primaryExperimentId :: Id Experiment
-  , primaryProposalId :: Id Proposal
-  , experimentDescription :: Text
-  , exposureTime :: Float
-  , boundingBox :: Maybe BoundingBox
-  , health :: Health
-  , gosStatus :: GOSStatus
-  , aoLocked :: Int
-  , lightLevel :: Distribution
-  , polarimetricAccuracy :: Distribution
-  , friedParameter :: Distribution
-  , embargo :: Maybe UTCTime
+type Dataset = Dataset' Identity
+data Dataset' f = Dataset'
+  { datasetId :: Column f (Id Dataset)
+  , scanDate :: Column f UTCTime
+  , latest :: Column f Bool
+  , observingProgramId :: Column f (Id ObservingProgram)
+  , instrument :: Column f Instrument
+  , instrumentProgramId :: Column f (Id InstrumentProgram)
+  , stokesParameters :: Column f StokesParameters
+  , createDate :: Column f UTCTime
+  , updateDate :: Column f UTCTime
+  , wavelengthMin :: Column f (Wavelength Nm)
+  , wavelengthMax :: Column f (Wavelength Nm)
+  , startTime :: Column f UTCTime
+  , endTime :: Column f UTCTime
+  , frameCount :: Column f Int16
+  , primaryExperimentId :: Column f (Id Experiment)
+  , primaryProposalId :: Column f (Id Proposal)
+  , experimentDescription :: Column f Text
+  , exposureTime :: Column f Float
+  , boundingBox :: Column f (Maybe BoundingBox)
+  , health :: Column f Health
+  , gosStatus :: Column f GOSStatus
+  , aoLocked :: Column f Int16
+  , lightLevel :: Column f Distribution
+  , polarimetricAccuracy :: Column f Distribution
+  , friedParameter :: Column f Distribution
+  , embargo :: Column f (Maybe UTCTime)
   }
-  deriving (Show, Eq)
+  deriving (Generic, Rel8able)
 
 
 data ObserveFrames

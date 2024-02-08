@@ -2,7 +2,7 @@ module App.Config where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
-import Effectful.Request
+import Effectful.GraphQL (Service (..), service)
 import NSO.Prelude
 import System.Environment
 import Web.Hyperbole

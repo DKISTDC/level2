@@ -1,3 +1,5 @@
 packages:
   .
-  https://hackage.haskell.org/package/web-view-0.3.2/candidate/web-view-0.3.2.tar.gz
+  -- https://hackage.haskell.org/package/web-view-0.3.2/candidate/web-view-0.3.2.tar.gz
+  ../web-view/
+  ./types/

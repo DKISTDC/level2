@@ -1,20 +1,19 @@
 module App.Page.Scan where
 
 import App.Colors
-import App.Config
+import App.Error
 import App.Route
 import App.Style qualified as Style
 import App.View.Common
 import App.View.DataRow qualified as View
 import Data.String.Interpolate
 import Effectful.Error.Static
-import Effectful.Reader.Static
-import Effectful.Request
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Qualify (dayOfYear, isOnDisk)
 import NSO.Data.Scan
 import NSO.DataStore.Datasets
+import NSO.Metadata
 import NSO.Prelude
 import Numeric (showFFloat)
 import Web.Hyperbole
@@ -36,7 +35,7 @@ instance HyperView ScanView where
   type Action ScanView = PageEvent
 
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => Page es ()
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error AppError :> es) => Page es ()
 page = do
   hyper pageEvent
 
@@ -45,10 +44,9 @@ page = do
       viewId ScanView $ viewScan Nothing
 
 
-pageEvent :: (Hyperbole :> es, Time :> es, Datasets :> es, GraphQL :> es, Error RequestError :> es, Reader Services :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
+pageEvent :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error AppError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
 pageEvent _ RunScan = do
-  services <- ask @Services
-  ds <- syncDatasets services.metadata
+  ds <- syncDatasets
   pure $ viewScan (Just ds)
 
 

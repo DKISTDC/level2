@@ -1,16 +1,14 @@
 module NSO.Data.Scan where
 
+import App.Error
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Request
 import Effectful.Time
 import NSO.Data.Datasets
-import NSO.DataStore.Datasets
 import NSO.Metadata
-import NSO.Metadata.Types
 import NSO.Prelude
 import Text.Read (readMaybe)
 
@@ -34,21 +32,20 @@ data SyncResults = SyncResults
   , updated :: [Dataset]
   , unchanged :: [Dataset]
   }
-  deriving (Eq)
 
 
-scanDatasetInventory :: (GraphQL :> es, Error RequestError :> es, Time :> es) => Service -> Eff es [Dataset]
-scanDatasetInventory metadata = do
+scanDatasetInventory :: (Metadata :> es, Time :> es, Error AppError :> es) => Eff es [Dataset]
+scanDatasetInventory = do
   now <- currentTime
-  ads <- fetch @AllDatasets metadata ()
-  exs <- fetch @AllExperiments metadata ()
-  let res = mapM (toDataset now exs) ads.datasetInventories
-  either (throwError . ParseError) pure res
+  ads <- send AllDatasets
+  exs <- send AllExperiments
+  let res = mapM (toDataset now exs) ads
+  either (throwError . ValidationError) pure res
 
 
-syncDatasets :: (Datasets :> es, GraphQL :> es, Error RequestError :> es, Time :> es) => Service -> Eff es SyncResults
-syncDatasets metadata = do
-  scan <- scanDatasetInventory metadata
+syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es, Error AppError :> es) => Eff es SyncResults
+syncDatasets = do
+  scan <- scanDatasetInventory
   old <- indexed <$> send (Query Latest)
 
   let res = syncResults old scan
@@ -79,18 +76,18 @@ syncResults old scan =
 syncResult :: Map (Id Dataset) Dataset -> Dataset -> SyncResult
 syncResult old d = fromMaybe New $ do
   dold <- M.lookup d.datasetId old
-  if d == (dold :: Dataset){scanDate = d.scanDate}
+  if d == dold{scanDate = d.scanDate}
     then pure Unchanged
     else pure Updated
 
 
-toDataset :: UTCTime -> AllExperiments -> DatasetInventory -> Either String Dataset
-toDataset scanDate (AllExperiments exs) d = do
+toDataset :: UTCTime -> [ExperimentDescription] -> DatasetInventory -> Either String Dataset
+toDataset scanDate exs d = do
   ins <- parseRead "Instrument" d.instrumentName
   exd <- parseExperiment d.primaryExperimentId
   emb <- parseEmbargo
   pure $
-    Dataset
+    Dataset'
       { datasetId = Id d.datasetId
       , scanDate = scanDate
       , latest = True
@@ -99,12 +96,12 @@ toDataset scanDate (AllExperiments exs) d = do
       , boundingBox = boundingBoxNaN d.boundingBox
       , instrument = ins
       , stokesParameters = d.stokesParameters
-      , createDate = d.createDate.utc
-      , updateDate = d.updateDate.utc
+      , createDate = d.createDate
+      , updateDate = d.updateDate
       , wavelengthMin = Wavelength d.wavelengthMin
       , wavelengthMax = Wavelength d.wavelengthMax
-      , startTime = d.startTime.utc
-      , endTime = d.endTime.utc
+      , startTime = d.startTime
+      , endTime = d.endTime
       , frameCount = fromIntegral d.frameCount
       , primaryExperimentId = Id d.primaryExperimentId
       , primaryProposalId = Id d.primaryProposalId
@@ -122,19 +119,19 @@ toDataset scanDate (AllExperiments exs) d = do
   parseExperiment :: Text -> Either String Text
   parseExperiment eid =
     case L.find (\e -> e.experimentId == eid) exs of
-      Nothing -> fail "Experiment Description"
+      Nothing -> Left "Experiment Description"
       (Just e) -> pure e.experimentDescription
 
   parseEmbargo :: Either String (Maybe UTCTime)
   parseEmbargo =
     if d.isEmbargoed
       then do
-        utc <- required "Embargo End Date" $ (.utc) <$> d.embargoEndDate
+        utc <- required "Embargo End Date" d.embargoEndDate
         pure (Just utc)
       else pure Nothing
 
   required :: String -> Maybe a -> Either String a
-  required n Nothing = fail ("Missing Required: " <> n)
+  required n Nothing = Left ("Missing Required: " <> n)
   required _ (Just v) = pure v
 
   parseRead :: (Read a) => Text -> Text -> Either String a

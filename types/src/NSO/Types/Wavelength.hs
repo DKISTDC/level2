@@ -11,7 +11,7 @@ data Nm
 
 
 newtype Wavelength a = Wavelength Double
-  deriving newtype (Num, Ord, Show, DBType, Floating, Fractional, RealFloat, RealFrac, Real)
+  deriving newtype (Num, Ord, Show, Floating, Fractional, RealFloat, RealFrac, Real, DBType)
 
 
 instance Eq (Wavelength a) where

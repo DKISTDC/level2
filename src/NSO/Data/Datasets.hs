@@ -1,9 +1,9 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE StrictData #-}
 
 module NSO.Data.Datasets
-  ( Dataset' (..)
+  ( Datasets (..)
+  , Filter (..)
+  , Modify (..)
   , module NSO.Types.Dataset
   , Id (..)
   , Wavelength (..)
@@ -13,11 +13,9 @@ module NSO.Data.Datasets
 where
 
 import Control.Monad (void)
-import Data.Int (Int16)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Rel8
-import NSO.DataStore.Datasets
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -26,35 +24,25 @@ import NSO.Types.Wavelength
 import Rel8
 
 
-data Dataset' f = Dataset'
-  { datasetId :: Column f (Id Dataset)
-  , scanDate :: Column f UTCTime
-  , latest :: Column f Bool
-  , observingProgramId :: Column f (Id ObservingProgram)
-  , instrument :: Column f Instrument
-  , instrumentProgramId :: Column f (Id InstrumentProgram)
-  , stokesParameters :: Column f StokesParameters
-  , createDate :: Column f UTCTime
-  , updateDate :: Column f UTCTime
-  , wavelengthMin :: Column f (Wavelength Nm)
-  , wavelengthMax :: Column f (Wavelength Nm)
-  , startTime :: Column f UTCTime
-  , endTime :: Column f UTCTime
-  , frameCount :: Column f Int16
-  , primaryExperimentId :: Column f (Id Experiment)
-  , primaryProposalId :: Column f (Id Proposal)
-  , experimentDescription :: Column f Text
-  , exposureTime :: Column f Float
-  , boundingBox :: Column f (Maybe BoundingBox)
-  , health :: Column f Health
-  , gosStatus :: Column f GOSStatus
-  , aoLocked :: Column f Int16
-  , lightLevel :: Column f Distribution
-  , polarimetricAccuracy :: Column f Distribution
-  , friedParameter :: Column f Distribution
-  , embargo :: Column f (Maybe UTCTime)
-  }
-  deriving (Generic, Rel8able)
+-- Put all the operations here?
+data Datasets :: Effect where
+  Query :: Filter -> Datasets m [Dataset]
+  Create :: [Dataset] -> Datasets m ()
+  Modify :: Modify -> [Id Dataset] -> Datasets m ()
+
+
+type instance DispatchOf Datasets = 'Dynamic
+
+
+data Filter
+  = Latest
+  | ByExperiment (Id Experiment)
+  | ByProgram (Id InstrumentProgram)
+  | ById (Id Dataset)
+
+
+data Modify
+  = SetOld
 
 
 runDataDatasets
@@ -71,38 +59,32 @@ runDataDatasets = interpret $ \_ -> \case
  where
   queryLatest :: (Rel8 :> es) => Eff es [Dataset]
   queryLatest = do
-    ds <- query () $ select $ do
+    query () $ select $ do
       row <- each datasets
       where_ (row.latest ==. lit True)
       return row
-    pure $ fmap toDataset ds
 
   queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
   queryExperiment eid = do
-    ds <- query () $ select $ do
+    query () $ select $ do
       row <- each datasets
       where_ (row.primaryExperimentId ==. lit eid)
       return row
-    pure $ fmap toDataset ds
-
-  -- pure $ fmap dataset ds
 
   queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
   queryProgram ip = do
-    ds <- query () $ select $ do
+    query () $ select $ do
       -- note that this DOESN'T limit by latest
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit ip)
       return row
-    pure $ fmap toDataset ds
 
   queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
   queryById i = do
-    ds <- query () $ select $ do
+    query () $ select $ do
       row <- each datasets
       where_ (row.datasetId ==. lit i)
       return row
-    pure $ fmap toDataset ds
 
   insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
   insertAll ds =
@@ -111,7 +93,7 @@ runDataDatasets = interpret $ \_ -> \case
         Rel8.insert $
           Insert
             { into = datasets
-            , rows = values $ fmap (lit . fromDataset) ds
+            , rows = values $ fmap lit ds
             , onConflict = DoNothing
             , returning = NumberOfRowsAffected
             }
@@ -133,25 +115,25 @@ runDataDatasets = interpret $ \_ -> \case
     setOld :: Dataset' Expr -> Dataset' Expr
     setOld row = row{latest = lit False}
 
-  toDataset :: Dataset' Result -> Dataset
-  toDataset d@Dataset'{..} =
-    let frameCount' = fromIntegral d.frameCount
-        aoLocked' = fromIntegral d.aoLocked
-     in Dataset
-          { frameCount = frameCount'
-          , aoLocked = aoLocked'
-          , ..
-          }
-
-  fromDataset :: Dataset -> Dataset' Identity
-  fromDataset d@Dataset{..} =
-    let frameCount' = fromIntegral d.frameCount
-        aoLocked' = fromIntegral d.aoLocked
-     in Dataset'
-          { frameCount = frameCount'
-          , aoLocked = aoLocked'
-          , ..
-          }
+  -- toDataset :: Dataset' Result -> Dataset
+  -- toDataset d@Dataset'{..} =
+  --   let frameCount' = fromIntegral d.frameCount
+  --       aoLocked' = fromIntegral d.aoLocked
+  --    in Dataset
+  --         { frameCount = frameCount'
+  --         , aoLocked = aoLocked'
+  --         , ..
+  --         }
+  --
+  -- fromDataset :: Dataset -> Dataset' Identity
+  -- fromDataset d@Dataset{..} =
+  --   let frameCount' = fromIntegral d.frameCount
+  --       aoLocked' = fromIntegral d.aoLocked
+  --    in Dataset'
+  --         { frameCount = frameCount'
+  --         , aoLocked = aoLocked'
+  --         , ..
+  --         }
 
   datasets :: TableSchema (Dataset' Name)
   datasets =

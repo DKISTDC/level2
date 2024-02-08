@@ -1,0 +1,60 @@
+name:               nso-level2-types
+version:            0.2.1
+synopsis:           Types for NSO Level2 System
+homepage:           https://github.com/DKISTDC/Level2
+license:            BSD-3-Clause
+author:             Sean Hess
+maintainer:         shess@nso.edu
+category:           System, Science
+
+
+extra-doc-files:
+  - README.md
+
+language: GHC2021
+
+
+ghc-options:
+  - -Wall
+
+default-extensions:
+  - TypeFamilies
+  - DataKinds
+  - DeriveAnyClass
+  - DerivingStrategies
+  - OverloadedRecordDot
+  - OverloadedStrings
+  - QuasiQuotes
+  - DuplicateRecordFields
+  - LambdaCase
+  - NoImplicitPrelude
+  - NoFieldSelectors
+  - StrictData
+
+dependencies:
+  - base >=4.16.4.0
+  - time
+  - text
+  - tagged
+  - string-interpolate
+  - string-conversions
+  - rel8
+  - req
+  - hasql
+  - random
+  - modern-uri
+  - lens
+  - hyperbole
+  - exceptions
+  - effectful
+  - data-diverse
+  - data-diverse
+  - containers
+  - bytestring
+  - aeson
+
+
+library:
+  source-dirs: src
+
+

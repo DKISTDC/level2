@@ -134,7 +134,7 @@ viewInversions is = mapM_ viewInversion is
 viewInversion :: Inversion -> View InversionStatus ()
 viewInversion inv = do
   col (Style.card . gap 15) $ do
-    el (Style.cardHeader Info) "Inversion"
+    el (Style.cardHeader Info) "Inversion time!"
     col (gap 15 . pad 15) $ do
       invProgress
       el_ $ text inv.inversionId.fromId

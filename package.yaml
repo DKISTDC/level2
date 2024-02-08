@@ -37,6 +37,7 @@ default-extensions:
 
 dependencies:
   - base >=4.16.4.0
+  - nso-level2-types
   - web-view >= 0.2.3
   - warp == 3.3.31
   - wai-extra
@@ -47,12 +48,10 @@ dependencies:
   - string-conversions
   - req
   - rel8 == 1.4.1.0
-  # - selda
-  # - selda-postgresql
   - random
-  - morpheus-graphql-core == 0.27.3
-  - morpheus-graphql-client == 0.27.3
-  - morpheus-graphql == 0.27.3
+  # - morpheus-graphql-core == 0.27.3
+  # - morpheus-graphql-client == 0.27.3
+  # - morpheus-graphql == 0.27.3
   - modern-uri
   - lens
   - hyperbole == 0.2.0

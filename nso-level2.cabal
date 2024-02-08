@@ -40,12 +40,6 @@ library
       App.View.DatasetsTable
       App.View.ExperimentDetails
       App.View.Icons
-      Data.Grouped
-      Effectful.Debug
-      Effectful.GenRandom
-      Effectful.Rel8
-      Effectful.Request
-      Effectful.Time
       Flow
       Flow.Example
       Flow.Node
@@ -55,19 +49,9 @@ library
       NSO.Data.Qualify
       NSO.Data.Scan
       NSO.Data.Spectra
-      NSO.DataStore.Datasets
-      NSO.DataStore.Inversions
       NSO.Level2
       NSO.Metadata
-      NSO.Metadata.Types
-      NSO.Prelude
       NSO.Steps
-      NSO.Types.Common
-      NSO.Types.Dataset
-      NSO.Types.InstrumentProgram
-      NSO.Types.Inversion
-      NSO.Types.Status
-      NSO.Types.Wavelength
   other-modules:
       Paths_nso_level2
   autogen-modules:
@@ -100,9 +84,7 @@ library
     , hyperbole ==0.2.0
     , lens
     , modern-uri
-    , morpheus-graphql ==0.27.3
-    , morpheus-graphql-client ==0.27.3
-    , morpheus-graphql-core ==0.27.3
+    , nso-level2-types
     , random
     , rel8 ==1.4.1.0
     , req
@@ -150,10 +132,8 @@ executable level2
     , hyperbole ==0.2.0
     , lens
     , modern-uri
-    , morpheus-graphql ==0.27.3
-    , morpheus-graphql-client ==0.27.3
-    , morpheus-graphql-core ==0.27.3
     , nso-level2
+    , nso-level2-types
     , random
     , rel8 ==1.4.1.0
     , req
@@ -206,10 +186,8 @@ test-suite tests
     , hyperbole ==0.2.0
     , lens
     , modern-uri
-    , morpheus-graphql ==0.27.3
-    , morpheus-graphql-client ==0.27.3
-    , morpheus-graphql-core ==0.27.3
     , nso-level2
+    , nso-level2-types
     , random
     , rel8 ==1.4.1.0
     , req

@@ -14,26 +14,37 @@ import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
-import NSO.DataStore.Inversions
 import NSO.Prelude
+import NSO.Types.Inversion
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Rel8
 
 
--- The database definition is flattened. Needs validation on return from DB!
-data InversionRow f = InversionRow
-  { inversionId :: Column f (Id Inversion)
-  , programId :: Column f (Id InstrumentProgram)
-  , created :: Column f UTCTime
-  , download :: Column f (Maybe UTCTime)
-  , calibration :: Column f (Maybe UTCTime)
-  , calibrationUrl :: Column f (Maybe Url)
-  , inversion :: Column f (Maybe UTCTime)
-  , inversionSoftware :: Column f (Maybe InversionSoftware)
-  , postProcess :: Column f (Maybe UTCTime)
-  , publish :: Column f (Maybe UTCTime)
-  }
-  deriving (Generic, Rel8able)
+data Inversions :: Effect where
+  All :: Inversions m AllInversions
+  ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
+  Create :: Id InstrumentProgram -> Inversions m Inversion
+
+
+type instance DispatchOf Inversions = 'Dynamic
+
+
+-- | Provenance of EVERY Instrument Program
+newtype AllInversions = AllInversions [Inversion]
+
+
+empty :: (Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
+empty ip = do
+  now <- currentTime
+  i <- randomId
+  let start = Started now :: Started
+  pure $
+    Inversion
+      { inversionId = i
+      , programId = ip
+      , step = StepStarted (start ./ nil)
+      }
 
 
 inversion :: InversionRow Identity -> Either String Inversion

@@ -15,15 +15,15 @@ import Effectful
 import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Error.Static
 import Effectful.GenRandom
+import Effectful.GraphQL
 import Effectful.Reader.Static
 import Effectful.Rel8 as Rel8
-import Effectful.Request
 import Effectful.Time
 import NSO.Data.Datasets (runDataDatasets)
 import NSO.Data.Inversions (runDataInversions)
 import NSO.DataStore.Datasets (Datasets)
 import NSO.DataStore.Inversions (Inversions)
-import NSO.Metadata qualified as Metadata
+import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.Wai.Handler.Warp as Warp (Port, run)
 import Network.Wai.Middleware.AddHeaders (addHeaders)
@@ -53,7 +53,7 @@ initialize = do
 app :: Rel8.Connection -> Services -> IsMock -> Application
 app conn services isMock = application document (runApp . router)
  where
-  router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, GraphQL :> es, Error RequestError :> es, Error AppError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
+  router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error AppError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router (Experiment eid) = page $ Experiment.page eid
@@ -64,29 +64,22 @@ app conn services isMock = application document (runApp . router)
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
-      . runErrorNoCallStackWith @RequestError onRequestError
       . runErrorNoCallStackWith @AppError onAppError
       . runReader services
       . runGenRandom
       . runRel8 conn
-      . runRequest' isMock
+      . runGraphQL' isMock
+      . runMetadata services.metadata
       . runDebugIO
-      . runGraphQL
       . runDataDatasets
       . runDataInversions
 
-  runRequest' True = runRequestMock Metadata.mockRequest
-  runRequest' False = runRequest
+  runGraphQL' True = runGraphQLMock Metadata.mockRequest
+  runGraphQL' False = runGraphQL
 
 
 onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
 onRel8Error e = do
-  putStrLn "CAUGHT"
-  liftIO $ throwM e
-
-
-onRequestError :: (IOE :> es) => RequestError -> Eff es a
-onRequestError e = do
   putStrLn "CAUGHT"
   liftIO $ throwM e
 

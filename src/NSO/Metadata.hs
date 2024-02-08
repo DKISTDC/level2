@@ -2,88 +2,136 @@
 
 module NSO.Metadata where
 
-import Data.Aeson (FromJSON (..), Options (..), defaultOptions, eitherDecode, genericParseJSON)
+import Data.Aeson (FromJSON)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
-import Data.Morpheus.Client hiding (fetch)
-import Data.Morpheus.Client.CodeGen.Internal (OperationType (..))
 import Data.String.Interpolate
-import GHC.Generics
-import NSO.Metadata.Types
+import Effectful
+import Effectful.Dispatch.Dynamic
+import Effectful.GraphQL
 import NSO.Prelude
+import NSO.Types.Common
+import NSO.Types.Dataset
 
 
--- import Effectful.Request
--- import Network.HTTP.Req
-
-newtype AllDatasets = AllDatasets {datasetInventories :: [DatasetInventory]}
-  deriving (Show, Eq, Generic)
-  deriving anyclass (FromJSON)
+data Metadata :: Effect where
+  AllDatasets :: Metadata m [DatasetInventory]
+  AllExperiments :: Metadata m [ExperimentDescription]
+type instance DispatchOf Metadata = 'Dynamic
 
 
-instance RequestType AllDatasets where
-  type RequestArgs AllDatasets = ()
-  __name _ = "AllDatasets"
-  __query _ =
+runMetadata
+  :: (IOE :> es, GraphQL :> es)
+  => Service
+  -> Eff (Metadata : es) a
+  -> Eff es a
+runMetadata s = interpret $ \_ -> \case
+  AllDatasets -> do
+    send $ Query s (DatasetInventories Nothing)
+  AllExperiments -> do
+    send $ Query s ExperimentDescriptions
+
+
+newtype DatasetInventories = DatasetInventories
+  {isEmbargoed :: Maybe Bool}
+  deriving (Show, Eq)
+
+
+instance Query DatasetInventories where
+  type Result DatasetInventories = DatasetInventory
+  operationName _ = "AllDatasets"
+  query _ =
     let fields = genQueryFields @DatasetInventory Proxy
-     in [i| query AllDatasets { datasetInventories { #{fields} } } |]
-  __type _ = OPERATION_QUERY
+     in [i| query AllDatasets { datasetInventories { #{fields} }}|]
 
 
-newtype AllExperiments = AllExperiments {experimentDescriptions :: [ExperimentDescription]}
-  deriving (Show, Eq, Generic)
-  deriving anyclass (FromJSON)
+data ExperimentDescriptions = ExperimentDescriptions
+  deriving (Show, Eq)
 
 
-instance RequestType AllExperiments where
-  type RequestArgs AllExperiments = ()
-  __name _ = "AllExperiments"
-  __query _ =
+instance Query ExperimentDescriptions where
+  type Result ExperimentDescriptions = ExperimentDescription
+  operationName _ = "AllExperiments"
+  query _ =
     let fields = genQueryFields @ExperimentDescription Proxy
-     in [i| query AllExperiments { experimentDescriptions { #{fields} } } |]
-  __type _ = OPERATION_QUERY
+     in [i| query AllExperiments { experimentDescriptions { #{fields} }} |]
 
 
-mockRequest :: Text -> ByteString -> IO ByteString
+mockRequest :: Text -> Request -> IO ByteString
 mockRequest _ r = do
-  rq <- parseRequest r
-  putStrLn $ "MOCK Graphql: " <> cs rq.operationName
-  case rq.operationName of
+  putStrLn $ "MOCK Graphql: " <> cs r.operationName
+  case r.operationName of
     "AllDatasets" -> L.readFile "deps/datasets.json"
     "AllExperiments" -> L.readFile "deps/experiments.json"
     op -> fail $ "GraphQL Request not mocked: " <> cs op
 
 
-parseRequest :: ByteString -> IO GraphQLRequest
-parseRequest r = do
-  either fail pure $ eitherDecode r
-
-
-data GraphQLRequest = GraphQLRequest
-  {operationName :: Text}
-  deriving (Generic, FromJSON)
-
-
-data DataResponse a = DataResponse
-  { _data :: a
+data DatasetInventory = DatasetInventory
+  -- { asdfObjectKey :: Text
+  -- , averageDatasetSpatialSampling :: Double
+  -- , averageDatasetSpectralSampling :: Double
+  -- , averageDatasetTemporalSampling :: Double
+  { boundingBox :: BoundingBox
+  , -- , browseMovieObjectKey :: Text
+    -- , browseMovieUrl :: Text
+    -- , bucket :: Text
+    -- calibrationDocumentationUrl :: Text
+    -- , contributingExperimentIds :: [Text]
+    -- contributingProposalIds :: [Text]
+    createDate :: UTCTime
+  , datasetId :: Text
+  , -- , datasetInventoryId :: Int
+    -- , datasetSize :: Int
+    endTime :: UTCTime
+  , -- , experimentDescription :: Text
+    exposureTime :: Double
+  , frameCount :: Int
+  , -- , hasAllStokes :: Bool
+    -- , hasSpectralAxis :: Bool
+    -- , hasTemporalAxis :: Bool
+    -- , headerDataUnitCreationDate :: DateTime
+    -- , headerDocumentationUrl :: Text
+    -- , headerVersion :: Text
+    -- , highLevelSoftwareVersion :: Text
+    -- , infoUrl :: Text
+    -- , inputDatasetCalibrationFramesPartId :: Int
+    -- inputDatasetObserveFramesPartId :: Int
+    -- , inputDatasetParametersPartId :: Int
+    instrumentName :: Text
+  , instrumentProgramExecutionId :: Text
+  , -- , isActive :: Bool
+    isEmbargoed :: Bool
+  , embargoEndDate :: Maybe UTCTime
+  , observingProgramExecutionId :: Text
+  , -- , originalFrameCount :: Int
+    primaryExperimentId :: Text
+  , primaryProposalId :: Text
+  , -- , qualityAverageFriedParameter :: Double
+    -- , qualityAveragePolarimetricAccuracy :: Double
+    -- , qualityReportObjectKey :: Text
+    -- , recipeId :: Int
+    -- , recipeInstanceId :: Int
+    -- , recipeRunId :: Int
+    startTime :: UTCTime
+  , stokesParameters :: StokesParameters
+  , -- , targetTypes :: [Text]
+    updateDate :: UTCTime
+  , wavelengthMax :: Double
+  , wavelengthMin :: Double
+  , -- , workflowName :: Text
+    -- , workflowVersion :: Text
+    health :: Health
+  , gosStatus :: GOSStatus
+  , aoLocked :: Int
+  , -- , polarimetricAccuracy :: Distribution
+    lightLevel :: Distribution
+  , friedParameter :: Distribution
   }
-  deriving (Generic)
+  deriving (Generic, Show, Eq, FromJSON)
 
 
-instance (FromJSON a) => FromJSON (DataResponse a) where
-  parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = drop 1}
-
--- mockDatasetInventories :: IO [DatasetInventory]
--- mockDatasetInventories = do
---   bs <- L.readFile "deps/datasets.json"
---   case (eitherDecode bs :: Either String (DataResponse AllDatasets)) of
---     Left e -> fail e
---     Right (DataResponse d) -> pure d.datasetInventories
---
---
--- mockExperiments :: IO [ExperimentDescription]
--- mockExperiments = do
---   bs <- L.readFile "deps/experiments.json"
---   case (eitherDecode bs :: Either String (DataResponse AllExperiments)) of
---     Left e -> fail e
---     Right (DataResponse d) -> pure d.experimentDescriptions
+data ExperimentDescription = ExperimentDescription
+  { experimentId :: Text
+  , experimentDescription :: Text
+  }
+  deriving (Generic, Show, Eq, FromJSON)

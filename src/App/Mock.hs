@@ -2,33 +2,40 @@ module App.Mock where
 
 import App.Config
 import App.Error
-import App.Route as Route
+
 import NSO.Prelude
 
--- -- -- import App.Page.Dashboard qualified as Dashboard
--- -- -- import App.Page.Dataset qualified as Dataset
--- -- -- import App.Page.Experiment qualified as Experiment
--- -- -- import App.Page.Experiments qualified as Experiments
--- -- -- import App.Page.Program qualified as Program
--- -- -- import App.Page.Scan qualified as Scan
-import Effectful
-import Effectful.Debug
-import Effectful.Dispatch.Dynamic
-import Effectful.Error.Static
-import Effectful.GenRandom
-import Effectful.Reader.Static
-import Effectful.Request
-import Effectful.State.Static.Local
-import Effectful.Time
+-- import App.Page.Dashboard qualified as Dashboard
+-- import App.Page.Dataset qualified as Dataset
+-- import App.Page.Experiment qualified as Experiment
+-- import App.Page.Experiments qualified as Experiments
+-- import App.Page.Program qualified as Program
+-- import App.Page.Scan qualified as Scan
+-- import Effectful
+-- import Effectful.Debug
+-- import Effectful.Dispatch.Dynamic
+-- import Effectful.Error.Static
+-- import Effectful.GenRandom
+-- import Effectful.Reader.Static
+-- import Effectful.State.Static.Local
+-- import Effectful.Time
 
--- import NSO.Data.Scan
--- import NSO.DataStore.Datasets as Datasets
--- import NSO.DataStore.Inversions as Inversions
--- import NSO.Metadata as Metadata
-import NSO.Prelude
+import NSO.Data.Datasets
+import NSO.Data.Scan
+import NSO.DataStore.Datasets as Datasets
+import NSO.DataStore.Inversions as Inversions
+import NSO.Metadata as Metadata
+import NSO.Types.Common
+
+import NSO.Types.InstrumentProgram
+
+-- import NSO.Types.Status
+import NSO.Types.Wavelength
 import Network.Wai.Handler.Warp as Warp (run)
 import Web.Hyperbole
 
+
+-- import App.Route as Route
 
 --
 --

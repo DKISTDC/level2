@@ -1,0 +1,75 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           nso-level2-types
+version:        0.2.1
+synopsis:       Types for NSO Level2 System
+category:       System, Science
+homepage:       https://github.com/DKISTDC/Level2
+author:         Sean Hess
+maintainer:     shess@nso.edu
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-doc-files:
+    README.md
+
+library
+  exposed-modules:
+      Data.Grouped
+      Effectful.Debug
+      Effectful.GenRandom
+      Effectful.GraphQL
+      Effectful.Rel8
+      Effectful.Time
+      NSO.Prelude
+      NSO.Types.Common
+      NSO.Types.Dataset
+      NSO.Types.InstrumentProgram
+      NSO.Types.Inversion
+      NSO.Types.Status
+      NSO.Types.Wavelength
+  other-modules:
+      Paths_nso_level2_types
+  autogen-modules:
+      Paths_nso_level2_types
+  hs-source-dirs:
+      src
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      OverloadedStrings
+      QuasiQuotes
+      DuplicateRecordFields
+      LambdaCase
+      NoImplicitPrelude
+      NoFieldSelectors
+      StrictData
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.16.4.0
+    , bytestring
+    , containers
+    , data-diverse
+    , effectful
+    , exceptions
+    , hasql
+    , hyperbole
+    , lens
+    , modern-uri
+    , random
+    , rel8
+    , req
+    , string-conversions
+    , string-interpolate
+    , tagged
+    , text
+    , time
+  default-language: GHC2021
