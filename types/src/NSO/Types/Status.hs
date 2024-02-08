@@ -17,7 +17,7 @@ data ProgramStatus
   deriving (Eq)
 
 
-type Url = String
+type Url = Text
 newtype InversionSoftware = InversionSoftware String
   deriving newtype (Show, Eq, ToJSON, FromJSON, DBType)
 
@@ -75,4 +75,4 @@ data InversionStep
   | StepInverted (Many StepInverted)
   | StepProcessed (Many StepProcessed)
   | StepPublished (Many StepPublished)
-  deriving (Eq)
+  deriving (Eq, Show)

@@ -112,8 +112,14 @@ newtype InversionStatus = InversionStatus (Id InstrumentProgram)
 
 data InversionsAction
   = CreateInversion
-  | Download (Id Inversion)
-  | Cancel (Id Inversion)
+  | Update (Id Inversion) InversionAction
+  deriving (Show, Read, Param)
+
+
+data InversionAction
+  = Download
+  | Cancel
+  | Calibrate
   deriving (Show, Read, Param)
 
 
@@ -126,12 +132,19 @@ inversions (InversionStatus ip) = \case
   CreateInversion -> do
     inv <- send $ Inversions.Create ip
     pure $ viewInversion inv
-  Download iid -> do
-    send $ Inversions.SetDownloaded iid
-    pure $ el_ "DOWNLOADING"
-  Cancel iid -> do
-    send $ Inversions.Remove iid
-    pure $ el_ "CANCEL"
+  (Update iid act) ->
+    case act of
+      Cancel -> do
+        send $ Inversions.Remove iid
+        pure $ el_ "CANCEL"
+      Download -> do
+        send $ Inversions.SetDownloaded iid
+        pure $ el_ "DOWNLOADING"
+      Calibrate -> do
+        -- what's the url??? I need a form
+        f <- parseForm @CalibrationForm
+        send $ Inversions.SetCalibrated iid f.calibrationUrl
+        pure $ el_ $ text $ "CALIBRATE:" <> cs f.calibrationUrl
 
 
 viewInversions :: [Inversion] -> View InversionStatus ()
@@ -149,6 +162,7 @@ viewInversion inv = do
     col (gap 15 . pad 15) $ do
       invProgress
       viewStep
+      pre id $ cs (show inv)
  where
   invProgress :: View InversionStatus ()
   invProgress = do
@@ -185,15 +199,17 @@ viewInversion inv = do
 
   stepDownload = do
     -- click that download button!
-    el_ "Download"
     row (gap 10) $ do
-      button (Download inv.inversionId) (Style.btn Primary . grow) "Download"
-      button (Cancel inv.inversionId) (Style.btnOutline Secondary) $ do
-        -- el (width 24) Icons.xCircle
+      button (Update inv.inversionId Download) (Style.btn Primary . grow) "Download"
+      button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) $ do
         "Cancel"
 
   stepCalibrate = do
-    el_ "Calibrate"
+    form @CalibrationForm (Update inv.inversionId Calibrate) (gap 10) $ \f -> do
+      field id $ do
+        label "Calibration URL"
+        input TextInput Style.input f.calibrationUrl
+      submit (Style.btn Primary . grow) "Calibrate"
 
   stepInvert = do
     el_ "Invert"
@@ -206,6 +222,7 @@ viewInversion inv = do
 
   stepDone = do
     el_ "Done"
+
 
 -- moveDown =
 --   addClass
@@ -220,3 +237,8 @@ viewInversion inv = do
 --     button Complete btn "Complete"
 --  where
 --   btn = color White . pad (XY 15 10) . bg Secondary . hover (bg SecondaryLight)
+
+data CalibrationForm a = CalibrationForm
+  { calibrationUrl :: Field a Text
+  }
+  deriving (Generic, Form)

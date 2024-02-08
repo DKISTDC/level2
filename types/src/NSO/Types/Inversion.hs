@@ -19,6 +19,7 @@ data Inversion = Inversion
   , programId :: Id InstrumentProgram
   , step :: InversionStep
   }
+  deriving (Show)
 
 
 -- The database definition is flattened. Needs validation on return from DB!
@@ -35,3 +36,7 @@ data InversionRow f = InversionRow
   , publish :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)
+
+
+deriving stock instance (f ~ Result) => Show (InversionRow f)
+deriving stock instance (f ~ Result) => Eq (InversionRow f)

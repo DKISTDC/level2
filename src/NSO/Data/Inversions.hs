@@ -11,6 +11,7 @@ module NSO.Data.Inversions
 import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
 import Effectful
+import Effectful.Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
@@ -26,12 +27,12 @@ import Rel8
 
 data Inversions :: Effect where
   All :: Inversions m AllInversions
+  ById :: Id Inversion -> Inversions m [Inversion]
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   Create :: Id InstrumentProgram -> Inversions m Inversion
-  SetDownloaded :: Id Inversion -> Inversions m ()
   Remove :: Id Inversion -> Inversions m ()
-
-
+  SetDownloaded :: Id Inversion -> Inversions m ()
+  SetCalibrated :: Id Inversion -> Url -> Inversions m ()
 type instance DispatchOf Inversions = 'Dynamic
 
 
@@ -113,15 +114,17 @@ inversion row = maybe err pure $ do
 
 
 runDataInversions
-  :: (IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
+  :: (IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es, Debug :> es)
   => Eff (Inversions : es) a
   -> Eff es a
 runDataInversions = interpret $ \_ -> \case
   All -> queryAll
   ByProgram pid -> queryInstrumentProgram pid
+  ById iid -> queryById iid
   Create pid -> create pid
   Remove iid -> remove iid
   SetDownloaded iid -> setDownloaded iid
+  SetCalibrated iid url -> setCalibrated iid url
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
@@ -129,6 +132,14 @@ runDataInversions = interpret $ \_ -> \case
     irs <- query () $ select $ do
       each inversions
     AllInversions <$> toInversions irs
+
+  queryById :: (Rel8 :> es, Error DataError :> es) => Id Inversion -> Eff es [Inversion]
+  queryById iid = do
+    irs <- query () $ select $ do
+      row <- each inversions
+      where_ (row.inversionId ==. lit iid)
+      pure row
+    toInversions irs
 
   queryInstrumentProgram :: (Rel8 :> es, Error DataError :> es) => Id InstrumentProgram -> Eff es [Inversion]
   queryInstrumentProgram ip = do
@@ -162,6 +173,22 @@ runDataInversions = interpret $ \_ -> \case
             , from = each inversions
             , updateWhere = \_ r -> r.inversionId ==. lit iid
             , set = \_ r -> r{download = lit (Just now)}
+            , returning = NumberOfRowsAffected
+            }
+
+  -- you can only set this if it is currently StepStarted...
+  setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> Url -> Eff es ()
+  setCalibrated iid url = do
+    now <- currentTime
+    dump "URL" url
+    void $
+      query () $
+        Rel8.update $
+          Update
+            { target = inversions
+            , from = each inversions
+            , updateWhere = \_ r -> r.inversionId ==. lit iid
+            , set = \_ r -> r{calibration = lit (Just now), calibrationUrl = lit (Just url)}
             , returning = NumberOfRowsAffected
             }
 
