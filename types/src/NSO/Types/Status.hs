@@ -18,7 +18,7 @@ data ProgramStatus
 
 
 type Url = Text
-newtype InversionSoftware = InversionSoftware String
+newtype InversionSoftware = InversionSoftware Text
   deriving newtype (Show, Eq, ToJSON, FromJSON, DBType)
 
 

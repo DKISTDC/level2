@@ -33,6 +33,9 @@ data Inversions :: Effect where
   Remove :: Id Inversion -> Inversions m ()
   SetDownloaded :: Id Inversion -> Inversions m ()
   SetCalibrated :: Id Inversion -> Url -> Inversions m ()
+  SetInverted :: Id Inversion -> InversionSoftware -> Inversions m ()
+  SetPostProcessed :: Id Inversion -> Inversions m ()
+  SetPublished :: Id Inversion -> Inversions m ()
 type instance DispatchOf Inversions = 'Dynamic
 
 
@@ -125,6 +128,9 @@ runDataInversions = interpret $ \_ -> \case
   Remove iid -> remove iid
   SetDownloaded iid -> setDownloaded iid
   SetCalibrated iid url -> setCalibrated iid url
+  SetInverted iid soft -> setInverted iid soft
+  SetPostProcessed iid -> setPostProcessed iid
+  SetPublished iid -> setPublished iid
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
@@ -161,10 +167,8 @@ runDataInversions = interpret $ \_ -> \case
             , returning = NumberOfRowsAffected
             }
 
-  -- you can only set this if it is currently StepStarted...
-  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
-  setDownloaded iid = do
-    now <- currentTime
+  updateInversion :: (Rel8 :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
+  updateInversion iid f = do
     void $
       query () $
         Rel8.update $
@@ -172,25 +176,34 @@ runDataInversions = interpret $ \_ -> \case
             { target = inversions
             , from = each inversions
             , updateWhere = \_ r -> r.inversionId ==. lit iid
-            , set = \_ r -> r{download = lit (Just now)}
+            , set = \_ r -> f r
             , returning = NumberOfRowsAffected
             }
 
-  -- you can only set this if it is currently StepStarted...
+  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setDownloaded iid = do
+    now <- currentTime
+    updateInversion iid $ \r -> r{download = lit (Just now)}
+
   setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> Url -> Eff es ()
   setCalibrated iid url = do
     now <- currentTime
-    dump "URL" url
-    void $
-      query () $
-        Rel8.update $
-          Update
-            { target = inversions
-            , from = each inversions
-            , updateWhere = \_ r -> r.inversionId ==. lit iid
-            , set = \_ r -> r{calibration = lit (Just now), calibrationUrl = lit (Just url)}
-            , returning = NumberOfRowsAffected
-            }
+    updateInversion iid $ \r -> r{calibration = lit (Just now), calibrationUrl = lit (Just url)}
+
+  setInverted :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> InversionSoftware -> Eff es ()
+  setInverted iid soft = do
+    now <- currentTime
+    updateInversion iid $ \r -> r{inversion = lit (Just now), inversionSoftware = lit (Just soft)}
+
+  setPostProcessed :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setPostProcessed iid = do
+    now <- currentTime
+    updateInversion iid $ \r -> r{postProcess = lit (Just now)}
+
+  setPublished :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setPublished iid = do
+    now <- currentTime
+    updateInversion iid $ \r -> r{publish = lit (Just now)}
 
   create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
   create ip = do

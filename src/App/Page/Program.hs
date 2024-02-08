@@ -104,7 +104,9 @@ viewDatasets now (d : ds) is = do
 --     el_ "Queued"
 --     text $ showTimestamp p.completed
 
--- Status -----------------------------------------------
+-- ----------------------------------------------------------------
+-- INVERSION STATUS -----------------------------------------------
+-- ----------------------------------------------------------------
 
 newtype InversionStatus = InversionStatus (Id InstrumentProgram)
   deriving newtype (Show, Read, Param)
@@ -120,7 +122,22 @@ data InversionAction
   = Download
   | Cancel
   | Calibrate
+  | Invert
+  | PostProcess
+  | Publish
   deriving (Show, Read, Param)
+
+
+data CalibrationForm a = CalibrationForm
+  { calibrationUrl :: Field a Text
+  }
+  deriving (Generic, Form)
+
+
+data InversionForm a = InversionForm
+  { inversionSoftware :: Field a Text
+  }
+  deriving (Generic, Form)
 
 
 instance HyperView InversionStatus where
@@ -136,15 +153,28 @@ inversions (InversionStatus ip) = \case
     case act of
       Cancel -> do
         send $ Inversions.Remove iid
-        pure $ el_ "CANCEL"
+        pure none
       Download -> do
         send $ Inversions.SetDownloaded iid
-        pure $ el_ "DOWNLOADING"
+        refresh iid
       Calibrate -> do
-        -- what's the url??? I need a form
         f <- parseForm @CalibrationForm
         send $ Inversions.SetCalibrated iid f.calibrationUrl
-        pure $ el_ $ text $ "CALIBRATE:" <> cs f.calibrationUrl
+        refresh iid
+      Invert -> do
+        f <- parseForm @InversionForm
+        send $ Inversions.SetInverted iid (InversionSoftware f.inversionSoftware)
+        refresh iid
+      PostProcess -> do
+        send $ Inversions.SetPostProcessed iid
+        refresh iid
+      Publish -> do
+        send $ Inversions.SetPublished iid
+        refresh iid
+ where
+  refresh iid = do
+    inv <- send $ Inversions.ById iid
+    pure $ mapM_ viewInversion inv
 
 
 viewInversions :: [Inversion] -> View InversionStatus ()
@@ -159,7 +189,7 @@ viewInversion :: Inversion -> View InversionStatus ()
 viewInversion inv = do
   let curr = currentStep inv.step
   col (Style.card . gap 15) $ do
-    el (Style.cardHeader Info) "Inversion"
+    el (Style.cardHeader (headerColor curr)) "Inversion"
     col (gap 15 . pad 15) $ do
       invProgress curr
       viewStep curr
@@ -171,6 +201,9 @@ viewInversion inv = do
   viewStep Processing = stepProcess
   viewStep Publishing = stepPublish
   viewStep Complete = stepDone
+
+  headerColor Complete = Success
+  headerColor _ = Info
 
   stepDownload = do
     -- click that download button!
@@ -184,47 +217,23 @@ viewInversion inv = do
       field id $ do
         label "Calibration URL"
         input TextInput Style.input f.calibrationUrl
-      submit (Style.btn Primary . grow) "Calibrate"
+      submit (Style.btn Primary . grow) "Save Calibration"
 
   stepInvert = do
-    el_ "Invert"
+    form @InversionForm (Update inv.inversionId Invert) (gap 10) $ \f -> do
+      field id $ do
+        label "Inversion Software"
+        input TextInput Style.input f.inversionSoftware
+      submit (Style.btn Primary . grow) "Save Inversion"
 
   stepProcess = do
-    el_ "Process"
+    button (Update inv.inversionId PostProcess) (Style.btn Primary . grow) "Save Post Processing"
 
   stepPublish = do
-    el_ "Publish"
+    button (Update inv.inversionId Publish) (Style.btn Primary . grow) "Save Publish"
 
   stepDone = do
     el_ "Done"
-
-  stepProgress = \case
-    StepStarted _ -> el_ "started"
-    StepDownloaded _ -> el_ "downloaded"
-    StepCalibrated _ -> el_ "calibrated"
-    StepInverted _ -> el_ "inverted"
-    StepProcessed _ -> el_ "processed"
-    StepPublished _ -> el_ "published"
-
-
--- moveDown =
---   addClass
---     $ cls "move-down"
---     & prop @Text "position" "relative"
---     & prop @Text "top" "50px"
-
--- statusView :: View Status ()
--- statusView = do
---   row (gap 10) $ do
---     button Queue btn "Queue"
---     button Complete btn "Complete"
---  where
---   btn = color White . pad (XY 15 10) . bg Secondary . hover (bg SecondaryLight)
-
-data CalibrationForm a = CalibrationForm
-  { calibrationUrl :: Field a Text
-  }
-  deriving (Generic, Form)
 
 
 data CurrentStep

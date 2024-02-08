@@ -58,8 +58,8 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
 
   statusTag StatusInvalid = el (dataCell . color (light Secondary)) $ text "-"
   statusTag StatusQualified = el (stat Primary) $ text "Qualified"
-  statusTag (StatusInversion (StepStarted _)) = el (stat Info) $ text "Started"
-  statusTag (StatusInversion _) = el (stat Danger) $ text "Inversion"
+  statusTag (StatusInversion (StepPublished _)) = el (stat Success) $ text "Complete"
+  statusTag (StatusInversion _) = el (stat Info) $ text "Inversion"
 
   stat c = dataCell . bg c . color White
 
