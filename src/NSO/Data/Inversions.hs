@@ -46,7 +46,7 @@ newtype AllInversions = AllInversions [Inversion]
 empty :: (Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
 empty ip = do
   now <- currentTime
-  i <- randomId
+  i <- randomId "inv"
   let start = Started now :: Started
   pure $
     Inversion

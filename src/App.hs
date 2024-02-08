@@ -5,6 +5,7 @@ import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Experiment qualified as Experiment
 import App.Page.Experiments qualified as Experiments
+import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Scan qualified as Scan
 import App.Route
@@ -54,6 +55,7 @@ app conn services isMock = application document (runApp . router)
   router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
+  router Inversions = page Inversions.page
   router (Experiment eid) = page $ Experiment.page eid
   router (Program pid) = page $ Program.page pid
   router (Dataset di) = page $ Dataset.page di

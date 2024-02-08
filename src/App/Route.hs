@@ -12,6 +12,7 @@ data AppRoute
   = Dashboard
   | Scan
   | Experiments
+  | Inversions
   | Experiment (Id Experiment)
   | Program (Id InstrumentProgram)
   | Dataset (Id Dataset)
@@ -28,6 +29,7 @@ appLayout rc content = do
         space
       -- nav Dashboard "Dashboard"
       item Experiments "Experiments"
+      item Inversions "Inversions"
       item Scan "Scan"
 
     col (grow . scroll) content

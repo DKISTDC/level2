@@ -30,6 +30,7 @@ library
       App.Page.Dataset
       App.Page.Experiment
       App.Page.Experiments
+      App.Page.Inversions
       App.Page.Program
       App.Page.Scan
       App.Route

@@ -18,11 +18,11 @@ newtype Id a = Id {fromId :: Text}
   deriving (Generic)
 
 
-randomId :: (GenRandom :> es) => Eff es (Id a)
-randomId = do
+randomId :: (GenRandom :> es) => Text -> Eff es (Id a)
+randomId pre = do
   let chars = ['A' .. 'Z'] ++ ['0' .. '9']
   sid <- replicateM 6 (randomFromList chars)
-  pure $ Id (cs sid)
+  pure $ Id (pre <> "." <> cs sid)
 
 
 instance Param (Id a) where

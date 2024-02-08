@@ -28,7 +28,7 @@ page = do
     exs <- Programs.loadAllExperiments
     now <- currentTime
 
-    let fs = Filters{isVBI = False, isVISP = True, isInvertible = Nothing}
+    let fs = Filters{isVBI = False, isVISP = True, inversionStatus = Any}
 
     pure $ appLayout Experiments $ do
       viewId ExView $ do
@@ -56,11 +56,19 @@ instance HyperView ExView where
 
 
 data Filters = Filters
-  { isInvertible :: Maybe Bool
+  { inversionStatus :: InversionFilter
   , isVISP :: Bool
   , isVBI :: Bool
   }
   deriving (Show, Read)
+
+
+data InversionFilter
+  = Any
+  | Qualified
+  | Inverting
+  | Complete
+  deriving (Show, Read, Eq)
 
 
 experiments
@@ -124,7 +132,7 @@ viewExperiments now fs exs = do
             text "Hidden Instrument Programs"
 
   applyFilters :: InstrumentProgram -> Bool
-  applyFilters ip = checkInstrument ip && checkInvertible ip
+  applyFilters ip = checkInstrument ip && checkInvertible fs.inversionStatus ip.status
 
   checkInstrument :: InstrumentProgram -> Bool
   checkInstrument ip =
@@ -132,12 +140,13 @@ viewExperiments now fs exs = do
       VBI -> fs.isVBI
       VISP -> fs.isVISP
 
-  checkInvertible :: InstrumentProgram -> Bool
-  checkInvertible ip =
-    case fs.isInvertible of
-      Nothing -> True
-      (Just False) -> ip.status == StatusInvalid
-      (Just True) -> ip.status /= StatusInvalid
+  checkInvertible :: InversionFilter -> ProgramStatus -> Bool
+  checkInvertible Any _ = True
+  checkInvertible Qualified StatusQualified = True
+  checkInvertible Inverting (StatusInversion (StepPublished _)) = False
+  checkInvertible Inverting (StatusInversion _) = True
+  checkInvertible Complete (StatusInversion (StepPublished _)) = True
+  checkInvertible _ _ = False
 
 
 -- applyFilter :: Filter -> (InstrumentProgram -> Bool) -> (InstrumentProgram -> Bool)
@@ -158,10 +167,11 @@ viewFilters fs = do
   --   option (Just VBI) id "VBI"
 
   el (item . bold) "Status"
-  dropdown (\i -> Filter $ fs{isInvertible = i}) (== fs.isInvertible) (item . pad 5) $ do
-    option Nothing "Any"
-    option (Just True) "Qualified"
-    option (Just False) "Not Invertible"
+  dropdown (\i -> Filter $ fs{inversionStatus = i}) (== fs.inversionStatus) (item . pad 5) $ do
+    option Any "Any"
+    option Qualified "Qualified"
+    option Inverting "Active"
+    option Complete "Complete"
  where
   toggle action sel f =
     button action (f . item . pad (XY 10 5) . Style.btn (if sel then on else off))
