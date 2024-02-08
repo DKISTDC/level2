@@ -30,31 +30,33 @@ page di = load $ do
 
 viewDataset :: Dataset -> View c ()
 viewDataset d =
-  col (bg White . gap 10 . pad 10) $ do
-    dataField "Latest" $ datasetLatest d.latest
-    dataField "Scan Date" $ text $ showTimestamp d.scanDate
-    dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
-    dataField "Instrument" $ text $ cs $ show d.instrument
-    dataField "Instrument Program Id" $ link (Program d.instrumentProgramId) Style.link $ text d.instrumentProgramId.fromId
-    dataField "Experiment Id" $ link (Experiment d.primaryExperimentId) Style.link $ text d.primaryExperimentId.fromId
-    dataField "Proposal Id" $ text d.primaryProposalId.fromId
-    dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
-    dataField "Create Date" $ text $ showTimestamp d.createDate
-    dataField "Update Date" $ text $ showTimestamp d.updateDate
-    dataField "Wavelength Min" $ text $ cs $ show d.wavelengthMin
-    dataField "Wavelength Max" $ text $ cs $ show d.wavelengthMax
-    dataField "Start Time" $ text $ showTimestamp d.startTime
-    dataField "End Time" $ text $ showTimestamp d.endTime
-    dataField "Frame Count" $ text $ cs $ show d.frameCount
-    dataField "Exposure Time" $ text $ cs $ show d.exposureTime
-    dataField "Bounding Box" $ boundingBox d.boundingBox
-    dataField "Bounding Box Radius" $ radiusBoundingBox d.boundingBox
-    dataField "AO Locked" $ text $ cs $ show d.aoLocked
-    dataField "Health" $ json d.health
-    dataField "GOS Status" $ json d.gosStatus
-    dataField "Light Level" $ json d.lightLevel
-    -- dataField "Polarimetric Accuracy" $ json d.polarimetricAccuracy
-    dataField "friedParameter" $ json d.friedParameter
+  col Style.card $ do
+    el (Style.cardHeader Secondary . bold) "Dataset Details"
+    col (gap 10 . pad 10) $ do
+      dataField "Latest" $ datasetLatest d.latest
+      dataField "Scan Date" $ text $ showTimestamp d.scanDate
+      dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
+      dataField "Instrument" $ text $ cs $ show d.instrument
+      dataField "Instrument Program Id" $ link (Program d.instrumentProgramId) Style.link $ text d.instrumentProgramId.fromId
+      dataField "Experiment Id" $ link (Experiment d.primaryExperimentId) Style.link $ text d.primaryExperimentId.fromId
+      dataField "Proposal Id" $ text d.primaryProposalId.fromId
+      dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
+      dataField "Create Date" $ text $ showTimestamp d.createDate
+      dataField "Update Date" $ text $ showTimestamp d.updateDate
+      dataField "Wavelength Min" $ text $ cs $ show d.wavelengthMin
+      dataField "Wavelength Max" $ text $ cs $ show d.wavelengthMax
+      dataField "Start Time" $ text $ showTimestamp d.startTime
+      dataField "End Time" $ text $ showTimestamp d.endTime
+      dataField "Frame Count" $ text $ cs $ show d.frameCount
+      dataField "Exposure Time" $ text $ cs $ show d.exposureTime
+      dataField "Bounding Box" $ boundingBox d.boundingBox
+      dataField "Bounding Box Radius" $ radiusBoundingBox d.boundingBox
+      dataField "AO Locked" $ text $ cs $ show d.aoLocked
+      dataField "Health" $ json d.health
+      dataField "GOS Status" $ json d.gosStatus
+      dataField "Light Level" $ json d.lightLevel
+      -- dataField "Polarimetric Accuracy" $ json d.polarimetricAccuracy
+      dataField "friedParameter" $ json d.friedParameter
 
 
 dataField :: Text -> View c () -> View c ()

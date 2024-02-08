@@ -3,10 +3,11 @@ module App.Style where
 import App.Colors
 import NSO.Prelude
 import Web.View
+import Web.View.Style
 
 
 link :: Mod
-link = color Primary . hover (color (light Primary))
+link = color Primary . hover (color (light Primary) . underline)
 
 
 page :: Mod
@@ -38,3 +39,10 @@ btn c =
     . hover (bg (light c))
  where
   base = pad (XY 15 10)
+
+
+underline :: Mod
+underline =
+  addClass $
+    cls "under"
+      & prop @Text "text-decoration" "underline"
