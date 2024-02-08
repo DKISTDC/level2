@@ -26,7 +26,7 @@ card :: Mod
 card = bg White . rounded 4 . truncate
 
 
-cardHeader :: AppColor -> Mod
+cardHeader :: (Contrast c, ToColor c) => c -> Mod
 cardHeader c =
   bg c . color (contrast c) . textAlign Center . pad 10
 
@@ -39,6 +39,17 @@ btn c =
     . hover (bg (light c))
  where
   base = pad (XY 15 10)
+
+
+btnOutline :: AppColor -> Mod
+btnOutline c =
+  base
+    . border 2
+    . borderColor c
+    . color c
+    . hover (borderColor (light c) . color (light c))
+ where
+  base = pad (XY 15 8)
 
 
 underline :: Mod

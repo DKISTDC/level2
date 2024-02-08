@@ -28,6 +28,8 @@ data Inversions :: Effect where
   All :: Inversions m AllInversions
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   Create :: Id InstrumentProgram -> Inversions m Inversion
+  SetDownloaded :: Id Inversion -> Inversions m ()
+  Remove :: Id Inversion -> Inversions m ()
 
 
 type instance DispatchOf Inversions = 'Dynamic
@@ -118,6 +120,8 @@ runDataInversions = interpret $ \_ -> \case
   All -> queryAll
   ByProgram pid -> queryInstrumentProgram pid
   Create pid -> create pid
+  Remove iid -> remove iid
+  SetDownloaded iid -> setDownloaded iid
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
@@ -133,6 +137,33 @@ runDataInversions = interpret $ \_ -> \case
       where_ (row.programId ==. lit ip)
       return row
     toInversions irs
+
+  remove :: (Rel8 :> es) => Id Inversion -> Eff es ()
+  remove iid = do
+    void $
+      query () $
+        Rel8.delete $
+          Delete
+            { from = inversions
+            , using = each inversions
+            , deleteWhere = \_ r -> r.inversionId ==. lit iid
+            , returning = NumberOfRowsAffected
+            }
+
+  -- you can only set this if it is currently StepStarted...
+  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setDownloaded iid = do
+    now <- currentTime
+    void $
+      query () $
+        Rel8.update $
+          Update
+            { target = inversions
+            , from = each inversions
+            , updateWhere = \_ r -> r.inversionId ==. lit iid
+            , set = \_ r -> r{download = lit (Just now)}
+            , returning = NumberOfRowsAffected
+            }
 
   create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
   create ip = do

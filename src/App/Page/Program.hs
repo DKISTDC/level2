@@ -112,6 +112,8 @@ newtype InversionStatus = InversionStatus (Id InstrumentProgram)
 
 data InversionsAction
   = CreateInversion
+  | Download (Id Inversion)
+  | Cancel (Id Inversion)
   deriving (Show, Read, Param)
 
 
@@ -120,15 +122,24 @@ instance HyperView InversionStatus where
 
 
 inversions :: (Hyperbole :> es, Inversions :> es) => InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
-inversions (InversionStatus ip) CreateInversion = do
-  inv <- send $ Inversions.Create ip
-  pure $ viewInversion inv
+inversions (InversionStatus ip) = \case
+  CreateInversion -> do
+    inv <- send $ Inversions.Create ip
+    pure $ viewInversion inv
+  Download iid -> do
+    send $ Inversions.SetDownloaded iid
+    pure $ el_ "DOWNLOADING"
+  Cancel iid -> do
+    send $ Inversions.Remove iid
+    pure $ el_ "CANCEL"
 
 
 viewInversions :: [Inversion] -> View InversionStatus ()
 viewInversions [] = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
-viewInversions is = mapM_ viewInversion is
+viewInversions is =
+  col (gap 20) $ do
+    mapM_ viewInversion is
 
 
 viewInversion :: Inversion -> View InversionStatus ()
@@ -137,9 +148,9 @@ viewInversion inv = do
     el (Style.cardHeader Info) "Inversion"
     col (gap 15 . pad 15) $ do
       invProgress
-      el_ $ text inv.inversionId.fromId
+      viewStep
  where
-  invProgress :: View c ()
+  invProgress :: View InversionStatus ()
   invProgress = do
     row (gap 10) $ do
       step Success "DOWNLOAD" Icons.check
@@ -161,6 +172,40 @@ viewInversion inv = do
 
   line c f = col f $ do
     el (border (TRBL 0 0 2 0) . height 20 . borderColor c) ""
+
+  viewStep :: View InversionStatus ()
+  viewStep =
+    case inv.step of
+      StepStarted _ -> stepDownload
+      StepDownloaded _ -> stepCalibrate
+      StepCalibrated _ -> stepInvert
+      StepInverted _ -> stepProcess
+      StepProcessed _ -> stepPublish
+      StepPublished _ -> stepDone
+
+  stepDownload = do
+    -- click that download button!
+    el_ "Download"
+    row (gap 10) $ do
+      button (Download inv.inversionId) (Style.btn Primary . grow) "Download"
+      button (Cancel inv.inversionId) (Style.btnOutline Secondary) $ do
+        -- el (width 24) Icons.xCircle
+        "Cancel"
+
+  stepCalibrate = do
+    el_ "Calibrate"
+
+  stepInvert = do
+    el_ "Invert"
+
+  stepProcess = do
+    el_ "Process"
+
+  stepPublish = do
+    el_ "Publish"
+
+  stepDone = do
+    el_ "Done"
 
 -- moveDown =
 --   addClass

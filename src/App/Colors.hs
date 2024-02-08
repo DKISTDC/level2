@@ -19,61 +19,84 @@ data AppColor
 
 
 data Weight
-  = Normal
-  | Lighter
-  | Darker
+  = Normal AppColor
+  | Lighter AppColor
+  | Darker AppColor
+  deriving (Show)
 
 
 -- Generate semantic theme: https://huemint.com/bootstrap-basic/ ("Normal" values came from here)
--- Get weights for various colors: https://colors.eva.design (I used 300, 500 and 700)
-weight :: AppColor -> Weight -> HexColor
-weight White _ = "#FFF"
-weight Black _ = "#0e0d11"
-weight Light Lighter = "#F2F7FD"
-weight Light _ = "#d3dceb"
-weight Primary Lighter = "#6D9BD3"
-weight Primary Normal = "#4171b7"
-weight Primary Darker = "#204083"
-weight Secondary Lighter = "#9D999C"
-weight Secondary Normal = "#5D5A5C"
-weight Secondary Darker = "#4F414C"
-weight Info Lighter = "#E86D91"
-weight Info Normal = "#DA407C"
-weight Info Darker = "#BB2E73"
-weight Success Lighter = "#43C478"
-weight Success Normal = "#149e5a"
-weight Success Darker = "#0E8758"
-weight Warning Lighter = "#ECDC4B"
-weight Warning Normal = "#e1c915"
-weight Warning Darker = "#C1AA0F"
-weight Danger Lighter = "#F55C44"
-weight Danger Normal = "#ef1509"
-weight Danger Darker = "#CD060C"
-weight Gray Lighter = "#E8E8E9"
-weight Gray Normal = "#D2D2D3"
-weight Gray Darker = "#9999B5"
+-- Generate weights for various colors: https://colors.eva.design (I used 300, 500 and 700)
+hex :: Weight -> HexColor
+hex (Lighter White) = "#FFF"
+hex (Normal White) = "#FFF"
+hex (Darker White) = "#FFF"
+hex (Lighter Black) = "#0e0d11"
+hex (Normal Black) = "#0e0d11"
+hex (Darker Black) = "#0e0d11"
+hex (Lighter Light) = "#F2F7FD"
+hex (Normal Light) = "#d3dceb"
+hex (Darker Light) = "#d3dceb"
+hex (Lighter Primary) = "#6D9BD3"
+hex (Normal Primary) = "#4171b7"
+hex (Darker Primary) = "#204083"
+hex (Lighter Secondary) = "#9D999C"
+hex (Normal Secondary) = "#5D5A5C"
+hex (Darker Secondary) = "#4F414C"
+hex (Lighter Info) = "#E86D91"
+hex (Normal Info) = "#DA407C"
+hex (Darker Info) = "#BB2E73"
+hex (Lighter Success) = "#43C478"
+hex (Normal Success) = "#149e5a"
+hex (Darker Success) = "#0E8758"
+hex (Lighter Warning) = "#ECDC4B"
+hex (Normal Warning) = "#e1c915"
+hex (Darker Warning) = "#C1AA0F"
+hex (Lighter Danger) = "#F55C44"
+hex (Normal Danger) = "#ef1509"
+hex (Darker Danger) = "#CD060C"
+hex (Lighter Gray) = "#E8E8E9"
+hex (Normal Gray) = "#D2D2D3"
+hex (Darker Gray) = "#9999B5"
 
 
-light :: AppColor -> HexColor
-light c = weight c Lighter
+light :: AppColor -> Weight
+light = Lighter
 
 
-dark :: AppColor -> HexColor
-dark c = weight c Darker
+dark :: AppColor -> Weight
+dark = Darker
 
 
-contrast :: AppColor -> HexColor
-contrast White = colorValue Black
-contrast Black = colorValue White
-contrast Light = colorValue Black
-contrast Primary = colorValue White
-contrast Secondary = colorValue White
-contrast Info = colorValue White
-contrast Success = colorValue White
-contrast Warning = colorValue White
-contrast Danger = colorValue White
-contrast Gray = colorValue White
+class Contrast a where
+  contrast :: a -> HexColor
+
+
+instance Contrast AppColor where
+  contrast White = colorValue Black
+  contrast Black = colorValue White
+  contrast Light = colorValue Black
+  contrast Primary = colorValue White
+  contrast Secondary = colorValue White
+  contrast Info = colorValue White
+  contrast Success = colorValue White
+  contrast Warning = colorValue White
+  contrast Danger = colorValue White
+  contrast Gray = colorValue White
+
+
+instance Contrast Weight where
+  contrast (Normal c) = contrast c
+  contrast (Lighter c) = contrast c
+  contrast (Darker c) = contrast c
 
 
 instance ToColor AppColor where
-  colorValue c = weight c Normal
+  colorValue c = hex (Normal c)
+
+
+instance ToColor Weight where
+  colorValue = hex
+  colorName (Lighter c) = colorName c <> "-lgt"
+  colorName (Normal c) = colorName c
+  colorName (Darker c) = colorName c <> "-drk"
