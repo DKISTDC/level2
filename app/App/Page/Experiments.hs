@@ -14,7 +14,6 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
-import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole as H
 

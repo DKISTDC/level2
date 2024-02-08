@@ -1,7 +1,6 @@
 module App.Page.Scan where
 
 import App.Colors
-import App.Error
 import App.Route
 import App.Style qualified as Style
 import App.View.Common
@@ -12,6 +11,7 @@ import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Qualify (dayOfYear, isOnDisk)
 import NSO.Data.Scan
+import NSO.Error
 import NSO.Metadata
 import NSO.Prelude
 import Numeric (showFFloat)
@@ -34,7 +34,7 @@ instance HyperView ScanView where
   type Action ScanView = PageEvent
 
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error AppError :> es) => Page es ()
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => Page es ()
 page = do
   hyper pageEvent
 
@@ -43,7 +43,7 @@ page = do
       viewId ScanView $ viewScan Nothing
 
 
-pageEvent :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error AppError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
+pageEvent :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
 pageEvent _ RunScan = do
   ds <- syncDatasets
   pure $ viewScan (Just ds)

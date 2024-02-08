@@ -24,7 +24,6 @@ import NSO.Data.Qualify
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
-import NSO.Types.Wavelength
 
 
 -- import NSO.Data.Provenance hiding (Inverted, Queued)

@@ -6,9 +6,7 @@ import Data.Time.Calendar.OrdinalDate (DayOfYear, toOrdinalDate)
 import NSO.Data.Datasets
 import NSO.Data.Spectra
 import NSO.Prelude
-import NSO.Types.Common
 import NSO.Types.InstrumentProgram
-import NSO.Types.Wavelength
 
 
 isOnDisk :: DayOfYear -> BoundingBox -> Bool

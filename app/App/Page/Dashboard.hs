@@ -10,5 +10,5 @@ page :: (Hyperbole :> es) => Page es ()
 page = do
   load $ do
     pure $ appLayout Dashboard $ col (pad 20) $ do
-      -- el (fontSize 24 . bold) "Level 2"
+      el (fontSize 24 . bold) "Level 2"
       el_ $ text $ cs appVersion

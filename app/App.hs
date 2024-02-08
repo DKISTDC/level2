@@ -1,7 +1,6 @@
 module App where
 
 import App.Config
-import App.Error
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Experiment qualified as Experiment
@@ -21,6 +20,7 @@ import Effectful.Rel8 as Rel8
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
+import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.Wai.Handler.Warp as Warp (Port, run)
@@ -31,7 +31,7 @@ import Web.Hyperbole
 
 main :: IO ()
 main = do
-  putStrLn "NSO Level 2?"
+  putStrLn "NSO Level 2"
   (conn, port) <- initialize
   (services, isMock) <- initServices
   putStrLn $ "Starting on :" <> show port
@@ -51,7 +51,7 @@ initialize = do
 app :: Rel8.Connection -> Services -> IsMock -> Application
 app conn services isMock = application document (runApp . router)
  where
-  router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error AppError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
+  router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router (Experiment eid) = page $ Experiment.page eid
@@ -62,7 +62,7 @@ app conn services isMock = application document (runApp . router)
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
-      . runErrorNoCallStackWith @AppError onAppError
+      . runErrorNoCallStackWith @DataError onDataError
       . runReader services
       . runGenRandom
       . runRel8 conn
@@ -78,11 +78,11 @@ app conn services isMock = application document (runApp . router)
 
 onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
 onRel8Error e = do
-  putStrLn "CAUGHT"
+  putStrLn "CAUGHT Rel8Error"
   liftIO $ throwM e
 
 
-onAppError :: (IOE :> es) => AppError -> Eff es a
-onAppError e = do
-  putStrLn "CAUGHT"
+onDataError :: (IOE :> es) => DataError -> Eff es a
+onDataError e = do
+  putStrLn "CAUGHT Data Error"
   liftIO $ throwM e

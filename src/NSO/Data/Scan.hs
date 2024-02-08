@@ -1,6 +1,5 @@
 module NSO.Data.Scan where
 
-import App.Error
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
@@ -8,6 +7,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Time
 import NSO.Data.Datasets
+import NSO.Error
 import NSO.Metadata
 import NSO.Prelude
 import Text.Read (readMaybe)
@@ -34,7 +34,7 @@ data SyncResults = SyncResults
   }
 
 
-scanDatasetInventory :: (Metadata :> es, Time :> es, Error AppError :> es) => Eff es [Dataset]
+scanDatasetInventory :: (Metadata :> es, Time :> es, Error DataError :> es) => Eff es [Dataset]
 scanDatasetInventory = do
   now <- currentTime
   ads <- send AllDatasets
@@ -43,7 +43,7 @@ scanDatasetInventory = do
   either (throwError . ValidationError) pure res
 
 
-syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es, Error AppError :> es) => Eff es SyncResults
+syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es, Error DataError :> es) => Eff es SyncResults
 syncDatasets = do
   scan <- scanDatasetInventory
   old <- indexed <$> send (Query Latest)

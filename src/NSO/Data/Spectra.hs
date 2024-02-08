@@ -3,7 +3,7 @@ module NSO.Data.Spectra where
 import Data.List.NonEmpty qualified as NE
 import NSO.Data.Datasets
 import NSO.Prelude
-import NSO.Types.Wavelength
+
 
 -- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py
 identifyLine :: Wavelength Nm -> Wavelength Nm -> Maybe SpectralLine
@@ -23,6 +23,7 @@ identifyLine mn mx = find matchesLine allLines
   matchesLine s =
     let md = midPoint s
      in mn <= md && md <= mx
+
 
 identifyLines :: NonEmpty Dataset -> [SpectralLine]
 identifyLines = mapMaybe (\d -> identifyLine d.wavelengthMin d.wavelengthMax) . NE.toList

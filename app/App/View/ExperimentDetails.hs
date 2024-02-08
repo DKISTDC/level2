@@ -13,9 +13,7 @@ import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
-import NSO.Types.Common
 import NSO.Types.Status
-import NSO.Types.Wavelength
 import Web.View
 
 

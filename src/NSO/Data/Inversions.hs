@@ -8,7 +8,6 @@ module NSO.Data.Inversions
   , Id
   ) where
 
-import App.Error
 import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
 import Effectful
@@ -17,6 +16,7 @@ import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
+import NSO.Error
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -111,7 +111,7 @@ inversion row = maybe err pure $ do
 
 
 runDataInversions
-  :: (IOE :> es, Rel8 :> es, Error AppError :> es, Time :> es, GenRandom :> es)
+  :: (IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
   => Eff (Inversions : es) a
   -> Eff es a
 runDataInversions = interpret $ \_ -> \case
@@ -120,13 +120,13 @@ runDataInversions = interpret $ \_ -> \case
   Create pid -> create pid
  where
   -- TODO: only return the "latest" inversion for each instrument program
-  queryAll :: (Rel8 :> es, Error AppError :> es) => Eff es AllInversions
+  queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
   queryAll = do
     irs <- query () $ select $ do
       each inversions
     AllInversions <$> toInversions irs
 
-  queryInstrumentProgram :: (Rel8 :> es, Error AppError :> es) => Id InstrumentProgram -> Eff es [Inversion]
+  queryInstrumentProgram :: (Rel8 :> es, Error DataError :> es) => Id InstrumentProgram -> Eff es [Inversion]
   queryInstrumentProgram ip = do
     irs <- query () $ select $ do
       row <- each inversions
@@ -194,7 +194,7 @@ inversions =
     }
 
 
-toInversions :: (Error AppError :> es) => [InversionRow Identity] -> Eff es [Inversion]
+toInversions :: (Error DataError :> es) => [InversionRow Identity] -> Eff es [Inversion]
 toInversions irs = do
   case traverse inversion irs of
     Left err -> throwError $ ValidationError err
