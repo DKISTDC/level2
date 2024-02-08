@@ -21,6 +21,25 @@ extra-doc-files:
 
 library
   exposed-modules:
+      App
+      App.Colors
+      App.Config
+      App.Error
+      App.Mock
+      App.Page.Dashboard
+      App.Page.Dataset
+      App.Page.Experiment
+      App.Page.Experiments
+      App.Page.Program
+      App.Page.Scan
+      App.Route
+      App.Style
+      App.Version
+      App.View.Common
+      App.View.DataRow
+      App.View.DatasetsTable
+      App.View.ExperimentDetails
+      App.View.Icons
       Flow
       Flow.Example
       Flow.Node
@@ -83,25 +102,6 @@ library
 executable level2
   main-is: Main.hs
   other-modules:
-      App
-      App.Colors
-      App.Config
-      App.Error
-      App.Mock
-      App.Page.Dashboard
-      App.Page.Dataset
-      App.Page.Experiment
-      App.Page.Experiments
-      App.Page.Program
-      App.Page.Scan
-      App.Route
-      App.Style
-      App.Version
-      App.View.Common
-      App.View.DataRow
-      App.View.DatasetsTable
-      App.View.ExperimentDetails
-      App.View.Icons
       Paths_nso_level2
   autogen-modules:
       Paths_nso_level2
