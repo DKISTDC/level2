@@ -157,45 +157,20 @@ viewInversions is =
 
 viewInversion :: Inversion -> View InversionStatus ()
 viewInversion inv = do
+  let curr = currentStep inv.step
   col (Style.card . gap 15) $ do
     el (Style.cardHeader Info) "Inversion"
     col (gap 15 . pad 15) $ do
-      invProgress
-      viewStep
-      pre id $ cs (show inv)
+      invProgress curr
+      viewStep curr
  where
-  invProgress :: View InversionStatus ()
-  invProgress = do
-    row (gap 10) $ do
-      step Success "DOWNLOAD" Icons.check
-      line Success grow
-      step Info "INVERSION" "2"
-      line Gray grow
-      step Gray "POST PROCESS" "3"
-      line Gray grow
-      step Gray "PUBLISH" "4"
-
-  circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
-
-  step clr t icon = col (color clr . gap 4) $ do
-    row id $ do
-      space
-      el (circle . bg clr) icon
-      space
-    el (fontSize 12 . textAlign Center) (text t)
-
-  line c f = col f $ do
-    el (border (TRBL 0 0 2 0) . height 20 . borderColor c) ""
-
-  viewStep :: View InversionStatus ()
-  viewStep =
-    case inv.step of
-      StepStarted _ -> stepDownload
-      StepDownloaded _ -> stepCalibrate
-      StepCalibrated _ -> stepInvert
-      StepInverted _ -> stepProcess
-      StepProcessed _ -> stepPublish
-      StepPublished _ -> stepDone
+  viewStep :: CurrentStep -> View InversionStatus ()
+  viewStep Downloading = stepDownload
+  viewStep Calibrating = stepCalibrate
+  viewStep Inverting = stepInvert
+  viewStep Processing = stepProcess
+  viewStep Publishing = stepPublish
+  viewStep Complete = stepDone
 
   stepDownload = do
     -- click that download button!
@@ -223,6 +198,14 @@ viewInversion inv = do
   stepDone = do
     el_ "Done"
 
+  stepProgress = \case
+    StepStarted _ -> el_ "started"
+    StepDownloaded _ -> el_ "downloaded"
+    StepCalibrated _ -> el_ "calibrated"
+    StepInverted _ -> el_ "inverted"
+    StepProcessed _ -> el_ "processed"
+    StepPublished _ -> el_ "published"
+
 
 -- moveDown =
 --   addClass
@@ -242,3 +225,63 @@ data CalibrationForm a = CalibrationForm
   { calibrationUrl :: Field a Text
   }
   deriving (Generic, Form)
+
+
+data CurrentStep
+  = Downloading
+  | Calibrating
+  | Inverting
+  | Processing
+  | Publishing
+  | Complete
+  deriving (Eq, Ord, Bounded)
+
+
+currentStep :: InversionStep -> CurrentStep
+currentStep = \case
+  StepStarted _ -> Downloading
+  StepDownloaded _ -> Calibrating
+  StepCalibrated _ -> Inverting
+  StepInverted _ -> Processing
+  StepProcessed _ -> Publishing
+  StepPublished _ -> Complete
+
+
+invProgress :: CurrentStep -> View InversionStatus ()
+invProgress curr = do
+  row (gap 10) $ do
+    stat Downloading "DOWNLOAD" "1"
+    line Downloading
+    stat Calibrating "CALIBRATE" "2"
+    line Calibrating
+    stat Inverting "INVERT" "3"
+    line Inverting
+    stat Processing "POST PROCESS" "4"
+    line Processing
+    stat Publishing "PUBLISH" "5"
+ where
+  stat s t icon = col (color statColor . gap 4) $ do
+    row id $ do
+      space
+      el (circle . bg statColor) statIcon
+      space
+    el (fontSize 12 . textAlign Center) (text t)
+   where
+    statIcon
+      | s < curr = Icons.check
+      | otherwise = icon
+
+    statColor
+      | s == curr = Info
+      | s < curr = Success
+      | otherwise = Gray
+
+  line s = col grow $ do
+    el (border (TRBL 0 0 2 0) . height 20 . borderColor lineColor) ""
+   where
+    lineColor
+      | s == curr = Gray
+      | s < curr = Success
+      | otherwise = Gray
+
+  circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
