@@ -19,10 +19,8 @@ import Effectful.GraphQL
 import Effectful.Reader.Static
 import Effectful.Rel8 as Rel8
 import Effectful.Time
-import NSO.Data.Datasets (runDataDatasets)
-import NSO.Data.Inversions (runDataInversions)
-import NSO.DataStore.Datasets (Datasets)
-import NSO.DataStore.Inversions (Inversions)
+import NSO.Data.Datasets (Datasets, runDataDatasets)
+import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.Wai.Handler.Warp as Warp (Port, run)

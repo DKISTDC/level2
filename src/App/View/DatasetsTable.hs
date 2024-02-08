@@ -10,7 +10,6 @@ import Data.Ord (Down (..))
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify (boxRadius)
-import NSO.DataStore.Datasets
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)

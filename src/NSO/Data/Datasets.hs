@@ -5,9 +5,8 @@ module NSO.Data.Datasets
   , Filter (..)
   , Modify (..)
   , module NSO.Types.Dataset
-  , Id (..)
-  , Wavelength (..)
-  , Nm
+  , module NSO.Types.Common
+  , module NSO.Types.Wavelength
   , runDataDatasets
   )
 where

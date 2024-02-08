@@ -3,7 +3,7 @@
 
 module NSO.Types.Dataset where
 
-import Data.Aeson
+import Data.Aeson (FromJSON (..), ToJSON, withText)
 import Data.Int (Int16)
 import NSO.Prelude
 import NSO.Types.Common
@@ -43,6 +43,10 @@ data Dataset' f = Dataset'
   , embargo :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)
+
+
+deriving stock instance (f ~ Result) => Show (Dataset' f)
+deriving stock instance (f ~ Result) => Eq (Dataset' f)
 
 
 data ObserveFrames

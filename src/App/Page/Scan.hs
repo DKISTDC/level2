@@ -12,7 +12,6 @@ import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Qualify (dayOfYear, isOnDisk)
 import NSO.Data.Scan
-import NSO.DataStore.Datasets
 import NSO.Metadata
 import NSO.Prelude
 import Numeric (showFFloat)

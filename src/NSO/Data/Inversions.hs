@@ -1,8 +1,11 @@
 module NSO.Data.Inversions
-  ( Inversion (..)
+  ( Inversions (..)
+  , Inversion (..)
   , inversion
   , runDataInversions
   , AllInversions (..)
+  , module NSO.Types.Inversion
+  , Id
   ) where
 
 import App.Error
@@ -15,9 +18,9 @@ import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
 import NSO.Prelude
-import NSO.Types.Inversion
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Inversion
 import Rel8
 
 

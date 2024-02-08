@@ -7,7 +7,8 @@ import App.View.Common (showDate, showTimestamp)
 import App.View.DatasetsTable (datasetLatest, radiusBoundingBox)
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
-import NSO.DataStore.Datasets as Datasets
+import Effectful.Dispatch.Dynamic
+import NSO.Data.Datasets as Datasets
 import NSO.Prelude
 import Web.Hyperbole
 

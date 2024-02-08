@@ -6,10 +6,11 @@ import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
 import Data.Grouped as G
+import Effectful.Dispatch.Dynamic
 import Effectful.Time
+import NSO.Data.Datasets as Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
-import NSO.DataStore.Datasets as Datasets
-import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole

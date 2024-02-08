@@ -1,9 +1,10 @@
 module App.Mock where
 
-import App.Config
-import App.Error
+-- import App.Config
+-- import App.Error
 
 import NSO.Prelude
+
 
 -- import App.Page.Dashboard qualified as Dashboard
 -- import App.Page.Dataset qualified as Dataset
@@ -20,20 +21,19 @@ import NSO.Prelude
 -- import Effectful.State.Static.Local
 -- import Effectful.Time
 
-import NSO.Data.Datasets
-import NSO.Data.Scan
-import NSO.DataStore.Datasets as Datasets
-import NSO.DataStore.Inversions as Inversions
-import NSO.Metadata as Metadata
-import NSO.Types.Common
-
-import NSO.Types.InstrumentProgram
-
--- import NSO.Types.Status
-import NSO.Types.Wavelength
-import Network.Wai.Handler.Warp as Warp (run)
-import Web.Hyperbole
-
+-- import NSO.Data.Datasets
+-- import NSO.Data.Scan
+-- import NSO.DataStore.Datasets as Datasets
+-- import NSO.DataStore.Inversions as Inversions
+-- import NSO.Metadata as Metadata
+-- import NSO.Types.Common
+--
+-- import NSO.Types.InstrumentProgram
+--
+-- -- import NSO.Types.Status
+-- import NSO.Types.Wavelength
+-- import Network.Wai.Handler.Warp as Warp (run)
+-- import Web.Hyperbole
 
 -- import App.Route as Route
 

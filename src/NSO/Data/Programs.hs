@@ -16,13 +16,12 @@ module NSO.Data.Programs
 import Data.Either (lefts, rights)
 import Data.Grouped as G
 import Data.List.NonEmpty qualified as NE
+import Effectful
 import Effectful.Dispatch.Dynamic
-import NSO.Data.Datasets
-import NSO.Data.Inversions
+import NSO.Data.Datasets as Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Data.Qualify
 import NSO.Data.Spectra qualified as Spectra
-import NSO.DataStore.Datasets as Datasets
-import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength

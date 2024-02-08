@@ -13,9 +13,9 @@ import Data.List.NonEmpty qualified as NE
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
 import Effectful.Time
+import NSO.Data.Datasets as Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
-import NSO.DataStore.Datasets as Datasets
-import NSO.DataStore.Inversions as Inversions
 import NSO.Prelude
 import Web.Hyperbole
 
@@ -134,7 +134,7 @@ viewInversions is = mapM_ viewInversion is
 viewInversion :: Inversion -> View InversionStatus ()
 viewInversion inv = do
   col (Style.card . gap 15) $ do
-    el (Style.cardHeader Info) "Inversion time!"
+    el (Style.cardHeader Info) "Inversion"
     col (gap 15 . pad 15) $ do
       invProgress
       el_ $ text inv.inversionId.fromId
