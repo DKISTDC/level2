@@ -22,7 +22,10 @@ identifyLine mn mx = find matchesLine allLines
   matchesLine :: SpectralLine -> Bool
   matchesLine s =
     let md = midPoint s
-     in mn <= md && md <= mx
+     in mn <= md + wiggleRoom && md <= mx
+   where
+    wiggleRoom :: Wavelength Nm
+    wiggleRoom = Wavelength 1
 
 
 identifyLines :: NonEmpty Dataset -> [SpectralLine]
