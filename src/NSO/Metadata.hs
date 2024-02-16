@@ -2,10 +2,12 @@
 
 module NSO.Metadata where
 
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON (..), withText)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
-import Data.String.Interpolate
+import Data.Text (unpack)
+import Data.Time.Format (FormatTime)
+import Data.Time.Format.ISO8601
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.GraphQL
@@ -34,36 +36,34 @@ runMetadata s = interpret $ \_ -> \case
 
 newtype DatasetInventories = DatasetInventories
   {isEmbargoed :: Maybe Bool}
-  deriving (Show, Eq)
-
-
+  deriving (Show, Eq, Generic)
 instance Query DatasetInventories where
   type Result DatasetInventories = DatasetInventory
-  operationName _ = "AllDatasets"
-  query _ =
-    let fields = genQueryFields @DatasetInventory Proxy
-     in [i| query AllDatasets { datasetInventories { #{fields} }}|]
 
 
 data ExperimentDescriptions = ExperimentDescriptions
-  deriving (Show, Eq)
-
-
+  deriving (Show, Eq, Generic)
 instance Query ExperimentDescriptions where
   type Result ExperimentDescriptions = ExperimentDescription
-  operationName _ = "AllExperiments"
-  query _ =
-    let fields = genQueryFields @ExperimentDescription Proxy
-     in [i| query AllExperiments { experimentDescriptions { #{fields} }} |]
 
 
 mockRequest :: Text -> Request -> IO ByteString
 mockRequest _ r = do
   putStrLn $ "MOCK Graphql: " <> cs r.operationName
   case r.operationName of
-    "AllDatasets" -> L.readFile "deps/datasets.json"
-    "AllExperiments" -> L.readFile "deps/experiments.json"
+    "DatasetInventories" -> L.readFile "deps/datasets.json"
+    "ExperimentDescriptions" -> L.readFile "deps/experiments.json"
     op -> fail $ "GraphQL Request not mocked: " <> cs op
+
+
+newtype DateTime = DateTime {utc :: UTCTime}
+  deriving (Show, Eq, Generic)
+  deriving newtype (ISO8601, FormatTime)
+
+
+instance FromJSON DateTime where
+  parseJSON = withText "UTC" $ \s -> do
+    iso8601ParseM $ unpack s <> "Z"
 
 
 data DatasetInventory = DatasetInventory
@@ -78,11 +78,11 @@ data DatasetInventory = DatasetInventory
     -- calibrationDocumentationUrl :: Text
     -- , contributingExperimentIds :: [Text]
     -- contributingProposalIds :: [Text]
-    createDate :: UTCTime
+    createDate :: DateTime
   , datasetId :: Text
   , -- , datasetInventoryId :: Int
     -- , datasetSize :: Int
-    endTime :: UTCTime
+    endTime :: DateTime
   , -- , experimentDescription :: Text
     exposureTime :: Double
   , frameCount :: Int
@@ -101,7 +101,7 @@ data DatasetInventory = DatasetInventory
   , instrumentProgramExecutionId :: Text
   , -- , isActive :: Bool
     isEmbargoed :: Bool
-  , embargoEndDate :: Maybe UTCTime
+  , embargoEndDate :: Maybe DateTime
   , observingProgramExecutionId :: Text
   , -- , originalFrameCount :: Int
     primaryExperimentId :: Text
@@ -112,10 +112,10 @@ data DatasetInventory = DatasetInventory
     -- , recipeId :: Int
     -- , recipeInstanceId :: Int
     -- , recipeRunId :: Int
-    startTime :: UTCTime
+    startTime :: DateTime
   , stokesParameters :: StokesParameters
   , -- , targetTypes :: [Text]
-    updateDate :: UTCTime
+    updateDate :: DateTime
   , wavelengthMax :: Double
   , wavelengthMin :: Double
   , -- , workflowName :: Text

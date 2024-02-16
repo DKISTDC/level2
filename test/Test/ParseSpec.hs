@@ -13,14 +13,7 @@ spec = do
   describe "Metadata Parser" $ do
     it "should parse local mock file" $ do
       inp <- BL.readFile "deps/datasets.json"
-      case eitherDecode @(Response DatasetInventory) inp of
+      let q = DatasetInventories Nothing
+      case parseQueryResponse q =<< eitherDecode inp of
         Left e -> fail e
         Right _ -> pure ()
-
-
-data GraphQLData a = GraphQLData {_data :: a}
-  deriving (Generic)
-
-
-instance (FromJSON a) => FromJSON (GraphQLData a) where
-  parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = drop 1}

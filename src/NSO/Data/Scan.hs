@@ -96,12 +96,12 @@ toDataset scanDate exs d = do
       , boundingBox = boundingBoxNaN d.boundingBox
       , instrument = ins
       , stokesParameters = d.stokesParameters
-      , createDate = d.createDate
-      , updateDate = d.updateDate
+      , createDate = d.createDate.utc
+      , updateDate = d.updateDate.utc
       , wavelengthMin = Wavelength d.wavelengthMin
       , wavelengthMax = Wavelength d.wavelengthMax
-      , startTime = d.startTime
-      , endTime = d.endTime
+      , startTime = d.startTime.utc
+      , endTime = d.endTime.utc
       , frameCount = fromIntegral d.frameCount
       , primaryExperimentId = Id d.primaryExperimentId
       , primaryProposalId = Id d.primaryProposalId
@@ -126,8 +126,8 @@ toDataset scanDate exs d = do
   parseEmbargo =
     if d.isEmbargoed
       then do
-        utc <- required "Embargo End Date" d.embargoEndDate
-        pure (Just utc)
+        dt <- required "Embargo End Date" d.embargoEndDate
+        pure (Just dt.utc)
       else pure Nothing
 
   required :: String -> Maybe a -> Either String a
