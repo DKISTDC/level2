@@ -7,6 +7,7 @@ import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
 import App.View.Icons as Icons
+import App.View.Layout
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
@@ -23,9 +24,9 @@ import Web.Hyperbole
 -- import Web.View.Style
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es)
   => Id InstrumentProgram
-  -> Page es ()
+  -> Page es Response
 page ip = do
   hyper inversions
   hyper DatasetsTable.actionSort
@@ -39,7 +40,7 @@ page ip = do
     is <- send $ Inversions.ByProgram ip
     now <- currentTime
 
-    pure $ appLayout Experiments $ do
+    appLayout Experiments $ do
       col (Style.page . gap 30) $ do
         col (gap 5) $ do
           el Style.header $ do

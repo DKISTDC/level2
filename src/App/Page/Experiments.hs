@@ -6,6 +6,7 @@ import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.ExperimentDetails (viewProgramRow)
+import App.View.Layout
 import Data.Grouped as G
 import Data.Ord (Down (..))
 import Effectful
@@ -19,8 +20,8 @@ import Web.Hyperbole as H
 
 
 page
-  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es)
-  => Page es ()
+  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Layout :> es)
+  => Page es Response
 page = do
   hyper experiments
   -- pageAction handleIPRow
@@ -30,7 +31,7 @@ page = do
 
     let fs = Filters{isVBI = False, isVISP = True, inversionStatus = Any}
 
-    pure $ appLayout Experiments $ do
+    appLayout Experiments $ do
       viewId ExView $ do
         viewExperiments now fs exs
 

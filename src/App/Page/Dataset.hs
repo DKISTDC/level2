@@ -5,6 +5,7 @@ import App.Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
 import App.View.DatasetsTable (datasetLatest, radiusBoundingBox)
+import App.View.Layout
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
 import Effectful.Dispatch.Dynamic
@@ -13,13 +14,13 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es) => Id Dataset -> Page es ()
+page :: (Hyperbole :> es, Datasets :> es, Layout :> es) => Id Dataset -> Page es Response
 page di = load $ do
   ds <- send $ Datasets.Query (ById di)
 
   let sorted = sortOn (Down . (.scanDate)) ds
 
-  pure $ appLayout Experiments $ do
+  appLayout Experiments $ do
     col Style.page $ do
       el Style.header $ do
         text "Dataset: "

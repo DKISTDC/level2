@@ -5,6 +5,7 @@ import App.Route
 import App.Style qualified as Style
 import App.View.Common
 import App.View.DataRow qualified as View
+import App.View.Layout
 import Data.String.Interpolate
 import Effectful.Error.Static
 import Effectful.Time
@@ -34,12 +35,12 @@ instance HyperView ScanView where
   type Action ScanView = PageEvent
 
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => Page es ()
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Layout :> es) => Page es Response
 page = do
   hyper pageEvent
 
   load $ do
-    pure $ appLayout Scan $ do
+    appLayout Scan $ do
       viewId ScanView $ viewScan Nothing
 
 

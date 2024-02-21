@@ -25,6 +25,7 @@ library
       App.Colors
       App.Config
       App.Error
+      App.Globus
       App.Mock
       App.Page.Dashboard
       App.Page.Dataset
@@ -35,12 +36,14 @@ library
       App.Page.Scan
       App.Route
       App.Style
+      App.Types
       App.Version
       App.View.Common
       App.View.DataRow
       App.View.DatasetsTable
       App.View.ExperimentDetails
       App.View.Icons
+      App.View.Layout
       Flow
       Flow.Example
       Flow.Node
@@ -82,8 +85,9 @@ library
     , data-diverse
     , effectful ==2.3.0.0
     , exceptions
+    , globus
     , hasql
-    , hyperbole ==0.2.0
+    , hyperbole ==0.3.1
     , lens
     , modern-uri
     , nso-level2-types
@@ -130,8 +134,9 @@ executable level2
     , data-diverse
     , effectful ==2.3.0.0
     , exceptions
+    , globus
     , hasql
-    , hyperbole ==0.2.0
+    , hyperbole ==0.3.1
     , lens
     , modern-uri
     , nso-level2
@@ -184,8 +189,9 @@ test-suite tests
     , data-diverse
     , effectful ==2.3.0.0
     , exceptions
+    , globus
     , hasql
-    , hyperbole ==0.2.0
+    , hyperbole ==0.3.1
     , lens
     , modern-uri
     , nso-level2

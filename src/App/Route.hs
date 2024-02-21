@@ -1,6 +1,5 @@
 module App.Route where
 
-import App.Colors
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -16,29 +15,5 @@ data AppRoute
   | Experiment (Id Experiment)
   | Program (Id InstrumentProgram)
   | Dataset (Id Dataset)
+  | Redirect
   deriving (Show, Generic, Eq, Route)
-
-
-appLayout :: AppRoute -> View c () -> View c ()
-appLayout rc content = do
-  layout (color Black . flexCol) $ do
-    nav (gap 0 . bg Primary . color White . topbar) $ do
-      row (pad 15) $ do
-        space
-        link Dashboard (bold . fontSize 24 . pad (XY 20 0)) "Level 2"
-        space
-      -- nav Dashboard "Dashboard"
-      item Experiments "Experiments"
-      item Inversions "Inversions"
-      item Scan "Scan"
-
-    col (grow . scroll) content
- where
-  item r =
-    link
-      r
-      (pad 20 . hover (borderColor White . color White) . if r == rc then current else other)
-
-  current = bg (light Primary) . borderColor Primary
-  other = borderColor Primary
-  topbar = height 70 . flexRow

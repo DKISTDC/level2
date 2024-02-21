@@ -5,6 +5,7 @@ import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
+import App.View.Layout
 import Data.Grouped as G
 import Effectful.Dispatch.Dynamic
 import Effectful.Time
@@ -17,9 +18,9 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es)
   => Id Experiment
-  -> Page es ()
+  -> Page es Response
 page eid = do
   hyper DatasetsTable.actionSort
 
@@ -29,7 +30,7 @@ page eid = do
     now <- currentTime
     let pwds = Programs.fromDatasets ai ds
 
-    pure $ appLayout Experiments $ do
+    appLayout Experiments $ do
       col Style.page $ do
         el Style.header $ do
           text "Experiment  "

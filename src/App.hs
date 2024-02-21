@@ -1,6 +1,7 @@
 module App where
 
 import App.Config
+import App.Globus as Globus
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Experiment qualified as Experiment
@@ -12,47 +13,36 @@ import App.Route
 import App.Version
 import Control.Monad.Catch
 import Effectful
-import Effectful.Debug (Debug, runDebugIO)
+import Effectful.Debug as Debug
 import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.GraphQL
-import Effectful.Reader.Static
 import Effectful.Rel8 as Rel8
 import Effectful.Time
-import NSO.Data.Datasets (Datasets, runDataDatasets)
-import NSO.Data.Inversions (Inversions, runDataInversions)
+import NSO.Data.Datasets (runDataDatasets)
+import NSO.Data.Inversions (runDataInversions)
 import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
-import Network.Wai.Handler.Warp as Warp (Port, run)
+import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
-import System.Environment (getEnv)
 import Web.Hyperbole
 
 
 main :: IO ()
 main = do
   putStrLn "NSO Level 2"
-  (conn, port) <- initialize
-  (services, isMock) <- initServices
-  putStrLn $ "Starting on :" <> show port
-  Warp.run port $
+  config <- initConfig onRel8Error
+  putStrLn $ "Starting on :" <> show config.app.port
+  Warp.run config.app.port $
     addHeaders [("app-version", cs appVersion)] $
-      app conn services isMock
+      app config
 
 
-initialize :: IO (Rel8.Connection, Port)
-initialize = do
-  port <- read <$> getEnv "PORT"
-  postgres <- getEnv "DATABASE_URL"
-  conn <- runEff . runErrorNoCallStackWith @Rel8Error onRel8Error $ Rel8.connect $ cs postgres
-  pure (conn, port)
-
-
-app :: Rel8.Connection -> Services -> IsMock -> Application
-app conn services isMock = application document (runApp . router)
+app :: Config -> Application
+app config = application document (runApp . router)
  where
-  router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Reader Services :> es, Debug :> es) => AppRoute -> Eff es ()
+  -- router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Reader Config :> es, Debug :> es) => AppRoute -> Eff es Response
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router Inversions = page Inversions.page
@@ -60,16 +50,23 @@ app conn services isMock = application document (runApp . router)
   router (Program pid) = page $ Program.page pid
   router (Dataset di) = page $ Dataset.page di
   router Scan = page Scan.page
+  router Redirect = do
+    -- ooooook, pull off the code, get an access token, and store it in a cookie
+    -- ugh, everything about this is annoying...
+    code <- queryParam "code"
+    tok <- Globus.accessToken (Token code)
+    view $ text $ "Hello " <> tok.text
+  -- TODO: pull off query parameter "code=xxxx"
 
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
-      . runReader services
+      . runGlobus config.globus (redirectUri config.app.domain)
       . runGenRandom
-      . runRel8 conn
-      . runGraphQL' isMock
-      . runMetadata services.metadata
+      . runRel8 config.db
+      . runGraphQL' config.servicesIsMock
+      . runMetadata config.services.metadata
       . runDebugIO
       . runDataDatasets
       . runDataInversions
@@ -78,13 +75,13 @@ app conn services isMock = application document (runApp . router)
   runGraphQL' False = runGraphQL
 
 
-onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
-onRel8Error e = do
-  putStrLn "CAUGHT Rel8Error"
-  liftIO $ throwM e
-
-
 onDataError :: (IOE :> es) => DataError -> Eff es a
 onDataError e = do
   putStrLn "CAUGHT Data Error"
+  liftIO $ throwM e
+
+
+onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
+onRel8Error e = do
+  putStrLn "CAUGHT Rel8Error"
   liftIO $ throwM e

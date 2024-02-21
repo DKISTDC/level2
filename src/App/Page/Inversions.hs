@@ -3,6 +3,7 @@ module App.Page.Inversions where
 import App.Colors
 import App.Route
 import App.Style qualified as Style
+import App.View.Layout
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
@@ -11,11 +12,11 @@ import NSO.Types.Common
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es) => Page es ()
+page :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Page es Response
 page = do
   load $ do
     AllInversions ivs <- send Inversions.All
-    pure $ appLayout Inversions $ do
+    appLayout Inversions $ do
       col Style.page $ do
         col Style.card $ do
           el (Style.cardHeader Info) "Active"
