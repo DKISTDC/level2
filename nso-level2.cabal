@@ -87,7 +87,7 @@ library
     , exceptions
     , globus
     , hasql
-    , hyperbole ==0.3.1
+    , hyperbole ==0.3.3
     , lens
     , modern-uri
     , nso-level2-types
@@ -136,7 +136,7 @@ executable level2
     , exceptions
     , globus
     , hasql
-    , hyperbole ==0.3.1
+    , hyperbole ==0.3.3
     , lens
     , modern-uri
     , nso-level2
@@ -191,7 +191,7 @@ test-suite tests
     , exceptions
     , globus
     , hasql
-    , hyperbole ==0.3.1
+    , hyperbole ==0.3.3
     , lens
     , modern-uri
     , nso-level2

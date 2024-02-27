@@ -16,4 +16,5 @@ data AppRoute
   | Program (Id InstrumentProgram)
   | Dataset (Id Dataset)
   | Redirect
+  | Logout
   deriving (Show, Generic, Eq, Route)

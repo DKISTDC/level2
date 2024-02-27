@@ -15,7 +15,7 @@ done
 trap cleanup EXIT
 
 # Run postgres database
-# docker-compose up &
+docker-compose up postgres &
 
 # Recompile package.yaml on changes
 watchexec -e hs,yaml hpack &

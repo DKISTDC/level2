@@ -19,8 +19,8 @@ import Effectful.GenRandom
 import Effectful.GraphQL
 import Effectful.Rel8 as Rel8
 import Effectful.Time
-import NSO.Data.Datasets (runDataDatasets)
-import NSO.Data.Inversions (runDataInversions)
+import NSO.Data.Datasets (Datasets, runDataDatasets)
+import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
@@ -40,9 +40,13 @@ main = do
 
 
 app :: Config -> Application
-app config = application document (runApp . router)
+app config =
+  liveApp
+    document
+    (runApp . routeRequest $ router)
+    (runApp . routeRequest $ router)
  where
-  -- router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Reader Config :> es, Debug :> es) => AppRoute -> Eff es Response
+  -- router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Debug :> es) => AppRoute -> Eff es Response
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router Inversions = page Inversions.page
@@ -50,14 +54,18 @@ app config = application document (runApp . router)
   router (Program pid) = page $ Program.page pid
   router (Dataset di) = page $ Dataset.page di
   router Scan = page Scan.page
+  router Logout = do
+    clearSession "globus"
+    redirect (pathUrl . routePath $ Experiments)
   router Redirect = do
-    -- ooooook, pull off the code, get an access token, and store it in a cookie
-    -- ugh, everything about this is annoying...
-    code <- queryParam "code"
+    code <- reqParam "code"
+    liftIO $ putStrLn "WOOT"
+    liftIO $ print code
     tok <- Globus.accessToken (Token code)
-    view $ text $ "Hello " <> tok.text
-  -- TODO: pull off query parameter "code=xxxx"
+    setSession "globus" tok.text
+    redirect (pathUrl . routePath $ Experiments)
 
+  runApp :: (IOE :> es) => Eff (Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
