@@ -6,9 +6,12 @@ module App.Globus
   , redirectUri
   , fileManagerUrl
   , handleTransfer
+  , transferStatus
   , Uri
   , Id
   , Token
+  , Task (..)
+  , TaskStatus (..)
   , Tagged (..)
   , Token' (..)
   , Id' (..)
@@ -16,6 +19,7 @@ module App.Globus
   , getAccessToken
   , saveAccessToken
   , clearAccessToken
+  , taskPercentComplete
   ) where
 
 import App.Error (expectAuth, expectFound)
@@ -23,6 +27,7 @@ import App.Route qualified as Route
 import App.Types
 import Data.Tagged
 import Data.Text qualified as Text
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus hiding (Id)
@@ -35,6 +40,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (urlEncode)
 import System.FilePath
 import Web.Hyperbole
@@ -120,13 +126,21 @@ handleTransfer iv = do
     sub <- send $ SubmissionId acc
     res <- send $ Transfer acc $ transferRequest sub t ds
 
-    pure $ do
-      el_ $ text $ cs $ show res.task_id
-      el_ $ text res.submission_id.unTagged
-      el_ $ text res.message
-      el_ $ text res.resource
-      el_ $ text res.request_id.unTagged
- where
+    send $ Inversions.SetDownloaded iv (Id res.task_id.unTagged)
+
+    -- Redirect back to the inversion page
+    redirect $ pathUrl . routePath $ Route.Program inv.programId
+
+
+transferStatus :: (Hyperbole :> es, Globus :> es) => Id Task -> Eff es Task
+transferStatus (Id ti) = do
+  traceM "TREANSFER STATUS"
+  traceM $ show ti
+  mtok <- getAccessToken
+  traceM $ show mtok
+
+  tok <- getAccessToken >>= expectAuth
+  send $ TaskStatus tok (Tagged ti)
 
 
 transferRequest :: Globus.Id Submission -> TransferForm Identity -> [Dataset] -> TransferRequest

@@ -55,12 +55,12 @@ app config =
   router (Dataset di) = page $ Dataset.page di
   router Scan = page Scan.page
   router Logout = do
-    clearSession "globus"
+    clearAccessToken
     redirect (pathUrl . routePath $ Experiments)
   router Redirect = do
     code <- reqParam "code"
-    Tagged tok <- Globus.accessToken (Tagged code)
-    setSession "globus" tok
+    tok <- Globus.accessToken (Tagged code)
+    saveAccessToken tok
     redirect (pathUrl . routePath $ Experiments)
   router (Transfer inv) = page $ Globus.handleTransfer inv
 

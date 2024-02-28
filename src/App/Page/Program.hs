@@ -11,6 +11,7 @@ import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
 import App.View.Icons as Icons
 import App.View.Layout
+import Data.Diverse.Many
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
@@ -39,7 +40,8 @@ page ip = do
     let d = head ds
 
     dse <- send $ Datasets.Query (ByExperiment d.primaryExperimentId)
-    is <- send $ Inversions.ByProgram ip
+    invs <- send $ Inversions.ByProgram ip
+    steps <- mapM (currentStep . (.step)) invs
     now <- currentTime
 
     appLayout Experiments $ do
@@ -53,12 +55,12 @@ page ip = do
 
         -- viewExperimentDescription d.experimentDescription
 
-        viewId (InversionStatus ip) $ viewInversions is
+        viewId (InversionStatus ip) $ viewInversions invs steps
 
         col Style.card $ do
           el (Style.cardHeader Secondary) "Instrument Program Details"
           col (gap 15 . pad 15) $ do
-            viewDatasets now (NE.filter (.latest) ds) is
+            viewDatasets now (NE.filter (.latest) ds) invs
             viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
@@ -92,16 +94,6 @@ viewDatasets now (d : ds) is = do
 
   viewCriteria ip gd
 
-
--- viewProvenanceEntry :: ProvenanceEntry -> View c ()
--- viewProvenanceEntry (WasInverted p) = do
---   row (gap 10) $ do
---     el_ "Inverted"
---     text $ showTimestamp p.completed
--- viewProvenanceEntry (WasQueued p) = do
---   row (gap 10) $ do
---     el_ "Queued"
---     text $ showTimestamp p.completed
 
 -- ----------------------------------------------------------------
 -- INVERSION STATUS -----------------------------------------------
@@ -143,11 +135,12 @@ instance HyperView InversionStatus where
   type Action InversionStatus = InversionsAction
 
 
-inversions :: (Hyperbole :> es, Inversions :> es) => InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
+inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es) => InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
 inversions (InversionStatus ip) = \case
   CreateInversion -> do
     inv <- send $ Inversions.Create ip
-    pure $ viewInversion inv
+    step <- currentStep inv.step
+    pure $ viewInversion inv step
   (Update iid act) ->
     case act of
       Cancel -> do
@@ -155,18 +148,7 @@ inversions (InversionStatus ip) = \case
         pure none
       Download -> do
         r <- request
-        -- send $ Inversions.SetDownloaded iid
-        --
-        -- Redirects back to:
-        -- label: Transfer stuff
-        -- endpoint: u_trrv4k4tifgk7e4yl5ioauw2ju#0cb2ac86-3543-11ee-87b9-4dfadf03ac7e
-        -- path: /Users/shess/Data/
-        -- endpoint_id: 0cb2ac86-3543-11ee-87b9-4dfadf03ac7e
-        -- folder[0]: DKIST_pid_2_23
-        -- entity_type: GCP_mapped_collection
-        -- high_assurance: false
         redirect $ Globus.fileManagerUrl iid ip r
-      -- refresh iid
       Calibrate -> do
         f <- parseForm @CalibrationForm
         send $ Inversions.SetCalibrated iid (GitCommit f.calibrationSoftware)
@@ -184,28 +166,29 @@ inversions (InversionStatus ip) = \case
  where
   refresh iid = do
     inv <- send $ Inversions.ById iid
-    pure $ mapM_ viewInversion inv
+    steps <- mapM (currentStep . (.step)) inv
+    pure $ viewInversions inv steps
 
 
-viewInversions :: [Inversion] -> View InversionStatus ()
-viewInversions [] = do
+viewInversions :: [Inversion] -> [CurrentStep] -> View InversionStatus ()
+viewInversions [] [] = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
-viewInversions is =
+viewInversions is ss =
   col (gap 20) $ do
-    mapM_ viewInversion is
+    zipWithM_ viewInversion is ss
 
 
-viewInversion :: Inversion -> View InversionStatus ()
-viewInversion inv = do
-  let curr = currentStep inv.step
+viewInversion :: Inversion -> CurrentStep -> View InversionStatus ()
+viewInversion inv step = do
   col (Style.card . gap 15) $ do
-    el (Style.cardHeader (headerColor curr)) "Inversion"
+    el (Style.cardHeader (headerColor step)) "Inversion"
     col (gap 15 . pad 15) $ do
-      invProgress curr
-      viewStep curr
+      invProgress step
+      viewStep step
  where
   viewStep :: CurrentStep -> View InversionStatus ()
-  viewStep Downloading = stepDownload
+  viewStep SelectingDownload = stepDownload
+  viewStep (Downloading (CurrentTask t)) = stepDownloading t
   viewStep Calibrating = stepCalibrate
   viewStep Inverting = stepInvert
   viewStep Processing = stepProcess
@@ -216,11 +199,15 @@ viewInversion inv = do
   headerColor _ = Info
 
   stepDownload = do
-    el_ "You will be redirected to Globus. Please choose a destination collection and folder to transfer the files for this instrument program"
+    el_ "You will be redirected to Globus. Please select a destination for this instrument program"
     row (gap 10) $ do
       button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Download Location"
       button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) $ do
         "Cancel"
+
+  stepDownloading t = do
+    el_ "Downloading..."
+    el_ $ text $ cs $ show $ taskPercentComplete t
 
   stepCalibrate = do
     form @CalibrationForm (Update inv.inversionId Calibrate) (gap 10) $ \f -> do
@@ -247,30 +234,46 @@ viewInversion inv = do
 
 
 data CurrentStep
-  = Downloading
+  = SelectingDownload
+  | Downloading CurrentTask
   | Calibrating
   | Inverting
   | Processing
   | Publishing
   | Complete
-  deriving (Eq, Ord, Bounded)
+  deriving (Eq, Ord)
 
 
-currentStep :: InversionStep -> CurrentStep
+newtype CurrentTask = CurrentTask Task
+  deriving (Eq)
+
+
+instance Ord CurrentTask where
+  compare _ _ = EQ
+
+
+-- TODO: Just show the step, and then update on a poll
+-- TODO: put them in an instrument program sub-folder? Otherwise it's hard to know what is what...
+currentStep :: (Hyperbole :> es, Globus :> es) => InversionStep -> Eff es CurrentStep
 currentStep = \case
-  StepStarted _ -> Downloading
-  StepDownloaded _ -> Calibrating
-  StepCalibrated _ -> Inverting
-  StepInverted _ -> Processing
-  StepProcessed _ -> Publishing
-  StepPublished _ -> Complete
+  StepCreated _ -> pure SelectingDownload
+  StepDownloaded dwn -> do
+    let d = grab @Downloaded dwn :: Downloaded
+    t <- Globus.transferStatus (Id d.taskId)
+    case t.status of
+      Succeeded -> pure Calibrating
+      _ -> pure $ Downloading (CurrentTask t)
+  StepCalibrated _ -> pure Inverting
+  StepInverted _ -> pure Processing
+  StepProcessed _ -> pure Publishing
+  StepPublished _ -> pure Complete
 
 
 invProgress :: CurrentStep -> View InversionStatus ()
 invProgress curr = do
   row (gap 10) $ do
-    stat Downloading "DOWNLOAD" "1"
-    line Downloading
+    stat SelectingDownload "DOWNLOAD" "1"
+    line SelectingDownload
     stat Calibrating "CALIBRATE" "2"
     line Calibrating
     stat Inverting "INVERT" "3"

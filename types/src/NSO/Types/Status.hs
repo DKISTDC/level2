@@ -21,13 +21,13 @@ newtype GitCommit = GitCommit Text
   deriving newtype (Show, Eq, ToJSON, FromJSON, DBType)
 
 
-data Started = Started {timestamp :: UTCTime}
+data Created = Created {timestamp :: UTCTime}
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Started where
+instance DBType Created where
   typeInformation = jsonTypeInfo
 
 
-data Downloaded = Downloaded {timestamp :: UTCTime}
+data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Text}
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance DBType Downloaded where
   typeInformation = jsonTypeInfo
@@ -59,8 +59,8 @@ instance DBType Published where
 
 -- Data Diverse Many: https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/ManySpec.hs
 -- Each step requires all previous steps to exist
-type StepStarted = '[Started]
-type StepDownloaded = Downloaded : StepStarted
+type StepCreated = '[Created]
+type StepDownloaded = Downloaded : StepCreated
 type StepCalibrated = Calibrated : StepDownloaded
 type StepInverted = Inverted : StepCalibrated
 type StepProcessed = Processed : StepInverted
@@ -68,10 +68,19 @@ type StepPublished = Published : StepProcessed
 
 
 data InversionStep
-  = StepStarted (Many StepStarted)
+  = StepCreated (Many StepCreated)
   | StepDownloaded (Many StepDownloaded)
   | StepCalibrated (Many StepCalibrated)
   | StepInverted (Many StepInverted)
   | StepProcessed (Many StepProcessed)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)
+
+
+stepCreated :: InversionStep -> Created
+stepCreated (StepCreated m) = grab @Created m
+stepCreated (StepDownloaded m) = grab @Created m
+stepCreated (StepCalibrated m) = grab @Created m
+stepCreated (StepInverted m) = grab @Created m
+stepCreated (StepProcessed m) = grab @Created m
+stepCreated (StepPublished m) = grab @Created m

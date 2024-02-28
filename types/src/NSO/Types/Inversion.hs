@@ -28,6 +28,7 @@ data InversionRow f = InversionRow
   , programId :: Column f (Id InstrumentProgram)
   , created :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)
+  , downloadTaskId :: Column f (Maybe Text)
   , calibration :: Column f (Maybe UTCTime)
   , calibrationSoftware :: Column f (Maybe GitCommit)
   , inversion :: Column f (Maybe UTCTime)

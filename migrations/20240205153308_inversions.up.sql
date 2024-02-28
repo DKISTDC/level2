@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS inversions (
   created TIMESTAMP NOT NULL,
 
   download TIMESTAMP,
+  download_task_id TEXT,
 
   calibration TIMESTAMP,
   calibration_software TEXT,

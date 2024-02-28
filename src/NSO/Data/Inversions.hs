@@ -22,6 +22,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import Network.Globus.Transfer (Task)
 import Rel8
 
 
@@ -31,7 +32,7 @@ data Inversions :: Effect where
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   Create :: Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
-  SetDownloaded :: Id Inversion -> Inversions m ()
+  SetDownloaded :: Id Inversion -> Id Task -> Inversions m ()
   SetCalibrated :: Id Inversion -> GitCommit -> Inversions m ()
   SetInverted :: Id Inversion -> GitCommit -> Inversions m ()
   SetPostProcessed :: Id Inversion -> Inversions m ()
@@ -47,12 +48,12 @@ empty :: (Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversi
 empty ip = do
   now <- currentTime
   i <- randomId "inv"
-  let start = Started now :: Started
+  let start = Created now :: Created
   pure $
     Inversion
       { inversionId = i
       , programId = ip
-      , step = StepStarted (start ./ nil)
+      , step = StepCreated (start ./ nil)
       }
 
 
@@ -77,17 +78,18 @@ inversion row = maybe err pure $ do
       <|> (StepInverted <$> inverted)
       <|> (StepCalibrated <$> calibrated)
       <|> (StepDownloaded <$> downloaded)
-      <|> (StepStarted <$> started)
+      <|> (StepCreated <$> started)
 
-  started :: Maybe (Many StepStarted)
+  started :: Maybe (Many StepCreated)
   started = do
-    pure $ Started row.created ./ nil
+    pure $ Created row.created ./ nil
 
   downloaded :: Maybe (Many StepDownloaded)
   downloaded = do
     prev <- started
     down <- row.download
-    pure $ Downloaded down ./ prev
+    task <- row.downloadTaskId
+    pure $ Downloaded down task ./ prev
 
   calibrated :: Maybe (Many StepCalibrated)
   calibrated = do
@@ -126,7 +128,7 @@ runDataInversions = interpret $ \_ -> \case
   ById iid -> queryById iid
   Create pid -> create pid
   Remove iid -> remove iid
-  SetDownloaded iid -> setDownloaded iid
+  SetDownloaded iid tid -> setDownloaded iid tid
   SetCalibrated iid url -> setCalibrated iid url
   SetInverted iid soft -> setInverted iid soft
   SetPostProcessed iid -> setPostProcessed iid
@@ -180,10 +182,10 @@ runDataInversions = interpret $ \_ -> \case
             , returning = NumberOfRowsAffected
             }
 
-  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
-  setDownloaded iid = do
+  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
+  setDownloaded iid tid = do
     now <- currentTime
-    updateInversion iid $ \r -> r{download = lit (Just now)}
+    updateInversion iid $ \r -> r{download = lit (Just now), downloadTaskId = lit (Just tid.fromId)}
 
   setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setCalibrated iid url = do
@@ -221,12 +223,13 @@ runDataInversions = interpret $ \_ -> \case
    where
     emptyRow :: Inversion -> InversionRow Identity
     emptyRow inv =
-      let Started time = stepStarted inv.step
+      let Created time = stepCreated inv.step
        in InversionRow
             { inversionId = inv.inversionId
             , programId = inv.programId
             , created = time
             , download = Nothing
+            , downloadTaskId = Nothing
             , calibration = Nothing
             , calibrationSoftware = Nothing
             , inversion = Nothing
@@ -234,14 +237,6 @@ runDataInversions = interpret $ \_ -> \case
             , postProcess = Nothing
             , publish = Nothing
             }
-
-    stepStarted :: InversionStep -> Started
-    stepStarted (StepStarted m) = grab @Started m
-    stepStarted (StepDownloaded m) = grab @Started m
-    stepStarted (StepCalibrated m) = grab @Started m
-    stepStarted (StepInverted m) = grab @Started m
-    stepStarted (StepProcessed m) = grab @Started m
-    stepStarted (StepPublished m) = grab @Started m
 
 
 inversions :: TableSchema (InversionRow Name)
@@ -255,6 +250,7 @@ inversions =
           , programId = "program_id"
           , created = "created"
           , download = "download"
+          , downloadTaskId = "download_task_id"
           , calibration = "calibration"
           , calibrationSoftware = "calibration_software"
           , inversion = "inversion"
