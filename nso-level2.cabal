@@ -85,8 +85,10 @@ library
     , data-diverse
     , effectful ==2.3.0.0
     , exceptions
+    , filepath
     , globus
     , hasql
+    , http-types
     , hyperbole ==0.3.3
     , lens
     , modern-uri
@@ -134,8 +136,10 @@ executable level2
     , data-diverse
     , effectful ==2.3.0.0
     , exceptions
+    , filepath
     , globus
     , hasql
+    , http-types
     , hyperbole ==0.3.3
     , lens
     , modern-uri
@@ -189,8 +193,10 @@ test-suite tests
     , data-diverse
     , effectful ==2.3.0.0
     , exceptions
+    , filepath
     , globus
     , hasql
+    , http-types
     , hyperbole ==0.3.3
     , lens
     , modern-uri

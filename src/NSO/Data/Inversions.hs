@@ -32,8 +32,8 @@ data Inversions :: Effect where
   Create :: Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
   SetDownloaded :: Id Inversion -> Inversions m ()
-  SetCalibrated :: Id Inversion -> Url -> Inversions m ()
-  SetInverted :: Id Inversion -> InversionSoftware -> Inversions m ()
+  SetCalibrated :: Id Inversion -> GitCommit -> Inversions m ()
+  SetInverted :: Id Inversion -> GitCommit -> Inversions m ()
   SetPostProcessed :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
 type instance DispatchOf Inversions = 'Dynamic
@@ -93,7 +93,7 @@ inversion row = maybe err pure $ do
   calibrated = do
     prev <- downloaded
     cal <- row.calibration
-    url <- row.calibrationUrl
+    url <- row.calibrationSoftware
     pure $ Calibrated cal url ./ prev
 
   inverted :: Maybe (Many StepInverted)
@@ -185,12 +185,12 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{download = lit (Just now)}
 
-  setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> Url -> Eff es ()
+  setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setCalibrated iid url = do
     now <- currentTime
-    updateInversion iid $ \r -> r{calibration = lit (Just now), calibrationUrl = lit (Just url)}
+    updateInversion iid $ \r -> r{calibration = lit (Just now), calibrationSoftware = lit (Just url)}
 
-  setInverted :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> InversionSoftware -> Eff es ()
+  setInverted :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setInverted iid soft = do
     now <- currentTime
     updateInversion iid $ \r -> r{inversion = lit (Just now), inversionSoftware = lit (Just soft)}
@@ -228,7 +228,7 @@ runDataInversions = interpret $ \_ -> \case
             , created = time
             , download = Nothing
             , calibration = Nothing
-            , calibrationUrl = Nothing
+            , calibrationSoftware = Nothing
             , inversion = Nothing
             , inversionSoftware = Nothing
             , postProcess = Nothing
@@ -256,7 +256,7 @@ inversions =
           , created = "created"
           , download = "download"
           , calibration = "calibration"
-          , calibrationUrl = "calibration_url"
+          , calibrationSoftware = "calibration_software"
           , inversion = "inversion"
           , inversionSoftware = "inversion_software"
           , postProcess = "post_process"

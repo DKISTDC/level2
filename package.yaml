@@ -41,9 +41,11 @@ dependencies:
   - web-view >= 0.2.3
   - warp == 3.3.31
   - wai-extra
+  - http-types
   - time
   - text
   - tagged
+  - filepath
   - string-interpolate
   - string-conversions
   - req

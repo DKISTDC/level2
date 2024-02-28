@@ -13,7 +13,7 @@ module App.Config
   , document
   ) where
 
-import App.Globus (GlobusClient (..), Token (..))
+import App.Globus (GlobusClient (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -70,8 +70,8 @@ parseService u =
 
 initGlobus :: IO GlobusClient
 initGlobus = do
-  clientId <- Token . cs <$> getEnv "GLOBUS_CLIENT_ID"
-  clientSecret <- Token . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
+  clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
+  clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
   pure $ GlobusClient{clientId, clientSecret}
 
 

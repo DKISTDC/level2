@@ -11,10 +11,10 @@ import Web.View qualified as WebView
 type Layout = Globus
 
 
-appLayout :: forall es c. (Globus :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
+appLayout :: forall es c. (Layout :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
 appLayout r content = do
   login <- authUrl
-  mtok <- fmap Token <$> session "globus"
+  mtok <- getAccessToken
   pure $ layout login r mtok content
 
 
@@ -35,7 +35,7 @@ layout login rc tok content = do
     -- WebView.link login center "Login"
 
     col (grow . scroll) $ do
-      el_ $ text $ cs $ show tok
+      -- el_ $ text $ cs $ show tok
       content
  where
   item r =

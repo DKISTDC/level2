@@ -17,8 +17,7 @@ data ProgramStatus
   deriving (Eq)
 
 
-type Url = Text
-newtype InversionSoftware = InversionSoftware Text
+newtype GitCommit = GitCommit Text
   deriving newtype (Show, Eq, ToJSON, FromJSON, DBType)
 
 
@@ -34,13 +33,13 @@ instance DBType Downloaded where
   typeInformation = jsonTypeInfo
 
 
-data Calibrated = Calibrated {timestamp :: UTCTime, calibrationUrl :: Url}
+data Calibrated = Calibrated {timestamp :: UTCTime, calibrationSoftware :: GitCommit}
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance DBType Calibrated where
   typeInformation = jsonTypeInfo
 
 
-data Inverted = Inverted {timestamp :: UTCTime, inversionSoftware :: InversionSoftware}
+data Inverted = Inverted {timestamp :: UTCTime, inversionSoftware :: GitCommit}
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance DBType Inverted where
   typeInformation = jsonTypeInfo

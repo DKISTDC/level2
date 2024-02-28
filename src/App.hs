@@ -17,6 +17,7 @@ import Effectful.Debug as Debug
 import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.GraphQL
+import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
@@ -46,7 +47,6 @@ app config =
     (runApp . routeRequest $ router)
     (runApp . routeRequest $ router)
  where
-  -- router :: (Hyperbole :> es, Time :> es, GenRandom :> es, Datasets :> es, Inversions :> es, Metadata :> es, Error DataError :> es, Debug :> es) => AppRoute -> Eff es Response
   router Dashboard = page Dashboard.page
   router Experiments = page Experiments.page
   router Inversions = page Inversions.page
@@ -59,18 +59,18 @@ app config =
     redirect (pathUrl . routePath $ Experiments)
   router Redirect = do
     code <- reqParam "code"
-    liftIO $ putStrLn "WOOT"
-    liftIO $ print code
-    tok <- Globus.accessToken (Token code)
-    setSession "globus" tok.text
+    Tagged tok <- Globus.accessToken (Tagged code)
+    setSession "globus" tok
     redirect (pathUrl . routePath $ Experiments)
+  router (Transfer inv) = page $ Globus.handleTransfer inv
 
-  runApp :: (IOE :> es) => Eff (Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
       . runGlobus config.globus (redirectUri config.app.domain)
+      . runReader config.app
       . runGenRandom
       . runRel8 config.db
       . runGraphQL' config.servicesIsMock

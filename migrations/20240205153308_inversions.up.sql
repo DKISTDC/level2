@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS inversions (
   download TIMESTAMP,
 
   calibration TIMESTAMP,
-  calibration_url TEXT,
+  calibration_software TEXT,
 
   inversion TIMESTAMP,
   inversion_software TEXT,

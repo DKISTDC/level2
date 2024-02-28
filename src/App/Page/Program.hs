@@ -1,8 +1,11 @@
 module App.Page.Program where
 
 import App.Colors
+import App.Error (expectFound)
+import App.Globus as Globus
 import App.Route
 import App.Style qualified as Style
+import App.Types (App (..))
 import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
 import App.View.ExperimentDetails
@@ -13,6 +16,7 @@ import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
+import Effectful.Reader.Dynamic
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -21,10 +25,8 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
--- import Web.View.Style
-
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es, Reader App :> es)
   => Id InstrumentProgram
   -> Page es Response
 page ip = do
@@ -61,10 +63,6 @@ page ip = do
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
-
-  expectFound :: (Hyperbole :> es) => [a] -> Eff es (NonEmpty a)
-  expectFound [] = notFound
-  expectFound (a : as) = pure $ a :| as
 
   numOtherIps :: [Dataset] -> Int
   numOtherIps dse = length (instrumentProgramIds dse) - 1
@@ -130,7 +128,7 @@ data InversionAction
 
 
 data CalibrationForm a = CalibrationForm
-  { calibrationUrl :: Field a Text
+  { calibrationSoftware :: Field a Text
   }
   deriving (Generic, Form)
 
@@ -156,15 +154,26 @@ inversions (InversionStatus ip) = \case
         send $ Inversions.Remove iid
         pure none
       Download -> do
-        send $ Inversions.SetDownloaded iid
-        refresh iid
+        r <- request
+        -- send $ Inversions.SetDownloaded iid
+        --
+        -- Redirects back to:
+        -- label: Transfer stuff
+        -- endpoint: u_trrv4k4tifgk7e4yl5ioauw2ju#0cb2ac86-3543-11ee-87b9-4dfadf03ac7e
+        -- path: /Users/shess/Data/
+        -- endpoint_id: 0cb2ac86-3543-11ee-87b9-4dfadf03ac7e
+        -- folder[0]: DKIST_pid_2_23
+        -- entity_type: GCP_mapped_collection
+        -- high_assurance: false
+        redirect $ Globus.fileManagerUrl iid ip r
+      -- refresh iid
       Calibrate -> do
         f <- parseForm @CalibrationForm
-        send $ Inversions.SetCalibrated iid f.calibrationUrl
+        send $ Inversions.SetCalibrated iid (GitCommit f.calibrationSoftware)
         refresh iid
       Invert -> do
         f <- parseForm @InversionForm
-        send $ Inversions.SetInverted iid (InversionSoftware f.inversionSoftware)
+        send $ Inversions.SetInverted iid (GitCommit f.inversionSoftware)
         refresh iid
       PostProcess -> do
         send $ Inversions.SetPostProcessed iid
@@ -207,9 +216,9 @@ viewInversion inv = do
   headerColor _ = Info
 
   stepDownload = do
-    -- click that download button!
+    el_ "You will be redirected to Globus. Please choose a destination collection and folder to transfer the files for this instrument program"
     row (gap 10) $ do
-      button (Update inv.inversionId Download) (Style.btn Primary . grow) "Download"
+      button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Download Location"
       button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) $ do
         "Cancel"
 
@@ -217,7 +226,7 @@ viewInversion inv = do
     form @CalibrationForm (Update inv.inversionId Calibrate) (gap 10) $ \f -> do
       field id $ do
         label "Calibration URL"
-        input TextInput Style.input f.calibrationUrl
+        input TextInput Style.input f.calibrationSoftware
       submit (Style.btn Primary . grow) "Save Calibration"
 
   stepInvert = do

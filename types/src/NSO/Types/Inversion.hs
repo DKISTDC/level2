@@ -29,9 +29,9 @@ data InversionRow f = InversionRow
   , created :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)
   , calibration :: Column f (Maybe UTCTime)
-  , calibrationUrl :: Column f (Maybe Url)
+  , calibrationSoftware :: Column f (Maybe GitCommit)
   , inversion :: Column f (Maybe UTCTime)
-  , inversionSoftware :: Column f (Maybe InversionSoftware)
+  , inversionSoftware :: Column f (Maybe GitCommit)
   , postProcess :: Column f (Maybe UTCTime)
   , publish :: Column f (Maybe UTCTime)
   }
