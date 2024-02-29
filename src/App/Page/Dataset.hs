@@ -20,7 +20,7 @@ page di = load $ do
 
   let sorted = sortOn (Down . (.scanDate)) ds
 
-  appLayout Experiments $ do
+  appLayout Proposals $ do
     col Style.page $ do
       el Style.header $ do
         text "Dataset: "
@@ -39,8 +39,8 @@ viewDataset d =
       dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
       dataField "Instrument" $ text $ cs $ show d.instrument
       dataField "Instrument Program Id" $ link (Program d.instrumentProgramId) Style.link $ text d.instrumentProgramId.fromId
-      dataField "Experiment Id" $ link (Experiment d.primaryExperimentId) Style.link $ text d.primaryExperimentId.fromId
-      dataField "Proposal Id" $ text d.primaryProposalId.fromId
+      dataField "Proposal Id" $ link (Proposal d.primaryProposalId) Style.link $ text d.primaryProposalId.fromId
+      dataField "Experiment Id" $ text d.primaryExperimentId.fromId
       dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
       dataField "Create Date" $ text $ showTimestamp d.createDate
       dataField "Update Date" $ text $ showTimestamp d.updateDate

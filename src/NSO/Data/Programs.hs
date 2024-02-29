@@ -6,10 +6,10 @@ module NSO.Data.Programs
   , programStatus
   , programInversions
   , instrumentProgram
-  , toExperiment
-  , toExperiments
+  , toProposal
+  , toProposals
   , fromDatasets
-  , loadAllExperiments
+  , loadAllProposals
   , loadAll
   ) where
 
@@ -46,8 +46,8 @@ loadAll = do
   pure $ fmap (.program) $ fromDatasets ai ds
 
 
-loadAllExperiments :: (Datasets :> es, Inversions :> es) => Eff es [Experiment]
-loadAllExperiments = toExperiments <$> loadAll
+loadAllProposals :: (Datasets :> es, Inversions :> es) => Eff es [Proposal]
+loadAllProposals = toProposals <$> loadAll
 
 
 fromDatasets :: AllInversions -> [Dataset] -> [WithDatasets]
@@ -65,16 +65,16 @@ programInversions (AllInversions ivs) gd =
    in filter (\i -> i.programId == d.instrumentProgramId) ivs
 
 
-toExperiments :: [InstrumentProgram] -> [Experiment]
-toExperiments ips =
-  map toExperiment $ grouped (.experimentId) ips
+toProposals :: [InstrumentProgram] -> [Proposal]
+toProposals ips =
+  map toProposal $ grouped (.proposalId) ips
 
 
-toExperiment :: Grouped Experiment InstrumentProgram -> Experiment
-toExperiment g =
+toProposal :: Grouped Proposal InstrumentProgram -> Proposal
+toProposal g =
   let ip = sample g
-   in Experiment
-        { experimentId = ip.experimentId
+   in Proposal
+        { proposalId = ip.proposalId
         , description = ip.experimentDescription
         , startTime = ip.startTime
         , programs = Grouped g.items
@@ -88,7 +88,7 @@ instrumentProgram gd ivs =
       ls = NE.toList $ fmap identifyLine gd.items
    in InstrumentProgram
         { programId = d.instrumentProgramId
-        , experimentId = d.primaryExperimentId
+        , proposalId = d.primaryProposalId
         , experimentDescription = d.experimentDescription
         , createDate = d.createDate
         , stokesParameters = d.stokesParameters

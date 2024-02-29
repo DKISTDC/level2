@@ -53,7 +53,7 @@ data ObserveFrames
 
 
 data ObservingProgram
-data Proposal
+data Experiment
 
 
 data BoundingBox = BoundingBox

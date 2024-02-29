@@ -8,9 +8,9 @@ import App.Style qualified as Style
 import App.Types (App (..))
 import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
-import App.View.ExperimentDetails
 import App.View.Icons as Icons
 import App.View.Layout
+import App.View.ProposalDetails
 import Data.Diverse.Many
 import Data.Grouped as G
 import Data.List (nub)
@@ -39,12 +39,12 @@ page ip = do
     ds <- expectFound ds'
     let d = head ds
 
-    dse <- send $ Datasets.Query (ByExperiment d.primaryExperimentId)
+    dse <- send $ Datasets.Query (ByProposal d.primaryProposalId)
     invs <- send $ Inversions.ByProgram ip
     steps <- mapM (currentStep . (.step)) invs
     now <- currentTime
 
-    appLayout Experiments $ do
+    appLayout Proposals $ do
       col (Style.page . gap 30) $ do
         col (gap 5) $ do
           el Style.header $ do
@@ -72,9 +72,9 @@ page ip = do
   experimentLink :: Dataset -> Int -> View c ()
   experimentLink d n = do
     el_ $ do
-      text "Experiment: "
-      link (Experiment d.primaryExperimentId) Style.link $ do
-        text d.primaryExperimentId.fromId
+      text "Proposal: "
+      link (Proposal d.primaryProposalId) Style.link $ do
+        text d.primaryProposalId.fromId
       text $
         if n > 0
           then [i|(#{n} other Instrument Programs)|]

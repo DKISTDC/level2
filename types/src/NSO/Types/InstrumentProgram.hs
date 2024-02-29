@@ -11,7 +11,7 @@ import NSO.Types.Wavelength
 data InstrumentProgram = InstrumentProgram
   { programId :: Id InstrumentProgram
   , instrument :: Instrument
-  , experimentId :: Id Experiment
+  , proposalId :: Id Proposal
   , experimentDescription :: Text
   , createDate :: UTCTime
   , startTime :: UTCTime
@@ -24,9 +24,11 @@ data InstrumentProgram = InstrumentProgram
   }
 
 
-data Experiment = Experiment
-  { experimentId :: Id Experiment
+
+
+data Proposal = Proposal
+  { proposalId :: Id Proposal
   , description :: Text
   , startTime :: UTCTime
-  , programs :: Grouped Experiment InstrumentProgram
+  , programs :: Grouped Proposal InstrumentProgram
   }

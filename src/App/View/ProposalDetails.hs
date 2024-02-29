@@ -1,4 +1,4 @@
-module App.View.ExperimentDetails
+module App.View.ProposalDetails
   ( viewExperimentDescription
   , viewProgramRow
   , viewCriteria

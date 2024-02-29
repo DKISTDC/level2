@@ -29,10 +29,10 @@ library
       App.Mock
       App.Page.Dashboard
       App.Page.Dataset
-      App.Page.Experiment
-      App.Page.Experiments
       App.Page.Inversions
       App.Page.Program
+      App.Page.Proposal
+      App.Page.Proposals
       App.Page.Scan
       App.Route
       App.Style
@@ -41,9 +41,9 @@ library
       App.View.Common
       App.View.DataRow
       App.View.DatasetsTable
-      App.View.ExperimentDetails
       App.View.Icons
       App.View.Layout
+      App.View.ProposalDetails
       Flow
       Flow.Example
       Flow.Node

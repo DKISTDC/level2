@@ -4,10 +4,10 @@ import App.Config
 import App.Globus as Globus
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
-import App.Page.Experiment qualified as Experiment
-import App.Page.Experiments qualified as Experiments
 import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
+import App.Page.Proposal qualified as Proposal
+import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
@@ -48,20 +48,22 @@ app config =
     (runApp . routeRequest $ router)
  where
   router Dashboard = page Dashboard.page
-  router Experiments = page Experiments.page
+  router Proposals = page Proposals.page
   router Inversions = page Inversions.page
-  router (Experiment eid) = page $ Experiment.page eid
+  router (Proposal pid) = page $ Proposal.page pid
   router (Program pid) = page $ Program.page pid
   router (Dataset di) = page $ Dataset.page di
   router Scan = page Scan.page
+  router Experiments = do
+    redirect (pathUrl . routePath $ Proposals)
   router Logout = do
     clearAccessToken
-    redirect (pathUrl . routePath $ Experiments)
+    redirect (pathUrl . routePath $ Proposals)
   router Redirect = do
     code <- reqParam "code"
     tok <- Globus.accessToken (Tagged code)
     saveAccessToken tok
-    redirect (pathUrl . routePath $ Experiments)
+    redirect (pathUrl . routePath $ Proposals)
   router (Transfer inv) = page $ Globus.handleTransfer inv
 
   runApp :: (IOE :> es) => Eff (Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a

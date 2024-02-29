@@ -1,10 +1,10 @@
-module App.Page.Experiment where
+module App.Page.Proposal where
 
 import App.Colors
 import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
-import App.View.ExperimentDetails
+import App.View.ProposalDetails
 import App.View.Layout
 import Data.Grouped as G
 import Effectful.Dispatch.Dynamic
@@ -19,22 +19,22 @@ import Web.Hyperbole
 
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es)
-  => Id Experiment
+  => Id Proposal
   -> Page es Response
-page eid = do
+page pid = do
   hyper DatasetsTable.actionSort
 
   load $ do
-    ds <- send $ Datasets.Query (ByExperiment eid)
+    ds <- send $ Datasets.Query (ByProposal pid)
     ai <- send Inversions.All
     now <- currentTime
     let pwds = Programs.fromDatasets ai ds
 
-    appLayout Experiments $ do
+    appLayout Proposals $ do
       col Style.page $ do
         el Style.header $ do
-          text "Experiment  "
-          text eid.fromId
+          text "Propsoal  "
+          text pid.fromId
 
         viewPrograms now pwds
 
@@ -45,12 +45,12 @@ page eid = do
 viewPrograms :: UTCTime -> [WithDatasets] -> View c ()
 viewPrograms _ [] = el_ "Not Found"
 viewPrograms now (p : ps) = do
-  let wds = Grouped (p :| ps) :: Grouped Experiment WithDatasets
-  viewExperiment now wds
+  let wds = Grouped (p :| ps) :: Grouped Proposal WithDatasets
+  viewProposal now wds
 
 
-viewExperiment :: UTCTime -> Grouped Experiment WithDatasets -> View c ()
-viewExperiment now gx = do
+viewProposal :: UTCTime -> Grouped Proposal WithDatasets -> View c ()
+viewProposal now gx = do
   let wd = sample gx
   viewExperimentDescription wd.program.experimentDescription
   el Style.subheader $ do

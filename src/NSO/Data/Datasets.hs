@@ -35,7 +35,7 @@ type instance DispatchOf Datasets = 'Dynamic
 
 data Filter
   = Latest
-  | ByExperiment (Id Experiment)
+  | ByProposal (Id Proposal)
   | ByProgram (Id InstrumentProgram)
   | ById (Id Dataset)
 
@@ -50,7 +50,7 @@ runDataDatasets
   -> Eff es a
 runDataDatasets = interpret $ \_ -> \case
   Query Latest -> queryLatest
-  Query (ByExperiment eid) -> queryExperiment eid
+  Query (ByProposal pid) -> queryProposal pid
   Query (ByProgram pid) -> queryProgram pid
   Query (ById did) -> queryById did
   Create ds -> insertAll ds
@@ -63,11 +63,11 @@ runDataDatasets = interpret $ \_ -> \case
       where_ (row.latest ==. lit True)
       return row
 
-  queryExperiment :: (Rel8 :> es) => Id Experiment -> Eff es [Dataset]
-  queryExperiment eid = do
+  queryProposal :: (Rel8 :> es) => Id Proposal -> Eff es [Dataset]
+  queryProposal eid = do
     query () $ select $ do
       row <- each datasets
-      where_ (row.primaryExperimentId ==. lit eid)
+      where_ (row.primaryProposalId ==. lit eid)
       return row
 
   queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]

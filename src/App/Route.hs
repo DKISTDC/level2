@@ -11,15 +11,13 @@ import Web.Hyperbole
 data AppRoute
   = Dashboard
   | Scan
+  | Proposals
   | Experiments
   | Inversions
-  | Experiment (Id Experiment)
+  | Proposal (Id Proposal)
   | Program (Id InstrumentProgram)
   | Dataset (Id Dataset)
   | Redirect
   | Logout
   | Transfer (Id Inversion)
   deriving (Show, Generic, Eq, Route)
-
-
-

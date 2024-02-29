@@ -27,7 +27,7 @@ layout login rc tok content = do
         link Dashboard (bold . fontSize 24 . pad (XY 20 0)) "Level 2"
         space
       -- nav Dashboard "Dashboard"
-      item Experiments "Experiments"
+      item Proposals "Proposals"
       item Inversions "Inversions"
       item Scan "Scan"
       space

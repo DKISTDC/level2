@@ -1,12 +1,12 @@
-module App.Page.Experiments where
+module App.Page.Proposals where
 
 import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DataRow (dataRows)
-import App.View.ExperimentDetails (viewProgramRow)
 import App.View.Layout
+import App.View.ProposalDetails (viewProgramRow)
 import Data.Grouped as G
 import Data.Ord (Down (..))
 import Effectful
@@ -23,17 +23,17 @@ page
   :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Layout :> es)
   => Page es Response
 page = do
-  hyper experiments
+  hyper proposals
   -- pageAction handleIPRow
   load $ do
-    exs <- Programs.loadAllExperiments
+    exs <- Programs.loadAllProposals
     now <- currentTime
 
     let fs = Filters{isVBI = False, isVISP = True, inversionStatus = Any}
 
-    appLayout Experiments $ do
-      viewId ExView $ do
-        viewExperiments now fs exs
+    appLayout Proposals $ do
+      viewId PView $ do
+        viewProposals now fs exs
 
 
 loading :: View c ()
@@ -41,19 +41,19 @@ loading = el_ "loading..."
 
 
 -----------------------------------------------------
--- Experiments --------------------------------------
+-- Proposals --------------------------------------
 -----------------------------------------------------
 
-data ExView = ExView
+data PView = PView
   deriving (Show, Read, Param)
 
 
-data ExEvent = Filter Filters
+data PEvent = Filter Filters
   deriving (Show, Read, Param)
 
 
-instance HyperView ExView where
-  type Action ExView = ExEvent
+instance HyperView PView where
+  type Action PView = PEvent
 
 
 data Filters = Filters
@@ -72,49 +72,48 @@ data InversionFilter
   deriving (Show, Read, Eq)
 
 
-experiments
+proposals
   :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es)
-  => ExView
-  -> ExEvent
-  -> Eff es (View ExView ())
-experiments _ (Filter fs) = do
-  exs <- Programs.loadAllExperiments
+  => PView
+  -> PEvent
+  -> Eff es (View PView ())
+proposals _ (Filter fs) = do
+  exs <- Programs.loadAllProposals
   now <- currentTime
-  pure $ viewExperiments now fs exs
+  pure $ viewProposals now fs exs
 
 
--- ok, wait, I need to group them by experiment
-viewExperiments :: UTCTime -> Filters -> [Experiment] -> View ExView ()
-viewExperiments now fs exs = do
-  let sorted = sortOn (Down . (.experimentId)) exs
+viewProposals :: UTCTime -> Filters -> [Proposal] -> View PView ()
+viewProposals now fs exs = do
+  let sorted = sortOn (Down . (.proposalId)) exs
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
     row (big aside . gap 5) $ do
       viewFilters fs
 
     col (gap 40 . grow . collapse) $ do
-      forM_ sorted viewExperiment
+      forM_ sorted viewProposal
  where
   aside = width 250 . flexCol
   big = media (MinWidth 1000)
   small = media (MaxWidth 1000)
 
-  viewExperiment :: Experiment -> View ExView ()
-  viewExperiment e = do
+  viewProposal :: Proposal -> View PView ()
+  viewProposal e = do
     let shown = filter applyFilters $ G.toList e.programs
-    experimentPrograms e shown
+    proposalPrograms e shown
 
-  experimentPrograms :: Experiment -> [InstrumentProgram] -> View ExView ()
-  experimentPrograms _ [] = none
-  experimentPrograms e ips = do
+  proposalPrograms :: Proposal -> [InstrumentProgram] -> View PView ()
+  proposalPrograms _ [] = none
+  proposalPrograms p ips = do
     col (Style.card . gap 15 . pad 15) $ do
       row id $ do
         el bold $ do
-          text "Experiment "
-          link (Route.Experiment e.experimentId) Style.link $ do
-            text e.experimentId.fromId
+          text "Proposal "
+          link (Route.Proposal p.proposalId) Style.link $ do
+            text p.proposalId.fromId
         space
         el_ $ do
-          text $ showDate e.startTime
+          text $ showDate p.startTime
 
       View.hr (color Gray)
 
@@ -122,13 +121,13 @@ viewExperiments now fs exs = do
         -- row (gap 5) $ do
         --   el bold "Start Time:"
         --   el_ $ text $ showDate ds1.startTime
-        el truncate $ text e.description
+        el truncate $ text p.description
 
         tableInstrumentPrograms now ips
 
-        let ignored = length e.programs - length ips
+        let ignored = length p.programs - length ips
         when (ignored > 0) $ do
-          link (Route.Experiment e.experimentId) (fontSize 14 . color Black) $ do
+          link (Route.Proposal p.proposalId) (fontSize 14 . color Black) $ do
             text $ cs (show ignored)
             text "Hidden Instrument Programs"
 
@@ -154,7 +153,7 @@ viewExperiments now fs exs = do
 -- applyFilter Invertible f ip = f ip && Qualify.isQualified ip
 -- applyFilter (IsInstrument i) f ip = f ip && ip.instrument == i
 
-viewFilters :: Filters -> View ExView ()
+viewFilters :: Filters -> View PView ()
 viewFilters fs = do
   el (item . bold) "Instrument"
 
@@ -183,7 +182,7 @@ viewFilters fs = do
   off = Gray
 
 
-tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View ExView ()
+tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View PView ()
 tableInstrumentPrograms now ips = do
   let sorted = ips
   col id $ do
