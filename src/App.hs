@@ -4,6 +4,7 @@ import App.Config
 import App.Globus as Globus
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
+import App.Page.Inversion qualified as Inversion
 import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
@@ -50,9 +51,10 @@ app config =
   router Dashboard = page Dashboard.page
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page
-  router (Proposal pid) = page $ Proposal.page pid
-  router (Program pid) = page $ Program.page pid
-  router (Dataset di) = page $ Dataset.page di
+  router (Inversion i) = page $ Inversion.page i
+  router (Proposal p) = page $ Proposal.page p
+  router (Program p) = page $ Program.page p
+  router (Dataset d) = page $ Dataset.page d
   router Scan = page Scan.page
   router Experiments = do
     redirect (pathUrl . routePath $ Proposals)

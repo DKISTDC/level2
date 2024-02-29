@@ -14,6 +14,7 @@ data AppRoute
   | Proposals
   | Experiments
   | Inversions
+  | Inversion (Id Inversion)
   | Proposal (Id Proposal)
   | Program (Id InstrumentProgram)
   | Dataset (Id Dataset)

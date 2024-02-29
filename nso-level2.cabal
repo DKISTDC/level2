@@ -29,6 +29,7 @@ library
       App.Mock
       App.Page.Dashboard
       App.Page.Dataset
+      App.Page.Inversion
       App.Page.Inversions
       App.Page.Program
       App.Page.Proposal

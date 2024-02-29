@@ -1,8 +1,10 @@
 module App.Page.Inversions where
 
 import App.Colors
-import App.Route
+import App.Route as Route
 import App.Style qualified as Style
+import App.View.Common (showDate)
+import App.View.DataRow (dataRows)
 import App.View.Layout
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -21,15 +23,18 @@ page = do
         col Style.card $ do
           el (Style.cardHeader Info) "Active"
           col section $ do
-            mapM_ viewInversion $ filter isActive ivs
+            dataRows (filter isActive ivs) $ \iv ->
+              viewInversion iv
 
         el (fontSize 24 . bold) "Completed"
         col Style.card $ do
-          -- el (Style.cardHeader Success) "Completed"
           col section $ do
-            mapM_ viewInversion $ filter (not . isActive) ivs
+            dataRows (filter (not . isActive) ivs) $ \iv ->
+              viewInversion iv
  where
   section = gap 10 . pad 10
+
+  rows = odd (bg White) . even (bg (light Light)) . textAlign Center
 
 
 isActive :: Inversion -> Bool
@@ -43,7 +48,19 @@ viewInversion :: Inversion -> View c ()
 viewInversion inv = do
   -- TODO: Show more detailed status for each one... which step are we on?
   -- what are the dates that things have been happening
-  col (Style.card . gap 10) $ do
-    link (Program inv.programId) Style.link $
-      text inv.inversionId.fromId
-    pre id $ cs (show inv.step)
+  row (gap 10) $ do
+    -- link (Route.Program inv.programId) Style.link $
+    --   text inv.programId.fromId
+    link (Route.Inversion inv.inversionId) Style.link $
+      pre id inv.inversionId.fromId
+    el_ $ text $ cs $ showDate (stepCreated inv.step).timestamp
+    el_ $ status inv.step
+
+
+status :: InversionStep -> View c ()
+status (StepCreated _) = "Created"
+status (StepDownloaded _) = "Downloaded"
+status (StepCalibrated _) = "Calibrated"
+status (StepInverted _) = "Inverted"
+status (StepProcessed _) = "Processed"
+status (StepPublished _) = "Published"
