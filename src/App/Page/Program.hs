@@ -106,6 +106,7 @@ newtype InversionStatus = InversionStatus (Id InstrumentProgram)
 data InversionsAction
   = CreateInversion
   | Update (Id Inversion) InversionAction
+  | CheckTask (Id Inversion) (Id Task)
   deriving (Show, Read, Param)
 
 
@@ -145,7 +146,7 @@ inversions (InversionStatus ip) = \case
     case act of
       Cancel -> do
         send $ Inversions.Remove iid
-        pure none
+        pure $ viewInversions [] []
       Download -> do
         r <- request
         redirect $ Globus.fileManagerUrl iid ip r
@@ -163,6 +164,15 @@ inversions (InversionStatus ip) = \case
       Publish -> do
         send $ Inversions.SetPublished iid
         refresh iid
+  CheckTask vi ti -> do
+    t <- Globus.transferStatus ti
+    case t.status of
+      Succeeded -> do
+        inv <- send (Inversions.ById vi) >>= expectFound
+        pure $ viewInversionContainer Calibrating $ do
+          stepCalibrate $ head inv
+      _ -> pure $ viewInversionContainer (Downloading ti) $ do
+        stepDownloadProgress t
  where
   refresh iid = do
     inv <- send $ Inversions.ById iid
@@ -178,25 +188,31 @@ viewInversions is ss =
     zipWithM_ viewInversion is ss
 
 
-viewInversion :: Inversion -> CurrentStep -> View InversionStatus ()
-viewInversion inv step = do
+viewInversionContainer :: CurrentStep -> View InversionStatus () -> View InversionStatus ()
+viewInversionContainer step cnt =
   col (Style.card . gap 15) $ do
     el (Style.cardHeader (headerColor step)) "Inversion"
     col (gap 15 . pad 15) $ do
       invProgress step
-      viewStep step
+      cnt
+ where
+  headerColor Complete = Success
+  headerColor _ = Info
+
+
+viewInversion :: Inversion -> CurrentStep -> View InversionStatus ()
+viewInversion inv step = do
+  viewInversionContainer step $ do
+    viewStep step
  where
   viewStep :: CurrentStep -> View InversionStatus ()
   viewStep SelectingDownload = stepDownload
-  viewStep (Downloading (CurrentTask t)) = stepDownloading t
-  viewStep Calibrating = stepCalibrate
+  viewStep (Downloading ti) = stepCheckDownload ti
+  viewStep Calibrating = stepCalibrate inv
   viewStep Inverting = stepInvert
   viewStep Processing = stepProcess
   viewStep Publishing = stepPublish
   viewStep Complete = stepDone
-
-  headerColor Complete = Success
-  headerColor _ = Info
 
   stepDownload = do
     el_ "You will be redirected to Globus. Please select a destination for this instrument program"
@@ -205,16 +221,13 @@ viewInversion inv step = do
       button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) $ do
         "Cancel"
 
-  stepDownloading t = do
-    el_ "Downloading..."
-    el_ $ text $ cs $ show $ taskPercentComplete t
-
-  stepCalibrate = do
-    form @CalibrationForm (Update inv.inversionId Calibrate) (gap 10) $ \f -> do
-      field id $ do
-        label "Calibration URL"
-        input TextInput Style.input f.calibrationSoftware
-      submit (Style.btn Primary . grow) "Save Calibration"
+  stepCheckDownload ti = do
+    onLoad (CheckTask inv.inversionId ti) $ do
+      row (pad 20) $ do
+        space
+        el (width 200 . color (light Primary)) Icons.spinner
+        space
+  -- el_ $ text $ cs $ show $ taskPercentComplete t
 
   stepInvert = do
     form @InversionForm (Update inv.inversionId Invert) (gap 10) $ \f -> do
@@ -233,15 +246,29 @@ viewInversion inv step = do
     el_ "Done"
 
 
+stepDownloadProgress :: Task -> View InversionStatus ()
+stepDownloadProgress t =
+  el_ $ text $ cs $ show $ taskPercentComplete t
+
+
+stepCalibrate :: Inversion -> View InversionStatus ()
+stepCalibrate inv = do
+  form @CalibrationForm (Update inv.inversionId Calibrate) (gap 10) $ \f -> do
+    field id $ do
+      label "Calibration URL"
+      input TextInput Style.input f.calibrationSoftware
+    submit (Style.btn Primary . grow) "Save Calibration"
+
+
 data CurrentStep
   = SelectingDownload
-  | Downloading CurrentTask
+  | Downloading (Id Task)
   | Calibrating
   | Inverting
   | Processing
   | Publishing
   | Complete
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 
 newtype CurrentTask = CurrentTask Task
@@ -259,10 +286,7 @@ currentStep = \case
   StepCreated _ -> pure SelectingDownload
   StepDownloaded dwn -> do
     let d = grab @Downloaded dwn :: Downloaded
-    t <- Globus.transferStatus (Id d.taskId)
-    case t.status of
-      Succeeded -> pure Calibrating
-      _ -> pure $ Downloading (CurrentTask t)
+    pure $ Downloading (Id d.taskId)
   StepCalibrated _ -> pure Inverting
   StepInverted _ -> pure Processing
   StepProcessed _ -> pure Publishing
@@ -282,18 +306,29 @@ invProgress curr = do
     line Processing
     stat Publishing "PUBLISH" "5"
  where
-  stat s t icon = col (color statColor . gap 4) $ do
+  stat :: CurrentStep -> Text -> View InversionStatus () -> View InversionStatus ()
+  stat s t icon = col (color (statColor curr) . gap 4) $ do
     row id $ do
       space
-      el (circle . bg statColor) statIcon
+      el (circle . bg (statColor curr)) (statIcon curr)
       space
     el (fontSize 12 . textAlign Center) (text t)
    where
-    statIcon
+    statIcon (Downloading _)
+      | s == SelectingDownload = icon
+      | otherwise = statIcon'
+    statIcon _ = statIcon'
+
+    statIcon'
       | s < curr = Icons.check
       | otherwise = icon
 
-    statColor
+    statColor (Downloading _)
+      | s == SelectingDownload = Info
+      | otherwise = statColor'
+    statColor _ = statColor'
+
+    statColor'
       | s == curr = Info
       | s < curr = Success
       | otherwise = Gray

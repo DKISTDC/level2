@@ -5,8 +5,8 @@ import App.Route
 import App.Style qualified as Style
 import App.View.Common
 import App.View.DataRow qualified as View
+import App.View.Icons as Icons
 import App.View.Layout
-import Data.String.Interpolate
 import Effectful.Error.Static
 import Effectful.Time
 import NSO.Data.Datasets
@@ -60,7 +60,7 @@ viewScan msr =
  where
   loading = row (pad 100 . grow) $ do
     space
-    el (width 200 . color (light Primary)) spinner
+    el (width 200 . color (light Primary)) Icons.spinner
     space
 
 
@@ -109,60 +109,7 @@ datasetsTable ds = do
   hd = View.hd
   cell = View.cell . text
 
-
 -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
 -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
 -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
 -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
-
-spinner :: View c ()
-spinner =
-  raw
-    [i|
-<!-- By Sam Herbert (@sherb), for everyone. More @ http://goo.gl/7AJzbL -->
-<svg width="100%" height="100%" viewBox="0 0 57 57" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
-    <g fill="none" fill-rule="evenodd">
-        <g transform="translate(1 1)" stroke-width="2">
-            <circle cx="5" cy="50" r="5">
-                <animate attributeName="cy"
-                     begin="0s" dur="2.2s"
-                     values="50;5;50;50"
-                     calcMode="linear"
-                     repeatCount="indefinite" />
-                <animate attributeName="cx"
-                     begin="0s" dur="2.2s"
-                     values="5;27;49;5"
-                     calcMode="linear"
-                     repeatCount="indefinite" />
-            </circle>
-            <circle cx="27" cy="5" r="5">
-                <animate attributeName="cy"
-                     begin="0s" dur="2.2s"
-                     from="5" to="5"
-                     values="5;50;50;5"
-                     calcMode="linear"
-                     repeatCount="indefinite" />
-                <animate attributeName="cx"
-                     begin="0s" dur="2.2s"
-                     from="27" to="27"
-                     values="27;49;5;27"
-                     calcMode="linear"
-                     repeatCount="indefinite" />
-            </circle>
-            <circle cx="49" cy="50" r="5">
-                <animate attributeName="cy"
-                     begin="0s" dur="2.2s"
-                     values="50;50;5;50"
-                     calcMode="linear"
-                     repeatCount="indefinite" />
-                <animate attributeName="cx"
-                     from="49" to="49"
-                     begin="0s" dur="2.2s"
-                     values="49;5;27;49"
-                     calcMode="linear"
-                     repeatCount="indefinite" />
-            </circle>
-        </g>
-    </g>
-</svg>
-|]
