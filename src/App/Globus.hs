@@ -134,11 +134,6 @@ handleTransfer iv = do
 
 transferStatus :: (Hyperbole :> es, Globus :> es) => Id Task -> Eff es Task
 transferStatus (Id ti) = do
-  traceM "TREANSFER STATUS"
-  traceM $ show ti
-  mtok <- getAccessToken
-  traceM $ show mtok
-
   tok <- getAccessToken >>= expectAuth
   send $ TaskStatus tok (Tagged ti)
 

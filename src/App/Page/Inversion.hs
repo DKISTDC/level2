@@ -149,7 +149,7 @@ inversions onCancel (InversionStatus ip) = \case
 
   loading :: InversionsAction -> CurrentStep -> View InversionStatus () -> View InversionStatus ()
   loading act step cnt =
-    viewInversionContainer step $ onLoad act $ do
+    viewInversionContainer step $ onLoad act 0 $ do
       el disabled cnt
 
   disabled = opacity 0.5 . att "inert" ""
@@ -170,13 +170,13 @@ checkTask vi ti t' = do
         stepDownloadProgress t'
  where
   stepDownloadProgress :: Task -> View InversionStatus ()
-  stepDownloadProgress t = do
-    -- el_ $ text $ cs $ show $ taskPercentComplete t
-    row id $ do
-      el_ $ text $ "Downloading... (" <> cs rate <> " Mb/s)"
-      space
-      activityLink t
-    progress (taskPercentComplete t)
+  stepDownloadProgress t =
+    onLoad (CheckTask vi ti) 5000 $ do
+      row id $ do
+        el_ $ text $ "Downloading... (" <> cs rate <> " Mb/s)"
+        space
+        activityLink t
+      progress (taskPercentComplete t)
    where
     rate :: String
     rate = showFFloat (Just 2) (fromIntegral t.effective_bytes_per_second / (1000 * 1000) :: Float) ""
@@ -237,7 +237,7 @@ viewInversion inv step = do
 
   stepCheckDownload ti = do
     -- don't show anything until load
-    onLoad (CheckTask inv.inversionId ti) $ do
+    onLoad (CheckTask inv.inversionId ti) 0 $ do
       el (height 60) ""
 
   stepProcess = do
