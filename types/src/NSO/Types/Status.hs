@@ -18,7 +18,7 @@ data ProgramStatus
 
 
 newtype GitCommit = GitCommit Text
-  deriving newtype (Show, Eq, ToJSON, FromJSON, DBType)
+  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType)
 
 
 data Created = Created {timestamp :: UTCTime}

@@ -34,8 +34,6 @@ page = do
  where
   section = gap 10 . pad 10
 
-  rows = odd (bg White) . even (bg (light Light)) . textAlign Center
-
 
 isActive :: Inversion -> Bool
 isActive inv =

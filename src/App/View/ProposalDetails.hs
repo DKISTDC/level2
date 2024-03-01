@@ -89,7 +89,7 @@ viewCriteria ip gd = do
     el bold "VBI Criteria"
     criteria "Not Supported" False
 
-  criteriaRowHeight :: PxRem
+  criteriaRowHeight :: Length
   criteriaRowHeight = 32
 
   criteria :: Text -> Bool -> View c ()

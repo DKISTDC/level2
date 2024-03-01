@@ -17,7 +17,7 @@ dataCell = minWidth 100
 
 
 dataRow :: Mod
-dataRow = gap 10 . pad (All dataRowPadding)
+dataRow = gap 10 . pad (All $ PxRem dataRowPadding)
 
 
 dataRowPadding :: PxRem

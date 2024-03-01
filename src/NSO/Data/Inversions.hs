@@ -23,6 +23,7 @@ import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Network.Globus.Transfer (Task)
+import Network.HTTP.Req
 import Rel8
 
 
@@ -37,6 +38,8 @@ data Inversions :: Effect where
   SetInverted :: Id Inversion -> GitCommit -> Inversions m ()
   SetPostProcessed :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
+  ValidateDesireRepo :: GitCommit -> Inversions m Bool
+  ValidateCalibrationCommit :: GitCommit -> Inversions m Bool
 type instance DispatchOf Inversions = 'Dynamic
 
 
@@ -133,7 +136,12 @@ runDataInversions = interpret $ \_ -> \case
   SetInverted iid soft -> setInverted iid soft
   SetPostProcessed iid -> setPostProcessed iid
   SetPublished iid -> setPublished iid
+  ValidateDesireRepo gc -> validateGitCommit desireRepo gc
+  ValidateCalibrationCommit gc -> validateGitCommit calibrationRepo gc
  where
+  calibrationRepo = https "github.com" /: "DKISTDC" /: "level2"
+  desireRepo = https "github.com" /: "DKISTDC" /: "level2"
+
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
   queryAll = do
@@ -266,3 +274,14 @@ toInversions irs = do
   case traverse inversion irs of
     Left err -> throwError $ ValidationError err
     Right ivs -> pure ivs
+
+
+validateGitCommit :: (MonadIO m) => Url Https -> GitCommit -> m Bool
+validateGitCommit repo gc = do
+  res <- runReq httpConfig $ do
+    req GET (commitUrl gc) NoReqBody ignoreResponse mempty
+  pure $ responseStatusCode res == 200
+ where
+  commitUrl (GitCommit hash) =
+    repo /: "commit" /: hash
+  httpConfig = defaultHttpConfig{httpConfigCheckResponse = \_ _ _ -> Nothing}

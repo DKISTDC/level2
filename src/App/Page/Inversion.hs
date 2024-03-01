@@ -8,13 +8,16 @@ import App.Style qualified as Style
 import App.View.Icons qualified as Icons
 import App.View.Layout
 import Data.Diverse.Many
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import Numeric (showFFloat)
 import Web.Hyperbole
+import Web.View qualified as WebView
 
 
 page :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Id Inversion -> Page es Response
@@ -61,7 +64,8 @@ data InversionsAction
 data InversionAction
   = Download
   | Cancel
-  | Calibrate
+  | CalibrateValid
+  | Calibrate GitCommit
   | Invert
   | PostProcess
   | Publish
@@ -99,9 +103,17 @@ inversions onCancel (InversionStatus ip) = \case
       Download -> do
         r <- request
         redirect $ Globus.fileManagerUrl iid ip r
-      Calibrate -> do
+      CalibrateValid -> do
+        inv <- send (Inversions.ById iid) >>= expectFound
         f <- parseForm @CalibrationForm
-        send $ Inversions.SetCalibrated iid (GitCommit f.calibrationSoftware)
+        let commit = GitCommit f.calibrationSoftware
+
+        pure $ loading (Update iid (Calibrate commit)) Calibrating $ stepCalibrate (head inv)
+      Calibrate commit -> do
+        valid <- send $ ValidateCalibrationCommit commit
+        traceM $ show ("VALID?" :: String, valid)
+        validate iid Calibrating valid
+        send $ Inversions.SetCalibrated iid commit
         refresh iid
       Invert -> do
         f <- parseForm @InversionForm
@@ -115,18 +127,73 @@ inversions onCancel (InversionStatus ip) = \case
         refresh iid
   CheckTask vi ti -> do
     t <- Globus.transferStatus ti
-    case t.status of
-      Succeeded -> do
-        inv <- send (Inversions.ById vi) >>= expectFound
-        pure $ viewInversionContainer Calibrating $ do
-          stepCalibrate $ head inv
-      _ -> pure $ viewInversionContainer (Downloading ti) $ do
-        stepDownloadProgress t
+    checkTask vi ti t
  where
   refresh iid = do
     (inv :| _) <- send (Inversions.ById iid) >>= expectFound
     step <- currentStep inv.step
     pure $ viewInversion inv step
+
+  validate _ _ True = pure ()
+  validate iid step False = do
+    inv <- send (Inversions.ById iid) >>= expectFound
+    respondEarly (InversionStatus ip) $ do
+      viewInversionContainer step $ do
+        stepCalibrate $ head inv
+        validationError "Not a valid Git Commit"
+
+  loading :: InversionsAction -> CurrentStep -> View InversionStatus () -> View InversionStatus ()
+  loading act step cnt =
+    viewInversionContainer step $ onLoad act $ do
+      el disabled cnt
+
+  disabled = opacity 0.5 . att "inert" ""
+
+
+checkTask :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
+checkTask vi ti t' = do
+  case t'.status of
+    Succeeded -> do
+      inv <- send (Inversions.ById vi) >>= expectFound
+      pure $ viewInversionContainer Calibrating $ do
+        stepCalibrate $ head inv
+    Failed -> pure $ do
+      viewInversionContainer (Downloading ti) $ do
+        stepDownloadFailed t'
+    _ -> pure $ do
+      viewInversionContainer (Downloading ti) $ do
+        stepDownloadProgress t'
+ where
+  stepDownloadProgress :: Task -> View InversionStatus ()
+  stepDownloadProgress t = do
+    -- el_ $ text $ cs $ show $ taskPercentComplete t
+    row id $ do
+      el_ $ text $ "Downloading... (" <> cs rate <> " Mb/s)"
+      space
+      activityLink t
+    progress (taskPercentComplete t)
+   where
+    rate :: String
+    rate = showFFloat (Just 2) (fromIntegral t.effective_bytes_per_second / (1000 * 1000) :: Float) ""
+
+  stepDownloadFailed :: Task -> View InversionStatus ()
+  stepDownloadFailed t =
+    row id $ do
+      el_ "Download Failed"
+      space
+      activityLink t
+
+  activityLink :: Task -> View c ()
+  activityLink t =
+    WebView.link activityUrl Style.link "View Transfer on Globus"
+   where
+    activityUrl = Url $ "https://app.globus.org/activity/" <> t.task_id.unTagged
+
+  progress :: Float -> View c ()
+  progress p = do
+    row (bg Gray . height 20) $ do
+      el (width (Pct p) . bg (light Info)) $ do
+        space
 
 
 viewInversionContainer :: CurrentStep -> View InversionStatus () -> View InversionStatus ()
@@ -157,24 +224,23 @@ viewInversion inv step = do
 
   stepDownload = do
     el_ "You will be redirected to Globus. Please select a destination for this instrument program"
+
     row (gap 10) $ do
       button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Download Location"
       button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) $ do
         "Cancel"
 
   stepCheckDownload ti = do
+    -- don't show anything until load
     onLoad (CheckTask inv.inversionId ti) $ do
-      row (pad 20) $ do
-        space
-        el (width 200 . color (light Primary)) Icons.spinner
-        space
-  -- el_ $ text $ cs $ show $ taskPercentComplete t
+      el (height 60) ""
 
   stepInvert = do
     form @InversionForm (Update inv.inversionId Invert) (gap 10) $ \f -> do
       field id $ do
-        label "Inversion Software"
+        label "DeSIRe Git Commit"
         input TextInput Style.input f.inversionSoftware
+      -- TODO: upload files
       submit (Style.btn Primary . grow) "Save Inversion"
 
   stepProcess = do
@@ -187,18 +253,19 @@ viewInversion inv step = do
     el_ "Done"
 
 
-stepDownloadProgress :: Task -> View InversionStatus ()
-stepDownloadProgress t =
-  el_ $ text $ cs $ show $ taskPercentComplete t
-
-
 stepCalibrate :: Inversion -> View InversionStatus ()
 stepCalibrate inv = do
-  form @CalibrationForm (Update inv.inversionId Calibrate) (gap 10) $ \f -> do
+  form @CalibrationForm (Update inv.inversionId CalibrateValid) (gap 10) $ \f -> do
     field id $ do
-      label "Calibration URL"
+      label "Proprocessing / Calibration Git Commit"
       input TextInput Style.input f.calibrationSoftware
     submit (Style.btn Primary . grow) "Save Calibration"
+
+
+validationError :: Text -> View c ()
+validationError msg = do
+  el (border 1 . borderColor (dark Danger) . bg (light Danger) . pad 10 . rounded 4) $ do
+    el (color White) $ text msg
 
 
 data CurrentStep
