@@ -8,7 +8,6 @@ import App.Style qualified as Style
 import App.View.Icons qualified as Icons
 import App.View.Layout
 import Data.Diverse.Many
-import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
@@ -66,7 +65,8 @@ data InversionAction
   | Cancel
   | CalibrateValid
   | Calibrate GitCommit
-  | Invert
+  | InvertValid
+  | Invert GitCommit
   | PostProcess
   | Publish
   deriving (Show, Read, Param)
@@ -107,17 +107,21 @@ inversions onCancel (InversionStatus ip) = \case
         inv <- send (Inversions.ById iid) >>= expectFound
         f <- parseForm @CalibrationForm
         let commit = GitCommit f.calibrationSoftware
-
         pure $ loading (Update iid (Calibrate commit)) Calibrating $ stepCalibrate (head inv)
       Calibrate commit -> do
         valid <- send $ ValidateCalibrationCommit commit
-        traceM $ show ("VALID?" :: String, valid)
-        validate iid Calibrating valid
+        validate iid Calibrating stepCalibrate valid
         send $ Inversions.SetCalibrated iid commit
         refresh iid
-      Invert -> do
+      InvertValid -> do
+        inv <- send (Inversions.ById iid) >>= expectFound
         f <- parseForm @InversionForm
-        send $ Inversions.SetInverted iid (GitCommit f.inversionSoftware)
+        let commit = GitCommit f.inversionSoftware
+        pure $ loading (Update iid (Invert commit)) Inverting $ stepInvert (head inv)
+      Invert commit -> do
+        valid <- send $ ValidateDesireCommit commit
+        validate iid Inverting stepInvert valid
+        send $ Inversions.SetInverted iid commit
         refresh iid
       PostProcess -> do
         send $ Inversions.SetPostProcessed iid
@@ -134,12 +138,13 @@ inversions onCancel (InversionStatus ip) = \case
     step <- currentStep inv.step
     pure $ viewInversion inv step
 
-  validate _ _ True = pure ()
-  validate iid step False = do
+  validate :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> CurrentStep -> (Inversion -> View InversionStatus ()) -> Bool -> Eff es ()
+  validate _ _ _ True = pure ()
+  validate iid step viewStep False = do
     inv <- send (Inversions.ById iid) >>= expectFound
     respondEarly (InversionStatus ip) $ do
       viewInversionContainer step $ do
-        stepCalibrate $ head inv
+        viewStep $ head inv
         validationError "Not a valid Git Commit"
 
   loading :: InversionsAction -> CurrentStep -> View InversionStatus () -> View InversionStatus ()
@@ -217,7 +222,7 @@ viewInversion inv step = do
   viewStep SelectingDownload = stepDownload
   viewStep (Downloading ti) = stepCheckDownload ti
   viewStep Calibrating = stepCalibrate inv
-  viewStep Inverting = stepInvert
+  viewStep Inverting = stepInvert inv
   viewStep Processing = stepProcess
   viewStep Publishing = stepPublish
   viewStep Complete = stepDone
@@ -234,14 +239,6 @@ viewInversion inv step = do
     -- don't show anything until load
     onLoad (CheckTask inv.inversionId ti) $ do
       el (height 60) ""
-
-  stepInvert = do
-    form @InversionForm (Update inv.inversionId Invert) (gap 10) $ \f -> do
-      field id $ do
-        label "DeSIRe Git Commit"
-        input TextInput Style.input f.inversionSoftware
-      -- TODO: upload files
-      submit (Style.btn Primary . grow) "Save Inversion"
 
   stepProcess = do
     button (Update inv.inversionId PostProcess) (Style.btn Primary . grow) "Save Post Processing"
@@ -260,6 +257,16 @@ stepCalibrate inv = do
       label "Proprocessing / Calibration Git Commit"
       input TextInput Style.input f.calibrationSoftware
     submit (Style.btn Primary . grow) "Save Calibration"
+
+
+stepInvert :: Inversion -> View InversionStatus ()
+stepInvert inv = do
+  form @InversionForm (Update inv.inversionId InvertValid) (gap 10) $ \f -> do
+    field id $ do
+      label "DeSIRe Git Commit"
+      input TextInput Style.input f.inversionSoftware
+    -- TODO: upload files
+    submit (Style.btn Primary . grow) "Save Inversion"
 
 
 validationError :: Text -> View c ()

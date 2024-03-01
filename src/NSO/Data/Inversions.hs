@@ -38,7 +38,7 @@ data Inversions :: Effect where
   SetInverted :: Id Inversion -> GitCommit -> Inversions m ()
   SetPostProcessed :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
-  ValidateDesireRepo :: GitCommit -> Inversions m Bool
+  ValidateDesireCommit :: GitCommit -> Inversions m Bool
   ValidateCalibrationCommit :: GitCommit -> Inversions m Bool
 type instance DispatchOf Inversions = 'Dynamic
 
@@ -136,11 +136,14 @@ runDataInversions = interpret $ \_ -> \case
   SetInverted iid soft -> setInverted iid soft
   SetPostProcessed iid -> setPostProcessed iid
   SetPublished iid -> setPublished iid
-  ValidateDesireRepo gc -> validateGitCommit desireRepo gc
+  ValidateDesireCommit gc -> validateGitCommit desireRepo gc
   ValidateCalibrationCommit gc -> validateGitCommit calibrationRepo gc
  where
+  -- TODO: Get correct repo
   calibrationRepo = https "github.com" /: "DKISTDC" /: "level2"
-  desireRepo = https "github.com" /: "DKISTDC" /: "level2"
+
+  -- TODO: Get correct repo. Need to move into the data center?
+  desireRepo = https "github.com" /: "han-uitenbroek" /: "RH"
 
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
