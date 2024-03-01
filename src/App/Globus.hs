@@ -172,7 +172,7 @@ transferRequest submission_id tform datasets =
     TransferItem
       { data_type = DataType
       , source_path = datasetSourcePath d
-      , destination_path = destinationFolder </> cs d.datasetId.fromId
+      , destination_path = destinationFolder </> cs d.instrumentProgramId.fromId </> cs d.datasetId.fromId
       , recursive = True
       }
 
