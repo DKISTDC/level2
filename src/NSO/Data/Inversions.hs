@@ -10,6 +10,7 @@ module NSO.Data.Inversions
 
 import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
+import Data.Text qualified as Text
 import Effectful
 import Effectful.Debug
 import Effectful.Dispatch.Dynamic
@@ -136,8 +137,8 @@ runDataInversions = interpret $ \_ -> \case
   SetInverted iid soft -> setInverted iid soft
   SetPostProcessed iid -> setPostProcessed iid
   SetPublished iid -> setPublished iid
-  ValidateDesireCommit gc -> validateGitCommit desireRepo gc
   ValidateCalibrationCommit gc -> validateGitCommit calibrationRepo gc
+  ValidateDesireCommit gc -> validateGitCommit desireRepo gc
  where
   -- TODO: Get correct repo
   calibrationRepo = https "github.com" /: "DKISTDC" /: "level2"
@@ -280,11 +281,19 @@ toInversions irs = do
 
 
 validateGitCommit :: (MonadIO m) => Url Https -> GitCommit -> m Bool
-validateGitCommit repo gc = do
-  res <- runReq httpConfig $ do
-    req GET (commitUrl gc) NoReqBody ignoreResponse mempty
-  pure $ responseStatusCode res == 200
+validateGitCommit repo gc
+  | validHash gc = checkRemoteRepo
+  | otherwise = pure False
  where
   commitUrl (GitCommit hash) =
     repo /: "commit" /: hash
+
   httpConfig = defaultHttpConfig{httpConfigCheckResponse = \_ _ _ -> Nothing}
+
+  checkRemoteRepo = do
+    res <- runReq httpConfig $ do
+      req GET (commitUrl gc) NoReqBody ignoreResponse mempty
+    pure $ responseStatusCode res == 200
+
+  -- don't allow empty hashes or hashes shorter than 7
+  validHash (GitCommit hs) = Text.length hs >= 7

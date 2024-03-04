@@ -271,7 +271,7 @@ stepInvert inv = do
 
 validationError :: Text -> View c ()
 validationError msg = do
-  el (border 1 . borderColor (dark Danger) . bg (light Danger) . pad 10 . rounded 4) $ do
+  el (border 1 . borderColor (dark Danger) . bg Danger . pad 10) $ do
     el (color White) $ text msg
 
 

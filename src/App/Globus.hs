@@ -27,7 +27,6 @@ import App.Route qualified as Route
 import App.Types
 import Data.Tagged
 import Data.Text qualified as Text
-import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus hiding (Id)
