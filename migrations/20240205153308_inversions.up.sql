@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS inversions (
   calibration TIMESTAMP,
   calibration_software TEXT,
 
+  upload TIMESTAMP,
+  upload_task_id TEXT,
+
   inversion TIMESTAMP,
   inversion_software TEXT,
 

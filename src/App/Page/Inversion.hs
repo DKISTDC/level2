@@ -6,6 +6,7 @@ import App.Globus as Globus
 import App.Route
 import App.Style qualified as Style
 import App.View.Icons qualified as Icons
+import App.View.Inversions
 import App.View.Layout
 import Data.Diverse.Many
 import Effectful
@@ -14,9 +15,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
-import Numeric (showFFloat)
 import Web.Hyperbole
-import Web.View qualified as WebView
 
 
 page :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Id Inversion -> Page es Response
@@ -56,7 +55,8 @@ newtype InversionStatus = InversionStatus (Id InstrumentProgram)
 data InversionsAction
   = CreateInversion
   | Update (Id Inversion) InversionAction
-  | CheckTask (Id Inversion) (Id Task)
+  | CheckDownload (Id Inversion) (Id Task)
+  | CheckUpload (Id Inversion) (Id Task)
   deriving (Show, Read, Param)
 
 
@@ -65,6 +65,7 @@ data InversionAction
   | Cancel
   | CalibrateValid
   | Calibrate GitCommit
+  | Upload
   | InvertValid
   | Invert GitCommit
   | PostProcess
@@ -113,6 +114,8 @@ inversions onCancel (InversionStatus ip) = \case
         validate iid Calibrating stepCalibrate valid
         send $ Inversions.SetCalibrated iid commit
         refresh iid
+      Upload -> do
+        pure $ el_ "Upload"
       InvertValid -> do
         inv <- send (Inversions.ById iid) >>= expectFound
         f <- parseForm @InversionForm
@@ -129,9 +132,12 @@ inversions onCancel (InversionStatus ip) = \case
       Publish -> do
         send $ Inversions.SetPublished iid
         refresh iid
-  CheckTask vi ti -> do
+  CheckDownload vi ti -> do
     t <- Globus.transferStatus ti
-    checkTask vi ti t
+    checkDownload vi ti t
+  CheckUpload vi ti -> do
+    t <- Globus.transferStatus ti
+    checkUpload vi ti t
  where
   refresh iid = do
     (inv :| _) <- send (Inversions.ById iid) >>= expectFound
@@ -155,50 +161,40 @@ inversions onCancel (InversionStatus ip) = \case
   disabled = opacity 0.5 . att "inert" ""
 
 
-checkTask :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
-checkTask vi ti t' = do
+checkDownload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
+checkDownload vi ti t' = do
   case t'.status of
     Succeeded -> do
       inv <- send (Inversions.ById vi) >>= expectFound
+      -- Defer checking of whether or not the download has finished until they load this page
+      -- but then mark it as downloaded
+      send (Inversions.SetDownloaded vi)
       pure $ viewInversionContainer Calibrating $ do
         stepCalibrate $ head inv
     Failed -> pure $ do
       viewInversionContainer (Downloading ti) $ do
-        stepDownloadFailed t'
+        viewTransferFailed t'
     _ -> pure $ do
       viewInversionContainer (Downloading ti) $ do
-        stepDownloadProgress t'
- where
-  stepDownloadProgress :: Task -> View InversionStatus ()
-  stepDownloadProgress t =
-    onLoad (CheckTask vi ti) 5000 $ do
-      row id $ do
-        el_ $ text $ "Downloading... (" <> cs rate <> " Mb/s)"
-        space
-        activityLink t
-      progress (taskPercentComplete t)
-   where
-    rate :: String
-    rate = showFFloat (Just 2) (fromIntegral t.effective_bytes_per_second / (1000 * 1000) :: Float) ""
+        onLoad (CheckDownload vi ti) 5000 $ do
+          viewTransferProgress t'
 
-  stepDownloadFailed :: Task -> View InversionStatus ()
-  stepDownloadFailed t =
-    row id $ do
-      el_ "Download Failed"
-      space
-      activityLink t
 
-  activityLink :: Task -> View c ()
-  activityLink t =
-    WebView.link activityUrl Style.link "View Transfer on Globus"
-   where
-    activityUrl = Url $ "https://app.globus.org/activity/" <> t.task_id.unTagged
-
-  progress :: Float -> View c ()
-  progress p = do
-    row (bg Gray . height 20) $ do
-      el (width (Pct p) . bg (light Info)) $ do
-        space
+checkUpload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
+checkUpload vi ti t = do
+  case t.status of
+    Succeeded -> do
+      inv <- send (Inversions.ById vi) >>= expectFound
+      send (Inversions.SetUploaded vi)
+      pure $ viewInversionContainer Calibrating $ do
+        stepCalibrate $ head inv
+    Failed -> pure $ do
+      viewInversionContainer (Downloading ti) $ do
+        viewTransferFailed t
+    _ -> pure $ do
+      viewInversionContainer (Downloading ti) $ do
+        onLoad (CheckDownload vi ti) 5000 $ do
+          viewTransferProgress t
 
 
 viewInversionContainer :: CurrentStep -> View InversionStatus () -> View InversionStatus ()
@@ -219,10 +215,12 @@ viewInversion inv step = do
     viewStep step
  where
   viewStep :: CurrentStep -> View InversionStatus ()
-  viewStep SelectingDownload = stepDownload
-  viewStep (Downloading ti) = stepCheckDownload ti
+  viewStep (Downloading Select) = stepDownload
+  viewStep (Downloading (Transfer ti)) = stepCheckDownload ti
   viewStep Calibrating = stepCalibrate inv
   viewStep Inverting = stepInvert inv
+  viewStep (Uploading (Transfer ti)) = stepCheckUpload ti
+  viewStep (Uploading Select) = stepUpload
   viewStep Processing = stepProcess
   viewStep Publishing = stepPublish
   viewStep Complete = stepDone
@@ -237,7 +235,7 @@ viewInversion inv step = do
 
   stepCheckDownload ti = do
     -- don't show anything until load
-    onLoad (CheckTask inv.inversionId ti) 0 $ do
+    onLoad (CheckDownload inv.inversionId ti) 0 $ do
       el (height 60) ""
 
   stepProcess = do
@@ -248,6 +246,19 @@ viewInversion inv step = do
 
   stepDone = do
     el_ "Done"
+
+  stepUpload = do
+    el bold "Upload Inversion Output"
+    el id $ text $ cs $ show inv.step
+    el_ "You will be redirected to Globus. Please select a source folder containing the FITS output of the inversion"
+
+    row (gap 10) $ do
+      button (Update inv.inversionId Upload) (Style.btn Primary . grow) "Choose Upload Source Location"
+
+  stepCheckUpload ti = do
+    -- don't show anything until load
+    onLoad (CheckDownload inv.inversionId ti) 0 $ do
+      el (height 60) ""
 
 
 stepCalibrate :: Inversion -> View InversionStatus ()
@@ -266,7 +277,15 @@ stepInvert inv = do
       label "DeSIRe Git Commit"
       input TextInput Style.input f.inversionSoftware
     -- TODO: upload files
+
+    el_ "You will be redirected to Globus. Please select a destination for this instrument program"
+
+    -- 1. Choose the download location
+    -- 2. Start the upload?
+    -- 3. Two separate steps?
+    -- you can't confirm the entire step until all steps are complete
     submit (Style.btn Primary . grow) "Save Inversion"
+    button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Download Location"
 
 
 validationError :: Text -> View c ()
@@ -276,9 +295,9 @@ validationError msg = do
 
 
 data CurrentStep
-  = SelectingDownload
-  | Downloading (Id Task)
+  = Downloading TransferStep
   | Calibrating
+  | Uploading TransferStep
   | Inverting
   | Processing
   | Publishing
@@ -286,21 +305,28 @@ data CurrentStep
   deriving (Eq, Ord, Show)
 
 
+data TransferStep
+  = Select
+  | Transferring (Id Task)
+  deriving (Eq, Ord, Show)
+
+
 newtype CurrentTask = CurrentTask Task
   deriving (Eq)
 
 
-instance Ord CurrentTask where
-  compare _ _ = EQ
-
-
 currentStep :: (Globus :> es) => InversionStep -> Eff es CurrentStep
 currentStep = \case
-  StepCreated _ -> pure SelectingDownload
-  StepDownloaded dwn -> do
-    let d = grab @Downloaded dwn :: Downloaded
-    pure $ Downloading (Id d.taskId)
-  StepCalibrated _ -> pure Inverting
+  StepCreated _ -> pure $ Downloading Select
+  StepDownloading dwn -> do
+    let t = grab @Transfer dwn :: Transfer
+    pure $ Downloading $ Active (Id t.taskId)
+  StepDownloaded _ -> pure Calibrating
+  StepCalibrated _ -> pure Uploading Select
+  StepUploaded _ -> pure Inverting
+  StepUploading up -> do
+    let t = grab @Transfer up :: Transfer
+    pure $ Uploading $ Active (Id t.taskId)
   StepInverted _ -> pure Processing
   StepProcessed _ -> pure Publishing
   StepPublished _ -> pure Complete
@@ -309,8 +335,8 @@ currentStep = \case
 invProgress :: CurrentStep -> View InversionStatus ()
 invProgress curr = do
   row (gap 10) $ do
-    stat SelectingDownload "DOWNLOAD" "1"
-    line SelectingDownload
+    stat (Downloading Select) "DOWNLOAD" "1"
+    line (Downloading Select)
     stat Calibrating "CALIBRATE" "2"
     line Calibrating
     stat Inverting "INVERT" "3"
@@ -327,18 +353,18 @@ invProgress curr = do
       space
     el (fontSize 12 . textAlign Center) (text t)
    where
-    statIcon (Downloading _)
-      | s == SelectingDownload = icon
-      | otherwise = statIcon'
+    -- statIcon (Downloading _)
+    --   | s == SelectingDownload = icon
+    --   | otherwise = statIcon'
     statIcon _ = statIcon'
 
     statIcon'
       | s < curr = Icons.check
       | otherwise = icon
 
-    statColor (Downloading _)
-      | s == SelectingDownload = Info
-      | otherwise = statColor'
+    -- statColor (Downloading _)
+    --   | s == SelectingDownload = Info
+    --   | otherwise = statColor'
     statColor _ = statColor'
 
     statColor'

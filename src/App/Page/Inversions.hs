@@ -58,7 +58,10 @@ viewInversion inv = do
 status :: InversionStep -> View c ()
 status (StepCreated _) = "Created"
 status (StepDownloaded _) = "Downloaded"
+status (StepDownloading _) = "StepDownloading"
 status (StepCalibrated _) = "Calibrated"
 status (StepInverted _) = "Inverted"
+status (StepUploading _) = "Uploadeding"
+status (StepUploaded _) = "Uploaded"
 status (StepProcessed _) = "Processed"
 status (StepPublished _) = "Published"

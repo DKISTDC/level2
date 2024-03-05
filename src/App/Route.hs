@@ -20,5 +20,5 @@ data AppRoute
   | Dataset (Id Dataset)
   | Redirect
   | Logout
-  | Transfer (Id Inversion)
+  | SubmitDownload (Id Inversion)
   deriving (Show, Generic, Eq, Route)

@@ -66,6 +66,7 @@ accessToken tok = send $ AccessToken tok
 -- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
 -- accessToken (Token cid) (Token sec) red (Token code) =
 
+-- different url
 fileManagerUrl :: Id Inversion -> Id InstrumentProgram -> Request -> Url
 fileManagerUrl inv ip req =
   Url $
@@ -84,7 +85,7 @@ fileManagerUrl inv ip req =
   serverUrl = "https://" <> cs req.host.text
   currentUrl = serverUrl <> "/" <> Text.intercalate "/" req.path
   submitUrl =
-    let Url path = pathUrl . routePath $ Route.Transfer inv
+    let Url path = pathUrl . routePath $ Route.SubmitDownload inv
      in serverUrl <> path
 
 
@@ -113,19 +114,17 @@ instance Form TransferForm where
 handleTransfer :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, IOE :> es) => Id Inversion -> Page es Response
 handleTransfer iv = do
   load $ do
-    liftIO $ putStrLn "Handle Transfer"
     t <- parseForm @TransferForm
 
     (inv :| _) <- send (Inversions.ById iv) >>= expectFound
     ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
 
-    liftIO $ putStrLn "HI"
     acc <- getAccessToken >>= expectAuth
-    liftIO $ print acc
     sub <- send $ SubmissionId acc
-    res <- send $ Transfer acc $ transferRequest sub t ds
+    res <- send $ Globus.Transfer acc $ transferRequest sub t ds
 
-    send $ Inversions.SetDownloaded iv (Id res.task_id.unTagged)
+    -- TODO: this doesn't belong here. We need a "page" or something
+    send $ Inversions.SetDownloading iv (Id res.task_id.unTagged)
 
     -- Redirect back to the inversion page
     redirect $ pathUrl . routePath $ Route.Program inv.programId

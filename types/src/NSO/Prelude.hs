@@ -11,6 +11,7 @@ module NSO.Prelude
   , Map
   , Text
   , UTCTime
+  , Tagged (..)
 
     -- * List functions
   , module Data.List
@@ -45,21 +46,26 @@ import Data.Ord (comparing)
 import Data.Proxy (Proxy (..))
 import Data.String (IsString)
 import Data.String.Conversions (cs)
+import Data.Tagged (Tagged (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Effectful
 import GHC.Generics (Generic)
-import Prelude hiding (Real, even, head, last, odd, print, putStr, putStrLn, readFile, reverse, writeFile, (!!), truncate)
+import Prelude hiding (Real, even, head, last, odd, print, putStr, putStrLn, readFile, reverse, truncate, writeFile, (!!))
 import Prelude qualified
+
 
 identity :: a -> a
 identity x = x
 
+
 print :: (MonadIO m, Show a) => a -> m ()
 print = liftIO . Prelude.print
 
+
 putStrLn :: (MonadIO m) => String -> m ()
 putStrLn = liftIO . Prelude.putStrLn
+
 
 putStr :: (MonadIO m) => String -> m ()
 putStr = liftIO . Prelude.putStr

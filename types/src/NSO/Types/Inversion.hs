@@ -31,6 +31,8 @@ data InversionRow f = InversionRow
   , downloadTaskId :: Column f (Maybe Text)
   , calibration :: Column f (Maybe UTCTime)
   , calibrationSoftware :: Column f (Maybe GitCommit)
+  , upload :: Column f (Maybe UTCTime)
+  , uploadTaskId :: Column f (Maybe Text)
   , inversion :: Column f (Maybe UTCTime)
   , inversionSoftware :: Column f (Maybe GitCommit)
   , postProcess :: Column f (Maybe UTCTime)

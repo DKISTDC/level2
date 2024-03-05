@@ -34,8 +34,11 @@ data Inversions :: Effect where
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   Create :: Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
-  SetDownloaded :: Id Inversion -> Id Task -> Inversions m ()
+  SetDownloaded :: Id Inversion -> Inversions m ()
+  SetDownloading :: Id Inversion -> Id Task -> Inversions m ()
   SetCalibrated :: Id Inversion -> GitCommit -> Inversions m ()
+  SetUploading :: Id Inversion -> Id Task -> Inversions m ()
+  SetUploaded :: Id Inversion -> Inversions m ()
   SetInverted :: Id Inversion -> GitCommit -> Inversions m ()
   SetPostProcessed :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
@@ -80,8 +83,11 @@ inversion row = maybe err pure $ do
     (StepPublished <$> published)
       <|> (StepProcessed <$> processed)
       <|> (StepInverted <$> inverted)
+      <|> (StepUploaded <$> uploaded)
+      <|> (StepUploading <$> uploading)
       <|> (StepCalibrated <$> calibrated)
       <|> (StepDownloaded <$> downloaded)
+      <|> (StepDownloading <$> downloading)
       <|> (StepCreated <$> started)
 
   started :: Maybe (Many StepCreated)
@@ -95,6 +101,12 @@ inversion row = maybe err pure $ do
     task <- row.downloadTaskId
     pure $ Downloaded down task ./ prev
 
+  downloading :: Maybe (Many (Transfer : StepCreated))
+  downloading = do
+    prev <- started
+    task <- row.downloadTaskId
+    pure $ Transfer task ./ prev
+
   calibrated :: Maybe (Many StepCalibrated)
   calibrated = do
     prev <- downloaded
@@ -102,9 +114,22 @@ inversion row = maybe err pure $ do
     url <- row.calibrationSoftware
     pure $ Calibrated cal url ./ prev
 
+  uploaded :: Maybe (Many StepUploaded)
+  uploaded = do
+    prev <- calibrated
+    upd <- row.upload
+    tsk <- row.uploadTaskId
+    pure $ Uploaded upd tsk ./ prev
+
+  uploading :: Maybe (Many (Transfer : StepCalibrated))
+  uploading = do
+    prev <- calibrated
+    tsk <- row.uploadTaskId
+    pure $ Transfer tsk ./ prev
+
   inverted :: Maybe (Many StepInverted)
   inverted = do
-    prev <- calibrated
+    prev <- uploaded
     inv <- row.inversion
     sft <- row.inversionSoftware
     pure $ Inverted inv sft ./ prev
@@ -132,8 +157,11 @@ runDataInversions = interpret $ \_ -> \case
   ById iid -> queryById iid
   Create pid -> create pid
   Remove iid -> remove iid
-  SetDownloaded iid tid -> setDownloaded iid tid
+  SetDownloaded iid -> setDownloaded iid
+  SetDownloading iid tid -> setDownloading iid tid
   SetCalibrated iid url -> setCalibrated iid url
+  SetUploaded iid -> setUploaded iid
+  SetUploading iid tid -> setUploading iid tid
   SetInverted iid soft -> setInverted iid soft
   SetPostProcessed iid -> setPostProcessed iid
   SetPublished iid -> setPublished iid
@@ -194,10 +222,23 @@ runDataInversions = interpret $ \_ -> \case
             , returning = NumberOfRowsAffected
             }
 
-  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
-  setDownloaded iid tid = do
+  setDownloading :: (Rel8 :> es) => Id Inversion -> Id Task -> Eff es ()
+  setDownloading iid tid = do
+    updateInversion iid $ \r -> r{downloadTaskId = lit (Just tid.fromId)}
+
+  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setDownloaded iid = do
     now <- currentTime
-    updateInversion iid $ \r -> r{download = lit (Just now), downloadTaskId = lit (Just tid.fromId)}
+    updateInversion iid $ \r -> r{download = lit (Just now)}
+
+  setUploading :: (Rel8 :> es) => Id Inversion -> Id Task -> Eff es ()
+  setUploading iid tid = do
+    updateInversion iid $ \r -> r{uploadTaskId = lit (Just tid.fromId)}
+
+  setUploaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setUploaded iid = do
+    now <- currentTime
+    updateInversion iid $ \r -> r{upload = lit (Just now)}
 
   setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setCalibrated iid url = do
@@ -244,6 +285,8 @@ runDataInversions = interpret $ \_ -> \case
             , downloadTaskId = Nothing
             , calibration = Nothing
             , calibrationSoftware = Nothing
+            , upload = Nothing
+            , uploadTaskId = Nothing
             , inversion = Nothing
             , inversionSoftware = Nothing
             , postProcess = Nothing
@@ -265,6 +308,8 @@ inversions =
           , downloadTaskId = "download_task_id"
           , calibration = "calibration"
           , calibrationSoftware = "calibration_software"
+          , upload = "upload"
+          , uploadTaskId = "upload_task_id"
           , inversion = "inversion"
           , inversionSoftware = "inversion_software"
           , postProcess = "post_process"
