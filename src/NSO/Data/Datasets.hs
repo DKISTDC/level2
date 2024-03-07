@@ -58,21 +58,21 @@ runDataDatasets = interpret $ \_ -> \case
  where
   queryLatest :: (Rel8 :> es) => Eff es [Dataset]
   queryLatest = do
-    query () $ select $ do
+    runQuery () $ select $ do
       row <- each datasets
       where_ (row.latest ==. lit True)
       return row
 
   queryProposal :: (Rel8 :> es) => Id Proposal -> Eff es [Dataset]
   queryProposal eid = do
-    query () $ select $ do
+    runQuery () $ select $ do
       row <- each datasets
       where_ (row.primaryProposalId ==. lit eid)
       return row
 
   queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
   queryProgram ip = do
-    query () $ select $ do
+    runQuery () $ select $ do
       -- note that this DOESN'T limit by latest
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit ip)
@@ -80,7 +80,7 @@ runDataDatasets = interpret $ \_ -> \case
 
   queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
   queryById i = do
-    query () $ select $ do
+    runQuery () $ select $ do
       row <- each datasets
       where_ (row.datasetId ==. lit i)
       return row
@@ -88,7 +88,7 @@ runDataDatasets = interpret $ \_ -> \case
   insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
   insertAll ds =
     void $
-      query () $
+      runQuery () $
         Rel8.insert $
           Insert
             { into = datasets
@@ -101,7 +101,7 @@ runDataDatasets = interpret $ \_ -> \case
   updateOld ids = do
     let ids' = fmap lit ids
     void $
-      query () $
+      runQuery () $
         Rel8.update $
           Update
             { target = datasets

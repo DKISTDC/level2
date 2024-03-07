@@ -30,7 +30,7 @@ page
   => Id InstrumentProgram
   -> Page es Response
 page ip = do
-  hyper $ inversions $ refreshInversions ip
+  hyper $ inversions (refreshInversions ip)
   hyper DatasetsTable.actionSort
 
   load $ do

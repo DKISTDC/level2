@@ -3,7 +3,7 @@ module App.Page.Inversion where
 import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
-import App.Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.View.Icons qualified as Icons
 import App.View.Inversions
@@ -11,17 +11,23 @@ import App.View.Layout
 import Data.Diverse.Many
 import Effectful
 import Effectful.Dispatch.Dynamic
+import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
-import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Id Inversion -> Page es Response
-page i = do
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Layout :> es) => Id Inversion -> InversionRoute -> Page es Response
+page i Inv = pageMain i
+page i SubmitDownload = pageSubmitDownload i
+
+
+pageMain :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Id Inversion -> Page es Response
+pageMain i = do
   hyper $ inversions redirectHome
   load $ do
+    -- TODO: handle taskId query param, and pass forward!
     (inv :| _) <- send (Inversions.ById i) >>= expectFound
     step <- currentStep inv.step
     appLayout Inversions $ do
@@ -37,6 +43,23 @@ page i = do
               text inv.programId.fromId
 
         viewId (InversionStatus inv.programId) $ viewInversion inv step
+
+
+pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es) => Id Inversion -> Page es Response
+pageSubmitDownload iv = do
+  load $ do
+    t <- parseTransferForm
+    (inv :| _) <- send (Inversions.ById iv) >>= expectFound
+    ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
+    it <- Globus.initDownload t ds
+
+    -- don't mark as downloading... there is no downloading step
+    -- send $ Inversions.SetDownloading iv it
+
+    redirect $ addTaskId it $ routeUrl (Route.Inversion iv Inv)
+ where
+  setQuery query Url{path, scheme, domain} = Url{path, scheme, domain, query}
+  addTaskId it = setQuery [("taskId", Just (cs it.fromId))]
 
 
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())
@@ -103,7 +126,7 @@ inversions onCancel (InversionStatus ip) = \case
         onCancel
       Download -> do
         r <- request
-        redirect $ Globus.fileManagerUrl iid ip r
+        redirect $ Globus.fileManagerUrl (Route.Inversion iid SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
       CalibrateValid -> do
         inv <- send (Inversions.ById iid) >>= expectFound
         f <- parseForm @CalibrationForm
@@ -133,11 +156,13 @@ inversions onCancel (InversionStatus ip) = \case
         send $ Inversions.SetPublished iid
         refresh iid
   CheckDownload vi ti -> do
-    t <- Globus.transferStatus ti
-    checkDownload vi ti t
+    -- t <- Globus.transferStatus ti
+    -- checkDownload vi ti t
+    pure $ el_ "TODO"
   CheckUpload vi ti -> do
-    t <- Globus.transferStatus ti
-    checkUpload vi ti t
+    -- t <- Globus.transferStatus ti
+    -- checkUpload vi ti t
+    pure $ el_ "TODO"
  where
   refresh iid = do
     (inv :| _) <- send (Inversions.ById iid) >>= expectFound
@@ -158,44 +183,40 @@ inversions onCancel (InversionStatus ip) = \case
     viewInversionContainer step $ onLoad act 0 $ do
       el disabled cnt
 
-  disabled = opacity 0.5 . att "inert" ""
 
-
-checkDownload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
-checkDownload vi ti t' = do
-  case t'.status of
-    Succeeded -> do
-      inv <- send (Inversions.ById vi) >>= expectFound
-      -- Defer checking of whether or not the download has finished until they load this page
-      -- but then mark it as downloaded
-      send (Inversions.SetDownloaded vi)
-      pure $ viewInversionContainer Calibrating $ do
-        stepCalibrate $ head inv
-    Failed -> pure $ do
-      viewInversionContainer (Downloading ti) $ do
-        viewTransferFailed t'
-    _ -> pure $ do
-      viewInversionContainer (Downloading ti) $ do
-        onLoad (CheckDownload vi ti) 5000 $ do
-          viewTransferProgress t'
-
-
-checkUpload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
-checkUpload vi ti t = do
-  case t.status of
-    Succeeded -> do
-      inv <- send (Inversions.ById vi) >>= expectFound
-      send (Inversions.SetUploaded vi)
-      pure $ viewInversionContainer Calibrating $ do
-        stepCalibrate $ head inv
-    Failed -> pure $ do
-      viewInversionContainer (Downloading ti) $ do
-        viewTransferFailed t
-    _ -> pure $ do
-      viewInversionContainer (Downloading ti) $ do
-        onLoad (CheckDownload vi ti) 5000 $ do
-          viewTransferProgress t
-
+-- checkDownload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
+-- checkDownload vi ti t' = do
+--   case t'.status of
+--     Succeeded -> do
+--       inv <- send (Inversions.ById vi) >>= expectFound
+--       -- here is where we set that we have finished downloading
+--       send (Inversions.SetDownloaded vi)
+--       pure $ viewInversionContainer Calibrating $ do
+--         stepCalibrate $ head inv
+--     Failed -> pure $ do
+--       viewInversionContainer (Downloading (Transferring ti)) $ do
+--         viewTransferFailed t'
+--     _ -> pure $ do
+--       viewInversionContainer (Downloading (Transferring ti)) $ do
+--         onLoad (CheckDownload vi ti) 5000 $ do
+--           viewTransferProgress t'
+--
+--
+-- checkUpload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
+-- checkUpload vi ti t = do
+--   case t.status of
+--     Succeeded -> do
+--       inv <- send (Inversions.ById vi) >>= expectFound
+--       send (Inversions.SetUploaded vi)
+--       pure $ viewInversionContainer Calibrating $ do
+--         stepCalibrate $ head inv
+--     Failed -> pure $ do
+--       viewInversionContainer (Uploading (Transferring ti)) $ do
+--         viewTransferFailed t
+--     _ -> pure $ do
+--       viewInversionContainer (Uploading (Transferring ti)) $ do
+--         onLoad (CheckDownload vi ti) 5000 $ do
+--           viewTransferProgress t
 
 viewInversionContainer :: CurrentStep -> View InversionStatus () -> View InversionStatus ()
 viewInversionContainer step cnt =
@@ -215,28 +236,15 @@ viewInversion inv step = do
     viewStep step
  where
   viewStep :: CurrentStep -> View InversionStatus ()
-  viewStep (Downloading Select) = stepDownload
-  viewStep (Downloading (Transfer ti)) = stepCheckDownload ti
+  viewStep Downloading = viewStepDownload inv.inversionId Nothing
+  -- viewStep Downloading = stepCheckDownload ti
   viewStep Calibrating = stepCalibrate inv
   viewStep Inverting = stepInvert inv
-  viewStep (Uploading (Transfer ti)) = stepCheckUpload ti
-  viewStep (Uploading Select) = stepUpload
+  -- viewStep (Uploading (Transferring ti)) = stepCheckUpload ti
+  viewStep Uploading = stepUpload
   viewStep Processing = stepProcess
   viewStep Publishing = stepPublish
   viewStep Complete = stepDone
-
-  stepDownload = do
-    el_ "You will be redirected to Globus. Please select a destination for this instrument program"
-
-    row (gap 10) $ do
-      button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Download Location"
-      button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) $ do
-        "Cancel"
-
-  stepCheckDownload ti = do
-    -- don't show anything until load
-    onLoad (CheckDownload inv.inversionId ti) 0 $ do
-      el (height 60) ""
 
   stepProcess = do
     button (Update inv.inversionId PostProcess) (Style.btn Primary . grow) "Save Post Processing"
@@ -255,10 +263,26 @@ viewInversion inv step = do
     row (gap 10) $ do
       button (Update inv.inversionId Upload) (Style.btn Primary . grow) "Choose Upload Source Location"
 
-  stepCheckUpload ti = do
-    -- don't show anything until load
-    onLoad (CheckDownload inv.inversionId ti) 0 $ do
-      el (height 60) ""
+
+-- stepCheckUpload ti = do
+--   -- don't show anything until load
+--   onLoad (CheckDownload inv.inversionId ti) 0 $ do
+--     el (height 60) ""
+
+viewStepDownload :: Id Inversion -> Maybe (Id Task) -> View InversionStatus ()
+viewStepDownload ii Nothing = do
+  el_ "You will be redirected to Globus. Please select a destination for this instrument program"
+
+  row (gap 10) $ do
+    button (Update ii Download) (Style.btn Primary) "Choose Download Location"
+
+  row (gap 10) $ do
+    button (Update ii Cancel) (Style.btnOutline Secondary) "Cancel"
+    el (grow . disabled . Style.btnOutline Secondary) "Submit Download"
+viewStepDownload ii (Just it) = do
+  -- don't show anything until load
+  onLoad (CheckDownload ii it) 0 $ do
+    el (height 60) ""
 
 
 stepCalibrate :: Inversion -> View InversionStatus ()
@@ -295,9 +319,9 @@ validationError msg = do
 
 
 data CurrentStep
-  = Downloading TransferStep
+  = Downloading
   | Calibrating
-  | Uploading TransferStep
+  | Uploading
   | Inverting
   | Processing
   | Publishing
@@ -305,11 +329,10 @@ data CurrentStep
   deriving (Eq, Ord, Show)
 
 
-data TransferStep
-  = Select
-  | Transferring (Id Task)
-  deriving (Eq, Ord, Show)
-
+-- data TransferStep
+--   = Select
+--   | Transferring (Id Task)
+--   deriving (Eq, Ord, Show)
 
 newtype CurrentTask = CurrentTask Task
   deriving (Eq)
@@ -317,16 +340,16 @@ newtype CurrentTask = CurrentTask Task
 
 currentStep :: (Globus :> es) => InversionStep -> Eff es CurrentStep
 currentStep = \case
-  StepCreated _ -> pure $ Downloading Select
-  StepDownloading dwn -> do
-    let t = grab @Transfer dwn :: Transfer
-    pure $ Downloading $ Active (Id t.taskId)
+  StepCreated _ -> pure Downloading
+  -- StepDownloading dwn -> do
+  --   let t = grab @Transfer dwn :: Transfer
+  --   pure $ Downloading $ Transferring (Id t.taskId)
   StepDownloaded _ -> pure Calibrating
-  StepCalibrated _ -> pure Uploading Select
+  StepCalibrated _ -> pure Uploading
   StepUploaded _ -> pure Inverting
-  StepUploading up -> do
-    let t = grab @Transfer up :: Transfer
-    pure $ Uploading $ Active (Id t.taskId)
+  -- StepUploading up -> do
+  --   let t = grab @Transfer up :: Transfer
+  --   pure $ Uploading $ Transferring (Id t.taskId)
   StepInverted _ -> pure Processing
   StepProcessed _ -> pure Publishing
   StepPublished _ -> pure Complete
@@ -335,8 +358,8 @@ currentStep = \case
 invProgress :: CurrentStep -> View InversionStatus ()
 invProgress curr = do
   row (gap 10) $ do
-    stat (Downloading Select) "DOWNLOAD" "1"
-    line (Downloading Select)
+    stat Downloading "DOWNLOAD" "1"
+    line Downloading
     stat Calibrating "CALIBRATE" "2"
     line Calibrating
     stat Inverting "INVERT" "3"
@@ -381,3 +404,7 @@ invProgress curr = do
       | otherwise = Gray
 
   circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
+
+
+disabled :: Mod
+disabled = opacity 0.5 . att "inert" ""

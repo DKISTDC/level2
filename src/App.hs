@@ -51,7 +51,7 @@ app config =
   router Dashboard = page Dashboard.page
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page
-  router (Inversion i) = page $ Inversion.page i
+  router (Inversion i r) = page $ Inversion.page i r
   router (Proposal p) = page $ Proposal.page p
   router (Program p) = page $ Program.page p
   router (Dataset d) = page $ Dataset.page d
@@ -66,7 +66,6 @@ app config =
     tok <- Globus.accessToken (Tagged code)
     saveAccessToken tok
     redirect (pathUrl . routePath $ Proposals)
-  router (Transfer inv) = page $ Globus.handleTransfer inv
 
   runApp :: (IOE :> es) => Eff (Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
   runApp =

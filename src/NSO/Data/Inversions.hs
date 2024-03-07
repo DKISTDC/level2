@@ -84,10 +84,8 @@ inversion row = maybe err pure $ do
       <|> (StepProcessed <$> processed)
       <|> (StepInverted <$> inverted)
       <|> (StepUploaded <$> uploaded)
-      <|> (StepUploading <$> uploading)
       <|> (StepCalibrated <$> calibrated)
       <|> (StepDownloaded <$> downloaded)
-      <|> (StepDownloading <$> downloading)
       <|> (StepCreated <$> started)
 
   started :: Maybe (Many StepCreated)
@@ -100,12 +98,6 @@ inversion row = maybe err pure $ do
     down <- row.download
     task <- row.downloadTaskId
     pure $ Downloaded down task ./ prev
-
-  downloading :: Maybe (Many (Transfer : StepCreated))
-  downloading = do
-    prev <- started
-    task <- row.downloadTaskId
-    pure $ Transfer task ./ prev
 
   calibrated :: Maybe (Many StepCalibrated)
   calibrated = do
@@ -120,12 +112,6 @@ inversion row = maybe err pure $ do
     upd <- row.upload
     tsk <- row.uploadTaskId
     pure $ Uploaded upd tsk ./ prev
-
-  uploading :: Maybe (Many (Transfer : StepCalibrated))
-  uploading = do
-    prev <- calibrated
-    tsk <- row.uploadTaskId
-    pure $ Transfer tsk ./ prev
 
   inverted :: Maybe (Many StepInverted)
   inverted = do
@@ -177,13 +163,13 @@ runDataInversions = interpret $ \_ -> \case
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
   queryAll = do
-    irs <- query () $ select $ do
+    irs <- runQuery () $ select $ do
       each inversions
     AllInversions <$> toInversions irs
 
   queryById :: (Rel8 :> es, Error DataError :> es) => Id Inversion -> Eff es [Inversion]
   queryById iid = do
-    irs <- query () $ select $ do
+    irs <- runQuery () $ select $ do
       row <- each inversions
       where_ (row.inversionId ==. lit iid)
       pure row
@@ -191,7 +177,7 @@ runDataInversions = interpret $ \_ -> \case
 
   queryInstrumentProgram :: (Rel8 :> es, Error DataError :> es) => Id InstrumentProgram -> Eff es [Inversion]
   queryInstrumentProgram ip = do
-    irs <- query () $ select $ do
+    irs <- runQuery () $ select $ do
       row <- each inversions
       where_ (row.programId ==. lit ip)
       return row
@@ -200,7 +186,7 @@ runDataInversions = interpret $ \_ -> \case
   remove :: (Rel8 :> es) => Id Inversion -> Eff es ()
   remove iid = do
     void $
-      query () $
+      runQuery () $
         Rel8.delete $
           Delete
             { from = inversions
@@ -212,7 +198,7 @@ runDataInversions = interpret $ \_ -> \case
   updateInversion :: (Rel8 :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
   updateInversion iid f = do
     void $
-      query () $
+      runQuery () $
         Rel8.update $
           Update
             { target = inversions
@@ -264,7 +250,7 @@ runDataInversions = interpret $ \_ -> \case
   create ip = do
     inv <- empty ip
     void $
-      query () $
+      runQuery () $
         Rel8.insert $
           Insert
             { into = inversions

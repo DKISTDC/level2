@@ -14,11 +14,16 @@ data AppRoute
   | Proposals
   | Experiments
   | Inversions
-  | Inversion (Id Inversion)
+  | Inversion (Id Inversion) InversionRoute
   | Proposal (Id Proposal)
   | Program (Id InstrumentProgram)
   | Dataset (Id Dataset)
   | Redirect
   | Logout
-  | SubmitDownload (Id Inversion)
+  deriving (Show, Generic, Eq, Route)
+
+
+data InversionRoute
+  = Inv
+  | SubmitDownload
   deriving (Show, Generic, Eq, Route)

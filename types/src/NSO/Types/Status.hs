@@ -27,12 +27,6 @@ instance DBType Created where
   typeInformation = jsonTypeInfo
 
 
-data Transfer = Transfer {taskId :: Text}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Transfer where
-  typeInformation = jsonTypeInfo
-
-
 data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Text}
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 instance DBType Downloaded where
@@ -83,10 +77,8 @@ type StepPublished = Published : StepProcessed
 data InversionStep
   = StepCreated (Many StepCreated)
   | -- we are activly downloading but haven't finished yet
-    StepDownloading (Many (Transfer : StepCreated))
-  | StepDownloaded (Many StepDownloaded)
+    StepDownloaded (Many StepDownloaded)
   | StepCalibrated (Many StepCalibrated)
-  | StepUploading (Many (Transfer : StepCalibrated))
   | StepUploaded (Many StepUploaded)
   | StepInverted (Many StepInverted)
   | StepProcessed (Many StepProcessed)
@@ -97,9 +89,7 @@ data InversionStep
 stepCreated :: InversionStep -> Created
 stepCreated (StepCreated m) = grab @Created m
 stepCreated (StepDownloaded m) = grab @Created m
-stepCreated (StepDownloading m) = grab @Created m
 stepCreated (StepCalibrated m) = grab @Created m
-stepCreated (StepUploading m) = grab @Created m
 stepCreated (StepUploaded m) = grab @Created m
 stepCreated (StepInverted m) = grab @Created m
 stepCreated (StepProcessed m) = grab @Created m

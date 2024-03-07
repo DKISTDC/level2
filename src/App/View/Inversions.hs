@@ -33,7 +33,7 @@ activityLink :: Task -> View c ()
 activityLink t =
   WebView.link activityUrl Style.link "View Transfer on Globus"
  where
-  activityUrl = Url $ "https://app.globus.org/activity/" <> t.task_id.unTagged
+  activityUrl = Url "https://" "app.globus.org" ["activity", t.task_id.unTagged] []
 
 
 progress :: Float -> View c ()
