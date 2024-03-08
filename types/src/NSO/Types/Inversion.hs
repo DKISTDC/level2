@@ -29,13 +29,13 @@ data InversionRow f = InversionRow
   , created :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)
   , downloadTaskId :: Column f (Maybe Text)
-  , calibration :: Column f (Maybe UTCTime)
-  , calibrationSoftware :: Column f (Maybe GitCommit)
+  , preprocess :: Column f (Maybe UTCTime)
+  , preprocessSoftware :: Column f (Maybe GitCommit)
   , upload :: Column f (Maybe UTCTime)
   , uploadTaskId :: Column f (Maybe Text)
   , inversion :: Column f (Maybe UTCTime)
   , inversionSoftware :: Column f (Maybe GitCommit)
-  , postProcess :: Column f (Maybe UTCTime)
+  , generate :: Column f (Maybe UTCTime)
   , publish :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)

@@ -4,6 +4,7 @@ import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversion
+import App.Page.Inversions.InvForm
 import App.Route
 import App.Style qualified as Style
 import App.Types (App (..))
@@ -32,6 +33,7 @@ page
 page ip = do
   hyper $ inversions (refreshInversions ip)
   hyper DatasetsTable.actionSort
+  hyper inversionCommit
 
   load $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram ip)

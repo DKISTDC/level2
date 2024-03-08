@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS inversions (
   download TIMESTAMP,
   download_task_id TEXT,
 
-  calibration TIMESTAMP,
-  calibration_software TEXT,
+  preprocess TIMESTAMP,
+  preprocess_software TEXT,
 
   upload TIMESTAMP,
   upload_task_id TEXT,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS inversions (
   inversion TIMESTAMP,
   inversion_software TEXT,
 
-  post_process TIMESTAMP,
+  generate TIMESTAMP,
 
   publish TIMESTAMP
 );

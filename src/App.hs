@@ -43,11 +43,17 @@ main = do
 
 app :: Config -> Application
 app config =
-  liveApp
+  waiApp
     document
     (runApp . routeRequest $ router)
-    (runApp . routeRequest $ router)
  where
+  -- (runApp . routeRequest $ router)
+
+  -- liveApp
+  --   document
+  --   (runApp . routeRequest $ router)
+  --   (runApp . routeRequest $ router)
+
   router Dashboard = page Dashboard.page
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page

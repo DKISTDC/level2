@@ -59,5 +59,9 @@ underline =
       & prop @Text "text-decoration" "underline"
 
 
-input :: Mod
-input = pad 8 . border 1 . borderColor Gray
+input :: AppColor -> Mod
+input c = pad 8 . border 1 . borderColor c
+
+
+disabled :: Mod
+disabled = opacity 0.5 . att "inert" ""

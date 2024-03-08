@@ -36,14 +36,14 @@ data Inversions :: Effect where
   Remove :: Id Inversion -> Inversions m ()
   SetDownloaded :: Id Inversion -> Inversions m ()
   SetDownloading :: Id Inversion -> Id Task -> Inversions m ()
-  SetCalibrated :: Id Inversion -> GitCommit -> Inversions m ()
+  SetPreprocessed :: Id Inversion -> GitCommit -> Inversions m ()
   SetUploading :: Id Inversion -> Id Task -> Inversions m ()
   SetUploaded :: Id Inversion -> Inversions m ()
-  SetInverted :: Id Inversion -> GitCommit -> Inversions m ()
-  SetPostProcessed :: Id Inversion -> Inversions m ()
+  SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
+  SetGenerated :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
   ValidateDesireCommit :: GitCommit -> Inversions m Bool
-  ValidateCalibrationCommit :: GitCommit -> Inversions m Bool
+  ValidatePreprocessCommit :: GitCommit -> Inversions m Bool
 type instance DispatchOf Inversions = 'Dynamic
 
 
@@ -81,11 +81,12 @@ inversion row = maybe err pure $ do
   -- if any are missing skip
   step =
     (StepPublished <$> published)
-      <|> (StepProcessed <$> processed)
+      <|> (StepGenerated <$> generated)
       <|> (StepInverted <$> inverted)
-      <|> (StepUploaded <$> uploaded)
-      <|> (StepCalibrated <$> calibrated)
+      <|> (StepInverting <$> inverting)
+      <|> (StepPreprocessed <$> preprocessed)
       <|> (StepDownloaded <$> downloaded)
+      <|> (StepDownloading <$> downloading)
       <|> (StepCreated <$> started)
 
   started :: Maybe (Many StepCreated)
@@ -99,38 +100,46 @@ inversion row = maybe err pure $ do
     task <- row.downloadTaskId
     pure $ Downloaded down task ./ prev
 
-  calibrated :: Maybe (Many StepCalibrated)
-  calibrated = do
+  preprocessed :: Maybe (Many StepPreprocessed)
+  preprocessed = do
     prev <- downloaded
-    cal <- row.calibration
-    url <- row.calibrationSoftware
-    pure $ Calibrated cal url ./ prev
+    pre <- row.preprocess
+    sft <- row.preprocessSoftware
+    pure $ Preprocessed pre sft ./ prev
 
-  uploaded :: Maybe (Many StepUploaded)
-  uploaded = do
-    prev <- calibrated
-    upd <- row.upload
-    tsk <- row.uploadTaskId
-    pure $ Uploaded upd tsk ./ prev
+  inverting :: Maybe (Many StepInverting)
+  inverting = do
+    prev <- preprocessed
+    let sft = row.inversionSoftware
+    let tsk = row.uploadTaskId
+    pure $ Invert sft tsk ./ prev
 
   inverted :: Maybe (Many StepInverted)
   inverted = do
-    prev <- uploaded
+    prev <- preprocessed
     inv <- row.inversion
     sft <- row.inversionSoftware
-    pure $ Inverted inv sft ./ prev
+    upl <- row.upload
+    tsk <- row.uploadTaskId
+    pure $ Inverted inv sft upl tsk ./ prev
 
-  processed :: Maybe (Many StepProcessed)
-  processed = do
+  generated :: Maybe (Many StepGenerated)
+  generated = do
     prev <- inverted
-    proc <- row.postProcess
-    pure $ Processed proc ./ prev
+    proc <- row.generate
+    pure $ Generated proc ./ prev
 
   published :: Maybe (Many StepPublished)
   published = do
-    prev <- processed
+    prev <- generated
     publ <- row.publish
     pure $ Published publ ./ prev
+
+  downloading :: Maybe (Many StepDownloading)
+  downloading = do
+    prev <- started
+    task <- row.downloadTaskId
+    pure $ Transfer task ./ prev
 
 
 runDataInversions
@@ -145,17 +154,17 @@ runDataInversions = interpret $ \_ -> \case
   Remove iid -> remove iid
   SetDownloaded iid -> setDownloaded iid
   SetDownloading iid tid -> setDownloading iid tid
-  SetCalibrated iid url -> setCalibrated iid url
+  SetPreprocessed iid url -> setPreprocessed iid url
   SetUploaded iid -> setUploaded iid
   SetUploading iid tid -> setUploading iid tid
-  SetInverted iid soft -> setInverted iid soft
-  SetPostProcessed iid -> setPostProcessed iid
+  SetInversion iid soft -> setInversion iid soft
+  SetGenerated iid -> setGenerated iid
   SetPublished iid -> setPublished iid
-  ValidateCalibrationCommit gc -> validateGitCommit calibrationRepo gc
+  ValidatePreprocessCommit gc -> validateGitCommit preprocessRepo gc
   ValidateDesireCommit gc -> validateGitCommit desireRepo gc
  where
   -- TODO: Get correct repo
-  calibrationRepo = https "github.com" /: "DKISTDC" /: "level2"
+  preprocessRepo = https "github.com" /: "DKISTDC" /: "level2"
 
   -- TODO: Get correct repo. Need to move into the data center?
   desireRepo = https "github.com" /: "han-uitenbroek" /: "RH"
@@ -226,20 +235,20 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{upload = lit (Just now)}
 
-  setCalibrated :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
-  setCalibrated iid url = do
+  setPreprocessed :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
+  setPreprocessed iid url = do
     now <- currentTime
-    updateInversion iid $ \r -> r{calibration = lit (Just now), calibrationSoftware = lit (Just url)}
+    updateInversion iid $ \r -> r{preprocess = lit (Just now), preprocessSoftware = lit (Just url)}
 
-  setInverted :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
-  setInverted iid soft = do
+  setInversion :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
+  setInversion iid soft = do
     now <- currentTime
     updateInversion iid $ \r -> r{inversion = lit (Just now), inversionSoftware = lit (Just soft)}
 
-  setPostProcessed :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
-  setPostProcessed iid = do
+  setGenerated :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setGenerated iid = do
     now <- currentTime
-    updateInversion iid $ \r -> r{postProcess = lit (Just now)}
+    updateInversion iid $ \r -> r{generate = lit (Just now)}
 
   setPublished :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
   setPublished iid = do
@@ -269,13 +278,13 @@ runDataInversions = interpret $ \_ -> \case
             , created = time
             , download = Nothing
             , downloadTaskId = Nothing
-            , calibration = Nothing
-            , calibrationSoftware = Nothing
+            , preprocess = Nothing
+            , preprocessSoftware = Nothing
             , upload = Nothing
             , uploadTaskId = Nothing
             , inversion = Nothing
             , inversionSoftware = Nothing
-            , postProcess = Nothing
+            , generate = Nothing
             , publish = Nothing
             }
 
@@ -292,13 +301,13 @@ inversions =
           , created = "created"
           , download = "download"
           , downloadTaskId = "download_task_id"
-          , calibration = "calibration"
-          , calibrationSoftware = "calibration_software"
+          , preprocess = "preprocess"
+          , preprocessSoftware = "preprocess_software"
           , upload = "upload"
           , uploadTaskId = "upload_task_id"
           , inversion = "inversion"
           , inversionSoftware = "inversion_software"
-          , postProcess = "post_process"
+          , generate = "generate"
           , publish = "publish"
           }
     }

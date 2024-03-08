@@ -127,7 +127,7 @@ instance Form TransferForm where
 transferStatus :: (Hyperbole :> es, Globus :> es) => Id Task -> Eff es Task
 transferStatus (Id ti) = do
   tok <- getAccessToken >>= expectAuth
-  send $ TaskStatus tok (Tagged ti)
+  send $ StatusTask tok (Tagged ti)
 
 
 getAccessToken :: (Hyperbole :> es) => Eff es (Maybe (Token Access))

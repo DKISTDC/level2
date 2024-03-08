@@ -5,7 +5,6 @@ module NSO.Types.Status where
 import Data.Aeson
 import Data.Diverse.Many
 import NSO.Prelude
-import NSO.Types.Common (jsonTypeInfo)
 import Rel8
 
 
@@ -18,70 +17,66 @@ data ProgramStatus
 
 
 newtype GitCommit = GitCommit Text
-  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType)
+  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord)
 
 
 data Created = Created {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Created where
-  typeInformation = jsonTypeInfo
+  deriving (Show, Eq)
 
 
 data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Text}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Downloaded where
-  typeInformation = jsonTypeInfo
+  deriving (Show, Eq)
 
 
-data Calibrated = Calibrated {timestamp :: UTCTime, calibrationSoftware :: GitCommit}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Calibrated where
-  typeInformation = jsonTypeInfo
+data Preprocessed = Preprocessed {timestamp :: UTCTime, preprocessSoftware :: GitCommit}
+  deriving (Show, Eq)
 
 
-data Uploaded = Uploaded {timestamp :: UTCTime, taskId :: Text}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Uploaded where
-  typeInformation = jsonTypeInfo
+data Inverted = Inverted {inverted :: UTCTime, inversionSoftware :: GitCommit, uploaded :: UTCTime, uploadedTaskId :: Text}
+  deriving (Show, Eq)
 
 
-data Inverted = Inverted {timestamp :: UTCTime, inversionSoftware :: GitCommit}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Inverted where
-  typeInformation = jsonTypeInfo
-
-
-data Processed = Processed {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Processed where
-  typeInformation = jsonTypeInfo
+data Generated = Generated {timestamp :: UTCTime}
+  deriving (Show, Eq)
 
 
 data Published = Published {timestamp :: UTCTime}
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-instance DBType Published where
-  typeInformation = jsonTypeInfo
+  deriving (Show, Eq)
+
+
+data Transfer = Transfer {taskId :: Text}
+  deriving (Show, Eq)
+
+
+data Invert = Invert
+  { commit :: Maybe GitCommit
+  , taskId :: Maybe Text
+  }
+  deriving (Show, Eq)
 
 
 -- Data Diverse Many: https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/ManySpec.hs
 -- Each step requires all previous steps to exist
 type StepCreated = '[Created]
 type StepDownloaded = Downloaded : StepCreated
-type StepCalibrated = Calibrated : StepDownloaded
-type StepUploaded = Uploaded : StepCalibrated
-type StepInverted = Inverted : StepUploaded
-type StepProcessed = Processed : StepInverted
-type StepPublished = Published : StepProcessed
+type StepDownloading = Transfer : StepCreated
+type StepPreprocessed = Preprocessed : StepDownloaded
+type StepInverted = Inverted : StepPreprocessed
+type StepInverting = Invert : StepPreprocessed
+type StepGenerated = Generated : StepInverted
+type StepPublished = Published : StepGenerated
 
 
 data InversionStep
   = StepCreated (Many StepCreated)
   | -- we are activly downloading but haven't finished yet
     StepDownloaded (Many StepDownloaded)
-  | StepCalibrated (Many StepCalibrated)
-  | StepUploaded (Many StepUploaded)
-  | StepInverted (Many StepInverted)
-  | StepProcessed (Many StepProcessed)
+  | StepDownloading (Many StepDownloading)
+  | StepPreprocessed (Many StepPreprocessed)
+  | -- record the inversion metadata first, then upload files
+    StepInverted (Many StepInverted)
+  | StepInverting (Many StepInverting)
+  | StepGenerated (Many StepGenerated)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)
 
@@ -89,8 +84,9 @@ data InversionStep
 stepCreated :: InversionStep -> Created
 stepCreated (StepCreated m) = grab @Created m
 stepCreated (StepDownloaded m) = grab @Created m
-stepCreated (StepCalibrated m) = grab @Created m
-stepCreated (StepUploaded m) = grab @Created m
+stepCreated (StepPreprocessed m) = grab @Created m
 stepCreated (StepInverted m) = grab @Created m
-stepCreated (StepProcessed m) = grab @Created m
+stepCreated (StepGenerated m) = grab @Created m
 stepCreated (StepPublished m) = grab @Created m
+stepCreated (StepDownloading m) = grab @Created m
+stepCreated (StepInverting m) = grab @Created m
