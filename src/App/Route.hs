@@ -26,4 +26,5 @@ data AppRoute
 data InversionRoute
   = Inv
   | SubmitDownload
+  | SubmitUpload
   deriving (Show, Generic, Eq, Route)

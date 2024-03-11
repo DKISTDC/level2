@@ -19,8 +19,12 @@ module App.Globus
   , saveAccessToken
   , clearAccessToken
   , taskPercentComplete
-  , parseTransferForm
   , initDownload
+  , initUpload
+  , FileLimit (..)
+  , TransferForm
+  , UploadFiles
+  , DownloadFolder
   ) where
 
 import App.Error (expectAuth)
@@ -40,6 +44,7 @@ import NSO.Types.InstrumentProgram
 import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
 import System.FilePath
+import Web.FormUrlEncoded (parseMaybe)
 import Web.Hyperbole
 import Web.Hyperbole.Effect (Host (..))
 import Web.View as WebView
@@ -73,16 +78,21 @@ accessToken tok = send $ AccessToken tok
 -- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
 -- accessToken (Token cid) (Token sec) red (Token code) =
 
-fileManagerUrl :: (Route r) => r -> Text -> Request -> Url
-fileManagerUrl r lbl req =
+data FileLimit
+  = Folders Int
+  | Files Int
+
+
+fileManagerUrl :: (Route r) => FileLimit -> r -> Text -> Request -> Url
+fileManagerUrl lmt r lbl req =
   Url
     "https://"
     "app.globus.org"
     ["file-manager"]
     [ ("method", Just "POST")
     , ("action", Just $ cs (renderUrl submitUrl))
-    , ("folderlimit", Just "1")
-    , ("filelimit", Just "0")
+    , ("folderlimit", Just $ cs $ folderLimit lmt)
+    , ("filelimit", Just $ cs $ fileLimit lmt)
     , ("cancelurl", Just $ cs (renderUrl currentUrl))
     , ("label", Just $ cs lbl)
     ]
@@ -90,6 +100,11 @@ fileManagerUrl r lbl req =
   -- <> "&origin_id=d26bd00b-62dc-40d2-9179-7aece2b8c437"
   -- <> "&origin_path=%2Fdata%2Fpid_1_118%2F"
   -- <> "&two_pane=true"
+  fileLimit (Folders _) = "0"
+  fileLimit (Files n) = show n
+
+  folderLimit (Folders n) = show n
+  folderLimit (Files _) = "0"
 
   serverUrl :: [Text] -> Url
   serverUrl p = Url "https://" (cs req.host.text) p []
@@ -107,21 +122,45 @@ data TransferForm a = TransferForm
   , endpoint :: Field a Text
   , path :: Field a Text
   , endpoint_id :: Field a Text
-  , folder :: Field a (Maybe Text)
+  }
+  deriving (Generic, Form)
+
+
+data DownloadFolder a = DownloadFolder
+  { folder :: Field a (Maybe FilePath)
   }
   deriving (Generic)
+instance Form DownloadFolder where
+  fromForm f = do
+    DownloadFolder <$> parseMaybe "folder[0]" f
 
 
-instance Form TransferForm where
-  fromForm =
-    genericFromForm
-      defaultFormOptions
-        { fieldLabelModifier = fields
-        }
+data UploadFiles a = UploadFiles
+  { invResPre :: Field a FilePath
+  , invResMod :: Field a FilePath
+  , perOri :: Field a FilePath
+  }
+  deriving (Generic)
+instance Form UploadFiles where
+  fromForm f = do
+    fs <- multi "file"
+    invResPre <- findFile "inv_res_pre.fits" fs
+    invResMod <- findFile "inv_res_mod.fits" fs
+    perOri <- findFile "per_ori.fits" fs
+    pure UploadFiles{invResPre, invResMod, perOri}
    where
-    -- from my field names to theirs
-    fields "folder" = "folder[0]"
-    fields f = f
+    sub :: Text -> Int -> Text
+    sub t n = t <> "[" <> cs (show n) <> "]"
+    multi t = do
+      sub0 <- parseMaybe (sub t 0) f
+      sub1 <- parseMaybe (sub t 1) f
+      sub2 <- parseMaybe (sub t 2) f
+      pure $ catMaybes [sub0, sub1, sub2]
+    findFile :: FilePath -> [FilePath] -> Either Text FilePath
+    findFile file fs = do
+      if file `elem` fs
+        then pure file
+        else Left $ "Missing required file: " <> cs file
 
 
 transferStatus :: (Hyperbole :> es, Globus :> es) => Id Task -> Eff es Task
@@ -143,28 +182,60 @@ clearAccessToken :: (Hyperbole :> es) => Eff es ()
 clearAccessToken = clearSession "globus"
 
 
-parseTransferForm :: (Hyperbole :> es) => Eff es (TransferForm Identity)
-parseTransferForm =
-  parseForm @TransferForm
-
-
-initDownload :: (Hyperbole :> es, Globus :> es) => TransferForm Identity -> [Dataset] -> Eff es (Id Task)
-initDownload t ds = do
+initTransfer :: (Hyperbole :> es, Globus :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
+initTransfer toRequest = do
   -- TODO: not sure if this belongs here. How can we handle errors?
   acc <- getAccessToken >>= expectAuth
   sub <- send $ SubmissionId acc
-  res <- send $ Globus.Transfer acc $ downloadTransferRequest sub t ds
+  res <- send $ Globus.Transfer acc $ toRequest sub
   pure $ Id res.task_id.unTagged
+
+
+initUpload :: (Hyperbole :> es, Globus :> es) => TransferForm Identity -> UploadFiles Identity -> Id Inversion -> Eff es (Id Task)
+initUpload tform up ii = do
+  initTransfer transferRequest
  where
-  downloadTransferRequest :: Globus.Id Submission -> TransferForm Identity -> [Dataset] -> TransferRequest
-  downloadTransferRequest submission_id tform datasets =
+  transferRequest :: Globus.Id Submission -> TransferRequest
+  transferRequest submission_id =
+    TransferRequest
+      { data_type = DataType
+      , submission_id
+      , label = Just tform.label
+      , source_endpoint = Tagged tform.endpoint_id
+      , destination_endpoint = level2Scratch
+      , data_ = map transferItem [up.invResMod, up.invResPre, up.perOri]
+      , sync_level = SyncTimestamp
+      }
+
+  transferItem :: String -> TransferItem
+  transferItem f =
+    TransferItem
+      { data_type = DataType
+      , source_path = cs tform.path </> f
+      , destination_path = scratchPath </> f
+      , recursive = False
+      }
+
+  scratchPath :: FilePath
+  scratchPath = "~/Data/Level2/" <> cs ii.fromId
+
+  level2Scratch :: Globus.Id Collection
+  level2Scratch = Tagged "0cb2ac86-3543-11ee-87b9-4dfadf03ac7e"
+
+
+initDownload :: (Hyperbole :> es, Globus :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (Id Task)
+initDownload tform df ds = do
+  initTransfer downloadTransferRequest
+ where
+  downloadTransferRequest :: Globus.Id Submission -> TransferRequest
+  downloadTransferRequest submission_id =
     TransferRequest
       { data_type = DataType
       , submission_id
       , label = Just tform.label
       , source_endpoint = dkistDataTransfer
       , destination_endpoint = Tagged tform.endpoint_id
-      , data_ = map transferItem datasets
+      , data_ = map transferItem ds
       , sync_level = SyncTimestamp
       }
    where
@@ -188,6 +259,7 @@ initDownload t ds = do
 
     destinationFolder :: FilePath
     destinationFolder =
-      case tform.folder of
-        Nothing -> cs tform.path
+      -- If they didn't select a folder, use the current folder
+      case df.folder of
         Just f -> cs tform.path </> cs f
+        Nothing -> cs tform.path

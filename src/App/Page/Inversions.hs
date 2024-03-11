@@ -47,9 +47,9 @@ viewInversion inv = do
   -- TODO: Show more detailed status for each one... which step are we on?
   -- what are the dates that things have been happening
   row (gap 10) $ do
-    -- link (Route.Program inv.programId) Style.link $
+    -- route (Route.Program inv.programId) Style.link $
     --   text inv.programId.fromId
-    link (Route.Inversion inv.inversionId Inv) Style.link $
+    route (Route.Inversion inv.inversionId Inv) Style.link $
       pre id inv.inversionId.fromId
     el_ $ text $ cs $ showDate (stepCreated inv.step).timestamp
     el_ $ status inv.step

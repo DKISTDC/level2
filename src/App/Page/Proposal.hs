@@ -4,8 +4,8 @@ import App.Colors
 import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
-import App.View.ProposalDetails
 import App.View.Layout
+import App.View.ProposalDetails
 import Data.Grouped as G
 import Effectful.Dispatch.Dynamic
 import Effectful.Time
@@ -61,7 +61,7 @@ viewProposal now gx = do
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
   col (gap 10) $ do
-    link (Program wdp.program.programId) (Style.link . bold) $ do
+    route (Program wdp.program.programId) (Style.link . bold) $ do
       text wdp.program.programId.fromId
 
     col (bg White . gap 10 . pad 10) $ do

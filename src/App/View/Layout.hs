@@ -24,7 +24,7 @@ layout login rc tok content = do
     nav (gap 0 . bg Primary . color White . topbar) $ do
       row (pad 15) $ do
         space
-        link Dashboard (bold . fontSize 24 . pad (XY 20 0)) "Level 2"
+        route Dashboard (bold . fontSize 24 . pad (XY 20 0)) "Level 2"
         space
       -- nav Dashboard "Dashboard"
       item Proposals "Proposals"
@@ -39,14 +39,14 @@ layout login rc tok content = do
       content
  where
   item r =
-    link
+    route
       r
       (center . hover (borderColor White . color White) . if r == rc then current else other)
 
   loginLink Nothing =
-    WebView.link login center "Login"
+    link login center "Login"
   loginLink (Just _) =
-    link Logout center "Log Out"
+    route Logout center "Log Out"
 
   center = pad 20
 

@@ -74,7 +74,7 @@ page ip = do
   experimentLink d n = do
     el_ $ do
       text "Proposal: "
-      link (Proposal d.primaryProposalId) Style.link $ do
+      route (Proposal d.primaryProposalId) Style.link $ do
         text d.primaryProposalId.fromId
       text $
         if n > 0

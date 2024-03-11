@@ -65,6 +65,7 @@ dependencies:
   - containers
   - bytestring
   - aeson == 2.1.2.1
+  - http-api-data
   - globus
   # - amqp-worker >= 2.0
 

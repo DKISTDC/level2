@@ -7,10 +7,10 @@ import App.Page.Inversions.InvForm
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Icons qualified as Icons
-import App.View.Inversions as View
 import App.View.Layout
 import Data.Diverse.Many
-import Debug.Trace
+import Data.Maybe (isJust)
+import Data.Text (pack)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
@@ -23,6 +23,7 @@ import Web.Hyperbole
 page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Layout :> es) => Id Inversion -> InversionRoute -> Page es Response
 page i Inv = pageMain i
 page i SubmitDownload = pageSubmitDownload i
+page i SubmitUpload = pageSubmitUpload i
 
 
 pageMain :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Id Inversion -> Page es Response
@@ -42,23 +43,34 @@ pageMain i = do
 
           el_ $ do
             text "Program: "
-            link (Program inv.programId) Style.link $ do
+            route (Program inv.programId) Style.link $ do
               text inv.programId.fromId
 
         viewId (InversionStatus inv.programId) $ viewInversion inv step
 
 
-pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es) => Id Inversion -> Page es Response
-pageSubmitDownload iv = do
+pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es) => Id Inversion -> Page es Response
+pageSubmitUpload ii = do
   load $ do
-    t <- parseTransferForm
-    (inv :| _) <- send (Inversions.ById iv) >>= expectFound
+    tfrm <- parseForm @TransferForm
+    tup <- parseForm @UploadFiles
+    it <- Globus.initUpload tfrm tup ii
+    send $ Inversions.SetUploading ii it
+
+    redirect $ routeUrl (Route.Inversion ii Inv)
+
+
+pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es) => Id Inversion -> Page es Response
+pageSubmitDownload ii = do
+  load $ do
+    tfrm <- parseForm @TransferForm
+    tfls <- parseForm @DownloadFolder
+    (inv :| _) <- send (Inversions.ById ii) >>= expectFound
     ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
-    it <- Globus.initDownload t ds
+    it <- Globus.initDownload tfrm tfls ds
+    send $ Inversions.SetDownloading ii it
 
-    send $ Inversions.SetDownloading iv it
-
-    redirect $ routeUrl (Route.Inversion iv Inv)
+    redirect $ routeUrl (Route.Inversion ii Inv)
 
 
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())
@@ -123,7 +135,7 @@ inversions onCancel (InversionStatus ip) = \case
         onCancel
       Download -> do
         r <- request
-        redirect $ Globus.fileManagerUrl (Route.Inversion iid SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
+        redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion iid SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
       PreprocessValid -> do
         inv <- send (Inversions.ById iid) >>= expectFound
         f <- parseForm @PreprocessForm
@@ -135,7 +147,8 @@ inversions onCancel (InversionStatus ip) = \case
         send $ Inversions.SetPreprocessed iid commit
         refresh iid
       Upload -> do
-        pure $ el_ "Upload"
+        r <- request
+        redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion iid SubmitUpload) ("Transfer Inversion Results " <> iid.fromId) r
       PostProcess -> do
         send $ Inversions.SetGenerated iid
         refresh iid
@@ -175,20 +188,21 @@ inversions onCancel (InversionStatus ip) = \case
 
 
 checkDownload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
-checkDownload vi ti t' = do
+checkDownload ii ti t' = do
+  (inv :| _) <- send (Inversions.ById ii) >>= expectFound
   case t'.status of
     Succeeded -> do
-      inv <- send (Inversions.ById vi) >>= expectFound
       -- here is where we set that we have finished downloading
-      send (Inversions.SetDownloaded vi)
+      send (Inversions.SetDownloaded ii)
       pure $ viewInversionContainer Preprocessing $ do
-        stepPreprocess (head inv) False
+        stepPreprocess inv False
     Failed -> pure $ do
       viewInversionContainer (Downloading (Transferring ti)) $ do
         viewTransferFailed t'
+        stepDownload inv Select
     _ -> pure $ do
       viewInversionContainer (Downloading (Transferring ti)) $ do
-        onLoad (CheckDownload vi ti) 5000 $ do
+        onLoad (CheckDownload ii ti) 5000 $ do
           viewTransferProgress t'
 
 
@@ -227,7 +241,7 @@ viewInversion inv step = do
     viewStep step
  where
   viewStep :: CurrentStep -> View InversionStatus ()
-  viewStep (Downloading ts) = stepDownload ts
+  viewStep (Downloading ts) = stepDownload inv ts
   viewStep Preprocessing = stepPreprocess inv False
   viewStep (Inverting is) = stepInvert is inv
   viewStep Generating = stepGenerate
@@ -243,20 +257,18 @@ viewInversion inv step = do
   stepDone = do
     el_ "Done"
 
-  stepDownload :: TransferStep -> View InversionStatus ()
-  stepDownload Select = do
-    el_ "Please select a destination for this instrument program. You will be redirected to Globus."
 
-    row (gap 10) $ do
-      button (Update inv.inversionId Download) (Style.btn Primary) "Choose Download Location"
+stepDownload :: Inversion -> TransferStep -> View InversionStatus ()
+stepDownload inv Select = do
+  el_ "Please select a destination folder for the instrument program's datasets. You will be redirected to Globus."
 
-    row (gap 10) $ do
-      button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) "Cancel"
-      el (grow . Style.disabled . Style.btn Primary) "Submit Download"
-  stepDownload (Transferring it) = do
-    -- don't show anything until load
-    onLoad (CheckDownload inv.inversionId it) 0 $ do
-      el (height 60) ""
+  row (gap 10) $ do
+    button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Folder"
+    button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) "Cancel"
+stepDownload inv (Transferring it) = do
+  -- don't show anything until load
+  onLoad (CheckDownload inv.inversionId it) 0 $ do
+    el (height 60) ""
 
 
 stepPreprocess :: Inversion -> Bool -> View InversionStatus ()
@@ -273,13 +285,20 @@ stepInvert :: InvertStep -> Inversion -> View InversionStatus ()
 stepInvert (InvertStep mc mt) inv = do
   viewId (InversionCommit inv.inversionId) $ commitForm (fromExistingCommit mc)
 
+  -- inversion_file = self.scan_dir + 'inv_res_pre.fits'
+  -- observed_file  = self.scan_dir + 'per_ori.fits'
+  -- models_file    = self.scan_dir + 'inv_res_mod.fits'
+
   maybe selectUpload viewTransfer mt
  where
   selectUpload = do
     col (gap 5) $ do
-      el bold "Upload FITS Files"
-      el_ "You will be redirected to Globus. Please select a folder containing inverted FITS files"
-      button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Folder"
+      el bold "Upload Inversion Results"
+      el_ "Please select the following files for upload. You will be redirected to Globus"
+      tag "li" id "inv_res_pre.fits"
+      tag "li" id "per_ori.fits"
+      tag "li" id "inv_res_mod.fits"
+    button (Update inv.inversionId Upload) (Style.btn Primary . grow) "Select Files"
 
   viewTransfer ti = do
     onLoad (CheckUpload inv.inversionId ti) 0 $ do
@@ -333,56 +352,63 @@ currentStep = \case
 invProgress :: CurrentStep -> View InversionStatus ()
 invProgress curr = do
   row (gap 10) $ do
-    stat (Downloading Select) "DOWNLOAD" "1"
-    line (Downloading Select)
-    stat Preprocessing "PREPROCESS" "2"
-    line Preprocessing
-    stat (Inverting mempty) "INVERT" "3"
-    line (Inverting mempty)
-    stat Generating "GENERATE" "4"
-    line Generating
-    stat Publishing "PUBLISH" "5"
+    prgDown curr "1" "DOWNLOAD"
+    prgStep Preprocessing "2" "PREPROCESS"
+    prgInv curr "3" "INVERT"
+    prgStep Generating "4" "GENERATE"
+    prgStep Publishing "5" "PUBLISH"
  where
-  stat :: CurrentStep -> Text -> View InversionStatus () -> View InversionStatus ()
-  stat s t icon = col (color (statColor curr) . gap 4) $ do
+  stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
+  stat clr icn lbl = col (color clr . gap 4) $ do
     row id $ do
       space
-      el (circle . bg (statColor curr)) (statIcon curr)
+      el (circle . bg clr) icn
       space
-    el (fontSize 12 . textAlign Center) (text t)
-   where
-    statIcon (Inverting _)
-      | isInverting s = icon
-      | otherwise = statIcon'
-    statIcon _ = statIcon'
+    el (fontSize 12 . textAlign Center) (text lbl)
 
-    statIcon'
-      | s < curr = Icons.check
-      | otherwise = icon
+  prgDown (Downloading Select) icn lbl = do
+    stat Info icn lbl
+    line Gray
+  prgDown (Downloading _) icn lbl = do
+    stat Info icn lbl
+    line Info
+  prgDown _ _ lbl = do
+    stat Success Icons.check lbl
+    line Success
 
-    statColor (Inverting _)
-      | isInverting s = Info
-      | otherwise = statColor'
-    statColor _ = statColor'
+  prgInv (Inverting (InvertStep mc mt)) icn lbl = do
+    stat Info icn lbl
+    line $
+      if isJust mc || isJust mt
+        then Info
+        else Gray
+  prgInv _ icn lbl = do
+    let clr = statColor (Inverting mempty)
+    stat clr (statIcon (Inverting mempty) icn) lbl
+    line clr
 
-    statColor'
-      | s == curr = Info
-      | s < curr = Success
-      | otherwise = Gray
+  prgStep s icn lbl = do
+    stat (statColor s) (statIcon s icn) lbl
+    line (lineColor s)
 
-  line s = col grow $ do
-    el (border (TRBL 0 0 2 0) . height 20 . borderColor (lineColor s)) ""
-   where
-    lineColor (Inverting _)
-      | isInverting s = Gray
-      | otherwise = lineColor'
-    lineColor _ = lineColor'
-    lineColor'
-      | s == curr = Gray
-      | s < curr = Success
-      | otherwise = Gray
+  statIcon s icon
+    | s < curr = Icons.check
+    | otherwise = icon
+
+  statColor s
+    | s == curr = Info
+    | s < curr = Success
+    | otherwise = Gray
+
+  line clr = col grow $ do
+    el (border (TRBL 0 0 2 0) . height 20 . borderColor clr) ""
+
+  lineColor s
+    | s == curr = Gray
+    | s < curr = Success
+    | otherwise = Gray
 
   circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
 
-  isInverting (Inverting _) = True
-  isInverting _ = False
+-- isInverting (Inverting _) = True
+-- isInverting _ = False

@@ -44,7 +44,6 @@ library
       App.View.DataRow
       App.View.DatasetsTable
       App.View.Icons
-      App.View.Inversions
       App.View.Layout
       App.View.ProposalDetails
       Flow
@@ -91,6 +90,7 @@ library
     , filepath
     , globus
     , hasql
+    , http-api-data
     , http-types
     , hyperbole ==0.3.3
     , lens
@@ -142,6 +142,7 @@ executable level2
     , filepath
     , globus
     , hasql
+    , http-api-data
     , http-types
     , hyperbole ==0.3.3
     , lens
@@ -199,6 +200,7 @@ test-suite tests
     , filepath
     , globus
     , hasql
+    , http-api-data
     , http-types
     , hyperbole ==0.3.3
     , lens
