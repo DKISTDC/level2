@@ -13,7 +13,6 @@ import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
 import Control.Monad.Catch
-import Debug.Trace
 import Effectful
 import Effectful.Debug as Debug
 import Effectful.Dispatch.Dynamic
@@ -45,15 +44,15 @@ main = do
 
 app :: Config -> Application
 app config =
-  liveApp
+  --  liveApp
+  --    document
+  --    (runApp . routeRequest $ router)
+  --    (runApp . routeRequest $ router)
+  -- where
+  waiApp
     document
     (runApp . routeRequest $ router)
-    (runApp . routeRequest $ router)
  where
-  -- waiApp
-  --   document
-  --   (runApp . routeRequest $ router)
-
   -- (runApp . routeRequest $ router)
 
   router Dashboard = page Dashboard.page

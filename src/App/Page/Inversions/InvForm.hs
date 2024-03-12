@@ -3,6 +3,7 @@ module App.Page.Inversions.InvForm where
 import App.Colors
 import App.Globus
 import App.Style qualified as Style
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
@@ -12,11 +13,13 @@ import Web.Hyperbole
 import Web.View qualified as WebView
 
 
-data InversionCommit = InversionCommit (Id Inversion)
-  deriving (Show, Read, Param)
-instance HyperView InversionCommit where
-  type Action InversionCommit = CommitAction
+-----------------------------------------------------
+-- Inversion Transfer
+-----------------------------------------------------
 
+-----------------------------------------------------
+-- Inversion Commit
+-----------------------------------------------------
 
 data CommitAction
   = CheckCommitValid GitCommit
@@ -30,35 +33,35 @@ data CommitForm a = CommitForm
   deriving (Generic, Form)
 
 
-inversionCommit :: (Hyperbole :> es, Inversions :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
-inversionCommit (InversionCommit ii) = action
- where
-  action LoadValid = do
-    f <- parseForm @CommitForm
-    let gc = GitCommit f.gitCommit
-    pure $ loadingForm gc
-  action (CheckCommitValid gc) = do
-    isValid <- send $ ValidateDesireCommit gc
-    validate ii gc isValid
-
-    -- TODO: make this work for preprocessing as well!
-    send $ Inversions.SetInversion ii gc
-
-    pure $ commitForm (Valid gc)
+validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated GitCommit)
+validate i repo gc lbl onValid = do
+  traceM "VALIDATE"
+  traceM $ show gc
+  isValid <- send $ ValidateGitCommit repo gc
+  checkValid i gc lbl isValid
+  onValid
+  pure $ Valid gc
 
 
-validate :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> GitCommit -> Bool -> Eff es ()
-validate _ _ True = pure ()
-validate ii gc False = do
+checkValid :: (Hyperbole :> es, HyperView id, Action id ~ CommitAction) => id -> GitCommit -> Text -> Bool -> Eff es ()
+checkValid _ _ _ True = pure ()
+checkValid i gc lbl False = do
   -- inv <- send (Inversions.ById ii) >>= expectFound
-  respondEarly (InversionCommit ii) $ do
-    commitForm (Invalid gc)
+  respondEarly i $ do
+    commitForm (Invalid gc) lbl
 
 
-loadingForm :: GitCommit -> View InversionCommit ()
-loadingForm gc = do
+loadValid :: (Hyperbole :> es, HyperView id, Action id ~ CommitAction) => Text -> Eff es (View id ())
+loadValid lbl = do
+  f <- parseForm @CommitForm
+  let gc = GitCommit f.gitCommit
+  pure $ loadingForm gc lbl
+
+
+loadingForm :: (HyperView id, Action id ~ CommitAction) => GitCommit -> Text -> View id ()
+loadingForm gc lbl = do
   onLoad (CheckCommitValid gc) 0 $ do
-    el Style.disabled $ commitForm (Prevalid gc)
+    el Style.disabled $ commitForm (Prevalid gc) lbl
 
 
 data Validated a
@@ -73,11 +76,11 @@ fromExistingCommit Nothing = Empty
 fromExistingCommit (Just c) = Valid c
 
 
-commitForm :: Validated GitCommit -> View InversionCommit ()
-commitForm vg = do
+commitForm :: (HyperView id, Action id ~ CommitAction) => Validated GitCommit -> Text -> View id ()
+commitForm vg lbl = do
   form @CommitForm LoadValid (gap 10) $ \f -> do
     field id $ do
-      label "DeSIRe Git Commit"
+      label lbl
       input TextInput (value (commitText vg) . Style.input (validationColor vg)) f.gitCommit
     validationFeedback vg
     submit (validationButton vg . grow) "Save Commit"

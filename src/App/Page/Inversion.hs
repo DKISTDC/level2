@@ -10,7 +10,6 @@ import App.View.Icons qualified as Icons
 import App.View.Layout
 import Data.Diverse.Many
 import Data.Maybe (isJust)
-import Data.Text (pack)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
@@ -30,6 +29,7 @@ pageMain :: (Hyperbole :> es, Inversions :> es, Auth :> es, Globus :> es) => Id 
 pageMain i = do
   hyper $ inversions redirectHome
   hyper inversionCommit
+  hyper $ preprocessCommit
   load $ do
     -- TODO: handle taskId query param, and pass forward!
     (inv :| _) <- send (Inversions.ById i) >>= expectFound
@@ -73,9 +73,55 @@ pageSubmitDownload ii = do
     redirect $ routeUrl (Route.Inversion ii Inv)
 
 
+markInverted :: (Inversions :> es) => Id Inversion -> GitCommit -> Eff es ()
+markInverted ii gc =
+  send $ SetInversion ii gc
+
+
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())
 redirectHome = do
   redirect $ pathUrl . routePath $ Inversions
+
+
+-- ----------------------------------------------------------------
+-- INVERSION COMMIT
+-- ----------------------------------------------------------------
+
+data InversionCommit = InversionCommit (Id Inversion)
+  deriving (Show, Read, Param)
+instance HyperView InversionCommit where
+  type Action InversionCommit = CommitAction
+
+
+data PreprocessCommit = PreprocessCommit (Id InstrumentProgram) (Id Inversion)
+  deriving (Show, Read, Param)
+instance HyperView PreprocessCommit where
+  type Action PreprocessCommit = CommitAction
+
+
+inversionCommit :: (Hyperbole :> es, Inversions :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
+inversionCommit (InversionCommit ii) = action
+ where
+  action LoadValid = loadValid lbl
+  action (CheckCommitValid gc) = do
+    vg <- validate (InversionCommit ii) desireRepo gc lbl $ do
+      send $ SetInversion ii gc
+    pure $ commitForm vg lbl
+
+  lbl = "DeSIRe Git Commit"
+
+
+preprocessCommit :: (Hyperbole :> es, Inversions :> es) => PreprocessCommit -> CommitAction -> Eff es (View PreprocessCommit ())
+preprocessCommit (PreprocessCommit ip ii) = action
+ where
+  action LoadValid = loadValid lbl
+  action (CheckCommitValid gc) = do
+    _ <- validate (PreprocessCommit ip ii) preprocessRepo gc lbl $ do
+      send $ SetPreprocessed ii gc
+    -- We can reload the parent like this!
+    pure $ target (InversionStatus ip) $ onLoad (Reload ii) 0 $ el_ "Loading.."
+
+  lbl = "Preprocess Git Commit"
 
 
 -- ----------------------------------------------------------------
@@ -91,14 +137,13 @@ data InversionsAction
   | Update (Id Inversion) InversionAction
   | CheckDownload (Id Inversion) (Id Task)
   | CheckUpload (Id Inversion) (Id Task)
+  | Reload (Id Inversion)
   deriving (Show, Read, Param)
 
 
 data InversionAction
   = Download
   | Cancel
-  | PreprocessValid
-  | Preprocess GitCommit
   | Upload
   | PostProcess
   | Publish
@@ -136,16 +181,6 @@ inversions onCancel (InversionStatus ip) = \case
       Download -> do
         r <- request
         redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion iid SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
-      PreprocessValid -> do
-        inv <- send (Inversions.ById iid) >>= expectFound
-        f <- parseForm @PreprocessForm
-        let commit = GitCommit f.preprocessSoftware
-        pure $ loading (Update iid (Preprocess commit)) Preprocessing $ stepPreprocess (head inv) False
-      Preprocess commit -> do
-        valid <- send $ ValidatePreprocessCommit commit
-        validate iid Preprocessing stepPreprocess valid
-        send $ Inversions.SetPreprocessed iid commit
-        refresh iid
       Upload -> do
         r <- request
         redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion iid SubmitUpload) ("Transfer Inversion Results " <> iid.fromId) r
@@ -161,30 +196,13 @@ inversions onCancel (InversionStatus ip) = \case
   CheckUpload vi ti -> do
     t <- Globus.transferStatus ti
     checkUpload vi ti t
+  Reload iid -> do
+    refresh iid
  where
   refresh iid = do
     (inv :| _) <- send (Inversions.ById iid) >>= expectFound
     step <- currentStep inv.step
     pure $ viewInversion inv step
-
-  -- we need to pass some kind of validation to the view itself
-  validate :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> CurrentStep -> (Inversion -> Bool -> View InversionStatus ()) -> Bool -> Eff es ()
-  validate _ _ _ True = pure ()
-  validate iid progStep viewStep False = do
-    inv <- send (Inversions.ById iid) >>= expectFound
-    respondEarly (InversionStatus ip) $ do
-      viewInversionContainer progStep $ do
-        viewStep (head inv) True
-  -- where
-  -- validationError :: Text -> View c ()
-  -- validationError msg = do
-  --   el (border 1 . borderColor (dark Danger) . bg Danger . pad 10) $ do
-  --     el (color White) $ text msg
-
-  loading :: InversionsAction -> CurrentStep -> View InversionStatus () -> View InversionStatus ()
-  loading act step cnt =
-    viewInversionContainer step $ onLoad act 0 $ do
-      el Style.disabled cnt
 
 
 checkDownload :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Id Task -> Task -> Eff es (View InversionStatus ())
@@ -195,7 +213,7 @@ checkDownload ii ti t' = do
       -- here is where we set that we have finished downloading
       send (Inversions.SetDownloaded ii)
       pure $ viewInversionContainer Preprocessing $ do
-        stepPreprocess inv False
+        stepPreprocess inv
     Failed -> pure $ do
       viewInversionContainer (Downloading (Transferring ti)) $ do
         viewTransferFailed t'
@@ -242,7 +260,7 @@ viewInversion inv step = do
  where
   viewStep :: CurrentStep -> View InversionStatus ()
   viewStep (Downloading ts) = stepDownload inv ts
-  viewStep Preprocessing = stepPreprocess inv False
+  viewStep Preprocessing = stepPreprocess inv
   viewStep (Inverting is) = stepInvert is inv
   viewStep Generating = stepGenerate
   viewStep Publishing = stepPublish
@@ -271,19 +289,15 @@ stepDownload inv (Transferring it) = do
     el (height 60) ""
 
 
-stepPreprocess :: Inversion -> Bool -> View InversionStatus ()
-stepPreprocess inv isInvalid = do
-  form @PreprocessForm (Update inv.inversionId PreprocessValid) (gap 10) $ \f -> do
-    field id $ do
-      label "Proprocessing Git Commit"
-      input TextInput (Style.input Gray) f.preprocessSoftware
-    submit (Style.btn Primary . grow) "Submit Preprocessed"
+stepPreprocess :: Inversion -> View InversionStatus ()
+stepPreprocess inv = do
+  viewId (PreprocessCommit inv.programId inv.inversionId) $ commitForm Empty "Preprocessing Git Commit"
 
 
 -- if we have one set on the inversion itself, it's valid
 stepInvert :: InvertStep -> Inversion -> View InversionStatus ()
 stepInvert (InvertStep mc mt) inv = do
-  viewId (InversionCommit inv.inversionId) $ commitForm (fromExistingCommit mc)
+  viewId (InversionCommit inv.inversionId) $ commitForm (fromExistingCommit mc) "DeSIRe GIt Commit"
 
   -- inversion_file = self.scan_dir + 'inv_res_pre.fits'
   -- observed_file  = self.scan_dir + 'per_ori.fits'

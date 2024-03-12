@@ -6,6 +6,9 @@ module NSO.Data.Inversions
   , AllInversions (..)
   , module NSO.Types.Inversion
   , Id
+  , desireRepo
+  , preprocessRepo
+  , GitRepo
   ) where
 
 import Control.Monad (void)
@@ -42,8 +45,8 @@ data Inversions :: Effect where
   SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
   SetGenerated :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
-  ValidateDesireCommit :: GitCommit -> Inversions m Bool
-  ValidatePreprocessCommit :: GitCommit -> Inversions m Bool
+  -- maybe doesn't belong on Inversions?
+  ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
 type instance DispatchOf Inversions = 'Dynamic
 
 
@@ -160,15 +163,8 @@ runDataInversions = interpret $ \_ -> \case
   SetInversion iid soft -> setInversion iid soft
   SetGenerated iid -> setGenerated iid
   SetPublished iid -> setPublished iid
-  ValidatePreprocessCommit gc -> validateGitCommit preprocessRepo gc
-  ValidateDesireCommit gc -> validateGitCommit desireRepo gc
+  ValidateGitCommit repo gc -> validateGitCommit repo gc
  where
-  -- TODO: Get correct repo
-  preprocessRepo = https "github.com" /: "DKISTDC" /: "level2"
-
-  -- TODO: Get correct repo. Need to move into the data center?
-  desireRepo = https "github.com" /: "han-uitenbroek" /: "RH"
-
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
   queryAll = do
@@ -320,8 +316,8 @@ toInversions irs = do
     Right ivs -> pure ivs
 
 
-validateGitCommit :: (MonadIO m) => Url Https -> GitCommit -> m Bool
-validateGitCommit repo gc
+validateGitCommit :: (MonadIO m) => GitRepo -> GitCommit -> m Bool
+validateGitCommit (GitRepo repo) gc
   | validHash gc = checkRemoteRepo
   | otherwise = pure False
  where
@@ -337,3 +333,16 @@ validateGitCommit repo gc
 
   -- don't allow empty hashes or hashes shorter than 7
   validHash (GitCommit hs) = Text.length hs >= 7
+
+
+newtype GitRepo = GitRepo (Url Https)
+
+
+-- TODO: Get correct repo
+preprocessRepo :: GitRepo
+preprocessRepo = GitRepo $ https "github.com" /: "DKISTDC" /: "level2"
+
+
+-- TODO: Get correct repo. Need to move into the data center?
+desireRepo :: GitRepo
+desireRepo = GitRepo $ https "github.com" /: "han-uitenbroek" /: "RH"
