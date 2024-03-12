@@ -1,6 +1,7 @@
 module App.Page.Inversions where
 
 import App.Colors
+import App.Globus
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate)
@@ -14,7 +15,7 @@ import NSO.Types.Common
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es, Routes :> es) => Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Auth :> es) => Page es Response
 page = do
   load $ do
     AllInversions ivs <- send Inversions.All

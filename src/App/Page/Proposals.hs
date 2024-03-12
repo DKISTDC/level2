@@ -1,6 +1,7 @@
 module App.Page.Proposals where
 
 import App.Colors
+import App.Globus
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -20,7 +21,7 @@ import Web.Hyperbole as H
 
 
 page
-  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Routes :> es)
+  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
   => Page es Response
 page = do
   hyper proposals

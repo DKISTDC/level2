@@ -45,16 +45,16 @@ main = do
 
 app :: Config -> Application
 app config =
-  waiApp
+  liveApp
     document
     (runApp . routeRequest $ router)
+    (runApp . routeRequest $ router)
  where
-  -- (runApp . routeRequest $ router)
-
-  -- liveApp
+  -- waiApp
   --   document
   --   (runApp . routeRequest $ router)
-  --   (runApp . routeRequest $ router)
+
+  -- (runApp . routeRequest $ router)
 
   router Dashboard = page Dashboard.page
   router Proposals = page Proposals.page
@@ -70,14 +70,13 @@ app config =
     clearAccessToken
     redirect (pathUrl . routePath $ Proposals)
   router Redirect = do
-    -- traceM $ show path
     code <- reqParam "code"
     red <- send RedirectUri
     tok <- Globus.accessToken red (Tagged code)
     saveAccessToken tok
-    redirect $ pathUrl []
+    redirect $ pathUrl $ routePath Proposals
 
-  runApp :: (IOE :> es) => Eff (Routes : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
@@ -91,7 +90,7 @@ app config =
       . runDebugIO
       . runDataDatasets
       . runDataInversions
-      . runAppRoutes config.app.domain Redirect
+      . runAuth config.app.domain Redirect
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

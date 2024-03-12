@@ -11,7 +11,7 @@ import Web.Hyperbole hiding (layout)
 import Web.View qualified as WebView
 
 
-appLayout :: forall es c. (Routes :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
+appLayout :: forall es c. (Auth :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
 appLayout r content = do
   login <- send LoginUrl
   mtok <- getAccessToken

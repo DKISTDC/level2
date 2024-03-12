@@ -1,6 +1,7 @@
 module App.Page.Proposal where
 
 import App.Colors
+import App.Globus
 import App.Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
@@ -18,7 +19,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Routes :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
   -> Page es Response
 page pid = do

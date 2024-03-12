@@ -25,7 +25,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Routes :> es, Globus :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es)
   => Id InstrumentProgram
   -> Page es Response
 page ip = do

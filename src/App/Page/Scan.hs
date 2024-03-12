@@ -1,6 +1,7 @@
 module App.Page.Scan where
 
 import App.Colors
+import App.Globus
 import App.Route
 import App.Style qualified as Style
 import App.View.Common
@@ -35,7 +36,7 @@ instance HyperView ScanView where
   type Action ScanView = PageEvent
 
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Routes :> es) => Page es Response
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Page es Response
 page = do
   hyper pageEvent
 

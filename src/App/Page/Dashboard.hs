@@ -1,5 +1,6 @@
 module App.Page.Dashboard where
 
+import App.Globus
 import App.Route
 import App.Version
 import App.View.Layout
@@ -7,7 +8,7 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Routes :> es) => Page es Response
+page :: (Hyperbole :> es, Auth :> es) => Page es Response
 page = do
   load $ do
     appLayout Dashboard $ col (pad 20) $ do

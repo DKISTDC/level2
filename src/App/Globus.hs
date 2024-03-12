@@ -24,9 +24,11 @@ module App.Globus
   , TransferForm
   , UploadFiles
   , DownloadFolder
+  , Auth (..)
+  , runAuth
   ) where
 
-import App.Error (expectAuth)
+import App.Types
 import Data.Tagged
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -155,35 +157,21 @@ instance Form UploadFiles where
         else Left $ "Missing required file: " <> cs file
 
 
-transferStatus :: (Hyperbole :> es, Globus :> es) => Id Task -> Eff es Task
+transferStatus :: (Hyperbole :> es, Globus :> es, Auth :> es) => Id Task -> Eff es Task
 transferStatus (Id ti) = do
   tok <- getAccessToken >>= expectAuth
   send $ StatusTask tok (Tagged ti)
 
 
-getAccessToken :: (Hyperbole :> es) => Eff es (Maybe (Token Access))
-getAccessToken = do
-  fmap Tagged <$> session "globus"
-
-
-saveAccessToken :: (Hyperbole :> es) => Token Access -> Eff es ()
-saveAccessToken (Tagged acc) = setSession "globus" acc
-
-
-clearAccessToken :: (Hyperbole :> es) => Eff es ()
-clearAccessToken = clearSession "globus"
-
-
-initTransfer :: (Hyperbole :> es, Globus :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
+initTransfer :: (Hyperbole :> es, Globus :> es, Auth :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
 initTransfer toRequest = do
-  -- TODO: not sure if this belongs here. How can we handle errors?
   acc <- getAccessToken >>= expectAuth
   sub <- send $ SubmissionId acc
   res <- send $ Globus.Transfer acc $ toRequest sub
   pure $ Id res.task_id.unTagged
 
 
-initUpload :: (Hyperbole :> es, Globus :> es) => TransferForm Identity -> UploadFiles Identity -> Id Inversion -> Eff es (Id Task)
+initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm Identity -> UploadFiles Identity -> Id Inversion -> Eff es (Id Task)
 initUpload tform up ii = do
   initTransfer transferRequest
  where
@@ -215,7 +203,7 @@ initUpload tform up ii = do
   level2Scratch = Tagged "0cb2ac86-3543-11ee-87b9-4dfadf03ac7e"
 
 
-initDownload :: (Hyperbole :> es, Globus :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (Id Task)
+initDownload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (Id Task)
 initDownload tform df ds = do
   initTransfer downloadTransferRequest
  where
@@ -255,3 +243,48 @@ initDownload tform df ds = do
       case df.folder of
         Just f -> cs tform.path </> cs f
         Nothing -> cs tform.path
+
+
+-- Authentication!
+data Auth :: Effect where
+  LoginUrl :: Auth m Url
+  RedirectUri :: Auth m (Uri Globus.Redirect)
+
+
+type instance DispatchOf Auth = 'Dynamic
+
+
+runAuth
+  :: (Globus :> es, Route r)
+  => AppDomain
+  -> r
+  -> Eff (Auth : es) a
+  -> Eff es a
+runAuth dom r = interpret $ \_ -> \case
+  LoginUrl -> authUrl (redirectUri dom r)
+  RedirectUri -> pure $ redirectUri dom r
+
+
+redirectUri :: (Route r) => AppDomain -> r -> Uri Globus.Redirect
+redirectUri dom r = do
+  Uri Https (cs dom.unTagged) (routePath r) (Query [])
+
+
+expectAuth :: (Hyperbole :> es, Auth :> es) => Maybe a -> Eff es a
+expectAuth Nothing = do
+  u <- send LoginUrl
+  redirect u
+expectAuth (Just a) = pure a
+
+
+getAccessToken :: (Hyperbole :> es, Auth :> es) => Eff es (Maybe (Token Access))
+getAccessToken = do
+  fmap Tagged <$> session "globus"
+
+
+saveAccessToken :: (Hyperbole :> es) => Token Access -> Eff es ()
+saveAccessToken (Tagged acc) = setSession "globus" acc
+
+
+clearAccessToken :: (Hyperbole :> es) => Eff es ()
+clearAccessToken = clearSession "globus"

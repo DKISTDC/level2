@@ -20,13 +20,13 @@ import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Routes :> es, Globus :> es) => Id Inversion -> InversionRoute -> Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es) => Id Inversion -> InversionRoute -> Page es Response
 page i Inv = pageMain i
 page i SubmitDownload = pageSubmitDownload i
 page i SubmitUpload = pageSubmitUpload i
 
 
-pageMain :: (Hyperbole :> es, Inversions :> es, Routes :> es, Globus :> es) => Id Inversion -> Page es Response
+pageMain :: (Hyperbole :> es, Inversions :> es, Auth :> es, Globus :> es) => Id Inversion -> Page es Response
 pageMain i = do
   hyper $ inversions redirectHome
   hyper inversionCommit
@@ -49,7 +49,7 @@ pageMain i = do
         viewId (InversionStatus inv.programId) $ viewInversion inv step
 
 
-pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es) => Id Inversion -> Page es Response
+pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
 pageSubmitUpload ii = do
   load $ do
     tfrm <- parseForm @TransferForm
@@ -60,7 +60,7 @@ pageSubmitUpload ii = do
     redirect $ routeUrl (Route.Inversion ii Inv)
 
 
-pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es) => Id Inversion -> Page es Response
+pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
 pageSubmitDownload ii = do
   load $ do
     tfrm <- parseForm @TransferForm
@@ -121,7 +121,7 @@ instance HyperView InversionStatus where
   type Action InversionStatus = InversionsAction
 
 
-inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
+inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
 inversions onCancel (InversionStatus ip) = \case
   CreateInversion -> do
     inv <- send $ Inversions.Create ip
