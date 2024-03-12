@@ -20,7 +20,7 @@ import Web.Hyperbole as H
 
 
 page
-  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Layout :> es)
+  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Routes :> es)
   => Page es Response
 page = do
   hyper proposals

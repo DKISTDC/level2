@@ -3,7 +3,6 @@ module App.Globus
   , Globus
   , authUrl
   , accessToken
-  , redirectUri
   , fileManagerUrl
   , transferStatus
   , Uri
@@ -28,8 +27,6 @@ module App.Globus
   ) where
 
 import App.Error (expectAuth)
-import App.Route qualified as Route
-import App.Types
 import Data.Tagged
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -50,9 +47,9 @@ import Web.Hyperbole.Effect (Host (..))
 import Web.View as WebView
 
 
-authUrl :: (Globus :> es) => Eff es WebView.Url
-authUrl = do
-  uri <- send $ AuthUrl [TransferAll] (State "_")
+authUrl :: (Globus :> es) => Uri Redirect -> Eff es WebView.Url
+authUrl red = do
+  uri <- send $ AuthUrl red [TransferAll] (State "_")
   pure $ convertUrl uri
  where
   convertUrl :: Uri a -> WebView.Url
@@ -65,14 +62,9 @@ authUrl = do
   query (t, mt) = (cs t, cs <$> mt)
 
 
--- the interplay with the routes and this module is weird ...
-redirectUri :: AppDomain -> Uri Globus.Redirect
-redirectUri domain =
-  Uri Https domain.unTagged (routePath Route.Redirect) (Query [])
-
-
-accessToken :: (Globus :> es) => Token Exchange -> Eff es (Token Access)
-accessToken tok = send $ AccessToken tok
+accessToken :: (Globus :> es) => Uri Redirect -> Token Exchange -> Eff es (Token Access)
+accessToken red tok = do
+  send $ AccessToken tok red
 
 
 -- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse

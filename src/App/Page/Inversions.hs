@@ -14,7 +14,7 @@ import NSO.Types.Common
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Routes :> es) => Page es Response
 page = do
   load $ do
     AllInversions ivs <- send Inversions.All

@@ -35,7 +35,7 @@ instance HyperView ScanView where
   type Action ScanView = PageEvent
 
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Layout :> es) => Page es Response
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Routes :> es) => Page es Response
 page = do
   hyper pageEvent
 

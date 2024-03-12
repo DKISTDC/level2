@@ -7,7 +7,6 @@ import App.Page.Inversion
 import App.Page.Inversions.InvForm
 import App.Route
 import App.Style qualified as Style
-import App.Types (App (..))
 import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
 import App.View.Layout
@@ -17,7 +16,6 @@ import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
-import Effectful.Reader.Dynamic
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -27,7 +25,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es, Reader App :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Routes :> es, Globus :> es)
   => Id InstrumentProgram
   -> Page es Response
 page ip = do

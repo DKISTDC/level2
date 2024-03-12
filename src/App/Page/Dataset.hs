@@ -14,7 +14,7 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es, Layout :> es) => Id Dataset -> Page es Response
+page :: (Hyperbole :> es, Datasets :> es, Routes :> es) => Id Dataset -> Page es Response
 page di = load $ do
   ds <- send $ Datasets.Query (ById di)
 

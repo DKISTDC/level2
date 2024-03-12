@@ -3,17 +3,17 @@ module App.View.Layout where
 import App.Colors
 import App.Globus as Globus
 import App.Route
+import App.Types
+import Effectful
+import Effectful.Dispatch.Dynamic
 import NSO.Prelude
 import Web.Hyperbole hiding (layout)
 import Web.View qualified as WebView
 
 
-type Layout = Globus
-
-
-appLayout :: forall es c. (Layout :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
+appLayout :: forall es c. (Routes :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
 appLayout r content = do
-  login <- authUrl
+  login <- send LoginUrl
   mtok <- getAccessToken
   pure $ layout login r mtok content
 

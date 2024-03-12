@@ -18,7 +18,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Layout :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Routes :> es)
   => Id Proposal
   -> Page es Response
 page pid = do

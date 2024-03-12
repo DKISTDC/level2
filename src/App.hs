@@ -13,8 +13,10 @@ import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
 import Control.Monad.Catch
+import Debug.Trace
 import Effectful
 import Effectful.Debug as Debug
+import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.GraphQL
@@ -68,17 +70,19 @@ app config =
     clearAccessToken
     redirect (pathUrl . routePath $ Proposals)
   router Redirect = do
+    -- traceM $ show path
     code <- reqParam "code"
-    tok <- Globus.accessToken (Tagged code)
+    red <- send RedirectUri
+    tok <- Globus.accessToken red (Tagged code)
     saveAccessToken tok
-    redirect (pathUrl . routePath $ Proposals)
+    redirect $ pathUrl []
 
-  runApp :: (IOE :> es) => Eff (Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Routes : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
   runApp =
     runTime
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
-      . runGlobus config.globus (redirectUri config.app.domain)
+      . runGlobus config.globus
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
@@ -87,6 +91,7 @@ app config =
       . runDebugIO
       . runDataDatasets
       . runDataInversions
+      . runAppRoutes config.app.domain Redirect
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

@@ -7,7 +7,7 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Layout :> es) => Page es Response
+page :: (Hyperbole :> es, Routes :> es) => Page es Response
 page = do
   load $ do
     appLayout Dashboard $ col (pad 20) $ do

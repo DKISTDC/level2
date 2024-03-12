@@ -20,13 +20,13 @@ import NSO.Types.InstrumentProgram
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Layout :> es) => Id Inversion -> InversionRoute -> Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Routes :> es, Globus :> es) => Id Inversion -> InversionRoute -> Page es Response
 page i Inv = pageMain i
 page i SubmitDownload = pageSubmitDownload i
 page i SubmitUpload = pageSubmitUpload i
 
 
-pageMain :: (Hyperbole :> es, Inversions :> es, Layout :> es) => Id Inversion -> Page es Response
+pageMain :: (Hyperbole :> es, Inversions :> es, Routes :> es, Globus :> es) => Id Inversion -> Page es Response
 pageMain i = do
   hyper $ inversions redirectHome
   hyper inversionCommit
