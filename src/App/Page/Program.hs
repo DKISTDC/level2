@@ -32,6 +32,9 @@ page ip = do
   hyper programInversions
   hyper DatasetsTable.actionSort
   hyper inversionCommit
+  hyper preprocessCommit
+  hyper downloadTransfer
+  hyper uploadTransfer
 
   load $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram ip)
@@ -113,6 +116,7 @@ instance HyperView ProgramInversions where
 
 data InvsAction
   = CreateInversion
+  | ReloadAll
   deriving (Show, Read, Param)
 
 
@@ -120,6 +124,8 @@ programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> e
 programInversions (ProgramInversions ip) = \case
   CreateInversion -> do
     _ <- send $ Inversions.Create ip
+    refreshInversions ip
+  ReloadAll -> do
     refreshInversions ip
 
 
@@ -146,4 +152,6 @@ refreshInversions ip = do
 
 clearInversion :: Id InstrumentProgram -> Eff es (View InversionStatus ())
 clearInversion ip = pure $ do
-  target (ProgramInversions ip) $ button CreateInversion (Style.btn Primary) "Create Inversion"
+  target (ProgramInversions ip) $ onLoad ReloadAll 0 emptyButtonSpace
+ where
+  emptyButtonSpace = el (height 44) none

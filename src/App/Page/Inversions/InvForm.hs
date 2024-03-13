@@ -1,13 +1,14 @@
 module App.Page.Inversions.InvForm where
 
 import App.Colors
-import App.Globus
+import App.Globus as Globus
 import App.Style qualified as Style
 import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
+import NSO.Types.Common (Id (..))
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View qualified as WebView
@@ -16,6 +17,74 @@ import Web.View qualified as WebView
 -----------------------------------------------------
 -- Inversion Transfer
 -----------------------------------------------------
+--
+data TransferAction
+  = CheckTransfer
+  | TaskFailed
+  | TaskSucceeded
+  deriving (Show, Read, Param)
+
+
+-- I want it to reload itself and call these when necessary
+checkTransfer :: (HyperView id, Action id ~ TransferAction, Hyperbole :> es, Globus :> es, Auth :> es) => Id Task -> Eff es (View id ())
+checkTransfer it = do
+  task <- Globus.transferStatus it
+  pure $ viewTransfer it task
+
+
+viewLoadTransfer :: (HyperView id, Action id ~ TransferAction) => View id ()
+viewLoadTransfer = do
+  onLoad CheckTransfer 0 none
+
+
+viewTransfer :: (HyperView id, Action id ~ TransferAction) => Id Task -> Task -> View id ()
+viewTransfer it task =
+  case task.status of
+    Succeeded -> onLoad TaskSucceeded 0 none
+    Failed -> onLoad TaskFailed 0 none
+    _ ->
+      viewPollTransfer it task
+
+
+viewPollTransfer :: (HyperView id, Action id ~ TransferAction) => Id Task -> Task -> View id ()
+viewPollTransfer it task = do
+  onLoad CheckTransfer 5000 $ do
+    viewTransferProgress it task
+
+
+viewTransferProgress :: Id Task -> Task -> View c ()
+viewTransferProgress it task = do
+  row id $ do
+    el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
+    space
+    activityLink it
+  progress (taskPercentComplete task)
+ where
+  rate :: String
+  rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
+
+
+viewTransferFailed :: Id Task -> View c ()
+viewTransferFailed it = do
+  row id $ do
+    el (color Danger) "Transfer Failed"
+    space
+    activityLink it
+
+
+activityLink :: Id Task -> View c ()
+activityLink it =
+  WebView.link activityUrl Style.link "View Transfer on Globus"
+ where
+  activityUrl = Url "https://" "app.globus.org" ["activity", it.fromId] []
+
+
+progress :: Float -> View c ()
+progress p = do
+  row (bg Gray . height 20) $ do
+    el (width (Pct p) . bg (light Info)) $ do
+      space
+
 
 -----------------------------------------------------
 -- Inversion Commit
@@ -100,37 +169,3 @@ commitForm vg lbl = do
   commitText (Invalid (GitCommit t)) = t
   commitText (Prevalid (GitCommit t)) = t
   commitText _ = ""
-
-
-viewTransferProgress :: Task -> View c ()
-viewTransferProgress t = do
-  row id $ do
-    el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
-    space
-    activityLink t
-  progress (taskPercentComplete t)
- where
-  rate :: String
-  rate = showFFloat (Just 2) (fromIntegral t.effective_bytes_per_second / (1000 * 1000) :: Float) ""
-
-
-viewTransferFailed :: Task -> View c ()
-viewTransferFailed t = do
-  row id $ do
-    el (color Danger) "Transfer Failed"
-    space
-    activityLink t
-
-
-activityLink :: Task -> View c ()
-activityLink t =
-  WebView.link activityUrl Style.link "View Transfer on Globus"
- where
-  activityUrl = Url "https://" "app.globus.org" ["activity", t.task_id.unTagged] []
-
-
-progress :: Float -> View c ()
-progress p = do
-  row (bg Gray . height 20) $ do
-    el (width (Pct p) . bg (light Info)) $ do
-      space
