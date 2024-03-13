@@ -4,7 +4,6 @@ import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversion
-import App.Page.Inversions.InvForm
 import App.Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -19,7 +18,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Programs
+import NSO.Data.Programs hiding (programInversions)
 import NSO.Prelude
 import Web.Hyperbole
 
@@ -29,7 +28,8 @@ page
   => Id InstrumentProgram
   -> Page es Response
 page ip = do
-  hyper $ inversions (refreshInversions ip)
+  hyper $ inversions (clearInversion ip)
+  hyper programInversions
   hyper DatasetsTable.actionSort
   hyper inversionCommit
 
@@ -39,8 +39,8 @@ page ip = do
     let d = head ds
 
     dse <- send $ Datasets.Query (ByProposal d.primaryProposalId)
-    invs <- send $ Inversions.ByProgram ip
-    steps <- mapM (currentStep . (.step)) invs
+    invs <- latestInversions ip
+    steps <- mapM inversionStep invs
     now <- currentTime
 
     appLayout Proposals $ do
@@ -54,7 +54,7 @@ page ip = do
 
         -- viewExperimentDescription d.experimentDescription
 
-        viewId (InversionStatus ip) $ viewInversions invs steps
+        viewId (ProgramInversions ip) $ viewProgramInversions invs steps
 
         col Style.card $ do
           el (Style.cardHeader Secondary) "Instrument Program Details"
@@ -80,6 +80,17 @@ page ip = do
           else ""
 
 
+latestInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> Eff es [Inversion]
+latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
+ where
+  sortLatest :: [Inversion] -> [Inversion]
+  sortLatest = sortOn (.created)
+
+
+inversionStep :: (Globus :> es) => Inversion -> Eff es CurrentStep
+inversionStep inv = currentStep inv.step
+
+
 viewDatasets :: UTCTime -> [Dataset] -> [Inversion] -> View c ()
 viewDatasets _ [] _ = none
 viewDatasets now (d : ds) is = do
@@ -94,16 +105,45 @@ viewDatasets now (d : ds) is = do
   viewCriteria ip gd
 
 
-viewInversions :: [Inversion] -> [CurrentStep] -> View InversionStatus ()
-viewInversions [] [] = do
-  button CreateInversion (Style.btn Primary) "Create Inversion"
-viewInversions is ss =
+data ProgramInversions = ProgramInversions (Id InstrumentProgram)
+  deriving (Show, Read, Param)
+instance HyperView ProgramInversions where
+  type Action ProgramInversions = InvsAction
+
+
+data InvsAction
+  = CreateInversion
+  deriving (Show, Read, Param)
+
+
+programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
+programInversions (ProgramInversions ip) = \case
+  CreateInversion -> do
+    _ <- send $ Inversions.Create ip
+    refreshInversions ip
+
+
+viewProgramInversions :: [Inversion] -> [CurrentStep] -> View ProgramInversions ()
+viewProgramInversions (inv : is) (step : ss) = do
+  viewId (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
   col (gap 20) $ do
-    zipWithM_ viewInversion is ss
+    zipWithM_ viewOldInversion is ss
+viewProgramInversions _ _ = do
+  button CreateInversion (Style.btn Primary) "Create Inversion"
 
 
-refreshInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> Eff es (View InversionStatus ())
+viewOldInversion :: Inversion -> CurrentStep -> View c ()
+viewOldInversion _ _ =
+  el_ "OLD INVERSION"
+
+
+refreshInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
 refreshInversions ip = do
-  invs <- send $ Inversions.ByProgram ip
-  steps <- mapM (currentStep . (.step)) invs
-  pure $ viewInversions invs steps
+  invs <- latestInversions ip
+  steps <- mapM inversionStep invs
+  pure $ viewProgramInversions invs steps
+
+
+clearInversion :: Id InstrumentProgram -> Eff es (View InversionStatus ())
+clearInversion ip = pure $ do
+  target (ProgramInversions ip) $ button CreateInversion (Style.btn Primary) "Create Inversion"

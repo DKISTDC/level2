@@ -29,7 +29,7 @@ pageMain :: (Hyperbole :> es, Inversions :> es, Auth :> es, Globus :> es) => Id 
 pageMain i = do
   hyper $ inversions redirectHome
   hyper inversionCommit
-  hyper $ preprocessCommit
+  hyper preprocessCommit
   load $ do
     -- TODO: handle taskId query param, and pass forward!
     (inv :| _) <- send (Inversions.ById i) >>= expectFound
@@ -46,7 +46,7 @@ pageMain i = do
             route (Program inv.programId) Style.link $ do
               text inv.programId.fromId
 
-        viewId (InversionStatus inv.programId) $ viewInversion inv step
+        viewId (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
 
 
 pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
@@ -119,7 +119,7 @@ preprocessCommit (PreprocessCommit ip ii) = action
     _ <- validate (PreprocessCommit ip ii) preprocessRepo gc lbl $ do
       send $ SetPreprocessed ii gc
     -- We can reload the parent like this!
-    pure $ target (InversionStatus ip) $ onLoad (Reload ii) 0 $ el_ "Loading.."
+    pure $ target (InversionStatus ip ii) $ onLoad Reload 0 $ el_ "Loading.."
 
   lbl = "Preprocess Git Commit"
 
@@ -128,17 +128,10 @@ preprocessCommit (PreprocessCommit ip ii) = action
 -- INVERSION STATUS -----------------------------------------------
 -- ----------------------------------------------------------------
 
-data InversionStatus = InversionStatus (Id InstrumentProgram)
+data InversionStatus = InversionStatus (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, Param)
-
-
-data InversionsAction
-  = CreateInversion
-  | Update (Id Inversion) InversionAction
-  | CheckDownload (Id Inversion) (Id Task)
-  | CheckUpload (Id Inversion) (Id Task)
-  | Reload (Id Inversion)
-  deriving (Show, Read, Param)
+instance HyperView InversionStatus where
+  type Action InversionStatus = InversionAction
 
 
 data InversionAction
@@ -147,6 +140,9 @@ data InversionAction
   | Upload
   | PostProcess
   | Publish
+  | CheckDownload (Id Task)
+  | CheckUpload (Id Task)
+  | Reload
   deriving (Show, Read, Param)
 
 
@@ -162,45 +158,35 @@ data InversionForm a = InversionForm
   deriving (Generic, Form)
 
 
-instance HyperView InversionStatus where
-  type Action InversionStatus = InversionsAction
-
-
-inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionsAction -> Eff es (View InversionStatus ())
-inversions onCancel (InversionStatus ip) = \case
-  CreateInversion -> do
-    inv <- send $ Inversions.Create ip
-    step <- currentStep inv.step
-    pure $ viewInversion inv step
-  (Update iid act) ->
-    case act of
-      Cancel -> do
-        send $ Inversions.Remove iid
-        -- then redirect to home.. but that won't refresh!
-        onCancel
-      Download -> do
-        r <- request
-        redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion iid SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
-      Upload -> do
-        r <- request
-        redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion iid SubmitUpload) ("Transfer Inversion Results " <> iid.fromId) r
-      PostProcess -> do
-        send $ Inversions.SetGenerated iid
-        refresh iid
-      Publish -> do
-        send $ Inversions.SetPublished iid
-        refresh iid
-  CheckDownload vi ti -> do
+inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
+inversions onCancel (InversionStatus ip ii) = \case
+  Cancel -> do
+    send $ Inversions.Remove ii
+    onCancel
+  Download -> do
+    r <- request
+    requireLogin
+    redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
+  Upload -> do
+    r <- request
+    redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
+  PostProcess -> do
+    send $ Inversions.SetGenerated ii
+    refresh
+  Publish -> do
+    send $ Inversions.SetPublished ii
+    refresh
+  CheckDownload ti -> do
     t <- Globus.transferStatus ti
-    checkDownload vi ti t
-  CheckUpload vi ti -> do
+    checkDownload ii ti t
+  CheckUpload ti -> do
     t <- Globus.transferStatus ti
-    checkUpload vi ti t
-  Reload iid -> do
-    refresh iid
+    checkUpload ii ti t
+  Reload -> do
+    refresh
  where
-  refresh iid = do
-    (inv :| _) <- send (Inversions.ById iid) >>= expectFound
+  refresh = do
+    (inv :| _) <- send (Inversions.ById ii) >>= expectFound
     step <- currentStep inv.step
     pure $ viewInversion inv step
 
@@ -220,7 +206,7 @@ checkDownload ii ti t' = do
         stepDownload inv Select
     _ -> pure $ do
       viewInversionContainer (Downloading (Transferring ti)) $ do
-        onLoad (CheckDownload ii ti) 5000 $ do
+        onLoad (CheckDownload ti) 5000 $ do
           viewTransferProgress t'
 
 
@@ -237,7 +223,7 @@ checkUpload vi ti t = do
         viewTransferFailed t
     _ -> pure $ do
       viewInversionContainer (Inverting mempty) $ do
-        onLoad (CheckUpload vi ti) 5000 $ do
+        onLoad (CheckUpload ti) 5000 $ do
           viewTransferProgress t
 
 
@@ -267,10 +253,10 @@ viewInversion inv step = do
   viewStep Complete = stepDone
 
   stepGenerate = do
-    button (Update inv.inversionId PostProcess) (Style.btn Primary . grow) "Save FITS Generation"
+    button PostProcess (Style.btn Primary . grow) "Save FITS Generation"
 
   stepPublish = do
-    button (Update inv.inversionId Publish) (Style.btn Primary . grow) "Save Publish"
+    button Publish (Style.btn Primary . grow) "Save Publish"
 
   stepDone = do
     el_ "Done"
@@ -281,11 +267,11 @@ stepDownload inv Select = do
   el_ "Please select a destination folder for the instrument program's datasets. You will be redirected to Globus."
 
   row (gap 10) $ do
-    button (Update inv.inversionId Download) (Style.btn Primary . grow) "Choose Folder"
-    button (Update inv.inversionId Cancel) (Style.btnOutline Secondary) "Cancel"
-stepDownload inv (Transferring it) = do
+    button Download (Style.btn Primary . grow) "Choose Folder"
+    button Cancel (Style.btnOutline Secondary) "Cancel"
+stepDownload _ (Transferring it) = do
   -- don't show anything until load
-  onLoad (CheckDownload inv.inversionId it) 0 $ do
+  onLoad (CheckDownload it) 0 $ do
     el (height 60) ""
 
 
@@ -312,10 +298,10 @@ stepInvert (InvertStep mc mt) inv = do
       tag "li" id "inv_res_pre.fits"
       tag "li" id "per_ori.fits"
       tag "li" id "inv_res_mod.fits"
-    button (Update inv.inversionId Upload) (Style.btn Primary . grow) "Select Files"
+    button Upload (Style.btn Primary . grow) "Select Files"
 
   viewTransfer ti = do
-    onLoad (CheckUpload inv.inversionId ti) 0 $ do
+    onLoad (CheckUpload ti) 0 $ do
       el (height 60) ""
 
 

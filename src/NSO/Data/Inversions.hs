@@ -63,6 +63,7 @@ empty ip = do
     Inversion
       { inversionId = i
       , programId = ip
+      , created = now
       , step = StepCreated (start ./ nil)
       }
 
@@ -75,6 +76,7 @@ inversion row = maybe err pure $ do
     Inversion
       { inversionId = row.inversionId
       , programId = row.programId
+      , created = row.created
       , step = stp
       }
  where
@@ -267,22 +269,21 @@ runDataInversions = interpret $ \_ -> \case
    where
     emptyRow :: Inversion -> InversionRow Identity
     emptyRow inv =
-      let Created time = stepCreated inv.step
-       in InversionRow
-            { inversionId = inv.inversionId
-            , programId = inv.programId
-            , created = time
-            , download = Nothing
-            , downloadTaskId = Nothing
-            , preprocess = Nothing
-            , preprocessSoftware = Nothing
-            , upload = Nothing
-            , uploadTaskId = Nothing
-            , inversion = Nothing
-            , inversionSoftware = Nothing
-            , generate = Nothing
-            , publish = Nothing
-            }
+      InversionRow
+        { inversionId = inv.inversionId
+        , programId = inv.programId
+        , created = inv.created
+        , download = Nothing
+        , downloadTaskId = Nothing
+        , preprocess = Nothing
+        , preprocessSoftware = Nothing
+        , upload = Nothing
+        , uploadTaskId = Nothing
+        , inversion = Nothing
+        , inversionSoftware = Nothing
+        , generate = Nothing
+        , publish = Nothing
+        }
 
 
 inversions :: TableSchema (InversionRow Name)

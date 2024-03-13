@@ -17,6 +17,7 @@ import Rel8
 data Inversion = Inversion
   { inversionId :: Id Inversion
   , programId :: Id InstrumentProgram
+  , created :: UTCTime
   , step :: InversionStep
   }
   deriving (Show)

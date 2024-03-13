@@ -26,6 +26,7 @@ module App.Globus
   , DownloadFolder
   , Auth (..)
   , runAuth
+  , requireLogin
   ) where
 
 import App.Types
@@ -288,3 +289,9 @@ saveAccessToken (Tagged acc) = setSession "globus" acc
 
 clearAccessToken :: (Hyperbole :> es) => Eff es ()
 clearAccessToken = clearSession "globus"
+
+
+requireLogin :: (Hyperbole :> es, Auth :> es) => Eff es ()
+requireLogin = do
+  _ <- getAccessToken >>= expectAuth
+  pure ()
