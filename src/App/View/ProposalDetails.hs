@@ -7,6 +7,7 @@ module App.View.ProposalDetails
 import App.Colors
 import App.View.DataRow (dataCell)
 import App.View.Icons as Icons
+import App.View.Inversions (inversionStatusLabel)
 import Data.Grouped
 import Data.Text qualified as Text
 import NSO.Data.Datasets
@@ -59,7 +60,7 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
   statusTag StatusInvalid = el (dataCell . color (light Secondary)) $ text "-"
   statusTag StatusQualified = el (stat Primary) $ text "Qualified"
   statusTag (StatusInversion (StepPublished _)) = el (stat Success) $ text "Complete"
-  statusTag (StatusInversion _) = el (stat Info) $ text "Inversion"
+  statusTag (StatusInversion step) = el (stat Info) $ text $ inversionStatusLabel step
 
   stat c = dataCell . bg c . color White
 

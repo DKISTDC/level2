@@ -44,6 +44,7 @@ library
       App.View.DataRow
       App.View.DatasetsTable
       App.View.Icons
+      App.View.Inversions
       App.View.Layout
       App.View.ProposalDetails
       Flow

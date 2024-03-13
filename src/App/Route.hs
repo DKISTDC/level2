@@ -3,7 +3,6 @@
 module App.Route where
 
 import App.Globus as Globus
-import Effectful
 import NSO.Prelude
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram

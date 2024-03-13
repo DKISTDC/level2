@@ -79,14 +79,3 @@ data InversionStep
   | StepGenerated (Many StepGenerated)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)
-
-
-stepCreated :: InversionStep -> Created
-stepCreated (StepCreated m) = grab @Created m
-stepCreated (StepDownloaded m) = grab @Created m
-stepCreated (StepPreprocessed m) = grab @Created m
-stepCreated (StepInverted m) = grab @Created m
-stepCreated (StepGenerated m) = grab @Created m
-stepCreated (StepPublished m) = grab @Created m
-stepCreated (StepDownloading m) = grab @Created m
-stepCreated (StepInverting m) = grab @Created m

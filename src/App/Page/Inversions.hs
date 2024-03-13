@@ -6,6 +6,7 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate)
 import App.View.DataRow (dataRows)
+import App.View.Inversions (inversionStatusLabel)
 import App.View.Layout
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -52,16 +53,5 @@ viewInversion inv = do
     --   text inv.programId.fromId
     route (Route.Inversion inv.inversionId Inv) Style.link $
       pre id inv.inversionId.fromId
-    el_ $ text $ cs $ showDate (stepCreated inv.step).timestamp
-    el_ $ status inv.step
-
-
-status :: InversionStep -> View c ()
-status (StepCreated _) = "Created"
-status (StepDownloaded _) = "Downloaded"
-status (StepPreprocessed _) = "Preprocessed"
-status (StepInverted _) = "Inverted"
-status (StepInverting _) = "Inverting"
-status (StepGenerated _) = "Generated"
-status (StepPublished _) = "Published"
-status (StepDownloading _) = "Downloading"
+    el_ $ text $ cs $ showDate inv.created
+    el_ $ text $ inversionStatusLabel inv.step

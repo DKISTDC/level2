@@ -3,7 +3,6 @@ module App.View.Layout where
 import App.Colors
 import App.Globus as Globus
 import App.Route
-import App.Types
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Prelude
