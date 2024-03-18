@@ -56,7 +56,7 @@ dependencies:
   # - morpheus-graphql == 0.27.3
   - modern-uri
   - lens
-  - hyperbole == 0.3.3
+  - hyperbole == 0.3.4
   - hasql
   - exceptions
   - effectful == 2.3.0.0

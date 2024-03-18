@@ -93,7 +93,7 @@ library
     , hasql
     , http-api-data
     , http-types
-    , hyperbole ==0.3.3
+    , hyperbole ==0.3.4
     , lens
     , modern-uri
     , nso-level2-types
@@ -145,7 +145,7 @@ executable level2
     , hasql
     , http-api-data
     , http-types
-    , hyperbole ==0.3.3
+    , hyperbole ==0.3.4
     , lens
     , modern-uri
     , nso-level2
@@ -203,7 +203,7 @@ test-suite tests
     , hasql
     , http-api-data
     , http-types
-    , hyperbole ==0.3.3
+    , hyperbole ==0.3.4
     , lens
     , modern-uri
     , nso-level2
