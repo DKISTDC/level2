@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           nso-level2
-version:        0.2.1
+version:        0.3.0
 synopsis:       NSO Level 2 Data Processing
 category:       System, Science
 homepage:       https://github.com/DKISTDC/Level2
