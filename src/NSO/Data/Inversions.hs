@@ -341,7 +341,7 @@ newtype GitRepo = GitRepo (Url Https)
 
 -- TODO: Get correct repo
 preprocessRepo :: GitRepo
-preprocessRepo = GitRepo $ https "github.com" /: "DKISTDC" /: "level2"
+preprocessRepo = GitRepo $ https "github.com" /: "DKISTDC" /: "level2-preprocess"
 
 
 -- TODO: Get correct repo. Need to move into the data center?
