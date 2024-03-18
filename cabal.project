@@ -4,4 +4,4 @@ packages:
   ./types/
   https://hackage.haskell.org/package/web-view-0.4.0/candidate/web-view-0.4.0.tar.gz
   https://hackage.haskell.org/package/globus-0.1.1/candidate/globus-0.1.1.tar.gz
-  https://hackage.haskell.org/package/hyperbole-0.3.3/candidate/hyperbole-0.3.3.tar.gz
+  https://hackage.haskell.org/package/hyperbole-0.3.4/candidate/hyperbole-0.3.4.tar.gz
