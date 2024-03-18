@@ -133,6 +133,7 @@ inversions onCancel (InversionStatus ip ii) = \case
     redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
   Upload -> do
     r <- request
+    requireLogin
     redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
   PostProcess -> do
     send $ Inversions.SetGenerated ii

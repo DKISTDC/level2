@@ -198,10 +198,10 @@ initUpload tform up ii = do
       }
 
   scratchPath :: FilePath
-  scratchPath = "~/Data/Level2/" <> cs ii.fromId
+  scratchPath = "~/level2/" <> cs ii.fromId
 
   level2Scratch :: Globus.Id Collection
-  level2Scratch = Tagged "0cb2ac86-3543-11ee-87b9-4dfadf03ac7e"
+  level2Scratch = Tagged "20fa4840-366a-494c-b009-063280ecf70d"
 
 
 initDownload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (Id Task)
