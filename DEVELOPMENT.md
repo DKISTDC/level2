@@ -22,10 +22,32 @@ Postgres Database
 
     > brew install sqlx-cli
 
+Environment Variables
+--------------------
+
+Set the following ENV via a .env file or another method:
+
+```bash
+APP_PORT=3000
+APP_DOMAIN=localhost
+# APP_DOMAIN=localhost
+DATABASE_URL=postgres://guest:guest@127.0.0.1:5432/level2
+GLOBUS_CLIENT_ID="5422f0b3-e40d-47b1-8c22-f64b1a1ae38e"
+GLOBUS_CLIENT_SECRET="..."
+
+SERVICES=MOCK
+METADATA_API=http://internal-api-gateway.service.prod.consul/graphql
+```
+
+
 Testing Changes
 ---------------
 
-Run all dev dependencies, including hpack, docker-compose, and ghcid
+Run all dev dependencies, including hpack, docker-compose:nginx and postgres
+
+    $ bin/deps
+
+Run tests and then Run all dev dependencies
 
     $ bin/dev
 
@@ -39,6 +61,10 @@ Database Migrations
 Create a new migration, then edit the generated .sql file
 
     $ sqlx migrate create
+
+Create your database
+
+    $ sqlx database create
 
 Bring database up-to-date with migrations
 
