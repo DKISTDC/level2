@@ -283,11 +283,10 @@ instance HyperView UploadTransfer where
 uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
 uploadTransfer (UploadTransfer ip ii ti) = \case
   TaskFailed -> do
-    inv <- loadInversion ii
     pure $ do
       col (gap 10) $ do
         viewTransferFailed ti
-        viewId (InversionStatus ip ii) $ stepDownload inv Select
+        viewId (InversionStatus ip ii) selectUpload
   TaskSucceeded -> do
     send (Inversions.SetUploaded ii)
     pure $ viewId (InversionStatus ip ii) $ onLoad Reload 0 none
@@ -300,17 +299,20 @@ stepInvert (InvertStep mc mt) inv = do
 
   maybe selectUpload viewUploadTransfer mt
  where
-  selectUpload = do
-    col (gap 5) $ do
-      el bold "Upload Inversion Results"
-      el_ "Please select the following files for upload. You will be redirected to Globus"
-      tag "li" id "inv_res_pre.fits"
-      tag "li" id "per_ori.fits"
-      tag "li" id "inv_res_mod.fits"
-    button Upload (Style.btn Primary . grow) "Select Files"
 
   viewUploadTransfer it = do
     viewId (UploadTransfer inv.programId inv.inversionId it) viewLoadTransfer
+
+
+selectUpload :: View InversionStatus ()
+selectUpload = do
+  col (gap 5) $ do
+    el bold "Upload Inversion Results"
+    el_ "Please select the following files for upload. You will be redirected to Globus"
+    tag "li" id "inv_res_pre.fits"
+    tag "li" id "per_ori.fits"
+    tag "li" id "inv_res_mod.fits"
+  button Upload (Style.btn Primary . grow) "Select Files"
 
 
 -- ----------------------------------------------------------------
