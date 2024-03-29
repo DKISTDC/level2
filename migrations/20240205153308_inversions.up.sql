@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS inversions (
 
   download TIMESTAMP,
   download_task_id TEXT,
+  download_datasets TEXT[],
 
   preprocess TIMESTAMP,
   preprocess_software TEXT,

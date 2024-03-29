@@ -26,7 +26,7 @@ page i SubmitDownload = pageSubmitDownload i
 page i SubmitUpload = pageSubmitUpload i
 
 
-pageMain :: (Hyperbole :> es, Inversions :> es, Auth :> es, Globus :> es) => Id Inversion -> Page es Response
+pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es) => Id Inversion -> Page es Response
 pageMain i = do
   hyper $ inversions redirectHome
   hyper inversionCommit
@@ -199,7 +199,7 @@ instance HyperView DownloadTransfer where
   type Action DownloadTransfer = TransferAction
 
 
-downloadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => DownloadTransfer -> TransferAction -> Eff es (View DownloadTransfer ())
+downloadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => DownloadTransfer -> TransferAction -> Eff es (View DownloadTransfer ())
 downloadTransfer (DownloadTransfer ip ii ti) = \case
   TaskFailed -> do
     inv <- loadInversion ii
@@ -208,7 +208,9 @@ downloadTransfer (DownloadTransfer ip ii ti) = \case
         InvForm.viewTransferFailed ti
         viewId (InversionStatus ip ii) $ stepDownload inv Select
   TaskSucceeded -> do
-    send (Inversions.SetDownloaded ii)
+    -- need to get the datasets used???
+    ds <- send $ Datasets.Query $ Datasets.ByProgram ip
+    send (Inversions.SetDownloaded ii (map (.datasetId) ds))
     pure $ viewId (InversionStatus ip ii) $ onLoad Reload 0 none
   CheckTransfer -> InvForm.checkTransfer ti
 

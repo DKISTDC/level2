@@ -24,7 +24,7 @@ data Created = Created {timestamp :: UTCTime}
   deriving (Show, Eq)
 
 
-data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Text}
+data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Text, datasets :: [Text]}
   deriving (Show, Eq)
 
 

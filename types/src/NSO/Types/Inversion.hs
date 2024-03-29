@@ -32,6 +32,7 @@ data InversionRow f = InversionRow
   , updated :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)
   , downloadTaskId :: Column f (Maybe Text)
+  , downloadDatasets :: Column f [Text]
   , preprocess :: Column f (Maybe UTCTime)
   , preprocessSoftware :: Column f (Maybe GitCommit)
   , upload :: Column f (Maybe UTCTime)

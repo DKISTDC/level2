@@ -26,6 +26,7 @@ import Effectful.Time
 import NSO.Error
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Network.Globus.Transfer (Task)
@@ -39,7 +40,7 @@ data Inversions :: Effect where
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   Create :: Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
-  SetDownloaded :: Id Inversion -> Inversions m ()
+  SetDownloaded :: Id Inversion -> [Id Dataset] -> Inversions m ()
   SetDownloading :: Id Inversion -> Id Task -> Inversions m ()
   SetPreprocessed :: Id Inversion -> GitCommit -> Inversions m ()
   SetUploading :: Id Inversion -> Id Task -> Inversions m ()
@@ -107,7 +108,8 @@ fromRow row = maybe err pure $ do
     prev <- started
     down <- row.download
     task <- row.downloadTaskId
-    pure $ Downloaded down task ./ prev
+    let dtss = row.downloadDatasets
+    pure $ Downloaded down task dtss ./ prev
 
   preprocessed :: Maybe (Many StepPreprocessed)
   preprocessed = do
@@ -161,7 +163,7 @@ runDataInversions = interpret $ \_ -> \case
   ById iid -> queryById iid
   Create pid -> create pid
   Remove iid -> remove iid
-  SetDownloaded iid -> setDownloaded iid
+  SetDownloaded iid ds -> setDownloaded iid ds
   SetDownloading iid tid -> setDownloading iid tid
   SetPreprocessed iid url -> setPreprocessed iid url
   SetUploaded iid -> setUploaded iid
@@ -227,10 +229,10 @@ runDataInversions = interpret $ \_ -> \case
   setDownloading iid tid = do
     updateInversion iid $ \r -> r{downloadTaskId = lit (Just tid.fromId)}
 
-  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
-  setDownloaded iid = do
+  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> [Id Dataset] -> Eff es ()
+  setDownloaded iid ds = do
     now <- currentTime
-    updateInversion iid $ \r -> r{download = lit (Just now)}
+    updateInversion iid $ \r -> r{download = lit (Just now), downloadDatasets = lit $ map (.fromId) ds}
 
   setUploading :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
   setUploading iid tid = do
@@ -284,6 +286,7 @@ runDataInversions = interpret $ \_ -> \case
         , updated = inv.created
         , download = Nothing
         , downloadTaskId = Nothing
+        , downloadDatasets = []
         , preprocess = Nothing
         , preprocessSoftware = Nothing
         , upload = Nothing
@@ -308,6 +311,7 @@ inversions =
           , updated = "updated"
           , download = "download"
           , downloadTaskId = "download_task_id"
+          , downloadDatasets = "download_datasets"
           , preprocess = "preprocess"
           , preprocessSoftware = "preprocess_software"
           , upload = "upload"
