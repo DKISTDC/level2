@@ -4,15 +4,17 @@ import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversion
-import App.Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
+import App.View.Inversions (inversionStatusLabel)
 import App.View.Layout
 import App.View.ProposalDetails
 import Data.Grouped as G
 import Data.List (nub)
 import Data.List.NonEmpty qualified as NE
+import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
 import Effectful.Time
@@ -87,7 +89,7 @@ latestInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> 
 latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
  where
   sortLatest :: [Inversion] -> [Inversion]
-  sortLatest = sortOn (.created)
+  sortLatest = sortOn (Down . (.updated))
 
 
 inversionStep :: (Globus :> es) => Inversion -> Eff es CurrentStep
@@ -132,15 +134,21 @@ programInversions (ProgramInversions ip) = \case
 viewProgramInversions :: [Inversion] -> [CurrentStep] -> View ProgramInversions ()
 viewProgramInversions (inv : is) (step : ss) = do
   viewId (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
-  col (gap 20) $ do
+  col (gap 10 . pad 10) $ do
     zipWithM_ viewOldInversion is ss
+    row id $ do
+      button CreateInversion Style.link "Start Over With New Inversion"
 viewProgramInversions _ _ = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
 
 
 viewOldInversion :: Inversion -> CurrentStep -> View c ()
-viewOldInversion _ _ =
-  el_ "OLD INVERSION"
+viewOldInversion inv _ = row (gap 4) $ do
+  el_ "•"
+  link (routeUrl $ Route.Inversion inv.inversionId Inv) Style.link $ do
+    text inv.inversionId.fromId
+  el_ $ text $ cs $ showDate inv.created
+  el_ $ text $ inversionStatusLabel inv.step
 
 
 refreshInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())

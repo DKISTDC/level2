@@ -1,7 +1,9 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module NSO.Data.Inversions
   ( Inversions (..)
   , Inversion (..)
-  , inversion
+  , fromRow
   , runDataInversions
   , AllInversions (..)
   , module NSO.Types.Inversion
@@ -64,12 +66,13 @@ empty ip = do
       { inversionId = i
       , programId = ip
       , created = now
+      , updated = now
       , step = StepCreated (start ./ nil)
       }
 
 
-inversion :: InversionRow Identity -> Either String Inversion
-inversion row = maybe err pure $ do
+fromRow :: InversionRow Identity -> Either String Inversion
+fromRow row = maybe err pure $ do
   -- Parse each step. Try the last one first
   stp <- step
   pure $
@@ -77,6 +80,7 @@ inversion row = maybe err pure $ do
       { inversionId = row.inversionId
       , programId = row.programId
       , created = row.created
+      , updated = row.updated
       , step = stp
       }
  where
@@ -202,8 +206,9 @@ runDataInversions = interpret $ \_ -> \case
             , returning = NumberOfRowsAffected
             }
 
-  updateInversion :: (Rel8 :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
+  updateInversion :: (Rel8 :> es, Time :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
   updateInversion iid f = do
+    now <- currentTime
     void $
       runQuery () $
         Rel8.update $
@@ -211,11 +216,14 @@ runDataInversions = interpret $ \_ -> \case
             { target = inversions
             , from = each inversions
             , updateWhere = \_ r -> r.inversionId ==. lit iid
-            , set = \_ r -> f r
+            , set = \_ r -> f . setUpdated now $ r
             , returning = NumberOfRowsAffected
             }
 
-  setDownloading :: (Rel8 :> es) => Id Inversion -> Id Task -> Eff es ()
+  setUpdated :: UTCTime -> InversionRow Expr -> InversionRow Expr
+  setUpdated now InversionRow{..} = InversionRow{updated = lit now, ..}
+
+  setDownloading :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
   setDownloading iid tid = do
     updateInversion iid $ \r -> r{downloadTaskId = lit (Just tid.fromId)}
 
@@ -224,7 +232,7 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{download = lit (Just now)}
 
-  setUploading :: (Rel8 :> es) => Id Inversion -> Id Task -> Eff es ()
+  setUploading :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
   setUploading iid tid = do
     updateInversion iid $ \r -> r{uploadTaskId = lit (Just tid.fromId)}
 
@@ -273,6 +281,7 @@ runDataInversions = interpret $ \_ -> \case
         { inversionId = inv.inversionId
         , programId = inv.programId
         , created = inv.created
+        , updated = inv.created
         , download = Nothing
         , downloadTaskId = Nothing
         , preprocess = Nothing
@@ -296,6 +305,7 @@ inversions =
           { inversionId = "inversion_id"
           , programId = "program_id"
           , created = "created"
+          , updated = "updated"
           , download = "download"
           , downloadTaskId = "download_task_id"
           , preprocess = "preprocess"
@@ -312,7 +322,7 @@ inversions =
 
 toInversions :: (Error DataError :> es) => [InversionRow Identity] -> Eff es [Inversion]
 toInversions irs = do
-  case traverse inversion irs of
+  case traverse fromRow irs of
     Left err -> throwError $ ValidationError err
     Right ivs -> pure ivs
 

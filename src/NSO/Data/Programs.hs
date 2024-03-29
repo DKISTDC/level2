@@ -16,6 +16,7 @@ module NSO.Data.Programs
 import Data.Either (lefts, rights)
 import Data.Grouped as G
 import Data.List.NonEmpty qualified as NE
+import Data.Ord (Down (..))
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
@@ -97,7 +98,7 @@ instrumentProgram gd ivs =
         , onDisk = qualifyOnDisk gd
         , spectralLines = rights ls
         , otherWavelengths = lefts ls
-        , status = programStatus gd ivs
+        , status = programStatus gd $ sortOn (Down . (.updated)) ivs
         , embargo = d.embargo
         }
  where

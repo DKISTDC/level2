@@ -3,7 +3,6 @@ module App.Page.Inversions.InvForm where
 import App.Colors
 import App.Globus as Globus
 import App.Style qualified as Style
-import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
@@ -17,7 +16,7 @@ import Web.View qualified as WebView
 -----------------------------------------------------
 -- Inversion Transfer
 -----------------------------------------------------
---
+
 data TransferAction
   = CheckTransfer
   | TaskFailed
@@ -104,8 +103,6 @@ data CommitForm a = CommitForm
 
 validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated GitCommit)
 validate i repo gc lbl onValid = do
-  traceM "VALIDATE"
-  traceM $ show gc
   isValid <- send $ ValidateGitCommit repo gc
   checkValid i gc lbl isValid
   onValid
@@ -158,9 +155,6 @@ commitForm vg lbl = do
     el (color Danger) "Invalid Git Commit"
   validationFeedback _ = none
 
-  validationButton (Valid _) = Style.btnOutline Success
-  validationButton _ = Style.btn Primary
-
   validationColor (Invalid _) = Danger
   validationColor (Valid _) = Success
   validationColor _ = Gray
@@ -169,3 +163,8 @@ commitForm vg lbl = do
   commitText (Invalid (GitCommit t)) = t
   commitText (Prevalid (GitCommit t)) = t
   commitText _ = ""
+
+
+validationButton :: Validated a -> Mod
+validationButton (Valid _) = Style.btnOutline Success
+validationButton _ = Style.btn Primary

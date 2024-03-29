@@ -20,21 +20,23 @@ page :: (Hyperbole :> es, Inversions :> es, Auth :> es) => Page es Response
 page = do
   load $ do
     AllInversions ivs <- send Inversions.All
+    let sorted = sortOn sortProgram ivs
     appLayout Inversions $ do
       col Style.page $ do
         col Style.card $ do
           el (Style.cardHeader Info) "Active"
           col section $ do
-            dataRows (filter isActive ivs) $ \iv ->
+            dataRows (filter isActive sorted) $ \iv ->
               viewInversion iv
 
         el (fontSize 24 . bold) "Completed"
         col Style.card $ do
           col section $ do
-            dataRows (filter (not . isActive) ivs) $ \iv ->
+            dataRows (filter (not . isActive) sorted) $ \iv ->
               viewInversion iv
  where
   section = gap 10 . pad 10
+  sortProgram i = i.programId
 
 
 isActive :: Inversion -> Bool
@@ -51,6 +53,8 @@ viewInversion inv = do
   row (gap 10) $ do
     -- route (Route.Program inv.programId) Style.link $
     --   text inv.programId.fromId
+    route (Route.Program inv.programId) Style.link $
+      pre id inv.programId.fromId
     route (Route.Inversion inv.inversionId Inv) Style.link $
       pre id inv.inversionId.fromId
     el_ $ text $ cs $ showDate inv.created

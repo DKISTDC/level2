@@ -67,6 +67,8 @@ dependencies:
   - aeson == 2.1.2.1
   - http-api-data
   - globus
+  - fits-parse
+  - massiv
   # - amqp-worker >= 2.0
 
 

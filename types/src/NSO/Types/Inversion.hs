@@ -18,6 +18,7 @@ data Inversion = Inversion
   { inversionId :: Id Inversion
   , programId :: Id InstrumentProgram
   , created :: UTCTime
+  , updated :: UTCTime
   , step :: InversionStep
   }
   deriving (Show)
@@ -28,6 +29,7 @@ data InversionRow f = InversionRow
   { inversionId :: Column f (Id Inversion)
   , programId :: Column f (Id InstrumentProgram)
   , created :: Column f UTCTime
+  , updated :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)
   , downloadTaskId :: Column f (Maybe Text)
   , preprocess :: Column f (Maybe UTCTime)

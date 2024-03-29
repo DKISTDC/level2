@@ -185,7 +185,7 @@ initUpload tform up ii = do
       , source_endpoint = Tagged tform.endpoint_id
       , destination_endpoint = level2Scratch
       , data_ = map transferItem [up.invResMod, up.invResPre, up.perOri]
-      , sync_level = SyncTimestamp
+      , sync_level = SyncChecksum
       }
 
   transferItem :: String -> TransferItem
@@ -217,7 +217,7 @@ initDownload tform df ds = do
       , source_endpoint = dkistDataTransfer
       , destination_endpoint = Tagged tform.endpoint_id
       , data_ = map transferItem ds
-      , sync_level = SyncTimestamp
+      , sync_level = SyncChecksum
       }
    where
     dkistDataTransfer :: Globus.Id Collection

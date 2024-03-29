@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS inversions (
 
   program_id TEXT NOT NULL,
   created TIMESTAMP NOT NULL,
+  updated TIMESTAMP NOT NULL,
 
   download TIMESTAMP,
   download_task_id TEXT,

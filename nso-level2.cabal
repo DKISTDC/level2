@@ -51,6 +51,7 @@ library
       Flow.Example
       Flow.Node
       NSO.Data.Datasets
+      NSO.Data.Generate
       NSO.Data.Inversions
       NSO.Data.Programs
       NSO.Data.Qualify
@@ -89,12 +90,14 @@ library
     , effectful ==2.3.0.0
     , exceptions
     , filepath
+    , fits-parse
     , globus
     , hasql
     , http-api-data
     , http-types
     , hyperbole ==0.3.4
     , lens
+    , massiv
     , modern-uri
     , nso-level2-types
     , random
@@ -141,12 +144,14 @@ executable level2
     , effectful ==2.3.0.0
     , exceptions
     , filepath
+    , fits-parse
     , globus
     , hasql
     , http-api-data
     , http-types
     , hyperbole ==0.3.4
     , lens
+    , massiv
     , modern-uri
     , nso-level2
     , nso-level2-types
@@ -199,12 +204,14 @@ test-suite tests
     , effectful ==2.3.0.0
     , exceptions
     , filepath
+    , fits-parse
     , globus
     , hasql
     , http-api-data
     , http-types
     , hyperbole ==0.3.4
     , lens
+    , massiv
     , modern-uri
     , nso-level2
     , nso-level2-types

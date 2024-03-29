@@ -3,7 +3,8 @@ module App.Page.Inversion where
 import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
-import App.Page.Inversions.InvForm
+import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..), Validated (..))
+import App.Page.Inversions.InvForm qualified as InvForm
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Icons qualified as Icons
@@ -164,9 +165,12 @@ viewInversionContainer step cnt =
 
 viewInversion :: Inversion -> CurrentStep -> View InversionStatus ()
 viewInversion inv step = do
-  viewInversionContainer step $ do
-    viewStep step
+  col (gap 10) $ do
+    viewInversionContainer step $ do
+      viewStep step
  where
+  -- button NewInversion Style.link "HELLO"
+
   viewStep :: CurrentStep -> View InversionStatus ()
   viewStep (Downloading ts) = stepDownload inv ts
   viewStep Preprocessing = stepPreprocess inv
@@ -201,12 +205,12 @@ downloadTransfer (DownloadTransfer ip ii ti) = \case
     inv <- loadInversion ii
     pure $ do
       col (gap 10) $ do
-        viewTransferFailed ti
+        InvForm.viewTransferFailed ti
         viewId (InversionStatus ip ii) $ stepDownload inv Select
   TaskSucceeded -> do
     send (Inversions.SetDownloaded ii)
     pure $ viewId (InversionStatus ip ii) $ onLoad Reload 0 none
-  CheckTransfer -> checkTransfer ti
+  CheckTransfer -> InvForm.checkTransfer ti
 
 
 stepDownload :: Inversion -> TransferStep -> View InversionStatus ()
@@ -217,7 +221,7 @@ stepDownload _ Select = do
     button Download (Style.btn Primary . grow) "Choose Folder"
     button Cancel (Style.btnOutline Secondary) "Cancel"
 stepDownload inv (Transferring it) = do
-  viewId (DownloadTransfer inv.programId inv.inversionId it) viewLoadTransfer
+  viewId (DownloadTransfer inv.programId inv.inversionId it) InvForm.viewLoadTransfer
 
 
 -- ----------------------------------------------------------------
@@ -233,9 +237,9 @@ instance HyperView PreprocessCommit where
 preprocessCommit :: (Hyperbole :> es, Inversions :> es) => PreprocessCommit -> CommitAction -> Eff es (View PreprocessCommit ())
 preprocessCommit (PreprocessCommit ip ii) = action
  where
-  action LoadValid = loadValid preprocessCommitLabel
+  action LoadValid = InvForm.loadValid preprocessCommitLabel
   action (CheckCommitValid gc) = do
-    _ <- validate (PreprocessCommit ip ii) preprocessRepo gc preprocessCommitLabel $ do
+    _ <- InvForm.validate (PreprocessCommit ip ii) preprocessRepo gc preprocessCommitLabel $ do
       send $ SetPreprocessed ii gc
     -- We can reload the parent like this!
     pure $ target (InversionStatus ip ii) $ onLoad Reload 0 $ el_ "Loading.."
@@ -247,7 +251,7 @@ preprocessCommitLabel = "Preprocess Git Commit"
 
 stepPreprocess :: Inversion -> View InversionStatus ()
 stepPreprocess inv = do
-  viewId (PreprocessCommit inv.programId inv.inversionId) $ commitForm Empty preprocessCommitLabel
+  viewId (PreprocessCommit inv.programId inv.inversionId) $ InvForm.commitForm Empty preprocessCommitLabel
 
 
 -- ----------------------------------------------------------------
@@ -260,14 +264,15 @@ instance HyperView InversionCommit where
   type Action InversionCommit = CommitAction
 
 
-inversionCommit :: (Hyperbole :> es, Inversions :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
+inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
 inversionCommit (InversionCommit ii) = action
  where
-  action LoadValid = loadValid inversionCommitLabel
+  action LoadValid = InvForm.loadValid inversionCommitLabel
   action (CheckCommitValid gc) = do
-    vg <- validate (InversionCommit ii) desireRepo gc inversionCommitLabel $ do
+    vg <- InvForm.validate (InversionCommit ii) desireRepo gc inversionCommitLabel $ do
       send $ SetInversion ii gc
-    pure $ commitForm vg inversionCommitLabel
+
+    checkInvertReload ii $ InvForm.commitForm vg inversionCommitLabel
 
 
 inversionCommitLabel :: Text
@@ -285,34 +290,51 @@ uploadTransfer (UploadTransfer ip ii ti) = \case
   TaskFailed -> do
     pure $ do
       col (gap 10) $ do
-        viewTransferFailed ti
-        viewId (InversionStatus ip ii) selectUpload
+        InvForm.viewTransferFailed ti
+        viewId (InversionStatus ip ii) $ uploadSelect (Invalid ti)
   TaskSucceeded -> do
     send (Inversions.SetUploaded ii)
-    pure $ viewId (InversionStatus ip ii) $ onLoad Reload 0 none
-  CheckTransfer -> checkTransfer ti
+    checkInvertReload ii $ viewId (InversionStatus ip ii) $ uploadSelect (Valid ti) -- onLoad Reload 1000 none
+  CheckTransfer -> InvForm.checkTransfer ti
+
+
+checkInvertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es) => Id Inversion -> View a () -> Eff es (View a ())
+checkInvertReload ii vw = do
+  inv <- loadInversion ii
+  curr <- currentStep inv.step
+  pure $ case curr of
+    Generating -> viewId (InversionStatus inv.programId inv.inversionId) $ onLoad Reload 0 none
+    _ -> vw
 
 
 stepInvert :: InvertStep -> Inversion -> View InversionStatus ()
 stepInvert (InvertStep mc mt) inv = do
-  viewId (InversionCommit inv.inversionId) $ commitForm (fromExistingCommit mc) "DeSIRe GIt Commit"
-
-  maybe selectUpload viewUploadTransfer mt
+  viewId (InversionCommit inv.inversionId) $ InvForm.commitForm (InvForm.fromExistingCommit mc) "DeSIRe GIt Commit"
+  viewUploadTransfer mt
  where
+  viewUploadTransfer (Just it) = do
+    viewId (UploadTransfer inv.programId inv.inversionId it) InvForm.viewLoadTransfer
+  viewUploadTransfer Nothing = do
+    uploadSelect Empty
 
-  viewUploadTransfer it = do
-    viewId (UploadTransfer inv.programId inv.inversionId it) viewLoadTransfer
 
-
-selectUpload :: View InversionStatus ()
-selectUpload = do
-  col (gap 5) $ do
+uploadSelect :: Validated (Id Task) -> View InversionStatus ()
+uploadSelect vid = do
+  col (gap 5 . file vid) $ do
     el bold "Upload Inversion Results"
-    el_ "Please select the following files for upload. You will be redirected to Globus"
+    instructions vid
     tag "li" id "inv_res_pre.fits"
     tag "li" id "per_ori.fits"
     tag "li" id "inv_res_mod.fits"
-  button Upload (Style.btn Primary . grow) "Select Files"
+    case vid of
+      Valid _ -> button Upload (Style.btnOutline Success . grow) "Select New Files"
+      _ -> button Upload (Style.btn Primary . grow) "Select Files"
+ where
+  file (Valid _) = color Success
+  file _ = color Black
+
+  instructions (Valid _) = none
+  instructions _ = el_ "Please select the following files for upload. You will be redirected to Globus"
 
 
 -- ----------------------------------------------------------------
