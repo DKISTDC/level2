@@ -10,6 +10,7 @@ import Data.Kind
 import Data.Massiv.Array hiding (mapM, mapM_, transposeOuter)
 import NSO.Prelude
 import Telescope.Fits as Fits
+import Telescope.Fits.Types as Fits
 
 
 ------------------------------------------------------------------------------
@@ -31,8 +32,29 @@ test = do
 ------------------------------------------------------------------------------
 
 -- TODO: generate a bunch of HDUs!
-quantitiesToFits :: Quantities -> Fits
-quantitiesToFits qs = _
+quantitiesToFits :: Quantities -> [ImageHDU]
+quantitiesToFits q =
+  [ dataHDU "Log of optical depth at 500nm" q.opticalDepth
+  , dataHDU "Temperature" q.temperature
+  , dataHDU "Electron Pressure" q.electronPressure
+  , dataHDU "Microturbulence" q.microTurbulence
+  , dataHDU "my extname" q.magStrength
+  , dataHDU "my extname" q.velocity
+  , dataHDU "my extname" q.magInclination
+  , dataHDU "my extname" q.magAzimuth
+  , dataHDU "my extname" q.geoHeight
+  , dataHDU "my extname" q.gasPressure
+  , dataHDU "my extname" q.density
+  ]
+ where
+  -- how do you know which is which?
+  dataHDU :: Text -> Array D Ix2 Float -> ImageHDU
+  dataHDU extName arr =
+    -- TODO: add headers, at least name them with EXTNAME
+    -- TODO: need methods to write headers easily, for sure
+    let header = Header [Keyword $ KeywordRecord "EXTNAME" (String extName) Nothing]
+        dataArray = encodeArray arr
+     in ImageHDU{header, dataArray}
 
 
 readQuantities :: (MonadIO m, MonadThrow m) => FilePath -> m [Quantities]
