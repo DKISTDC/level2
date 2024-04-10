@@ -4,5 +4,6 @@ packages:
   ./types/
   https://hackage.haskell.org/package/web-view-0.4.0/candidate/web-view-0.4.0.tar.gz
   ../fits-parse/
-  ../globus-hs/
+  ../globus/
   ../hyperbole/
+  ../telescope/

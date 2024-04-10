@@ -69,6 +69,7 @@ dependencies:
   - globus
   - fits-parse
   - massiv
+  - telescope
   # - amqp-worker >= 2.0
 
 

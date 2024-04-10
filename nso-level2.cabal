@@ -106,6 +106,7 @@ library
     , string-conversions
     , string-interpolate
     , tagged
+    , telescope
     , text
     , time
     , wai-extra
@@ -161,6 +162,7 @@ executable level2
     , string-conversions
     , string-interpolate
     , tagged
+    , telescope
     , text
     , time
     , wai-extra
@@ -222,6 +224,7 @@ test-suite tests
     , string-interpolate
     , sydtest >=0.15
     , tagged
+    , telescope
     , text
     , time
     , wai-extra
