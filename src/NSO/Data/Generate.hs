@@ -5,11 +5,13 @@ module NSO.Data.Generate where
 
 import Data.ByteString qualified as BS
 
--- import Data.Fits
 import Data.Kind
 import Data.Massiv.Array hiding (mapM, mapM_, transposeOuter)
+import Effectful
+import Effectful.Writer.Static.Local
 import NSO.Prelude
 import Telescope.Fits as Fits
+import Telescope.Fits.Header
 import Telescope.Fits.Types as Fits
 
 
@@ -22,68 +24,28 @@ testInput = "/Users/seanhess/Data/scan1807/inv_res_mod.fits"
 test :: IO ()
 test = do
   putStrLn "TEST"
-  res <- readQuantities testInput
+  (f : fs) <- readQuantitiesFrames testInput
 
-  let (q : qs) = res
+  print $ f.temperature !> 1
 
-  print $ q.temperature !> 1
+  let dat = encodeArray f.opticalDepth
+  print dat.axes
+  print dat.bitpix
+  print $ BS.length dat.rawData
 
+  let fits = quantitiesFits f
+  print $ length fits.extensions
 
-------------------------------------------------------------------------------
+  let (Image i : _) = fits.extensions
+  -- print $ BS.length i.dataArray.rawData
 
--- TODO: generate a bunch of HDUs!
-quantitiesToFits :: Quantities -> [ImageHDU]
-quantitiesToFits q =
-  [ dataHDU "Log of optical depth at 500nm" q.opticalDepth
-  , dataHDU "Temperature" q.temperature
-  , dataHDU "Electron Pressure" q.electronPressure
-  , dataHDU "Microturbulence" q.microTurbulence
-  , dataHDU "my extname" q.magStrength
-  , dataHDU "my extname" q.velocity
-  , dataHDU "my extname" q.magInclination
-  , dataHDU "my extname" q.magAzimuth
-  , dataHDU "my extname" q.geoHeight
-  , dataHDU "my extname" q.gasPressure
-  , dataHDU "my extname" q.density
-  ]
- where
-  -- how do you know which is which?
-  dataHDU :: Text -> Array D Ix2 Float -> ImageHDU
-  dataHDU extName arr =
-    -- TODO: add headers, at least name them with EXTNAME
-    -- TODO: need methods to write headers easily, for sure
-    let header = Header [Keyword $ KeywordRecord "EXTNAME" (String extName) Nothing]
-        dataArray = encodeArray arr
-     in ImageHDU{header, dataArray}
+  print fits.primaryHDU.dataArray.rawData
+
+  let out = encode fits
+  BS.writeFile "/Users/seanhess/code/notebooks/data/out.fits" out
 
 
-readQuantities :: (MonadIO m, MonadThrow m) => FilePath -> m [Quantities]
-readQuantities fp = do
-  inp <- liftIO $ BS.readFile fp
-  res <- decodeResults inp
-  resultsQuantities res
-
-
-decodeResults :: (MonadThrow m) => BS.ByteString -> m (Results [Quantity, Depth, FrameY, SlitX])
-decodeResults inp = do
-  f <- decode inp
-  a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
-  pure $ Results a
-
-
-resultsQuantities :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Quantities]
-resultsQuantities r = do
-  let rbf = resultsByFrame r
-  mapM splitQuantitiesM rbf
-
-
-resultsByFrame :: Results [Quantity, Depth, FrameY, SlitX] -> [Results [Quantity, Depth, SlitX]]
-resultsByFrame (Results arr) =
-  let Sz (_ :> _ :> nf :. _) = size arr
-   in fmap (Results . frame) [0 .. nf - 1]
- where
-  frame n = arr <!> (Dim 2, n)
-
+-- Quantiies To Fits -------------------------------------------------
 
 data Quantities = Quantities
   { opticalDepth :: Array D Ix2 Float
@@ -100,10 +62,121 @@ data Quantities = Quantities
   }
 
 
-data GenerateError
-  = InvalidFrameShape (Sz Ix3)
-  | InvalidFits String
-  deriving (Show, Eq, Exception)
+quantitiesFits :: Quantities -> Fits
+quantitiesFits q = Fits primaryHDU $ fmap Image $ quantitiesHDUs q
+
+
+-- What is supposed to go in here?
+primaryHDU :: PrimaryHDU
+primaryHDU = PrimaryHDU primaryHeaders emptyDataArray
+ where
+  primaryHeaders =
+    Header
+      [keyword "WOOT" (String "this is a very long string passing 30 characters") Nothing, keyword "CUSTOM" (String "adf") Nothing]
+
+
+-- TODO: generate a bunch of HDUs!
+quantitiesHDUs :: Quantities -> [ImageHDU]
+quantitiesHDUs q = runPureEff . execWriter $ do
+  opticalDepth
+  temperature
+  electronPressure
+  microTurbulence
+  magStrength
+  velocity
+  magInclination
+  magAzimuth
+  geoHeight
+  gasPressure
+  density
+ where
+  -- how do you know which is which?
+  dataHDU :: (Writer [ImageHDU] :> es) => Text -> Array D Ix2 Float -> Eff es ()
+  dataHDU ext arr = do
+    let header = Header $ dataHDUHeaders ext
+        dataArray = encodeArray arr
+    tell [ImageHDU{header, dataArray}]
+
+  dataHDUHeaders :: Text -> [HeaderRecord]
+  dataHDUHeaders ext =
+    [ extName ext
+    , custom "woot"
+    ]
+
+  extName n = keyword "EXTNAME" (String n) Nothing
+  custom n = keyword "CUSTOM" (String n) Nothing
+
+  opticalDepth =
+    dataHDU "Log of optical depth at 500nm" q.opticalDepth
+
+  temperature =
+    dataHDU "Temperature" q.temperature
+
+  electronPressure =
+    dataHDU "Electron Pressure" q.electronPressure
+
+  microTurbulence =
+    dataHDU "Microturbulence" q.microTurbulence
+
+  magStrength =
+    dataHDU "Magnetic Field Strength" q.magStrength
+
+  velocity =
+    dataHDU "Line-of-sight Velocity" q.velocity
+
+  magInclination =
+    dataHDU "Magnetic Field Inclination (w.r.t. line-of-sight)" q.magInclination
+
+  magAzimuth =
+    dataHDU "Magnetic Field Azimuth (w.r.t. line-of-sight)" q.magAzimuth
+
+  geoHeight =
+    dataHDU "Geometric Height above solar surface (tau ~ 1 at 500nm)" q.geoHeight
+
+  gasPressure =
+    dataHDU "Gas Pressure" q.gasPressure
+
+  density =
+    dataHDU "Density" q.density
+
+
+-- Parse Quantities ---------------------------------------------------------------------------------
+
+readQuantitiesFrames :: (MonadIO m, MonadThrow m) => FilePath -> m [Quantities]
+readQuantitiesFrames fp = do
+  inp <- liftIO $ BS.readFile fp
+  res <- decodeResults inp
+  resultsQuantities res
+
+
+decodeResults :: (MonadThrow m) => BS.ByteString -> m (Results [Quantity, Depth, FrameY, SlitX])
+decodeResults inp = do
+  f <- decode inp
+  a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
+  pure $ Results a
+
+
+resultsQuantities :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Quantities]
+resultsQuantities res = do
+  fs <- resultsByFrame res
+  mapM splitQuantitiesM fs
+
+
+resultsByFrame :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Results [Quantity, Depth, SlitX]]
+resultsByFrame res =
+  let maxFrame = numFrames res - 1
+   in mapM (sliceFrame res) [0 .. maxFrame]
+ where
+  numFrames :: Results [Quantity, Depth, FrameY, SlitX] -> Int
+  numFrames (Results arr) =
+    let Sz (_ :> _ :> nf :. _) = size arr
+     in nf
+
+  sliceFrame :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> Int -> m (Results [Quantity, Depth, SlitX])
+  sliceFrame (Results arr) n =
+    case arr <!?> (Dim 2, n) of
+      Nothing -> throwM $ FrameOutOfBounds (size arr) n
+      Just s -> pure $ Results s
 
 
 splitQuantitiesM :: (MonadThrow m) => Results [Quantity, Depth, SlitX] -> m Quantities
@@ -120,52 +193,11 @@ splitQuantities res = do
   pure Quantities{..}
 
 
--- quantitiesForFrames :: Results [FrameY, Quantity, Depth, SlitX] -> Maybe [Quantities]
--- quantitiesForFrames = mapM splitQuantities . outerList
-
--- O(2N)?
--- resultsByFrame :: (MonadThrow m, MonadUnliftIO m, PrimMonad m) => Results [Quantity, Depth, FrameY, SlitX] -> m (Results [FrameY, Quantity, Depth, SlitX])
--- resultsByFrame (Results a) = do
---   a' <- M.backpermuteM (newSize a) indexNewToOld a
---   pure $ Results a'
---  where
---   newSize a' =
---     let Sz s = size a'
---      in Sz $ indexOldToNew s
---
---   indexNewToOld (frameY :> quantity :> depth :. slitX) =
---     quantity :> depth :> frameY :. slitX
---
---   indexOldToNew (quantity :> depth :> frameY :. slitX) =
---     frameY :> quantity :> depth :. slitX
-
--- allFrames :: Results [FrameY, Quantity, Depth, SlitX] -> [Results [Quantity, Depth, SlitX]]
--- allFrames = outerList
-
-outerList :: forall a as. (Lower (ResultsIx (a : as)) ~ ResultsIx as, Index (ResultsIx as), Index (ResultsIx (a : as))) => Results (a : as) -> [Results as]
-outerList (Results a) = foldOuterSlice row a
- where
-  row :: Array D (ResultsIx as) Float -> [Results as]
-  row r = [Results r]
-
-
--- (|>) :: (Index (ResultsIx as), Index (ResultsIx (a : as)), Lower (ResultsIx (a : as)) ~ ResultsIx as) => Results (a : as) -> Int -> Results as
--- Results a |> n = Results $ a M.!> n
---
---
--- (|?>) :: (Index (ResultsIx as), Index (ResultsIx (a : as)), Lower (ResultsIx (a : as)) ~ ResultsIx as) => Results (a : as) -> Int -> Maybe (Results as)
--- Results a !?> n = do
---   sub <- a M.!?> n
---   pure $ Results sub
-
--- transposeOuter :: (ResultsIx (a : b : as) ~ ResultsIx (b : a : as), Index (ResultsIx (b : a : as)), Index (Lower (ResultsIx (b : a : as)))) => Results (a : b : as) -> Results (b : a : as)
--- transposeOuter (Results a) =
---   -- "inner" and "outer" are opposite my intuition in the library. Why "slice from the outside" but then those are the innermost dimensions?
---   Results (compute $ transposeInner a)
-
 -- Results ------------------------------------------------------------------------------
 
-newtype Results (as :: [Type]) = Results {array :: Array D (ResultsIx as) Float}
+newtype Results (as :: [Type]) = Results
+  { array :: Array D (ResultsIx as) Float
+  }
 
 
 instance (Ragged L (ResultsIx as) Float) => Show (Results as) where
@@ -203,3 +235,19 @@ instance IsResults '[a, b, c, d] where
   type ResultsIx '[a, b, c, d] = Ix4
   outerLength (Results a) =
     let Sz (s :> _) = size a in s
+
+
+outerList :: forall a as. (Lower (ResultsIx (a : as)) ~ ResultsIx as, Index (ResultsIx as), Index (ResultsIx (a : as))) => Results (a : as) -> [Results as]
+outerList (Results a) = foldOuterSlice row a
+ where
+  row :: Array D (ResultsIx as) Float -> [Results as]
+  row r = [Results r]
+
+
+-- Errors ------------------------------------------
+
+data GenerateError
+  = InvalidFrameShape (Sz Ix3)
+  | InvalidFits String
+  | FrameOutOfBounds (Sz Ix4) Int
+  deriving (Show, Eq, Exception)
