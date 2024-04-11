@@ -91,53 +91,58 @@ quantitiesHDUs q = runPureEff . execWriter $ do
   density
  where
   -- how do you know which is which?
-  dataHDU :: (Writer [ImageHDU] :> es) => Text -> Array D Ix2 Float -> Eff es ()
-  dataHDU ext arr = do
-    let header = Header $ dataHDUHeaders ext
+  dataHDU :: (Writer [ImageHDU] :> es) => Array D Ix2 Float -> [HeaderRecord] -> Eff es ()
+  dataHDU arr h = do
+    let header = Header h
         dataArray = encodeArray arr
     tell [ImageHDU{header, dataArray}]
 
-  dataHDUHeaders :: Text -> [HeaderRecord]
-  dataHDUHeaders ext =
+  dataHeaders :: Text -> Text -> Text -> [HeaderRecord]
+  dataHeaders ext bt bu =
     [ extName ext
+    , bType bt
+    , bUnit bu
     , custom "woot"
     ]
 
-  extName n = keyword "EXTNAME" (String n) Nothing
+  extName e = keyword "EXTNAME" (String e) Nothing
+  bType bt = keyword "BTYPE" (String bt) (Just "Uniform Content Descriptor (UCD)")
+  bUnit "" = keyword "BUNIT" (String "") (Just "dimensionless")
+  bUnit bu = keyword "BUNIT" (String bu) Nothing
   custom n = keyword "CUSTOM" (String n) Nothing
 
   opticalDepth =
-    dataHDU "Log of optical depth at 500nm" q.opticalDepth
+    dataHDU q.opticalDepth $ dataHeaders "Log of optical depth at 500nm" "phys.absorption.opticalDepth" ""
 
   temperature =
-    dataHDU "Temperature" q.temperature
+    dataHDU q.temperature $ dataHeaders "Temperature" "phys.temperature" "K"
 
   electronPressure =
-    dataHDU "Electron Pressure" q.electronPressure
+    dataHDU q.electronPressure $ dataHeaders "Electron Pressure" "phys.electron;phys.pressure" "N/m^2"
 
   microTurbulence =
-    dataHDU "Microturbulence" q.microTurbulence
+    dataHDU q.microTurbulence $ dataHeaders "Microturbulence" "phys.veloc.microTurb" "km/s"
 
   magStrength =
-    dataHDU "Magnetic Field Strength" q.magStrength
+    dataHDU q.magStrength $ dataHeaders "Magnetic Field Strength" "phys.magField" "T"
 
   velocity =
-    dataHDU "Line-of-sight Velocity" q.velocity
+    dataHDU q.velocity $ dataHeaders "Line-of-sight Velocity" "spect.dopplerVeloc" "km/s"
 
   magInclination =
-    dataHDU "Magnetic Field Inclination (w.r.t. line-of-sight)" q.magInclination
+    dataHDU q.magInclination $ dataHeaders "Magnetic Field Inclination (w.r.t. line-of-sight)" "phys.magField;pos.angDistance" "deg"
 
   magAzimuth =
-    dataHDU "Magnetic Field Azimuth (w.r.t. line-of-sight)" q.magAzimuth
+    dataHDU q.magAzimuth $ dataHeaders "Magnetic Field Azimuth (w.r.t. line-of-sight)" "phys.magField;pos.azimuth" "deg"
 
   geoHeight =
-    dataHDU "Geometric Height above solar surface (tau ~ 1 at 500nm)" q.geoHeight
+    dataHDU q.geoHeight $ dataHeaders "Geometric Height above solar surface (tau ~ 1 at 500nm)" "phys.distance" "km"
 
   gasPressure =
-    dataHDU "Gas Pressure" q.gasPressure
+    dataHDU q.gasPressure $ dataHeaders "Gas Pressure" "phys.pressure" "N/m^2"
 
   density =
-    dataHDU "Density" q.density
+    dataHDU q.density $ dataHeaders "Density" "phys.density" "kg/m^3"
 
 
 -- Parse Quantities ---------------------------------------------------------------------------------
