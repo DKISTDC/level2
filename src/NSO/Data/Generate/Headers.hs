@@ -28,13 +28,15 @@ import NSO.Prelude
 -- 2. Typed reading of L1 headers - We have a file(s) we want to use as input for a header
 
 -- we go to pure strings
--- no, but you could construct them from anything
-data Head (typ :: Type) (description :: Symbol) = Head String
+-- without the GADT you can't put the runtime type at the type-level
+data Key (typ :: Type) (description :: Symbol) where
+  KeySeconds :: Float -> Key Seconds d
+  KeyDeg :: Float -> Key Deg d
+  KeyBool :: Bool -> Key Bool d
 
 
-headSeconds :: Float -> Head Seconds d
-headSeconds = Head . show
-
+-- headSeconds :: Float -> Key Seconds d
+-- headSeconds = Key . show
 
 -- data Unit (unit :: Unit') (typ :: Type)
 data Constant (s :: Symbol)
@@ -47,14 +49,14 @@ newtype Deg = Deg Float
 
 --
 data PrimaryHeader = PrimaryHeader
-  { telapse :: Head Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
-  , wcsvalid :: Head Bool "WCI data are correct"
-  , dsetid :: Head String "Unique ID of the dataset to which the frame belongs"
-  , framevol :: Head MB "Size of the frame on disk."
-  , proctype :: Head (Constant "L2") "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
+  { telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
+  , wcsvalid :: Key Bool "WCI data are correct"
+  , dsetid :: Key String "Unique ID of the dataset to which the frame belongs"
+  , framevol :: Key MB "Size of the frame on disk."
+  , proctype :: Key (Constant "L2") "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
   , -- asdf
-    origin :: Head (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
-  , lonpole :: Head Deg "Native longitude of the celestial pole in Helioprojective coordinate system"
+    origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
+  , lonpole :: Key Deg "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
 
 
