@@ -52,6 +52,7 @@ library
       Flow.Node
       NSO.Data.Datasets
       NSO.Data.Generate
+      NSO.Data.Generate.Headers
       NSO.Data.Inversions
       NSO.Data.Programs
       NSO.Data.Qualify
