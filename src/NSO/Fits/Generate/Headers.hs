@@ -1,7 +1,8 @@
-module NSO.Data.Generate.Headers where
+module NSO.Fits.Generate.Headers where
 
 import Data.Kind
 import GHC.TypeLits
+import NSO.Fits.Generate.Key
 import NSO.Prelude
 
 
@@ -29,25 +30,12 @@ import NSO.Prelude
 
 -- we go to pure strings
 -- without the GADT you can't put the runtime type at the type-level
-data Key (typ :: Type) (description :: Symbol) where
-  KeySeconds :: Float -> Key Seconds d
-  KeyDeg :: Float -> Key Deg d
-  KeyBool :: Bool -> Key Bool d
-
 
 -- headSeconds :: Float -> Key Seconds d
 -- headSeconds = Key . show
 
 -- data Unit (unit :: Unit') (typ :: Type)
-data Constant (s :: Symbol)
 
-
-newtype MB = MB Float
-newtype Seconds = Seconds Float
-newtype Deg = Deg Float
-
-
---
 data PrimaryHeader = PrimaryHeader
   { telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
   , wcsvalid :: Key Bool "WCI data are correct"
@@ -58,23 +46,12 @@ data PrimaryHeader = PrimaryHeader
     origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
   , lonpole :: Key Deg "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
+  deriving (Generic)
 
 
-data HeadType
-  = HSeconds
-  | HBool
-  | HMB
-
--- wait.... we are generating
--- -- data Head' = Head String HeadType String
---
---
--- -- but then .... how do
--- primaryHeader :: [Head']
--- primaryHeader = do
---   header "TELAPSE" HSeconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
---   header "WCSVALID" HBool "WCI data are correct"
---
---
--- header :: String -> HeadType -> String -> [Head']
--- header = _
+data RequiredHDUHeader = RequiredHDUHeader
+  -- some of these are required. We still need to document them!
+  { extName :: Key String "Ext name description"
+  , bType :: Key Seconds "btype description"
+  }
+  deriving (Generic)

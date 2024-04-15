@@ -52,13 +52,16 @@ library
       Flow.Node
       NSO.Data.Datasets
       NSO.Data.Generate
-      NSO.Data.Generate.Headers
       NSO.Data.Inversions
       NSO.Data.Programs
       NSO.Data.Qualify
       NSO.Data.Scan
       NSO.Data.Spectra
       NSO.Error
+      NSO.Fits.Generate
+      NSO.Fits.Generate.Doc
+      NSO.Fits.Generate.Headers
+      NSO.Fits.Generate.Key
       NSO.Level2
       NSO.Metadata
       NSO.Steps
