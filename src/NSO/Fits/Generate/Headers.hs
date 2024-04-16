@@ -1,14 +1,18 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module NSO.Fits.Generate.Headers where
 
 import Data.Kind
+import Data.Text (pack)
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Doc
 import NSO.Fits.Generate.Key
 import NSO.Prelude
-import Telescope.Fits (BitPix)
+import Telescope.Fits (BitPix (..))
+import Telescope.Fits.Encoding (bitPixCode)
+import Telescope.Fits.Types (HeaderRecord (..), KeywordRecord (..), Value (..))
 
 
 -- data PrimaryHeaders = PrimaryHeaders
@@ -61,14 +65,6 @@ data PrimaryHeader f = PrimaryHeader
   deriving (Generic, HeaderDoc)
 
 
-type family Field f ktype desc where
-  Field Key ktype desc = ktype
-  Field Doc ktype desc = Doc ktype desc
-
-
--- TODO: Higher Order Type
---  in order to create a "documentation" PrimaryHeader and a "header" one with values, we need a higher order type
-
 type L2 = "L2"
 
 
@@ -79,9 +75,42 @@ type L2 = "L2"
 -- -- instance Documentation (PrimaryHeader Doc) where
 -- --   documentation
 
-constantKey :: forall a typ desc. (KnownSymbol a) => Constant a -> Key typ desc
-constantKey _ = KString (symbolVal @a Proxy)
+-- constantKey :: forall a typ desc. (KnownSymbol a) => Constant a -> Key typ desc
+-- constantKey _ = KString (symbolVal @a Proxy)
 
+-- Encode ALL Documentation at compile time
+-- no, we are going for ALL compile type
+-- data DataHDUHeader hdu = DataHDUHeader
+--   {
+--   }
+--
+--
+-- data HDUInfo (ext :: Symbol) (btype :: UCD) (bunit :: BUnit)
+--
+--
+-- type DataMagField = HDUInfo "Magnetic Field Strength" MagField Tesla
+
+primaryHeader :: PrimaryHeader Key
+primaryHeader =
+  PrimaryHeader
+    { wcsvalid = Key True
+    , dsetid = Key "randomid"
+    , framevol = Key $ MB 123
+    , proctype = Key Constant
+    , origin = Key Constant
+    , lonpole = Key $ Degrees 456
+    }
+
+
+-- primaryHeaderDoc :: PrimaryHeader Doc
+-- primaryHeaderDoc =
+--   PrimaryHeader
+--     { wcsvalid = Doc
+--     , dsetid = Doc
+--     }
+--
+-- magneticFieldStrength :: String -> DataHDUHeader DataMagField
+-- magneticFieldStrength = undefined
 
 -- TODO: we need to document END, but we aren't going to set it that way!
 data GenericHeader f = GenericHeader
@@ -92,47 +121,29 @@ data GenericHeader f = GenericHeader
   , bitpix :: Field f BitPix "Mandatory keyword describing the number of bits per pixel in the data. Permitted values are: 8, 16, 32, 64, -32, -64"
   , end :: Field f (Constant "End") "This keyword has no associated value. Bytes 9 through 80 shall be filled with ASCII spaces (decimal 32 or hexadecimal 20)."
   }
-  deriving (Generic, HeaderDoc)
+  deriving (Generic)
+instance HeaderKeywords GenericHeader
+instance HeaderDoc GenericHeader
 
 
--- Encode ALL Documentation at compile time
--- no, we are going for ALL compile type
-data DataHDUHeader hdu = DataHDUHeader
-  {
-  }
-
-
-data HDUInfo (ext :: Symbol) (btype :: UCD) (bunit :: BUnit)
-
-
-type DataMagField = HDUInfo "Magnetic Field Strength" MagField Tesla
-
-
-primaryHeader :: PrimaryHeader Key
-primaryHeader =
-  PrimaryHeader
-    { wcsvalid = True
-    , dsetid = "randomid"
-    , framevol = MB 123
-    , proctype = Constant
-    , origin = Constant
-    , lonpole = Degrees 456
+genericHeader :: GenericHeader Key
+genericHeader =
+  GenericHeader
+    { extname = Key $ ExtName "My HDU"
+    , bunit = Key Tesla
+    , btype = Key MagField
+    , bitpix = Key BPInt8
+    , end = Key Constant
     }
 
 
--- primaryHeaderDoc :: PrimaryHeader Doc
--- primaryHeaderDoc =
---   PrimaryHeader
---     { wcsvalid = Doc
---     , dsetid = Doc
---     }
-
-magneticFieldStrength :: String -> DataHDUHeader DataMagField
-magneticFieldStrength = undefined
+type family Field f ktype desc where
+  Field Key ktype desc = Key ktype ""
+  Field Doc ktype desc = Doc ktype desc
 
 
--- these aren't a list. They can be
-data DataHDU a
+-- TODO: Higher Order Type
+--  in order to create a "documentation" PrimaryHeader and a "header" one with values, we need a higher order type
 
 -- TODO: Documentation like this!
 -- HDU: ExtName
@@ -140,5 +151,64 @@ data DataHDU a
 --  naxis
 --  naxis1 -- describe the actual axis
 --  naxis2 -- describe the actual axis
---  naxis3
 --
+
+class HeaderKeywords f where
+  headerKeywords :: f Key -> [KeywordRecord]
+  default headerKeywords :: (Generic (f Key), GenHeaderKeywords (Rep (f Key))) => f Key -> [KeywordRecord]
+  headerKeywords a = genHeaderKeywords @(Rep (f Key)) $ from a
+
+
+class GenHeaderKeywords f where
+  genHeaderKeywords :: f p -> [KeywordRecord]
+
+
+instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 D c f) where
+  genHeaderKeywords (M1 a) = genHeaderKeywords @f a
+
+
+-- constructor metadata
+instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 C c f) where
+  genHeaderKeywords (M1 a) = genHeaderKeywords @f a
+
+
+-- Selectors
+instance (GenHeaderKeywords f, Selector s) => GenHeaderKeywords (M1 S s f) where
+  genHeaderKeywords (M1 a) =
+    let s = selName (undefined :: M1 S s f x)
+     in fmap (setKeyword s) $ genHeaderKeywords @f a
+   where
+    setKeyword s d = d{_keyword = pack s}
+
+
+instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: b) where
+  genHeaderKeywords (a :*: b) = genHeaderKeywords a ++ genHeaderKeywords b
+
+
+instance forall ktype comment i. (KeyValue ktype) => GenHeaderKeywords (K1 i (Key ktype comment)) where
+  genHeaderKeywords (K1 (Key t)) = [KeywordRecord mempty (keyValue @ktype t) Nothing]
+
+
+class KeyValue a where
+  keyValue :: a -> Value
+
+
+instance (KnownSymbol a) => KeyValue (Constant a) where
+  keyValue _ = String $ pack $ symbolVal @a Proxy
+
+
+instance KeyValue ExtName where
+  keyValue (ExtName s) = String s
+
+
+instance KeyValue BUnit where
+  keyValue b = String (pack $ show b)
+
+
+instance KeyValue UCD where
+  keyValue MagField = String "phys.magField"
+  keyValue DopplerVeloc = String "phys.dopplerVeloc"
+
+
+instance KeyValue BitPix where
+  keyValue b = Integer (bitPixCode b)

@@ -7,15 +7,18 @@ import GHC.TypeLits
 import NSO.Prelude
 
 
-data Key typ (description :: Symbol)
-  = KFloat Float
-  | KString String
-  | KBool Bool
-  | KConst
+-- data Key typ (description :: Symbol)
+--   = KFloat Float
+--   | KString String
+--   | KBool Bool
+--   | KConst
+
+-- they probably have to be the same order
+data Doc ktype (description :: Symbol) = Doc
+data Key ktype (comment :: Symbol) = Key ktype
 
 
-data Doc key (description :: Symbol) = Doc
-
+-- data Key ktype = Key
 
 -- KeySeconds :: Float -> Key Seconds d
 -- KeyDeg :: Float -> Key Deg d
@@ -29,7 +32,7 @@ data Doc key (description :: Symbol) = Doc
 newtype MB = MB Float
 newtype Seconds = Seconds Float
 newtype Degrees = Degrees Float
-newtype ExtName = ExtName Float
+newtype ExtName = ExtName Text
 
 
 data UCD
@@ -47,6 +50,15 @@ data BUnit
   | Deg
   | Km
   | Kg_m3
+instance Show BUnit where
+  show Dimensionless = ""
+  show Kelvin = "K"
+  show N_m2 = "N/m^2"
+  show Km_s = "km/s"
+  show Tesla = "T"
+  show Deg = "deg"
+  show Km = "km"
+  show Kg_m3 = "kg/m^3"
 
 
 -- newtype MB = MB Float
@@ -54,9 +66,3 @@ data BUnit
 -- newtype Deg = Deg Float
 -- newtype ExtName = ExtName String
 data Constant (s :: Symbol) = Constant
-
-
-class KeyValue a where
-  keyValue :: String
-instance KeyValue MagField where
-  keyValue = "phys.magField"
