@@ -1,9 +1,14 @@
+{-# LANGUAGE DataKinds #-}
+
 module NSO.Fits.Generate.Headers where
 
 import Data.Kind
+import GHC.Generics
 import GHC.TypeLits
+import NSO.Fits.Generate.Doc
 import NSO.Fits.Generate.Key
 import NSO.Prelude
+import Telescope.Fits (BitPix)
 
 
 -- data PrimaryHeaders = PrimaryHeaders
@@ -36,22 +41,104 @@ import NSO.Prelude
 
 -- data Unit (unit :: Unit') (typ :: Type)
 
-data PrimaryHeader = PrimaryHeader
-  { telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
-  , wcsvalid :: Key Bool "WCI data are correct"
-  , dsetid :: Key String "Unique ID of the dataset to which the frame belongs"
-  , framevol :: Key MB "Size of the frame on disk."
-  , proctype :: Key (Constant "L2") "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
+-- this is everything we need for the primnary header?
+-- yeah, we can add other stuff to the docs
+
+-- they don't all have to be a "Key"... could make instances for the other types
+-- the thing is, the keyname is encoded in the record. Is that what I want? It does enforce that I hit all the required keys easily...
+-- we could make it higher order
+
+data PrimaryHeader f = PrimaryHeader
+  -- { telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
+  { wcsvalid :: Field f Bool "WCI data are correct"
+  , dsetid :: Field f String "Unique ID of the dataset to which the frame belongs"
+  , framevol :: Field f MB "Size of the frame on disk."
+  , proctype :: Field f (Constant L2) "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
   , -- asdf
-    origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
-  , lonpole :: Key Deg "Native longitude of the celestial pole in Helioprojective coordinate system"
+    origin :: Field f (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
+  , lonpole :: Field f Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
-  deriving (Generic)
+  deriving (Generic, HeaderDoc)
 
 
-data RequiredHDUHeader = RequiredHDUHeader
-  -- some of these are required. We still need to document them!
-  { extName :: Key String "Ext name description"
-  , bType :: Key Seconds "btype description"
+type family Field f ktype desc where
+  Field Key ktype desc = ktype
+  Field Doc ktype desc = Doc ktype desc
+
+
+-- TODO: Higher Order Type
+--  in order to create a "documentation" PrimaryHeader and a "header" one with values, we need a higher order type
+
+type L2 = "L2"
+
+
+-- class Documentation f where
+--   documentation :: f Doc
+--
+--
+-- -- instance Documentation (PrimaryHeader Doc) where
+-- --   documentation
+
+constantKey :: forall a typ desc. (KnownSymbol a) => Constant a -> Key typ desc
+constantKey _ = KString (symbolVal @a Proxy)
+
+
+-- TODO: we need to document END, but we aren't going to set it that way!
+data GenericHeader f = GenericHeader
+  { extname :: Field f ExtName "Name of HDU"
+  , bunit :: Field f BUnit "The physical unit of the data values"
+  , -- eh.... not sure this is right...
+    btype :: Field f UCD "Uniform Content Descriptor of what the data array represents."
+  , bitpix :: Field f BitPix "Mandatory keyword describing the number of bits per pixel in the data. Permitted values are: 8, 16, 32, 64, -32, -64"
+  , end :: Field f (Constant "End") "This keyword has no associated value. Bytes 9 through 80 shall be filled with ASCII spaces (decimal 32 or hexadecimal 20)."
   }
-  deriving (Generic)
+  deriving (Generic, HeaderDoc)
+
+
+-- Encode ALL Documentation at compile time
+-- no, we are going for ALL compile type
+data DataHDUHeader hdu = DataHDUHeader
+  {
+  }
+
+
+data HDUInfo (ext :: Symbol) (btype :: UCD) (bunit :: BUnit)
+
+
+type DataMagField = HDUInfo "Magnetic Field Strength" MagField Tesla
+
+
+primaryHeader :: PrimaryHeader Key
+primaryHeader =
+  PrimaryHeader
+    { wcsvalid = True
+    , dsetid = "randomid"
+    , framevol = MB 123
+    , proctype = Constant
+    , origin = Constant
+    , lonpole = Degrees 456
+    }
+
+
+-- primaryHeaderDoc :: PrimaryHeader Doc
+-- primaryHeaderDoc =
+--   PrimaryHeader
+--     { wcsvalid = Doc
+--     , dsetid = Doc
+--     }
+
+magneticFieldStrength :: String -> DataHDUHeader DataMagField
+magneticFieldStrength = undefined
+
+
+-- these aren't a list. They can be
+data DataHDU a
+
+-- TODO: Documentation like this!
+-- HDU: ExtName
+--  bitpix
+--  naxis
+--  naxis1 -- describe the actual axis
+--  naxis2 -- describe the actual axis
+--  naxis3
+--

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module NSO.Fits.Generate.Doc where
 
@@ -6,6 +7,7 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Key
 import NSO.Prelude
+import Telescope.Fits.Types (BitPix)
 import Web.View
 
 
@@ -17,40 +19,46 @@ data DocKey = DocKey
   deriving (Show)
 
 
+class HeaderDoc a where
+  headerDoc :: [DocKey]
+  default headerDoc :: (GenHeaderDoc (Rep (a Doc))) => [DocKey]
+  headerDoc = genHeaderDoc @(Rep (a Doc))
+
+
 -- doesn't document the instance, but the type
 class DocView a where
   docView :: Proxy a -> View c ()
 
 
-class GenHeaderKeys rep where
-  genHeaderKeys :: [DocKey]
+class GenHeaderDoc rep where
+  genHeaderDoc :: [DocKey]
 
 
 -- datatype metadata
-instance (GenHeaderKeys f) => GenHeaderKeys (M1 D c f) where
-  genHeaderKeys = genHeaderKeys @f
+instance (GenHeaderDoc f) => GenHeaderDoc (M1 D c f) where
+  genHeaderDoc = genHeaderDoc @f
 
 
 -- constructor metadata
-instance (GenHeaderKeys f) => GenHeaderKeys (M1 C c f) where
-  genHeaderKeys = genHeaderKeys @f
+instance (GenHeaderDoc f) => GenHeaderDoc (M1 C c f) where
+  genHeaderDoc = genHeaderDoc @f
 
 
 -- Selectors
-instance (GenHeaderKeys f, Selector s) => GenHeaderKeys (M1 S s f) where
-  genHeaderKeys =
+instance (GenHeaderDoc f, Selector s) => GenHeaderDoc (M1 S s f) where
+  genHeaderDoc =
     let s = selName (undefined :: M1 S s f x)
-     in fmap (setKeyword s) $ genHeaderKeys @f
+     in fmap (setKeyword s) $ genHeaderDoc @f
    where
     setKeyword s d = d{keyword = s}
 
 
-instance (GenHeaderKeys a, GenHeaderKeys b) => GenHeaderKeys (a :*: b) where
-  genHeaderKeys = genHeaderKeys @a ++ genHeaderKeys @b
+instance (GenHeaderDoc a, GenHeaderDoc b) => GenHeaderDoc (a :*: b) where
+  genHeaderDoc = genHeaderDoc @a ++ genHeaderDoc @b
 
 
-instance (KeyTypeName ktype, KnownSymbol desc) => GenHeaderKeys (K1 i (Key ktype desc)) where
-  genHeaderKeys = [DocKey "TODO SELECTOR" (keyTypeName @ktype Proxy) (symbolVal @desc Proxy)]
+instance (KeyTypeName ktype, KnownSymbol desc) => GenHeaderDoc (K1 i (Doc ktype desc)) where
+  genHeaderDoc = [DocKey "TODO SELECTOR" (keyTypeName @ktype Proxy) (symbolVal @desc Proxy)]
 
 
 -- docKey :: (KnownSymbol desc) => Key typ desc -> DocKey
@@ -60,8 +68,28 @@ class KeyTypeName a where
   keyTypeName :: Proxy a -> String
 instance KeyTypeName String where
   keyTypeName _ = "String"
+instance KeyTypeName Bool where
+  keyTypeName _ = "Bool"
 instance KeyTypeName Seconds where
   keyTypeName _ = "Seconds"
+instance KeyTypeName MB where
+  keyTypeName _ = "MB"
+instance KeyTypeName Deg where
+  keyTypeName _ = "Deg"
+instance KeyTypeName ExtName where
+  keyTypeName _ = "ExtName"
+instance KeyTypeName BUnit where
+  keyTypeName _ = "BUnit"
+instance KeyTypeName UCD where
+  keyTypeName _ = "UCD"
+instance KeyTypeName BitPix where
+  keyTypeName _ = "BitPix"
+instance KeyTypeName Degrees where
+  keyTypeName _ = "Degrees"
+instance (KnownSymbol s) => KeyTypeName s where
+  keyTypeName _ = symbolVal @s Proxy
+instance (KnownSymbol s) => KeyTypeName (Constant s) where
+  keyTypeName _ = "Constant: " ++ symbolVal @s Proxy
 
 -- -- Constructor names / lines
 -- instance (Constructor c, GenRoute f) => GenRoute (M1 C c f) where
