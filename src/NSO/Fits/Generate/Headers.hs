@@ -54,22 +54,33 @@ import Telescope.Fits.Types (HeaderRecord (..), KeywordRecord (..), Value (..))
 -- they don't all have to be a "Key"... could make instances for the other types
 -- the thing is, the keyname is encoded in the record. Is that what I want? It does enforce that I hit all the required keys easily...
 -- we could make it higher order
+--
+-- newtype PrimaryHeaderDoc = PrimaryHeaderDoc PrimaryHeader
 
-data PrimaryHeader f = PrimaryHeader
-  -- { telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
-  { wcsvalid :: Field f Bool "WCI data are correct"
-  , dsetid :: Field f String "Unique ID of the dataset to which the frame belongs"
-  , framevol :: Field f MB "Size of the frame on disk."
-  , proctype :: Field f (Constant L2) "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
-  , -- asdf
-    origin :: Field f (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
-  , lonpole :: Field f Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
+data PrimaryHeader = PrimaryHeader
+  { telapse :: Key "telapse" Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
+  , wcsvalid :: Key "wcsvalid" (Constant True) "WCI data are correct"
+  , dsetid :: Key "dsetid" String "Unique ID of the dataset to which the frame belongs"
+  , framevol :: Key "framevol" MB "Size of the frame on disk."
+  , proctype :: Key "proctype" (Constant L2) "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
+  , origin :: Key "origin" (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
+  , lonpole :: Key "lonpole" Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
   deriving (Generic, HeaderDoc)
 
 
 type L2 = "L2"
 
+
+-- newtype PrimaryHeaderKeys = PrimaryHeaderKeys PrimaryHeader
+
+-- instance HeaderDoc PrimaryHeaderKeys where
+--   headerDoc = headerDoc @PrimaryHeaderKeys <> headerDoc @PrimaryHeaderConstants
+
+-- data PrimaryHeaderConstants = PrimaryHeaderConstants
+--   {dsetid :: Key "dsetid" String "Unique ID of the dataset"}
+
+-- instance HeaderDoc (KeyList PrimaryHeaderConstants)
 
 -- class Documentation f where
 --   documentation :: f Doc
@@ -93,17 +104,17 @@ type L2 = "L2"
 --
 -- type DataMagField = HDUInfo "Magnetic Field Strength" MagField Tesla
 
-primaryHeader :: PrimaryHeader Key
-primaryHeader =
-  PrimaryHeader
-    { wcsvalid = Key True
-    , dsetid = Key "randomid"
-    , framevol = Key $ MB 123
-    , proctype = Key Constant
-    , origin = Key Constant
-    , lonpole = Key $ Degrees 456
-    }
-
+-- primaryHeader :: PrimaryHeader
+-- primaryHeader =
+--   PrimaryHeader
+--     { telapse = Key (Seconds 123)
+--     , wcsvalid = Key Constant
+--     , dsetid = Key "randomid"
+--     , framevol = Key $ MB 123
+--     , proctype = Key Constant
+--     , origin = Key Constant
+--     , lonpole = Key (Degrees 40)
+--     }
 
 -- primaryHeaderDoc :: PrimaryHeader Doc
 -- primaryHeaderDoc =
@@ -117,53 +128,52 @@ primaryHeader =
 --
 -- Composition, not inheritance!
 
-data GenericHDUHeader axes f = GenericHDUHeader
-  -- these are always the same
-  { xtension :: Field f ExtName "IMAGE"
-  , bitpix :: Field f BitPix "Mandatory keyword describing the number of bits per pixel in the data. Permitted values are: 8, 16, 32, 64, -32, -64"
-  , axes :: axes f
-  , pcount :: Field f Int "Pcount"
-  , gcount :: Field f Int "GCount"
-  , extname :: Field f Int "Name of the HDU"
-  , bunit :: Field f BUnit "The physical unit of the data values"
-  , btype :: Field f UCD "Uniform Content Descriptor of what the data array represents."
-  }
-  deriving (Generic)
+-- data GenericHDUHeader axes f = GenericHDUHeader
+--   -- these are always the same
+--   { xtension :: Field f ExtName "IMAGE"
+--   , bitpix :: Field f BitPix "Mandatory keyword describing the number of bits per pixel in the data. Permitted values are: 8, 16, 32, 64, -32, -64"
+--   , axes :: axes f
+--   , pcount :: Field f Int "Pcount"
+--   , gcount :: Field f Int "GCount"
+--   , extname :: Field f Int "Name of the HDU"
+--   , bunit :: Field f BUnit "The physical unit of the data values"
+--   , btype :: Field f UCD "Uniform Content Descriptor of what the data array represents."
+--   }
+--   deriving (Generic)
+
+data DataHDUInfo (extName :: Symbol) (ucd :: UCD) (unit :: Unit)
 
 
--- instance HeaderKeywords (GenericHDUHeader DataHDUAxes)
--- instance HeaderDoc (GenericHDUHeader DataHDUAxes)
-
-type ExtNameField f = Field f ExtName "This is my extname"
-
-
--- what describes the data we need?
--- The axes are all the same, described by the thing below
-data DataHDUHeader f = DataHDUHeader
-  { extname :: ExtName
-  , btype :: UCD
-  , bunit :: BUnit
-  }
+-- type-level info for optical depth
+type OpticalDepth = DataHDUInfo "Log of Optical Depth at 500nm" 'OpticalDepth 'Dimensionless
+type Temperature = DataHDUInfo "Temperature" 'Temperature 'Kelvin
+type ElectronPressure = DataHDUInfo "ElectronPressure" 'ElectronPressure 'Kelvin
 
 
--- what about plain old typeclasses
+instance (KnownSymbol ext, KnownValue btype) => HeaderDoc (DataHDUInfo ext btype bunit) where
+  headerDoc =
+    [ docKey @(ExtName ext)
+    , docKey @(BType btype)
+    , docKey @(BUnit bunit)
+    ]
 
-instance HeaderDoc DataHDUHeader where
-  headerDoc = [] <> headerDoc @(Doc BUnit "Woot")
+-- but the generated docs for hdu 1 need to be different! They have different comments, etc
+-- make some compound types?
+-- no, wait, these are all constants!
 
+-- what about plain old typeclasses? By the type of the thing...
 
 -- data HDUAxesHeader f = HDUAxesHeader
 --   { naxis :: Field f Int "The number of axes"
 --   -- no, we want to label each one separately. That means something different
 --   , naxes :: [Field f Int ""]
 
-data DataHDUAxes f = DataHDUAxes
-  { naxis :: Field f Int "The number of axes"
-  , naxis1 :: Field f Int "Lenth of Optical Depth axis"
-  , naxis2 :: Field f Int "Lenth of Slit X axis"
-  , naxis3 :: Field f Int "Always (1). Dummy WCS Y axis"
-  }
-
+-- data DataHDUAxes f = DataHDUAxes
+--   { naxis :: Field f Int "The number of axes"
+--   , naxis1 :: Field f Int "Lenth of Optical Depth axis"
+--   , naxis2 :: Field f Int "Lenth of Slit X axis"
+--   , naxis3 :: Field f Int "Always (1). Dummy WCS Y axis"
+--   }
 
 -- deriving (Generic, HeaderKeywords, HeaderDoc)
 
@@ -206,78 +216,66 @@ data DataHDUAxes f = DataHDUAxes
 --     -- , end = Key Constant
 --     }
 
-type family Field f ktype desc where
-  Field Key ktype desc = Key ktype ""
-  Field Doc ktype desc = Doc ktype desc
+-- type family Field f ktype desc where
+--   Field Key ktype desc = Key ktype ""
+--   Field Doc ktype desc = Doc ktype desc
 
-
--- TODO: Higher Order Type
---  in order to create a "documentation" PrimaryHeader and a "header" one with values, we need a higher order type
-
--- TODO: Documentation like this!
--- HDU: ExtName
---  bitpix
---  naxis
---  naxis1 -- describe the actual axis
---  naxis2 -- describe the actual axis
+-- class HeaderKeywords f where
+--   headerKeywords :: f Key -> [KeywordRecord]
+--   default headerKeywords :: (Generic (f Key), GenHeaderKeywords (Rep (f Key))) => f Key -> [KeywordRecord]
+--   headerKeywords a = genHeaderKeywords @(Rep (f Key)) $ from a
 --
-
-class HeaderKeywords f where
-  headerKeywords :: f Key -> [KeywordRecord]
-  default headerKeywords :: (Generic (f Key), GenHeaderKeywords (Rep (f Key))) => f Key -> [KeywordRecord]
-  headerKeywords a = genHeaderKeywords @(Rep (f Key)) $ from a
-
-
-class GenHeaderKeywords f where
-  genHeaderKeywords :: f p -> [KeywordRecord]
-
-
-instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 D c f) where
-  genHeaderKeywords (M1 a) = genHeaderKeywords @f a
-
-
--- constructor metadata
-instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 C c f) where
-  genHeaderKeywords (M1 a) = genHeaderKeywords @f a
-
-
--- Selectors
-instance (GenHeaderKeywords f, Selector s) => GenHeaderKeywords (M1 S s f) where
-  genHeaderKeywords (M1 a) =
-    let s = selName (undefined :: M1 S s f x)
-     in fmap (setKeyword s) $ genHeaderKeywords @f a
-   where
-    setKeyword s d = d{_keyword = pack s}
-
-
-instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: b) where
-  genHeaderKeywords (a :*: b) = genHeaderKeywords a ++ genHeaderKeywords b
-
-
-instance forall ktype comment i. (KeyValue ktype) => GenHeaderKeywords (K1 i (Key ktype comment)) where
-  genHeaderKeywords (K1 (Key t)) = [KeywordRecord mempty (keyValue @ktype t) Nothing]
-
-
-class KeyValue a where
-  keyValue :: a -> Value
-
-
-instance (KnownSymbol a) => KeyValue (Constant a) where
-  keyValue _ = String $ pack $ symbolVal @a Proxy
-
-
-instance KeyValue ExtName where
-  keyValue (ExtName s) = String s
-
-
-instance KeyValue BUnit where
-  keyValue b = String (pack $ show b)
-
-
-instance KeyValue UCD where
-  keyValue MagField = String "phys.magField"
-  keyValue DopplerVeloc = String "phys.dopplerVeloc"
-
-
-instance KeyValue BitPix where
-  keyValue b = Integer (bitPixCode b)
+--
+-- class GenHeaderKeywords f where
+--   genHeaderKeywords :: f p -> [KeywordRecord]
+--
+--
+-- instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 D c f) where
+--   genHeaderKeywords (M1 a) = genHeaderKeywords @f a
+--
+--
+-- -- constructor metadata
+-- instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 C c f) where
+--   genHeaderKeywords (M1 a) = genHeaderKeywords @f a
+--
+--
+-- -- Selectors
+-- instance (GenHeaderKeywords f, Selector s) => GenHeaderKeywords (M1 S s f) where
+--   genHeaderKeywords (M1 a) =
+--     let s = selName (undefined :: M1 S s f x)
+--      in fmap (setKeyword s) $ genHeaderKeywords @f a
+--    where
+--     setKeyword s d = d{_keyword = pack s}
+--
+--
+-- instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: b) where
+--   genHeaderKeywords (a :*: b) = genHeaderKeywords a ++ genHeaderKeywords b
+--
+--
+-- instance forall ktype comment i. (KeyValue ktype) => GenHeaderKeywords (K1 i (Key ktype comment)) where
+--   genHeaderKeywords (K1 (Key t)) = [KeywordRecord mempty (keyValue @ktype t) Nothing]
+--
+--
+-- class KeyValue a where
+--   keyValue :: a -> Value
+--
+--
+-- instance (KnownSymbol a) => KeyValue (Constant a) where
+--   keyValue _ = String $ pack $ symbolVal @a Proxy
+--
+--
+-- instance (KnownSymbol e) => KeyValue (ExtName e) where
+--   keyValue _ = String $ pack $ symbolVals @e Proxy
+--
+--
+-- instance KeyValue BUnit where
+--   keyValue b = String (pack $ show b)
+--
+--
+-- instance KeyValue UCD where
+--   keyValue MagField = String "phys.magField"
+--   keyValue DopplerVeloc = String "phys.dopplerVeloc"
+--
+--
+-- instance KeyValue BitPix where
+--   keyValue b = Integer (bitPixCode b)
