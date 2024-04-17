@@ -15,6 +15,9 @@ import Telescope.Fits.Encoding (bitPixCode)
 import Telescope.Fits.Types (HeaderRecord (..), KeywordRecord (..), Value (..))
 
 
+-- TODO: NAXIS
+-- TODO: Comments
+
 -- data PrimaryHeaders = PrimaryHeaders
 --   { telapse :: ...
 --   ,
@@ -111,31 +114,97 @@ primaryHeader =
 --
 -- magneticFieldStrength :: String -> DataHDUHeader DataMagField
 -- magneticFieldStrength = undefined
+--
+-- Composition, not inheritance!
 
--- TODO: we need to document END, but we aren't going to set it that way!
-data GenericHeader f = GenericHeader
-  { extname :: Field f ExtName "Name of HDU"
-  , bunit :: Field f BUnit "The physical unit of the data values"
-  , -- eh.... not sure this is right...
-    btype :: Field f UCD "Uniform Content Descriptor of what the data array represents."
+data GenericHDUHeader axes f = GenericHDUHeader
+  -- these are always the same
+  { xtension :: Field f ExtName "IMAGE"
   , bitpix :: Field f BitPix "Mandatory keyword describing the number of bits per pixel in the data. Permitted values are: 8, 16, 32, 64, -32, -64"
-  , end :: Field f (Constant "End") "This keyword has no associated value. Bytes 9 through 80 shall be filled with ASCII spaces (decimal 32 or hexadecimal 20)."
+  , axes :: axes f
+  , pcount :: Field f Int "Pcount"
+  , gcount :: Field f Int "GCount"
+  , extname :: Field f Int "Name of the HDU"
+  , bunit :: Field f BUnit "The physical unit of the data values"
+  , btype :: Field f UCD "Uniform Content Descriptor of what the data array represents."
   }
   deriving (Generic)
-instance HeaderKeywords GenericHeader
-instance HeaderDoc GenericHeader
 
 
-genericHeader :: GenericHeader Key
-genericHeader =
-  GenericHeader
-    { extname = Key $ ExtName "My HDU"
-    , bunit = Key Tesla
-    , btype = Key MagField
-    , bitpix = Key BPInt8
-    , end = Key Constant
-    }
+-- instance HeaderKeywords (GenericHDUHeader DataHDUAxes)
+-- instance HeaderDoc (GenericHDUHeader DataHDUAxes)
 
+type ExtNameField f = Field f ExtName "This is my extname"
+
+
+-- what describes the data we need?
+-- The axes are all the same, described by the thing below
+data DataHDUHeader f = DataHDUHeader
+  { extname :: ExtName
+  , btype :: UCD
+  , bunit :: BUnit
+  }
+
+
+-- what about plain old typeclasses
+
+instance HeaderDoc DataHDUHeader where
+  headerDoc = [] <> headerDoc @(Doc BUnit "Woot")
+
+
+-- data HDUAxesHeader f = HDUAxesHeader
+--   { naxis :: Field f Int "The number of axes"
+--   -- no, we want to label each one separately. That means something different
+--   , naxes :: [Field f Int ""]
+
+data DataHDUAxes f = DataHDUAxes
+  { naxis :: Field f Int "The number of axes"
+  , naxis1 :: Field f Int "Lenth of Optical Depth axis"
+  , naxis2 :: Field f Int "Lenth of Slit X axis"
+  , naxis3 :: Field f Int "Always (1). Dummy WCS Y axis"
+  }
+
+
+-- deriving (Generic, HeaderKeywords, HeaderDoc)
+
+-- remember, it doesn't have to me in this flat format!
+
+-- DATA HDU (header order)
+--------------
+-- EXTNAME (required)
+-- BITPIX (generated from data)
+-- NAXIS (generated from data) (manual comments!) (manual description!)
+-- NAXIS1 (generated from data) (comments manual!) (manual description!)
+-- NAXIS2 (generated from data) (comments manual!) (manual description!)
+-- PCOUNT (generated from type)
+-- GCOUNT (generated from type)
+-- BUNIT (required) (manual)
+-- BTYPE (required) (manual)
+-- CHECKSUM (generated)
+-- DATASUM (generated)
+--
+-- NSO HEADERS (TELAPSE, ORIGIN, TELESCOP)
+--
+-- AXES CRPIX, PRVAL, CDELT, CUNIT, CTYPE
+--
+-- OTHER RANDOM STUFF
+--
+-- DATA HDU (documentation order)
+-----------------------------------
+-- (why not have it be exactly the same?)
+--
+-- the probe
+--
+
+-- hduHeader :: HDUHeader Key
+-- hduHeader =
+--   HDUHeader
+--     { extname = Key $ ExtName "My HDU"
+--     , bunit = Key Tesla
+--     , btype = Key MagField
+--     , bitpix = Key BPInt8
+--     -- , end = Key Constant
+--     }
 
 type family Field f ktype desc where
   Field Key ktype desc = Key ktype ""

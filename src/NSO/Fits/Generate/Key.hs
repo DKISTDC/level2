@@ -15,6 +15,7 @@ import NSO.Prelude
 
 -- they probably have to be the same order
 data Doc ktype (description :: Symbol) = Doc
+  deriving (Generic)
 data Key ktype (comment :: Symbol) = Key ktype
 
 

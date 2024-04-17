@@ -19,10 +19,15 @@ data DocKey = DocKey
   deriving (Show)
 
 
-class HeaderDoc a where
+class HeaderDoc f where
   headerDoc :: [DocKey]
-  default headerDoc :: (GenHeaderDoc (Rep (a Doc))) => [DocKey]
-  headerDoc = genHeaderDoc @(Rep (a Doc))
+
+
+-- default headerDoc :: (GenHeaderDoc (Rep (f Doc))) => [DocKey]
+-- headerDoc = genHeaderDoc @(Rep (f Doc))
+
+instance HeaderDoc (Doc BUnit desc) where
+  headerDoc = [DocKey "bunit" (keyTypeName @BUnit Proxy) ""]
 
 
 -- doesn't document the instance, but the type
