@@ -3,9 +3,9 @@
 
 module NSO.Fits.Generate.Keywords where
 
-import Data.Char (toLower)
 import Data.Fits (KeywordRecord (..), Value (..))
 import Data.Text (pack)
+import Data.Text qualified as T
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Types
@@ -14,7 +14,12 @@ import NSO.Prelude
 
 -- | Generate a 'KeywordRecord' from a type that supports it
 keywordRecord :: forall a. (KeyValue a, KeywordInfo a) => a -> KeywordRecord
-keywordRecord a = KeywordRecord (pack $ keyword @a) (keyValue a) (pack <$> comment @a)
+keywordRecord a = KeywordRecord (keyword @a) (keyValue a) comt
+ where
+  comt =
+    case comment @a of
+      "" -> Nothing
+      s -> Just s
 
 
 class HeaderKeywords a where
@@ -66,8 +71,9 @@ class KeyValue a where
 -- instance KeyValue UCD where
 --   keyValue u = String (pack $ fromUCD u)
 
--- instance (KnownSymbol ext) => KeyValue (ExtName ext) where
---   keyValue _ = String (pack $ symbolVal @ext)
+instance (KnownSymbol ext) => KeyValue (ExtName ext) where
+  keyValue _ = String (pack $ symbolVal @ext Proxy)
+
 
 instance (KnownValue ucd) => KeyValue (BType ucd) where
   keyValue _ = String (pack $ knownValue @ucd)
@@ -102,76 +108,74 @@ instance KeyValue Degrees where
 
 
 class KeywordInfo a where
-  keyword :: String
-  default keyword :: (Generic a, GTypeName (Rep a)) => String
-  keyword = gtypeName (from (undefined :: a))
+  keyword :: Text
+  default keyword :: (Generic a, GTypeName (Rep a)) => Text
+  keyword = pack $ gtypeName (from (undefined :: a))
 
 
-  keytype :: String
-  default keytype :: (Generic a, GTypeName (Rep a)) => String
-  keytype = gtypeName (from (undefined :: a))
+  keytype :: Text
+  default keytype :: (Generic a, GTypeName (Rep a)) => Text
+  keytype = pack $ gtypeName (from (undefined :: a))
 
 
-  description :: String
-  default description :: String
+  description :: Text
+  default description :: Text
   description = ""
 
 
-  comment :: Maybe String
-  default comment :: Maybe String
-  comment = Nothing
+  comment :: Text
+  default comment :: Text
+  comment = ""
 
 
-  -- it's either a constnat, or there's a function that goes from ketype -> Value
-  constant :: Maybe String
-  default constant :: Maybe String
+  constant :: Maybe Value
+  default constant :: Maybe Value
   constant = Nothing
 
 
 instance (KnownSymbol s) => KeywordInfo (ExtName s) where
-  -- the description is exactly the ExtName
+  keyword = "extname"
   description = "Name of the HDU"
-  constant = Just (symbolVal @s Proxy)
+  constant = Just (keyValue @(ExtName s) ExtName)
 
 
 instance (KnownValue ucd) => KeywordInfo (BType ucd) where
+  keyword = "btype"
   keytype = "Uniform Content Descriptor"
-  constant = Just (knownValue @ucd)
+  constant = Just (keyValue @(BType ucd) BType)
   description = "The type of the values in the data array"
+  comment = "[ucd]"
 
 
 instance (KnownValue unit) => KeywordInfo (BUnit unit) where
+  keyword = "bunit"
   keytype = "Unit"
-  constant = Just (knownValue @unit)
+  constant = Just (keyValue @(BUnit unit) BUnit)
   description = "The unit of the values in the data array"
 
 
 instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (Key ktype desc) where
   keytype = typeName @ktype
-  description = symbolVal @desc Proxy
+  description = pack $ symbolVal @desc Proxy
   constant = Nothing
-  comment =
-    case (typeComment @ktype) of
-      "" -> Nothing
-      s -> Just s
+  comment = typeComment @ktype
 
 
 instance (KnownValue kvalue, KnownSymbol desc) => KeywordInfo (Key (Constant kvalue) desc) where
   keytype = "Constant"
-  constant = Just (knownValue @kvalue)
-  description = symbolVal @desc Proxy
-  comment = Nothing
+  constant = Just (keyValue @(Constant kvalue) Constant)
+  description = pack $ symbolVal @desc Proxy
 
 
 class KeyType a where
-  typeName :: String
-  default typeName :: (Generic a, GTypeName (Rep a)) => String
-  typeName = gtypeName (from (undefined :: a))
+  typeName :: Text
+  default typeName :: (Generic a, GTypeName (Rep a)) => Text
+  typeName = pack $ gtypeName (from (undefined :: a))
 
 
-  typeComment :: String
-  default typeComment :: String
-  typeComment = "[" ++ map toLower (typeName @a) ++ "]"
+  typeComment :: Text
+  default typeComment :: Text
+  typeComment = "[" <> T.toLower (typeName @a) <> "]"
 
 
 instance KeyType String where

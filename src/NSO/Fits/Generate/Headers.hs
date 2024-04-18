@@ -2,12 +2,14 @@
 
 module NSO.Fits.Generate.Headers where
 
+import Data.Text (pack)
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Doc as Doc
 import NSO.Fits.Generate.Keywords
 import NSO.Fits.Generate.Types
 import NSO.Prelude
+import Telescope.Fits.Types (Value (..))
 
 
 -- DONE: automatic type-based comments
@@ -51,16 +53,45 @@ primaryHeader =
 -- DATA HDUS
 
 -- I would like to label each of these axes
-data DataHDUAxesDoc = DataHDUAxesDoc
+data DataHDUAxes = DataHDUAxes
   { naxis :: Key (Constant "3") "Data HDUs have the shape (y, x, depth)"
-  , naxis1 :: Key Int "depth"
-  , naxis2 :: Key Int "slit x"
-  , naxis3 :: Key (Constant "1") "dummy WCS y coordinate. Always only 1 wide"
+  , naxis1 :: Naxis "Optical Depth"
+  , naxis2 :: Naxis "Slit X"
+  , naxis3 :: NaxisY
   }
-  deriving (Generic, HeaderDoc)
+  deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-data DataHDUHeader info = DataHDUHeader
+data Naxis cmt = Naxis Int
+  deriving (Generic)
+
+
+instance KeyValue (Naxis cmt) where
+  keyValue (Naxis n) = Integer n
+
+
+instance (KnownSymbol cmt) => KeywordInfo (Naxis cmt) where
+  keytype = "Int"
+  description = pack $ symbolVal @cmt Proxy
+  comment = pack $ symbolVal @cmt Proxy
+
+
+instance KeyValue NaxisY where
+  keyValue _ = Integer 1
+
+
+instance KeywordInfo NaxisY where
+  keytype = "Int"
+  description = "Dummy WCS Y Coordinate"
+  comment = "Dummy WCS Y Coordinate"
+  constant = Just (Integer 1)
+
+
+data NaxisY = NaxisY
+  deriving (Generic)
+
+
+data DataHDUHeader info = DataHDUHeader info
 
 
 data DataHDUInfo (extName :: Symbol) (ucd :: UCD) (unit :: Unit) = DataHDUInfo
@@ -81,6 +112,12 @@ instance (KnownSymbol ext, KnownValue btype, KnownValue bunit) => HeaderKeywords
     ]
 
 
+instance (HeaderKeywords info) => HeaderKeywords (DataHDUHeader info) where
+  headerKeywords (DataHDUHeader info) =
+    -- TODO: use actual axes!
+    headerKeywords @info info <> headerKeywords @DataHDUAxes DataHDUAxes{naxis = Key Constant, naxis1 = Naxis 83, naxis2 = Naxis 123, naxis3 = NaxisY}
+
+
 -- DOCUMENTATION ------------------------------------------------
 instance (KnownSymbol ext, KnownValue btype, KnownValue bunit) => HeaderDoc (DataHDUInfo ext btype bunit) where
   headerDoc =
@@ -93,5 +130,5 @@ instance (KnownSymbol ext, KnownValue btype, KnownValue bunit) => HeaderDoc (Dat
 instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
   headerDoc =
     headerDoc @info
-      <> (headerDoc @DataHDUAxesDoc)
+      <> (headerDoc @DataHDUAxes)
       <> (headerDoc @PrimaryHeader)

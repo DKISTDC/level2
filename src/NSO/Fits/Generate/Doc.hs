@@ -3,21 +3,29 @@
 
 module NSO.Fits.Generate.Doc where
 
+import Data.Text (pack)
 import GHC.Generics
 import NSO.Fits.Generate.Keywords
 import NSO.Prelude
+import Telescope.Fits.Types (Value (..))
 import Web.View
 
 
 docKey :: forall a. (KeywordInfo a) => DocKey
-docKey = DocKey (keyword @a) (keytype @a) (constant @a) (description @a)
+docKey = DocKey (keyword @a) (keytype @a) (pack . constr <$> constant @a) (description @a)
+ where
+  -- TODO: this isn't exactly correct. Render them truly?
+  constr (String s) = show s
+  constr (Float f) = show f
+  constr (Integer i) = show i
+  constr (Logic l) = show l
 
 
 data DocKey = DocKey
-  { keyword :: String
-  , keytype :: String
-  , constant :: Maybe String
-  , description :: String
+  { keyword :: Text
+  , keytype :: Text
+  , constant :: Maybe Text
+  , description :: Text
   }
   deriving (Show)
 
@@ -55,7 +63,7 @@ instance (GenHeaderDoc f, Selector s) => GenHeaderDoc (M1 S s f) where
     let s = selName (undefined :: M1 S s f x)
      in fmap (setKeyword s) $ genHeaderDoc @f
    where
-    setKeyword s d = d{keyword = s}
+    setKeyword s d = d{keyword = pack s}
 
 
 instance (GenHeaderDoc a, GenHeaderDoc b) => GenHeaderDoc (a :*: b) where
