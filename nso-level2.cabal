@@ -61,7 +61,8 @@ library
       NSO.Fits.Generate
       NSO.Fits.Generate.Doc
       NSO.Fits.Generate.Headers
-      NSO.Fits.Generate.Key
+      NSO.Fits.Generate.Keywords
+      NSO.Fits.Generate.Types
       NSO.Level2
       NSO.Metadata
       NSO.Steps

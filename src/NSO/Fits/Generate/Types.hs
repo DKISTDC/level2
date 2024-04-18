@@ -1,8 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+module NSO.Fits.Generate.Types where
 
-module NSO.Fits.Generate.Key where
-
-import Data.Kind
 import GHC.TypeLits
 import NSO.Prelude
 
