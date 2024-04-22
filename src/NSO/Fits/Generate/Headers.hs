@@ -2,6 +2,7 @@
 
 module NSO.Fits.Generate.Headers where
 
+import Data.Massiv.Array as M
 import Data.Text (pack)
 import GHC.Generics
 import GHC.TypeLits
@@ -62,6 +63,16 @@ data DataHDUAxes = DataHDUAxes
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
+dataHduAxes :: Sz Ix2 -> DataHDUAxes
+dataHduAxes (Sz (naxis2 :. naxis1)) =
+  DataHDUAxes
+    { naxis = Key Constant
+    , naxis1 = Naxis naxis1
+    , naxis2 = Naxis naxis2
+    , naxis3 = NaxisY
+    }
+
+
 data Naxis cmt = Naxis Int
   deriving (Generic)
 
@@ -91,7 +102,7 @@ data NaxisY = NaxisY
   deriving (Generic)
 
 
-data DataHDUHeader info = DataHDUHeader info
+data DataHDUHeader info = DataHDUHeader info (Sz Ix2)
 
 
 data DataHDUInfo (extName :: Symbol) (ucd :: UCD) (unit :: Unit) = DataHDUInfo
@@ -113,9 +124,8 @@ instance (KnownSymbol ext, KnownValue btype, KnownValue bunit) => HeaderKeywords
 
 
 instance (HeaderKeywords info) => HeaderKeywords (DataHDUHeader info) where
-  headerKeywords (DataHDUHeader info) =
-    -- TODO: use actual axes!
-    headerKeywords @info info <> headerKeywords @DataHDUAxes DataHDUAxes{naxis = Key Constant, naxis1 = Naxis 83, naxis2 = Naxis 123, naxis3 = NaxisY}
+  headerKeywords (DataHDUHeader info sz) =
+    headerKeywords @info info <> headerKeywords @DataHDUAxes (dataHduAxes sz)
 
 
 -- DOCUMENTATION ------------------------------------------------

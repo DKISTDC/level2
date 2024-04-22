@@ -26,28 +26,33 @@ test = do
   putStrLn "TEST"
   (f : fs) <- readQuantitiesFrames testInput
 
-  print $ f.temperature !> 1
+  -- print $ f.temperature !> 1
+  print $ size f.temperature
 
-  let dat = encodeArray f.opticalDepth
-  print dat.axes
-  print dat.bitpix
-  print $ BS.length dat.rawData
 
-  let fits = quantitiesFits f
-  print $ length fits.extensions
+-- let dat = encodeArray f.opticalDepth
+-- print dat.axes
+-- print dat.bitpix
+-- print $ BS.length dat.rawData
+--
+-- let fits = quantitiesFits f
+-- print $ length fits.extensions
+--
+-- let (Image i : _) = fits.extensions
+--
+-- print i.dataArray.axes
 
-  let (Image i : _) = fits.extensions
-  -- print $ BS.length i.dataArray.rawData
+-- print $ BS.length i.dataArray.rawData
 
-  print fits.primaryHDU.dataArray.rawData
+-- print fits.primaryHDU.dataArray.rawData
 
-  let out = encode fits
-  BS.writeFile "/Users/seanhess/code/notebooks/data/out.fits" out
-
+-- let out = encode fits
+-- BS.writeFile "/Users/seanhess/code/notebooks/data/out.fits" out
 
 -- Quantiies To Fits -------------------------------------------------
 
-data Quantities = Quantities
+-- SlitX by Depth
+data Quantities (as :: [Type]) = Quantities
   { opticalDepth :: Array D Ix2 Float
   , temperature :: Array D Ix2 Float
   , electronPressure :: Array D Ix2 Float
@@ -62,7 +67,7 @@ data Quantities = Quantities
   }
 
 
-quantitiesFits :: Quantities -> Fits
+quantitiesFits :: Quantities [SlitX, Depth] -> Fits
 quantitiesFits q = Fits primaryHDU $ fmap Image $ quantitiesHDUs q
 
 
@@ -76,7 +81,7 @@ primaryHDU = PrimaryHDU primaryHeaders emptyDataArray
 
 
 -- TODO: generate a bunch of HDUs!
-quantitiesHDUs :: Quantities -> [ImageHDU]
+quantitiesHDUs :: Quantities [SlitX, Depth] -> [ImageHDU]
 quantitiesHDUs q = runPureEff . execWriter $ do
   opticalDepth
   temperature
@@ -147,7 +152,7 @@ quantitiesHDUs q = runPureEff . execWriter $ do
 
 -- Parse Quantities ---------------------------------------------------------------------------------
 
-readQuantitiesFrames :: (MonadIO m, MonadThrow m) => FilePath -> m [Quantities]
+readQuantitiesFrames :: (MonadIO m, MonadThrow m) => FilePath -> m [Quantities [SlitX, Depth]]
 readQuantitiesFrames fp = do
   inp <- liftIO $ BS.readFile fp
   res <- decodeResults inp
@@ -161,7 +166,7 @@ decodeResults inp = do
   pure $ Results a
 
 
-resultsQuantities :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Quantities]
+resultsQuantities :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Quantities [SlitX, Depth]]
 resultsQuantities res = do
   fs <- resultsByFrame res
   mapM splitQuantitiesM fs
@@ -184,14 +189,14 @@ resultsByFrame res =
       Just s -> pure $ Results s
 
 
-splitQuantitiesM :: (MonadThrow m) => Results [Quantity, Depth, SlitX] -> m Quantities
+splitQuantitiesM :: (MonadThrow m) => Results [Quantity, Depth, SlitX] -> m (Quantities [SlitX, Depth])
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwM $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: Results [Quantity, Depth, SlitX] -> Maybe Quantities
+splitQuantities :: Results [Quantity, Depth, SlitX] -> Maybe (Quantities [SlitX, Depth])
 splitQuantities res = do
   let qs = fmap (.array) $ outerList res
   [opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density] <- pure qs
