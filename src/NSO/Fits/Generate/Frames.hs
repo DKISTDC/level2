@@ -82,7 +82,7 @@ splitQuantitiesM rbf =
 
 splitQuantities :: Results [Quantity, Depth, SlitX] -> Maybe (Quantities Frame)
 splitQuantities res = do
-  let qs = fmap (transpose2) $ outerList res
+  let qs = fmap transpose2 $ outerList res
   [opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density] <- pure qs
   pure Quantities{..}
 

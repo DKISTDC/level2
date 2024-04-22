@@ -40,10 +40,10 @@ instance (KnownSymbol ext) => KeywordInfo (ExtName ext) where
   constant = Just (keyValue @(ExtName ext) ExtName)
 
 
-data BType (ucd :: UCD) = BType deriving (Generic)
-instance (KnownValue ucd) => KeyValue (BType ucd) where
-  keyValue _ = String (pack $ knownValue @ucd)
-instance (KnownValue ucd) => KeywordInfo (BType ucd) where
+data BType (ucd :: Symbol) = BType deriving (Generic)
+instance (KnownSymbol ucd) => KeyValue (BType ucd) where
+  keyValue _ = String (pack $ symbolVal @ucd Proxy)
+instance (KnownSymbol ucd) => KeywordInfo (BType ucd) where
   keyword = "btype"
   keytype = "Uniform Content Descriptor"
   constant = Just (keyValue @(BType ucd) BType)
@@ -59,31 +59,6 @@ instance (KnownValue unit) => KeywordInfo (BUnit unit) where
   keytype = "Unit"
   constant = Just (keyValue @(BUnit unit) BUnit)
   description = "The unit of the values in the data array"
-
-
-data UCD
-  = MagField
-  | DopplerVeloc
-  | OpticalDepth
-  | Temperature
-  | ElectronPressure
-  deriving (Generic)
-
-
-fromUCD :: UCD -> String
-fromUCD MagField = "phys.magField"
-fromUCD DopplerVeloc = "phys.dopplerVeloc"
-fromUCD OpticalDepth = "phys.absorption.opticalDepth"
-fromUCD Temperature = "phys.temperature"
-fromUCD ElectronPressure = "phys.electron;phys.pressure"
-
-
-instance KnownValue 'Temperature where
-  knownValue = fromUCD Temperature
-instance KnownValue 'OpticalDepth where
-  knownValue = fromUCD OpticalDepth
-instance KnownValue 'ElectronPressure where
-  knownValue = fromUCD ElectronPressure
 
 
 -- well, they are ALL floats
@@ -116,6 +91,14 @@ instance KnownValue Dimensionless where
   knownValue = show Dimensionless
 instance KnownValue Kelvin where
   knownValue = show Kelvin
+instance KnownValue Tesla where
+  knownValue = show Tesla
+instance KnownValue Deg where
+  knownValue = show Deg
+instance KnownValue Km where
+  knownValue = show Km
+instance KnownValue Kg_m3 where
+  knownValue = show Kg_m3
 
 
 data Depth

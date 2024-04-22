@@ -2,9 +2,8 @@
 
 module NSO.Fits.Generate where
 
--- import Data.Massiv.Array
-
 import Data.ByteString qualified as BS
+import Data.Massiv.Array
 import NSO.Fits.Generate.DataHDU (quantitiesHDUs)
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Types
@@ -22,10 +21,19 @@ test :: IO ()
 test = do
   putStrLn "TEST"
   (f : _) <- readQuantitiesFrames testInput
+
+  putStrLn "\nCHECK OPTICAL DEPTH"
+  print $ size f.opticalDepth.array
+  print $ f.opticalDepth.array !> 0
+  print $ f.opticalDepth.array !> 20
+  print $ f.opticalDepth.array !> 40
+
   let hdus = quantitiesHDUs f
   let (od : qs) = hdus
 
+  putStrLn "\nCHECK HDUS"
   print od.header
+  print od.dataArray.axes
 
   -- print $ size f.temperature.array
 
