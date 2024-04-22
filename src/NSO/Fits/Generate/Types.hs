@@ -149,3 +149,21 @@ instance KeywordInfo NaxisY where
 
 
 data NaxisY deriving (Generic)
+
+
+data BZero = BZero deriving (Generic)
+instance KeywordInfo BZero where
+  keytype = "Float"
+  description = "This keyword represents the physical value corresponding to an array value of zero. The default value for this keyword is 0.0. This keyword, along with BSCALE, is used to linearly scale the array pixel values to transform them into the phyical values that they represent. physical_value = BZERO + BSCALE x array_value"
+  constant = Just $ keyValue BZero
+instance KeyValue BZero where
+  keyValue _ = Integer 0
+
+
+data BScale = BScale deriving (Generic)
+instance KeywordInfo BScale where
+  keytype = "Float"
+  description = "This keyword represents the coefficient of the linear term in the scaling equation, the ratio of physical value to array value at zero offset. The default value for this keyword is 1.0. This keyword, along with BZERO, is used to linearly scale the array pixel values to transform them into the phyical values that they represent."
+  constant = Just $ keyValue BScale
+instance KeyValue BScale where
+  keyValue _ = Integer 1

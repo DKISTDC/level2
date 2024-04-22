@@ -6,7 +6,6 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Doc as Doc
 import NSO.Fits.Generate.Frames
-import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
 import NSO.Fits.Generate.Types
 import NSO.Prelude
@@ -91,7 +90,11 @@ type Density =
     Kg_m3
 
 
-data DataHDUHeader info = DataHDUHeader info
+data DataHDUHeader info
+  = DataHDUHeader
+  { info :: info
+  , common :: DataHDUCommon
+  }
 
 
 data DataHDUInfo (extName :: Symbol) (ucd :: Symbol) (unit :: Unit) = DataHDUInfo
@@ -115,8 +118,9 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderKeyword
 
 
 instance (HeaderKeywords info) => HeaderKeywords (DataHDUHeader info) where
-  headerKeywords (DataHDUHeader info) =
+  headerKeywords (DataHDUHeader info common) =
     headerKeywords @info info
+      <> headerKeywords common
 
 
 instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (DataHDUInfo ext btype bunit) where
@@ -127,11 +131,19 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (Da
     ]
 
 
--- instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
---   headerDoc =
---     headerDoc @info
---       <> (headerDoc @DataHDUAxes)
---       <> (headerDoc @PrimaryHeader)
+instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
+  headerDoc =
+    headerDoc @info
+      <> (headerDoc @DataHDUAxes)
+      <> (headerDoc @DataHDUCommon)
+
+
+data DataHDUCommon = DataHDUCommon
+  { bzero :: BZero
+  , bscale :: BScale
+  }
+  deriving (Generic, HeaderDoc, HeaderKeywords)
+
 
 quantitiesHDUs :: Quantities [SlitX, Depth] -> [ImageHDU]
 quantitiesHDUs q = runPureEff . execWriter $ do
@@ -149,10 +161,13 @@ quantitiesHDUs q = runPureEff . execWriter $ do
  where
   dataHDU :: forall info es. (HeaderKeywords info, Writer [ImageHDU] :> es) => info -> Results Frame -> Eff es ()
   dataHDU info res = do
-    let keywords = headerKeywords @(DataHDUHeader info) (DataHDUHeader info)
+    let keywords = headerKeywords @(DataHDUHeader info) (DataHDUHeader info common)
         header = Header $ fmap Keyword keywords
         darr = encodeArray res.array
     tell [ImageHDU{header, dataArray = addDummyAxis darr}]
+
+  common :: DataHDUCommon
+  common = DataHDUCommon BZero BScale
 
   addDummyAxis :: DataArray -> DataArray
   addDummyAxis DataArray{bitpix, axes, rawData} =
