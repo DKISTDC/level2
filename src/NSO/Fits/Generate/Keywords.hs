@@ -15,7 +15,7 @@ import NSO.Types.Common (Id (..))
 
 
 -- | Generate a 'KeywordRecord' from a type that supports it
-keywordRecord :: forall a. (KeyValue a, KeywordInfo a) => a -> KeywordRecord
+keywordRecord :: forall a. (KeywordInfo a) => a -> KeywordRecord
 keywordRecord a = KeywordRecord (keyword @a) (keyValue a) comt
  where
   comt =
@@ -63,28 +63,19 @@ instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: 
   genHeaderKeywords (a :*: b) = genHeaderKeywords a ++ genHeaderKeywords b
 
 
-instance (KeywordInfo a, KeyValue a) => GenHeaderKeywords (K1 i a) where
+instance (KeywordInfo a) => GenHeaderKeywords (K1 i a) where
   genHeaderKeywords (K1 a) = [keywordRecord a]
 
 
-class KeyValue a where
-  keyValue :: a -> Value
+-- class KeyValue a where
+--   keyValue :: a -> Value
 
-
--- instance KeyValue Unit where
---   keyValue u = String (pack $ show u)
+-- instance KeyValue String where
+--   keyValue s = String (pack s)
 --
 --
--- instance KeyValue UCD where
---   keyValue u = String (pack $ fromUCD u)
-
-instance KeyValue String where
-  keyValue s = String (pack s)
-
-
-instance KeyValue (Id a) where
-  keyValue (Id a) = String a
-
+-- instance KeyValue (Id a) where
+--   keyValue (Id a) = String a
 
 class KeywordInfo a where
   keyword :: Text
@@ -112,6 +103,11 @@ class KeywordInfo a where
   constant = Nothing
 
 
+  keyValue :: a -> Value
+  default keyValue :: (KeyType a) => a -> Value
+  keyValue = typeValue
+
+
 class KeyType a where
   typeName :: Text
   default typeName :: (Generic a, GTypeName (Rep a)) => Text
@@ -123,15 +119,21 @@ class KeyType a where
   typeComment = "[" <> T.toLower (typeName @a) <> "]"
 
 
+  typeValue :: a -> Value
+
+
 instance KeyType String where
   typeName = "String"
   typeComment = ""
+  typeValue s = String (pack s)
 instance KeyType Int where
   typeName = "Int"
   typeComment = ""
+  typeValue = Integer
 instance KeyType (Id a) where
   typeName = "Identifier"
   typeComment = ""
+  typeValue (Id a) = String a
 
 
 -- | Generic NodeName
