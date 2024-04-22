@@ -51,7 +51,6 @@ library
       Flow.Example
       Flow.Node
       NSO.Data.Datasets
-      NSO.Data.Generate
       NSO.Data.Inversions
       NSO.Data.Programs
       NSO.Data.Qualify
@@ -59,7 +58,9 @@ library
       NSO.Data.Spectra
       NSO.Error
       NSO.Fits.Generate
+      NSO.Fits.Generate.DataHDU
       NSO.Fits.Generate.Doc
+      NSO.Fits.Generate.Frames
       NSO.Fits.Generate.Headers
       NSO.Fits.Generate.Keywords
       NSO.Fits.Generate.Types

@@ -8,8 +8,10 @@ import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Fits.Generate.Types
+
+-- import NSO.Fits.Generate.Types
 import NSO.Prelude
+import NSO.Types.Common (Id (..))
 
 
 -- | Generate a 'KeywordRecord' from a type that supports it
@@ -27,6 +29,11 @@ class HeaderKeywords a where
   headerKeywords :: a -> [KeywordRecord]
   default headerKeywords :: (Generic a, GenHeaderKeywords (Rep a)) => a -> [KeywordRecord]
   headerKeywords = genHeaderKeywords . from
+
+
+  headerComments :: a -> [(Text, Text)]
+  default headerComments :: a -> [(Text, Text)]
+  headerComments _ = []
 
 
 class GenHeaderKeywords f where
@@ -71,40 +78,12 @@ class KeyValue a where
 -- instance KeyValue UCD where
 --   keyValue u = String (pack $ fromUCD u)
 
-instance (KnownSymbol ext) => KeyValue (ExtName ext) where
-  keyValue _ = String (pack $ symbolVal @ext Proxy)
-
-
-instance (KnownValue ucd) => KeyValue (BType ucd) where
-  keyValue _ = String (pack $ knownValue @ucd)
-
-
-instance (KnownValue unit) => KeyValue (BUnit unit) where
-  keyValue _ = String (pack $ knownValue @unit)
-
-
-instance (KeyValue ktype) => KeyValue (Key ktype desc) where
-  keyValue (Key k) = keyValue k
-
-
-instance (KnownValue c) => KeyValue (Constant c) where
-  keyValue _ = String (pack $ knownValue @c)
-
-
 instance KeyValue String where
   keyValue s = String (pack s)
 
 
-instance KeyValue Seconds where
-  keyValue (Seconds s) = Float s
-
-
-instance KeyValue MB where
-  keyValue (MB s) = Float s
-
-
-instance KeyValue Degrees where
-  keyValue (Degrees s) = Float s
+instance KeyValue (Id a) where
+  keyValue (Id a) = String a
 
 
 class KeywordInfo a where
@@ -133,40 +112,6 @@ class KeywordInfo a where
   constant = Nothing
 
 
-instance (KnownSymbol s) => KeywordInfo (ExtName s) where
-  keyword = "extname"
-  description = "Name of the HDU"
-  constant = Just (keyValue @(ExtName s) ExtName)
-
-
-instance (KnownValue ucd) => KeywordInfo (BType ucd) where
-  keyword = "btype"
-  keytype = "Uniform Content Descriptor"
-  constant = Just (keyValue @(BType ucd) BType)
-  description = "The type of the values in the data array"
-  comment = "[ucd]"
-
-
-instance (KnownValue unit) => KeywordInfo (BUnit unit) where
-  keyword = "bunit"
-  keytype = "Unit"
-  constant = Just (keyValue @(BUnit unit) BUnit)
-  description = "The unit of the values in the data array"
-
-
-instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (Key ktype desc) where
-  keytype = typeName @ktype
-  description = pack $ symbolVal @desc Proxy
-  constant = Nothing
-  comment = typeComment @ktype
-
-
-instance (KnownValue kvalue, KnownSymbol desc) => KeywordInfo (Key (Constant kvalue) desc) where
-  keytype = "Constant"
-  constant = Just (keyValue @(Constant kvalue) Constant)
-  description = pack $ symbolVal @desc Proxy
-
-
 class KeyType a where
   typeName :: Text
   default typeName :: (Generic a, GTypeName (Rep a)) => Text
@@ -181,13 +126,11 @@ class KeyType a where
 instance KeyType String where
   typeName = "String"
   typeComment = ""
-instance KeyType MB
-instance KeyType Seconds where
-  typeComment = "[s]"
-instance KeyType Degrees where
-  typeComment = "[deg]"
 instance KeyType Int where
   typeName = "Int"
+  typeComment = ""
+instance KeyType (Id a) where
+  typeName = "Identifier"
   typeComment = ""
 
 
@@ -204,21 +147,7 @@ class KnownValue a where
   knownValue :: String
 
 
-instance KnownValue Dimensionless where
-  knownValue = show Dimensionless
-instance KnownValue Kelvin where
-  knownValue = show Kelvin
-instance KnownValue Temperature where
-  knownValue = fromUCD Temperature
-instance KnownValue OpticalDepth where
-  knownValue = fromUCD OpticalDepth
 instance KnownValue True where
   knownValue = "T"
 instance (KnownSymbol s) => KnownValue s where
   knownValue = symbolVal @s Proxy
-
-
-instance KnownValue N_m2 where
-  knownValue = "N/m^2"
-instance KnownValue Km_s where
-  knownValue = "km/s"
