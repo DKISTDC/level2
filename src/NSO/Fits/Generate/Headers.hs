@@ -2,6 +2,9 @@
 
 module NSO.Fits.Generate.Headers where
 
+import Control.Monad.Catch (Exception, MonadThrow, throwM)
+import Data.Fits (toText)
+import Data.Text (unpack)
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Doc as Doc
@@ -9,6 +12,7 @@ import NSO.Fits.Generate.Keywords
 import NSO.Fits.Generate.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
+import Telescope.Fits as Fits
 
 
 -- DONE: automatic type-based comments
@@ -29,23 +33,39 @@ data PrimaryHeader = PrimaryHeader
   , proctype :: Key (Constant "L2") "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
   , origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
   , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
+  , dateBeg :: Key Time "Start date and time of light exposure for the frame"
+  , dateEnd :: Key Time "End date and time of light exposure for the frame."
   }
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-primaryHeader :: Id FrameY -> PrimaryHeader
-primaryHeader di =
-  PrimaryHeader
-    { telapse = Key (Seconds 123)
-    , wcsvalid = Key Constant
-    , dsetid = Key di
-    , framevol = Key $ MB 123
-    , proctype = Key Constant
-    , origin = Key Constant
-    , lonpole = Key (Degrees 40)
-    }
+primaryHeader :: (MonadThrow m) => Header -> Id FrameY -> m PrimaryHeader
+primaryHeader l1 di = do
+  dateBeg <- lookupL1 "DATE-BEG" l1
+  dateEnd <- lookupL1 "DATE-END" l1
 
--- TEST: lifts comments from DataHDUAxes header keywords
--- TEST: does NOT lift value from DataHDUAxes header keywords
---
--- TODO: WCS (CRPIX, CRVAL, CUNIT, CTYPE, etc)
+  pure $
+    PrimaryHeader
+      { telapse = Key (Seconds 123)
+      , wcsvalid = Key Constant
+      , dsetid = Key di
+      , framevol = Key $ MB 123
+      , proctype = Key Constant
+      , origin = Key Constant
+      , lonpole = Key (Degrees 40)
+      , dateBeg = Key (Time dateBeg)
+      , dateEnd = Key (Time dateEnd)
+      }
+
+
+lookupL1 :: (MonadThrow m) => Text -> Header -> m Text
+lookupL1 k h =
+  case toText =<< Fits.lookup k h of
+    Nothing -> throwM (MissingL1Key (unpack k))
+    Just t -> pure t
+
+
+data FitsGenError
+  = MissingL1Key String
+  | MissingL1HDU FilePath
+  deriving (Show, Exception)

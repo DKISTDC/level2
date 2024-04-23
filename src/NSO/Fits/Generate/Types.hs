@@ -118,6 +118,12 @@ instance (KnownValue c) => KeyType (Constant c) where
   typeValue _ = String (pack $ knownValue @c)
 
 
+data Time = Time Text deriving (Generic)
+instance KeyType Time where
+  typeValue (Time s) = String s
+  typeComment = "[utc]"
+
+
 -- Units -------------------------------------------------------------------
 
 data Unit

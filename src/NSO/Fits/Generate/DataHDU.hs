@@ -145,8 +145,8 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: Quantities [SlitX, Depth] -> [ImageHDU]
-quantitiesHDUs q = runPureEff . execWriter $ do
+quantitiesHDUs :: ImageHDU -> Quantities [SlitX, Depth] -> [ImageHDU]
+quantitiesHDUs l1 q = runPureEff . execWriter $ do
   opticalDepth
   temperature
   electronPressure
@@ -161,13 +161,12 @@ quantitiesHDUs q = runPureEff . execWriter $ do
  where
   dataHDU :: forall info es. (HeaderKeywords info, Writer [ImageHDU] :> es) => info -> Results Frame -> Eff es ()
   dataHDU info res = do
-    let keywords = headerKeywords @(DataHDUHeader info) (DataHDUHeader info common)
-        header = Header $ fmap Keyword keywords
+    let header = Header $ mainKeywords <> [Comment "ANOTHER BLOCK"]
         darr = encodeArray res.array
     tell [ImageHDU{header, dataArray = addDummyAxis darr}]
-
-  common :: DataHDUCommon
-  common = DataHDUCommon BZero BScale
+   where
+    mainKeywords = fmap Keyword $ headerKeywords @(DataHDUHeader info) (DataHDUHeader info common)
+    common = DataHDUCommon BZero BScale
 
   addDummyAxis :: DataArray -> DataArray
   addDummyAxis DataArray{bitpix, axes, rawData} =
@@ -185,3 +184,5 @@ quantitiesHDUs q = runPureEff . execWriter $ do
   geoHeight = dataHDU @GeoHeight DataHDUInfo q.geoHeight
   gasPressure = dataHDU @GasPressure DataHDUInfo q.gasPressure
   density = dataHDU @Density DataHDUInfo q.density
+
+-- l1Keywords = fmap Keyword $ headerKeywords @L1Keywords
