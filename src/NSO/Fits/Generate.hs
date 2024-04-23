@@ -66,27 +66,29 @@ test = do
   -- print fits.primaryHDU.dataArray.rawData
 
   let out = encode fits
-  BS.writeFile "/Users/seanhess/code/notebooks/data/out.fits" out
+      path = "code/notebooks/data/out.fits"
+  BS.writeFile ("/Users/seanhess/" <> path) out
+  putStrLn $ "\nWROTE : " <> path
 
 
-readLevel1 :: (MonadThrow m, MonadIO m) => FilePath -> m ImageHDU
+readLevel1 :: (MonadThrow m, MonadIO m) => FilePath -> m BinTableHDU
 readLevel1 fp = do
   inp <- liftIO $ BS.readFile fp
   fits <- decode inp
   case fits.extensions of
-    [Image i] -> pure i
+    [BinTable b] -> pure b
     _ -> throwM $ MissingL1HDU fp
 
 
 -- TODO: add primary HDU somewhere ...
-quantitiesFits :: (MonadThrow m) => ImageHDU -> Quantities [SlitX, Depth] -> m Fits
+quantitiesFits :: (MonadThrow m) => BinTableHDU -> Quantities [SlitX, Depth] -> m Fits
 quantitiesFits l1 q = do
   prim <- primaryHDU l1
   pure $ Fits prim $ fmap Image $ quantitiesHDUs l1 q
 
 
 -- What is supposed to go in here?
-primaryHDU :: (MonadThrow m) => ImageHDU -> m PrimaryHDU
+primaryHDU :: (MonadThrow m) => BinTableHDU -> m PrimaryHDU
 primaryHDU l1 = do
   ph <- primaryHeader l1.header (Id "unique id")
   pure $ PrimaryHDU (Header (keywords ph)) emptyDataArray

@@ -3,7 +3,7 @@
 module NSO.Fits.Generate.Headers where
 
 import Control.Monad.Catch (Exception, MonadThrow, throwM)
-import Data.Fits (toText)
+import Data.Fits (toText, toFloat)
 import Data.Text (unpack)
 import GHC.Generics
 import GHC.TypeLits
@@ -41,12 +41,15 @@ data PrimaryHeader = PrimaryHeader
 
 primaryHeader :: (MonadThrow m) => Header -> Id FrameY -> m PrimaryHeader
 primaryHeader l1 di = do
-  dateBeg <- lookupL1 "DATE-BEG" l1
-  dateEnd <- lookupL1 "DATE-END" l1
+
+  -- can I avoid typing these keys in twice?
+  dateBeg <- lookupL1 "DATE-BEG" toText l1
+  dateEnd <- lookupL1 "DATE-END" toText l1
+  telapse <- lookupL1 "TELAPSE" toFloat l1
 
   pure $
     PrimaryHeader
-      { telapse = Key (Seconds 123)
+      { telapse = Key (Seconds telapse)
       , wcsvalid = Key Constant
       , dsetid = Key di
       , framevol = Key $ MB 123
@@ -58,9 +61,9 @@ primaryHeader l1 di = do
       }
 
 
-lookupL1 :: (MonadThrow m) => Text -> Header -> m Text
-lookupL1 k h =
-  case toText =<< Fits.lookup k h of
+lookupL1 :: (MonadThrow m) => Text -> (Value -> Maybe a) -> Header -> m a
+lookupL1 k fromValue h =
+  case fromValue =<< Fits.lookup k h of
     Nothing -> throwM (MissingL1Key (unpack k))
     Just t -> pure t
 

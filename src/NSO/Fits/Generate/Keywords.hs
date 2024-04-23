@@ -8,6 +8,7 @@ import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.Generics
 import GHC.TypeLits
+import Text.Casing (fromHumps, toKebab)
 
 -- import NSO.Fits.Generate.Types
 import NSO.Prelude
@@ -16,7 +17,7 @@ import NSO.Types.Common (Id (..))
 
 -- | Generate a 'KeywordRecord' from a type that supports it
 keywordRecord :: forall a. (KeywordInfo a) => a -> KeywordRecord
-keywordRecord a = KeywordRecord (keyword @a) (keyValue a) comt
+keywordRecord a = KeywordRecord (T.toUpper $ keyword @a) (keyValue a) comt
  where
   comt =
     case comment @a of
@@ -53,10 +54,10 @@ instance (GenHeaderKeywords f) => GenHeaderKeywords (M1 C c f) where
 -- Selectors
 instance (GenHeaderKeywords f, Selector s) => GenHeaderKeywords (M1 S s f) where
   genHeaderKeywords (M1 a) =
-    let s = selName (undefined :: M1 S s f x)
-     in fmap (setKeyword s) $ genHeaderKeywords a
+    fmap (setKeyword selectorKeyword) $ genHeaderKeywords a
    where
-    setKeyword s d = d{_keyword = pack s}
+    setKeyword s d = d{_keyword = s}
+    selectorKeyword = cleanKeyword $ selName (undefined :: M1 S s f x)
 
 
 instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: b) where
@@ -65,6 +66,10 @@ instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: 
 
 instance (KeywordInfo a) => GenHeaderKeywords (K1 i a) where
   genHeaderKeywords (K1 a) = [keywordRecord a]
+
+
+cleanKeyword :: String -> Text
+cleanKeyword = T.toUpper . pack . toKebab . fromHumps
 
 
 -- class KeyValue a where
@@ -80,7 +85,7 @@ instance (KeywordInfo a) => GenHeaderKeywords (K1 i a) where
 class KeywordInfo a where
   keyword :: Text
   default keyword :: (Generic a, GTypeName (Rep a)) => Text
-  keyword = pack $ gtypeName (from (undefined :: a))
+  keyword = cleanKeyword $ gtypeName (from (undefined :: a))
 
 
   keytype :: Text

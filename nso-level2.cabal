@@ -91,6 +91,7 @@ library
       aeson ==2.1.2.1
     , base >=4.16.4.0
     , bytestring
+    , casing
     , containers
     , data-diverse
     , effectful ==2.3.0.0
@@ -146,6 +147,7 @@ executable level2
       aeson ==2.1.2.1
     , base >=4.16.4.0
     , bytestring
+    , casing
     , containers
     , data-diverse
     , effectful ==2.3.0.0
@@ -207,6 +209,7 @@ test-suite tests
       aeson ==2.1.2.1
     , base >=4.16.4.0
     , bytestring
+    , casing
     , containers
     , data-diverse
     , effectful ==2.3.0.0

@@ -145,7 +145,7 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: ImageHDU -> Quantities [SlitX, Depth] -> [ImageHDU]
+quantitiesHDUs :: BinTableHDU -> Quantities [SlitX, Depth] -> [ImageHDU]
 quantitiesHDUs l1 q = runPureEff . execWriter $ do
   opticalDepth
   temperature
