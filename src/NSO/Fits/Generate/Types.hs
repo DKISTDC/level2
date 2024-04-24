@@ -21,7 +21,7 @@ data ExtName (ext :: Symbol) = ExtName
 instance (KnownSymbol ext) => KeywordInfo (ExtName ext) where
   keyword = "extname"
   description = "Name of the HDU"
-  constant = Just (keyValue @(ExtName ext) ExtName)
+  allowed = [keyValue @(ExtName ext) ExtName]
   keyValue _ = String (pack $ symbolVal @ext Proxy)
 
 
@@ -29,7 +29,7 @@ data BType (ucd :: Symbol) = BType deriving (Generic)
 instance (KnownSymbol ucd) => KeywordInfo (BType ucd) where
   keyword = "btype"
   keytype = "Uniform Content Descriptor"
-  constant = Just (keyValue @(BType ucd) BType)
+  allowed = [keyValue @(BType ucd) BType]
   description = "The type of the values in the data array"
   comment = "[ucd]"
   keyValue _ = String (pack $ symbolVal @ucd Proxy)
@@ -39,7 +39,7 @@ data BUnit (unit :: Unit) = BUnit deriving (Generic)
 instance (KnownValue unit) => KeywordInfo (BUnit unit) where
   keyword = "bunit"
   keytype = "Unit"
-  constant = Just (keyValue @(BUnit unit) BUnit)
+  allowed = [keyValue @(BUnit unit) BUnit]
   description = "The unit of the values in the data array"
   keyValue _ = String (pack $ knownValue @unit)
 
@@ -49,14 +49,14 @@ data Key ktype (description :: Symbol) = Key ktype
 instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (Key ktype desc) where
   keytype = typeName @ktype
   description = pack $ symbolVal @desc Proxy
-  constant = Nothing
+  allowed = []
   comment = typeComment @ktype
   keyValue (Key t) = typeValue @ktype t
 
 
 instance (KnownValue kvalue, KnownSymbol desc) => KeywordInfo (Key (Constant kvalue) desc) where
   keytype = "Constant"
-  constant = Just (typeValue @(Constant kvalue) Constant)
+  allowed = [typeValue @(Constant kvalue) Constant]
   description = pack $ symbolVal @desc Proxy
   keyValue _ = typeValue @(Constant kvalue) Constant
 
@@ -74,7 +74,7 @@ instance KeywordInfo NaxisY where
   keytype = "Int"
   description = "Dummy WCS Y Coordinate"
   comment = "Dummy WCS Y Coordinate"
-  constant = Just (keyValue NaxisY)
+  allowed = [keyValue NaxisY]
   keyValue _ = Integer 1
 
 
@@ -82,7 +82,7 @@ data BZero = BZero deriving (Generic)
 instance KeywordInfo BZero where
   keytype = "Float"
   description = "This keyword represents the physical value corresponding to an array value of zero. The default value for this keyword is 0.0. This keyword, along with BSCALE, is used to linearly scale the array pixel values to transform them into the phyical values that they represent. physical_value = BZERO + BSCALE x array_value"
-  constant = Just (keyValue BZero)
+  allowed = [keyValue BZero]
   keyValue _ = Integer 0
 
 
@@ -90,8 +90,16 @@ data BScale = BScale deriving (Generic)
 instance KeywordInfo BScale where
   keytype = "Float"
   description = "This keyword represents the coefficient of the linear term in the scaling equation, the ratio of physical value to array value at zero offset. The default value for this keyword is 1.0. This keyword, along with BZERO, is used to linearly scale the array pixel values to transform them into the phyical values that they represent."
-  constant = Just (keyValue BScale)
+  allowed = [keyValue BScale]
   keyValue _ = Integer 1
+
+
+data Object = Object Text deriving (Generic)
+instance KeywordInfo Object where
+  keytype = "Object"
+  description = "The value field shall contain a character string giving a name for the observed object. Applicable standard values are TBD"
+  allowed = fmap String ["unknown", "quietsun", "sunspot", "pore", "plages", "spicules", "filament", "prominence", "coronalhole", "quietcorona", "activecorona"]
+  keyValue (Object s) = String s
 
 
 -- Key Types ---------------------------------------------------------
@@ -118,10 +126,16 @@ instance (KnownValue c) => KeyType (Constant c) where
   typeValue _ = String (pack $ knownValue @c)
 
 
-data Time = Time Text deriving (Generic)
-instance KeyType Time where
-  typeValue (Time s) = String s
-  typeComment = "[utc]"
+data DateTime = DateTime Text deriving (Generic)
+instance KeyType DateTime where
+  typeValue (DateTime s) = String s
+  typeComment = ""
+
+
+data Url = Url Text deriving (Generic)
+instance KeyType Url where
+  typeValue (Url u) = String u
+  typeComment = ""
 
 
 -- Units -------------------------------------------------------------------

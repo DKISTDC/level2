@@ -103,9 +103,9 @@ class KeywordInfo a where
   comment = ""
 
 
-  constant :: Maybe Value
-  default constant :: Maybe Value
-  constant = Nothing
+  allowed :: [Value]
+  default allowed :: [Value]
+  allowed = []
 
 
   keyValue :: a -> Value
@@ -156,5 +156,11 @@ class KnownValue a where
 
 instance KnownValue True where
   knownValue = "T"
+instance KnownValue 1 where
+  knownValue = "1"
+instance KnownValue 2 where
+  knownValue = "2"
+instance KnownValue 3 where
+  knownValue = "3"
 instance (KnownSymbol s) => KnownValue s where
   knownValue = symbolVal @s Proxy

@@ -12,10 +12,12 @@ import NSO.Fits.Generate.Keywords
 import NSO.Fits.Generate.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
+import NSO.Types.Inversion (Inversion)
 import Telescope.Fits
 import Telescope.Fits.Types (HeaderRecord (..))
 
 
+-- WARNING: VerifyWarning: Found a SIMPLE card but its format doesn't respect the FITS Standard [astropy.io.fits.hdu.hdulist]
 -- TODO: WCS (CRPIX, CRVAL, CUNIT, CTYPE, etc)
 
 ------------------------------------------------------------------------------
@@ -56,7 +58,7 @@ test = do
   -- print dat.bitpix
   -- print $ BS.length dat.rawData
   --
-  fits <- quantitiesFits i1 f
+  fits <- quantitiesFits (Id "inv.TEST0") i1 f
   print $ length fits.extensions
 
   --
@@ -81,16 +83,16 @@ readLevel1 fp = do
 
 
 -- TODO: add primary HDU somewhere ...
-quantitiesFits :: (MonadThrow m) => BinTableHDU -> Quantities [SlitX, Depth] -> m Fits
-quantitiesFits l1 q = do
-  prim <- primaryHDU l1
+quantitiesFits :: (MonadThrow m) => Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> m Fits
+quantitiesFits i l1 q = do
+  prim <- primaryHDU i l1
   pure $ Fits prim $ fmap Image $ quantitiesHDUs l1 q
 
 
 -- What is supposed to go in here?
-primaryHDU :: (MonadThrow m) => BinTableHDU -> m PrimaryHDU
-primaryHDU l1 = do
-  ph <- primaryHeader l1.header (Id "unique id")
+primaryHDU :: (MonadThrow m) => Id Inversion -> BinTableHDU -> m PrimaryHDU
+primaryHDU di l1 = do
+  ph <- primaryHeader l1.header di
   pure $ PrimaryHDU (Header (keywords ph)) emptyDataArray
  where
   keywords p = fmap Keyword $ headerKeywords @PrimaryHeader p

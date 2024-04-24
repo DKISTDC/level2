@@ -12,19 +12,23 @@ import Web.View
 
 
 docKey :: forall a. (KeywordInfo a) => DocKey
-docKey = DocKey (keyword @a) (keytype @a) (pack . constr <$> constant @a) (description @a)
+docKey = DocKey (keyword @a) (keytype @a) (allowedValues $ allowed @a) (description @a)
  where
+  allowedValues [] = Nothing
+  allowedValues as = Just $ fmap (pack . value) as
   -- TODO: this isn't exactly correct. Render them truly?
-  constr (String s) = show s
-  constr (Float f) = show f
-  constr (Integer i) = show i
-  constr (Logic l) = show l
+
+  value (String s) = show s
+  value (Float f) = show f
+  value (Integer i) = show i
+  value (Logic l) = show l
 
 
 data DocKey = DocKey
   { keyword :: Text
   , keytype :: Text
-  , constant :: Maybe Text
+  , -- , constant :: Maybe Text
+    allowed :: Maybe [Text]
   , description :: Text
   }
   deriving (Show)
