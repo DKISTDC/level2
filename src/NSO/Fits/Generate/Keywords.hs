@@ -32,10 +32,9 @@ class HeaderKeywords a where
   headerKeywords = genHeaderKeywords . from
 
 
-  headerComments :: a -> [(Text, Text)]
-  default headerComments :: a -> [(Text, Text)]
-  headerComments _ = []
-
+-- headerComments :: a -> [(Text, Text)]
+-- default headerComments :: a -> [(Text, Text)]
+-- headerComments _ = []
 
 class GenHeaderKeywords f where
   genHeaderKeywords :: f p -> [KeywordRecord]
@@ -64,8 +63,13 @@ instance (GenHeaderKeywords a, GenHeaderKeywords b) => GenHeaderKeywords (a :*: 
   genHeaderKeywords (a :*: b) = genHeaderKeywords a ++ genHeaderKeywords b
 
 
-instance (KeywordInfo a) => GenHeaderKeywords (K1 i a) where
+instance (KeywordInfo a) => GenHeaderKeywords (K1 r a) where
   genHeaderKeywords (K1 a) = [keywordRecord a]
+
+
+instance {-# OVERLAPPING #-} (KeywordInfo a) => GenHeaderKeywords (K1 r (Maybe a)) where
+  genHeaderKeywords (K1 Nothing) = []
+  genHeaderKeywords (K1 (Just a)) = [keywordRecord a]
 
 
 cleanKeyword :: String -> Text
@@ -113,6 +117,19 @@ class KeywordInfo a where
   keyValue = typeValue
 
 
+-- optValue :: a -> Maybe Value
+-- default optValue :: a -> Maybe Value
+-- optValue = pure . keyValue
+
+-- instance (KeywordInfo a) => KeywordInfo (Maybe a) where
+--   keyword = keyword @a
+--   keytype = keytype @a
+--   description = description @a
+--   comment = comment @a
+--   allowed = allowed @a
+--   optValue Nothing = _
+--   keyValue (Just a) = _
+
 class KeyType a where
   typeName :: Text
   default typeName :: (Generic a, GTypeName (Rep a)) => Text
@@ -135,6 +152,11 @@ instance KeyType Int where
   typeName = "Int"
   typeComment = ""
   typeValue = Integer
+instance KeyType Float where
+  -- TODO: change to Double. Don't support Float
+  typeName = "Float"
+  typeComment = ""
+  typeValue = Float
 instance KeyType (Id a) where
   typeName = "Identifier"
   typeComment = ""

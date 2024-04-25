@@ -1,10 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module NSO.Fits.Generate.Headers where
 
 import Control.Monad.Catch (Exception, MonadThrow, throwM)
-import Data.Fits (toFloat, toText)
-import Data.Text (unpack)
+import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
+import Data.Text (pack, unpack)
 import Data.Text qualified as T
 import GHC.Generics
 import GHC.TypeLits
@@ -21,8 +22,7 @@ import Telescope.Fits as Fits
 -- DONE: custom comments with custom newtype (cleaner)
 -- DONE: comments for bitpix, naxes and other auto-gen keywords.
 -- DONE: FILENAME - based on input filename
---
--- FIX: WCS: do they belong in data hdus or primary?
+-- DONE: Support optional lifted L1 headers
 --
 -- TODO: DSETID - the inversion id?
 -- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size
@@ -33,6 +33,9 @@ import Telescope.Fits as Fits
 -- TODO: PROV_URL - create a provenance URL page... public domain?
 -- TODO: CHECKSUM
 -- TODO: DATASUM
+--
+--
+-- TODO: Add support for Doubles to fits-parse? Or just always assume double...
 
 -- COMMENTS -----------------------------
 -- 1. Some units (ktype) need a comment. some don't
@@ -58,7 +61,6 @@ data PrimaryHeader = PrimaryHeader
   , infoUrl :: Key Url "Link to documentation for this frame"
   , fileId :: Key String "Unique ID of this FITS file"
   , provUrl :: Key Url "Link to provenance for this file"
-  , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
   , dateBeg :: Key DateTime "Start date and time of light exposure for the frame"
   , dateEnd :: Key DateTime "End date and time of light exposure for the frame"
   , dateAvg :: Key DateTime "Date/Time of the midpoint of the frame. (DATE-END - DATE_BEG) / 2"
@@ -66,14 +68,91 @@ data PrimaryHeader = PrimaryHeader
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
+-- TELESCOPE --------------------------------------------------------------------------
+--
+
+data TelescopeHeader = TelescopeHeader
+  { tazimuth :: Key Degrees "Raw Telescope azimuth angle"
+  , elevAng :: Key Degrees "Raw Telescope elevation angle"
+  , teltrack :: Teltrack
+  , telscan :: Maybe Telscan
+  , ttblangl :: Key Degrees "Telescope Coude table angle"
+  , ttbltrck :: Ttbltrck
+  , dateref :: Key DateTime "Time coordinate zero point"
+  , obsgeoX :: Key Meters "Observer’s fixed geographic X coordinate"
+  , obsgeoY :: Key Meters "Observer’s fixed geographic Y coordinate"
+  , obsgeoZ :: Key Meters "Observer’s fixed geographic Z coordinate"
+  , rotcomp :: Maybe (Key Int "Solar rotation compensation: 1: On 2: Off")
+  , obsVr :: Key Mps "Observer’s outward velocity w.r.t. the Sun"
+  }
+  deriving (Generic, HeaderKeywords)
+
+
+data Teltrack = Teltrack Text deriving (Generic)
+instance KeywordInfo Teltrack where
+  keytype = "Teltrack"
+  description = "Tracking Mode of the Telescope"
+  allowed = fmap String ["None", "Fixed Solar Rotation Tracking", "Standard Differential Rotation Tracking", "Custom Differential Rotation Tracking"]
+  keyValue (Teltrack s) = String s
+
+
+data Telscan = Telscan Text deriving (Generic)
+instance KeywordInfo Telscan where
+  keytype = "Telscan"
+  description = "Scanning Mode of the Telescope."
+  allowed = fmap String ["None", "Random", "Raster", "Spiral"]
+  keyValue (Telscan s) = String s
+
+
+data Ttbltrck = Ttbltrck Text deriving (Generic)
+instance KeywordInfo Ttbltrck where
+  keytype = "Ttbltrck"
+  description = "Coude table tracking mode."
+  allowed = fmap String ["(stepped) parallactic", "fixed angle on sun", "fixed difference-angle btwn", "coude and tel. azimuth", "fixed coude table angle"]
+  keyValue (Ttbltrck s) = String s
+
+
+-- WCS --------------------------------------------------------------
+
+data WCSCommon = WCSCommon
+  { wcsvalid :: Key (Constant True) "WCI data are correct"
+  , wcsaxes :: Key (Constant 3) "Number of axes in the Helioprojective Cartesian WCS description. Note that when WCSAXES > NAXIS, these extra axes correspond to the image as a whole" -- MUST precede other WCS keywords
+  , wcsname :: Key (Constant "Helioprojective Cartesian") "Helioprojective Cartesian"
+  , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
+  }
+  deriving (Generic, HeaderDoc, HeaderKeywords)
+
+
+-- TODO: add pc_n headers
+data WCSAxis (n :: Nat) = WCSAxis
+  { crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n of the Helioprojective coordinate system, in units of the axis index. This value is based upon a counter that runs from 1 to NAXISn with an increment of 1 per pixel. The reference point value need not be that for the center of a pixel nor lie within the actual data array. Use comments to indicate the location of the index point relative to the pixel. DKIST pointing data will be relative to the boresight of the telescope defined by the WFC Context Viewer that will center an image of the GOS pinhole on its detector using a 10 nm wavelength band centered on 525 nm. The same pinhole image will be used by all instruments as reference for determining the pointing of the instrument in relation to the WFC Context Viewer."
+  , crval :: Key Float "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn. DKIST values for this entry will be determined at the wavelength of the WFC Context Viewer, which covers a band of 10 nm centered on 525 nm. The value will not be corrected for differential refraction of Earth’s atmosphere."
+  , crdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n of the Helioprojective coordinate system. This value must not be zero."
+  , cunit :: Key String "The unit of the value contained in CDELTn"
+  , ctype :: Key String "A string value labeling axis n of the Helioprojective Coordinate system."
+  -- , pc1 :: Key _ "" -- ???
+  -- , pc2 :: Key _ "" -- ???
+  }
+  deriving (Generic)
+instance (KnownNat n) => HeaderKeywords (WCSAxis n) where
+  headerKeywords =
+    fmap modKey . genHeaderKeywords . from
+   where
+    modKey KeywordRecord{_keyword, _value, _comment} = KeywordRecord{_keyword = addN _keyword, _value, _comment}
+    addN k = k <> "_" <> pack (show (natVal @n Proxy))
+
+
+-- GENERATE ------------------------------------------------------------
+
 primaryHeader :: (MonadThrow m) => Header -> Id Inversion -> m PrimaryHeader
 primaryHeader l1 i = do
   -- can I avoid typing these keys in twice?
-  dateBeg <- lookupL1 "DATE-BEG" toDate l1
-  dateEnd <- lookupL1 "DATE-END" toDate l1
-  dateAvg <- lookupL1 "DATE-AVG" toDate l1
-  telapse <- lookupL1 "TELAPSE" toFloat l1
-  object <- lookupL1 "OBJECT" toText l1
+  dateBeg <- requireL1 "DATE-BEG" toDate l1
+  dateEnd <- requireL1 "DATE-END" toDate l1
+  dateAvg <- requireL1 "DATE-AVG" toDate l1
+  telapse <- requireL1 "TELAPSE" toFloat l1
+  object <- requireL1 "OBJECT" toText l1
+  -- teltrack <- requireL1 "TELTRACK" toText l1
 
   pure $
     PrimaryHeader
@@ -94,42 +173,49 @@ primaryHeader l1 i = do
       , fileId = Key "TODO"
       , provUrl = Key (Url "https://TODO")
       , origin = Key Constant
-      , lonpole = Key (Degrees 40)
       , dateBeg = Key dateBeg
       , dateEnd = Key dateEnd
       , dateAvg = Key dateAvg
       }
 
 
-data TelescopeHeader = TelescopeHeader
-  { wcsvalid :: Key (Constant True) "WCI data are correct"
-  , wcsaxes :: Key (Constant 3) ""
-  }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
-
-
 -- TODO: this belongs in the data, not the primary!
 telescopeHeader :: (MonadThrow m) => Header -> m TelescopeHeader
-telescopeHeader h = do
-  pure $
-    TelescopeHeader
-      { wcsvalid = Key Constant
-      , wcsaxes = Key Constant
-      }
+telescopeHeader l1 = do
+  tazimuth <- Key . Degrees <$> requireL1 "TAZIMUTH" toFloat l1
+  elevAng <- Key . Degrees <$> requireL1 "ELEV_ANG" toFloat l1
+  teltrack <- Teltrack <$> requireL1 "TELTRACK" toText l1
+  telscan <- fmap Telscan <$> lookupL1 "TELSCAN" toText l1
+  ttblangl <- Key . Degrees <$> requireL1 "TTBLANGL" toFloat l1
+  ttbltrck <- Ttbltrck <$> requireL1 "TTBLTRCK" toText l1
+  dateref <- Key . DateTime <$> requireL1 "DATEREF" toText l1
+  obsgeoX <- Key . Meters <$> requireL1 "OBSGEO-X" toFloat l1
+  obsgeoY <- Key . Meters <$> requireL1 "OBSGEO-Y" toFloat l1
+  obsgeoZ <- Key . Meters <$> requireL1 "OBSGEO-Z" toFloat l1
+  rotcomp <- fmap Key <$> lookupL1 "ROTCOMP" toInt l1
+  obsVr <- Key . Mps <$> requireL1 "OBS_VR" toFloat l1
+
+  pure $ TelescopeHeader{..}
 
 
-lookupL1 :: (MonadThrow m) => Text -> (Value -> Maybe a) -> Header -> m a
+lookupL1 :: (MonadThrow m) => Text -> (Value -> Maybe a) -> Header -> m (Maybe a)
 lookupL1 k fromValue h =
-  case fromValue =<< Fits.lookup k h of
-    Nothing -> throwM (MissingL1Key (unpack k))
-    Just t -> pure t
+  let mk = Fits.lookup k h
+   in case fromValue =<< mk of
+        Nothing -> pure Nothing
+        Just t -> pure (Just t)
+
+
+requireL1 :: (MonadThrow m) => Text -> (Value -> Maybe a) -> Header -> m a
+requireL1 k fromValue h =
+  let mk = Fits.lookup k h
+   in case fromValue =<< mk of
+        Nothing -> throwM (MissingL1Key (unpack k))
+        Just t -> pure t
 
 
 toDate :: Value -> Maybe DateTime
 toDate v = DateTime <$> toText v
-
-
-newtype L1Filename = L1Filename FilePath
 
 
 data FitsGenError

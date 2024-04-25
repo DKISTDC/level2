@@ -90,16 +90,6 @@ type Density =
     Kg_m3
 
 
-data DataHDUHeader info
-  = DataHDUHeader
-  { info :: info
-  , common :: DataHDUCommon
-  }
-
-
-data DataHDUInfo (extName :: Symbol) (ucd :: Symbol) (unit :: Unit) = DataHDUInfo
-
-
 data DataHDUAxes = DataHDUAxes
   { naxis :: Key (Constant "3") "Data HDUs have the shape (y, x, depth)"
   , naxis1 :: Naxis "Optical Depth"
@@ -107,6 +97,10 @@ data DataHDUAxes = DataHDUAxes
   , naxis3 :: NaxisY
   }
   deriving (Generic, HeaderDoc)
+
+
+-- The DataHDUInfo contains static headers EXTNAME, BTYPE and BUNIT
+data DataHDUInfo (extName :: Symbol) (btype :: Symbol) (bunit :: Unit) = DataHDUInfo
 
 
 instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderKeywords (DataHDUInfo ext btype bunit) where
@@ -117,12 +111,6 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderKeyword
     ]
 
 
-instance (HeaderKeywords info) => HeaderKeywords (DataHDUHeader info) where
-  headerKeywords (DataHDUHeader info common) =
-    headerKeywords @info info
-      <> headerKeywords common
-
-
 instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (DataHDUInfo ext btype bunit) where
   headerDoc =
     [ docKey @(ExtName ext)
@@ -131,6 +119,22 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (Da
     ]
 
 
+-- | A header contains info and common items
+data DataHDUHeader info
+  = DataHDUHeader
+  { info :: info
+  , common :: DataHDUCommon
+  }
+
+
+-- The Header Docs need to contain info, axes, and common
+instance (HeaderKeywords info) => HeaderKeywords (DataHDUHeader info) where
+  headerKeywords (DataHDUHeader info common) =
+    headerKeywords @info info
+      <> headerKeywords common
+
+
+-- The Header Docs need to contain info, axes, and common
 instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
   headerDoc =
     headerDoc @info

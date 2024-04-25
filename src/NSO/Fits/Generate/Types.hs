@@ -138,6 +138,18 @@ instance KeyType Url where
   typeComment = ""
 
 
+data Meters = Meters Float deriving (Generic)
+instance KeyType Meters where
+  typeValue (Meters m) = Float m
+  typeComment = "[m]"
+
+
+data Mps = Mps Float deriving (Generic)
+instance KeyType Mps where
+  typeValue (Mps m) = Float m
+  typeComment = "[m/s]"
+
+
 -- Units -------------------------------------------------------------------
 
 data Unit

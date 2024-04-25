@@ -93,9 +93,25 @@ quantitiesFits i l1 q = do
 primaryHDU :: (MonadThrow m) => Id Inversion -> BinTableHDU -> m PrimaryHDU
 primaryHDU di l1 = do
   ph <- primaryHeader l1.header di
-  pure $ PrimaryHDU (Header (keywords ph)) emptyDataArray
+  th <- telescopeHeader l1.header
+  pure $ PrimaryHDU (Header (primKeys ph <> teleKeys th)) emptyDataArray
  where
-  keywords p = fmap Keyword $ headerKeywords @PrimaryHeader p
+  primKeys = section @PrimaryHeader "Primary Info" "Primary info goes here"
+  teleKeys = section @TelescopeHeader "Telescope" "Keys describing the pointing and op of the Telescope"
+
+
+sectionHeader :: Text -> Text -> [HeaderRecord]
+sectionHeader title desc =
+  [ BlankLine
+  , Comment $ "----------------" <> title <> "------------------"
+  , Comment desc
+  , Comment "-------------------------------------------------"
+  ]
+
+
+section :: (HeaderKeywords a) => Text -> Text -> a -> [HeaderRecord]
+section title desc a =
+  sectionHeader title desc <> fmap Keyword (headerKeywords a)
 
 
 data FitsGenError
