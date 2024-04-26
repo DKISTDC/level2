@@ -16,6 +16,7 @@ import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
+import Telescope.Fits.Types (HeaderRecord (..))
 
 
 -- DONE: automatic type-based comments
@@ -23,6 +24,8 @@ import Telescope.Fits as Fits
 -- DONE: comments for bitpix, naxes and other auto-gen keywords.
 -- DONE: FILENAME - based on input filename
 -- DONE: Support optional lifted L1 headers
+--
+-- DOING: WCS
 --
 -- TODO: DSETID - the inversion id?
 -- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size
@@ -54,12 +57,12 @@ data PrimaryHeader = PrimaryHeader
   , framevol :: Key MB "Size of the frame on disk."
   , proctype :: Key (Constant "L2") "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
   , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
-  , filename :: Key String "Name of current file"
+  , filename :: Key Text "Name of current file"
   , level :: Key (Constant 2) "The level of the current data"
-  , headvers :: Key String "Version of this spec used during processing"
+  , headvers :: Key Text "Version of this spec used during processing"
   , headUrl :: Key Url "Link to documentation for the headers of this frame"
   , infoUrl :: Key Url "Link to documentation for this frame"
-  , fileId :: Key String "Unique ID of this FITS file"
+  , fileId :: Key Text "Unique ID of this FITS file"
   , provUrl :: Key Url "Link to provenance for this file"
   , dateBeg :: Key DateTime "Start date and time of light exposure for the frame"
   , dateEnd :: Key DateTime "End date and time of light exposure for the frame"
@@ -123,23 +126,106 @@ data WCSCommon = WCSCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
--- TODO: add pc_n headers
-data WCSAxis (n :: Nat) = WCSAxis
-  { crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n of the Helioprojective coordinate system, in units of the axis index. This value is based upon a counter that runs from 1 to NAXISn with an increment of 1 per pixel. The reference point value need not be that for the center of a pixel nor lie within the actual data array. Use comments to indicate the location of the index point relative to the pixel. DKIST pointing data will be relative to the boresight of the telescope defined by the WFC Context Viewer that will center an image of the GOS pinhole on its detector using a 10 nm wavelength band centered on 525 nm. The same pinhole image will be used by all instruments as reference for determining the pointing of the instrument in relation to the WFC Context Viewer."
+data WCSAxisKeywords (n :: Nat) = WCSAxisKeywords
+  { ctype :: Key Text "A string value labeling axis n of the Helioprojective Coordinate system."
+  , cunit :: Key Text "The unit of the value contained in CDELTn"
+  , crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n of the Helioprojective coordinate system, in units of the axis index. This value is based upon a counter that runs from 1 to NAXISn with an increment of 1 per pixel. The reference point value need not be that for the center of a pixel nor lie within the actual data array. Use comments to indicate the location of the index point relative to the pixel. DKIST pointing data will be relative to the boresight of the telescope defined by the WFC Context Viewer that will center an image of the GOS pinhole on its detector using a 10 nm wavelength band centered on 525 nm. The same pinhole image will be used by all instruments as reference for determining the pointing of the instrument in relation to the WFC Context Viewer."
   , crval :: Key Float "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn. DKIST values for this entry will be determined at the wavelength of the WFC Context Viewer, which covers a band of 10 nm centered on 525 nm. The value will not be corrected for differential refraction of Earth’s atmosphere."
-  , crdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n of the Helioprojective coordinate system. This value must not be zero."
-  , cunit :: Key String "The unit of the value contained in CDELTn"
-  , ctype :: Key String "A string value labeling axis n of the Helioprojective Coordinate system."
-  -- , pc1 :: Key _ "" -- ???
-  -- , pc2 :: Key _ "" -- ???
+  , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n of the Helioprojective coordinate system. This value must not be zero."
   }
   deriving (Generic)
-instance (KnownNat n) => HeaderKeywords (WCSAxis n) where
+instance (KnownNat n) => HeaderKeywords (WCSAxisKeywords n) where
   headerKeywords =
     fmap modKey . genHeaderKeywords . from
    where
     modKey KeywordRecord{_keyword, _value, _comment} = KeywordRecord{_keyword = addN _keyword, _value, _comment}
-    addN k = k <> "_" <> pack (show (natVal @n Proxy))
+    addN k = k <> pack (show (natVal @n Proxy))
+
+
+data WCSAxis (n :: Nat) = WCSAxis
+  { keys :: WCSAxisKeywords n
+  , pc :: DataAxes (PC n)
+  }
+
+
+instance (KnownNat n) => HeaderKeywords (WCSAxis n) where
+  headerKeywords ax =
+    headerKeywords ax.keys
+      <> headerKeywords ax.pc
+
+
+type DummyYN = 3
+type SlitXN = 2
+type DepthN = 1
+
+
+wcsCommon :: (MonadThrow m) => Header -> m WCSCommon
+wcsCommon l1 = do
+  lonpole <- Degrees <$> requireL1 "LONPOLE" toFloat l1
+  pure $
+    WCSCommon
+      { lonpole = Key lonpole
+      , wcsvalid = Key Constant
+      , wcsaxes = Key Constant
+      , wcsname = Key Constant
+      }
+
+
+data DataAxes f = DataAxes
+  { dummyY :: f DummyYN
+  , slitX :: f SlitXN
+  , depth :: f DepthN
+  }
+  deriving (Generic)
+instance (KnownNat n) => HeaderKeywords (DataAxes (PC n))
+
+
+wcsAxes :: (MonadThrow m) => Header -> m (DataAxes WCSAxis)
+wcsAxes h = do
+  dummyY <- wcsDummyY h
+  slitX <- wcsSlitX h
+  depth <- wcsDepth
+  pure $ DataAxes{..}
+
+
+requireWCS :: forall n m. (KnownNat n) => (MonadThrow m) => Header -> m (WCSAxisKeywords n)
+requireWCS l1 = do
+  crpix <- Key <$> requireL1 (keyN "CRPIX") toFloat l1
+  crval <- Key <$> requireL1 (keyN "CRVAL") toFloat l1
+  cdelt <- Key <$> requireL1 (keyN "CDELT") toFloat l1
+  cunit <- Key <$> requireL1 (keyN "CUNIT") toText l1
+  ctype <- Key <$> requireL1 (keyN "CTYPE") toText l1
+  pure $ WCSAxisKeywords{cunit, ctype, crpix, crval, cdelt}
+ where
+  keyN k = k <> pack (show (natVal @n Proxy))
+
+
+wcsDummyY :: (MonadThrow m) => Header -> m (WCSAxis DummyYN)
+wcsDummyY l1 = do
+  keys <- requireWCS @DummyYN l1
+  let pc = DataAxes{dummyY = PC 999, slitX = PC 999, depth = PC 0}
+  pure $ WCSAxis{keys, pc}
+
+
+-- DOING: Scale CRPIX and CDELT
+-- TODO: Copy PCs
+wcsSlitX :: (MonadThrow m) => Header -> m (WCSAxis SlitXN)
+wcsSlitX l1 = do
+  keys <- requireWCS @SlitXN l1
+  let pc = DataAxes{dummyY = PC 999, slitX = PC 999, depth = PC 0}
+  pure $ WCSAxis{keys, pc}
+
+
+wcsDepth :: (MonadThrow m) => m (WCSAxis DepthN)
+wcsDepth = do
+  let crpix = Key 12
+      crval = Key 0
+      cdelt = Key 0.1
+      cunit = Key ""
+      ctype = Key "TAU--LOG"
+  let keys = WCSAxisKeywords{..}
+  let pc = DataAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
+  pure $ WCSAxis{keys, pc}
 
 
 -- GENERATE ------------------------------------------------------------
@@ -228,16 +314,29 @@ data FitsGenError
 -- = INSTRUMENT DATETIME DATASET L1
 -- => DATETIME FRAMEID L2
 -- 2023_10_16T23_55_59_513_00589600_inv_290834_L2.fits
-frameFilename :: DateTime -> Id Inversion -> String
+frameFilename :: DateTime -> Id Inversion -> Text
 frameFilename (DateTime start) iv =
   addExtension $
-    unpack $
-      T.toUpper $
-        T.intercalate
-          "_"
-          [ T.replace "." "_" iv.fromId
-          , start
-          , "L2"
-          ]
+    T.toUpper $
+      T.intercalate
+        "_"
+        [ T.replace "." "_" iv.fromId
+        , start
+        , "L2"
+        ]
  where
   addExtension f = f <> ".fits"
+
+
+sectionHeader :: Text -> Text -> [HeaderRecord]
+sectionHeader title desc =
+  [ BlankLine
+  , Comment $ "----------------" <> title <> "------------------"
+  , Comment desc
+  , Comment "-------------------------------------------------"
+  ]
+
+
+section :: (HeaderKeywords a) => Text -> Text -> a -> [HeaderRecord]
+section title desc a =
+  sectionHeader title desc <> fmap Keyword (headerKeywords a)

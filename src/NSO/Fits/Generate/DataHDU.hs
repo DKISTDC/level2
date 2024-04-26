@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module NSO.Fits.Generate.DataHDU where
 
 import Effectful
@@ -6,6 +8,7 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Doc as Doc
 import NSO.Fits.Generate.Frames
+import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
 import NSO.Fits.Generate.Types
 import NSO.Prelude
@@ -149,7 +152,7 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: BinTableHDU -> Quantities [SlitX, Depth] -> [ImageHDU]
+quantitiesHDUs :: Header -> Quantities [SlitX, Depth] -> [ImageHDU]
 quantitiesHDUs l1 q = runPureEff . execWriter $ do
   opticalDepth
   temperature
@@ -163,30 +166,54 @@ quantitiesHDUs l1 q = runPureEff . execWriter $ do
   gasPressure
   density
  where
-  dataHDU :: forall info es. (HeaderKeywords info, Writer [ImageHDU] :> es) => info -> Results Frame -> Eff es ()
-  dataHDU info res = do
-    let header = Header $ mainKeywords <> [Comment "ANOTHER BLOCK"]
-        darr = encodeArray res.array
-    tell [ImageHDU{header, dataArray = addDummyAxis darr}]
-   where
-    mainKeywords = fmap Keyword $ headerKeywords @(DataHDUHeader info) (DataHDUHeader info common)
-    common = DataHDUCommon BZero BScale
+  opticalDepth = dataHDU @OpticalDepth l1 DataHDUInfo q.opticalDepth
+  temperature = dataHDU @Temperature l1 DataHDUInfo q.temperature
+  electronPressure = dataHDU @ElectronPressure l1 DataHDUInfo q.electronPressure
+  microTurbulence = dataHDU @Microturbulence l1 DataHDUInfo q.microTurbulence
+  magStrength = dataHDU @MagStrength l1 DataHDUInfo q.magStrength
+  velocity = dataHDU @Velocity l1 DataHDUInfo q.velocity
+  magInclination = dataHDU @MagInclination l1 DataHDUInfo q.magInclination
+  magAzimuth = dataHDU @MagAzimuth l1 DataHDUInfo q.magAzimuth
+  geoHeight = dataHDU @GeoHeight l1 DataHDUInfo q.geoHeight
+  gasPressure = dataHDU @GasPressure l1 DataHDUInfo q.gasPressure
+  density = dataHDU @Density l1 DataHDUInfo q.density
+
+
+dataHDU
+  :: forall info es
+   . (HeaderKeywords info, Writer [ImageHDU] :> es)
+  => Header
+  -> info
+  -> Results Frame
+  -> Eff es ()
+dataHDU l1 info res = do
+  let dat = DataHDUHeader info common
+
+  wc <- wcsCommon l1
+  wa <- wcsAxes l1
+
+  let header = Header $ mainSection dat <> wcsSection wc wa
+      darr = encodeArray res.array
+  tell [ImageHDU{header, dataArray = addDummyAxis darr}]
+ where
+  -- mainKeywords = fmap Keyword . headerKeywords
+  mainSection dat =
+    sectionHeader "Data HDU" "Headers describing the physical quantity"
+      <> fmap Keyword (headerKeywords dat)
+      <> [Comment "Example Comment"]
+
+  wcsSection wc wa =
+    sectionHeader "WCS" "WCS Related Keywords" <> fmap Keyword (wcsKeywords wc wa)
+
+  wcsKeywords wc wa =
+    headerKeywords @WCSCommon wc
+      <> headerKeywords @(WCSAxis DepthN) wa.depth
+      <> headerKeywords @(WCSAxis SlitXN) wa.slitX
+      <> headerKeywords @(WCSAxis DummyYN) wa.dummyY
+
+  common = DataHDUCommon BZero BScale
 
   addDummyAxis :: DataArray -> DataArray
   addDummyAxis DataArray{bitpix, axes, rawData} =
     let Axes as = axes
      in DataArray{bitpix, rawData, axes = Axes $ as <> [1]}
-
-  opticalDepth = dataHDU @OpticalDepth DataHDUInfo q.opticalDepth
-  temperature = dataHDU @Temperature DataHDUInfo q.temperature
-  electronPressure = dataHDU @ElectronPressure DataHDUInfo q.electronPressure
-  microTurbulence = dataHDU @Microturbulence DataHDUInfo q.microTurbulence
-  magStrength = dataHDU @MagStrength DataHDUInfo q.magStrength
-  velocity = dataHDU @Velocity DataHDUInfo q.velocity
-  magInclination = dataHDU @MagInclination DataHDUInfo q.magInclination
-  magAzimuth = dataHDU @MagAzimuth DataHDUInfo q.magAzimuth
-  geoHeight = dataHDU @GeoHeight DataHDUInfo q.geoHeight
-  gasPressure = dataHDU @GasPressure DataHDUInfo q.gasPressure
-  density = dataHDU @Density DataHDUInfo q.density
-
--- l1Keywords = fmap Keyword $ headerKeywords @L1Keywords

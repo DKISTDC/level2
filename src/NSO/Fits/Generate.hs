@@ -42,7 +42,7 @@ test = do
   print $ f.opticalDepth.array !> 20
   print $ f.opticalDepth.array !> 40
 
-  let hdus = quantitiesHDUs i1 f
+  let hdus = quantitiesHDUs i1.header f
   let (od : _) = hdus
 
   putStrLn "\nCHECK HDUS"
@@ -86,7 +86,7 @@ readLevel1 fp = do
 quantitiesFits :: (MonadThrow m) => Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> m Fits
 quantitiesFits i l1 q = do
   prim <- primaryHDU i l1
-  pure $ Fits prim $ fmap Image $ quantitiesHDUs l1 q
+  pure $ Fits prim $ fmap Image $ quantitiesHDUs l1.header q
 
 
 -- What is supposed to go in here?
@@ -98,20 +98,6 @@ primaryHDU di l1 = do
  where
   primKeys = section @PrimaryHeader "Primary Info" "Primary info goes here"
   teleKeys = section @TelescopeHeader "Telescope" "Keys describing the pointing and op of the Telescope"
-
-
-sectionHeader :: Text -> Text -> [HeaderRecord]
-sectionHeader title desc =
-  [ BlankLine
-  , Comment $ "----------------" <> title <> "------------------"
-  , Comment desc
-  , Comment "-------------------------------------------------"
-  ]
-
-
-section :: (HeaderKeywords a) => Text -> Text -> a -> [HeaderRecord]
-section title desc a =
-  sectionHeader title desc <> fmap Keyword (headerKeywords a)
 
 
 data FitsGenError

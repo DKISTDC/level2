@@ -55,7 +55,9 @@ instance (GenHeaderKeywords f, Selector s) => GenHeaderKeywords (M1 S s f) where
   genHeaderKeywords (M1 a) =
     fmap (setKeyword selectorKeyword) $ genHeaderKeywords a
    where
-    setKeyword s d = d{_keyword = s}
+    setKeyword s d = d{_keyword = newKeyword s d._keyword}
+    newKeyword s "" = s
+    newKeyword _ k = k
     selectorKeyword = cleanKeyword $ selName (undefined :: M1 S s f x)
 
 
@@ -88,8 +90,12 @@ cleanKeyword = T.toUpper . pack . toKebab . fromHumps
 
 class KeywordInfo a where
   keyword :: Text
-  default keyword :: (Generic a, GTypeName (Rep a)) => Text
-  keyword = cleanKeyword $ gtypeName (from (undefined :: a))
+  -- default keyword :: (Generic a, GTypeName (Rep a)) => Text
+  -- keyword = cleanKeyword $ gtypeName (from (undefined :: a))
+  default keyword :: Text
+  -- by default leave the keyword unset, allowing the selector to set it
+  -- but if the type specifies one, favor that. See `newKeyword` above
+  keyword = ""
 
 
   keytype :: Text
@@ -144,10 +150,10 @@ class KeyType a where
   typeValue :: a -> Value
 
 
-instance KeyType String where
+instance KeyType Text where
   typeName = "String"
   typeComment = ""
-  typeValue s = String (pack s)
+  typeValue = String
 instance KeyType Int where
   typeName = "Int"
   typeComment = ""
