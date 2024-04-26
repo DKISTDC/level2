@@ -190,7 +190,7 @@ dataHDU l1 info res = do
   let dat = DataHDUHeader info common
 
   wc <- wcsCommon l1
-  wa <- wcsAxes l1
+  wa <- wcsAxes (size res.array) l1
 
   let header = Header $ mainSection dat <> wcsSection wc wa
       darr = encodeArray res.array
@@ -207,9 +207,7 @@ dataHDU l1 info res = do
 
   wcsKeywords wc wa =
     headerKeywords @WCSCommon wc
-      <> headerKeywords @(WCSAxis DepthN) wa.depth
-      <> headerKeywords @(WCSAxis SlitXN) wa.slitX
-      <> headerKeywords @(WCSAxis DummyYN) wa.dummyY
+      <> headerKeywords @(DataAxes WCSAxis) wa
 
   common = DataHDUCommon BZero BScale
 

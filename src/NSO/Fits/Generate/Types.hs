@@ -45,7 +45,7 @@ instance (KnownValue unit) => KeywordInfo (BUnit unit) where
 
 
 data Key ktype (description :: Symbol) = Key ktype
-  deriving (Generic)
+  deriving (Generic, Show)
 instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (Key ktype desc) where
   keytype = typeName @ktype
   description = pack $ symbolVal @desc Proxy

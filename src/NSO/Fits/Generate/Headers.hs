@@ -5,8 +5,10 @@ module NSO.Fits.Generate.Headers where
 
 import Control.Monad.Catch (Exception, MonadThrow, throwM)
 import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
+import Data.Massiv.Array (Ix2 (..), Sz (..))
 import Data.Text (pack, unpack)
 import Data.Text qualified as T
+import Debug.Trace
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Doc as Doc
@@ -144,14 +146,14 @@ instance (KnownNat n) => HeaderKeywords (WCSAxisKeywords n) where
 
 data WCSAxis (n :: Nat) = WCSAxis
   { keys :: WCSAxisKeywords n
-  , pc :: DataAxes (PC n)
+  , pcs :: DataAxes (PC n)
   }
 
 
 instance (KnownNat n) => HeaderKeywords (WCSAxis n) where
   headerKeywords ax =
     headerKeywords ax.keys
-      <> headerKeywords ax.pc
+      <> headerKeywords ax.pcs
 
 
 type DummyYN = 3
@@ -178,18 +180,23 @@ data DataAxes f = DataAxes
   }
   deriving (Generic)
 instance (KnownNat n) => HeaderKeywords (DataAxes (PC n))
+instance HeaderKeywords (DataAxes WCSAxis) where
+  headerKeywords a =
+    headerKeywords @(WCSAxis DepthN) a.depth
+      <> headerKeywords @(WCSAxis SlitXN) a.slitX
+      <> headerKeywords @(WCSAxis DummyYN) a.dummyY
 
 
-wcsAxes :: (MonadThrow m) => Header -> m (DataAxes WCSAxis)
-wcsAxes h = do
+wcsAxes :: (MonadThrow m) => Sz Ix2 -> Header -> m (DataAxes WCSAxis)
+wcsAxes sz h = do
   dummyY <- wcsDummyY h
-  slitX <- wcsSlitX h
+  slitX <- wcsSlitX sz h
   depth <- wcsDepth
   pure $ DataAxes{..}
 
 
-requireWCS :: forall n m. (KnownNat n) => (MonadThrow m) => Header -> m (WCSAxisKeywords n)
-requireWCS l1 = do
+requireWCS :: (MonadThrow m) => Int -> Header -> m (WCSAxisKeywords n)
+requireWCS n l1 = do
   crpix <- Key <$> requireL1 (keyN "CRPIX") toFloat l1
   crval <- Key <$> requireL1 (keyN "CRVAL") toFloat l1
   cdelt <- Key <$> requireL1 (keyN "CDELT") toFloat l1
@@ -197,23 +204,52 @@ requireWCS l1 = do
   ctype <- Key <$> requireL1 (keyN "CTYPE") toText l1
   pure $ WCSAxisKeywords{cunit, ctype, crpix, crval, cdelt}
  where
-  keyN k = k <> pack (show (natVal @n Proxy))
+  keyN k = k <> pack (show n)
+
+
+requirePCs :: (MonadThrow m) => Int -> Header -> m (DataAxes (PC n))
+requirePCs n l1 = do
+  dummyY <- PC <$> requireL1 (pcN n 3) toFloat l1
+  slitX <- PC <$> requireL1 (pcN n 1) toFloat l1
+  pure $ DataAxes{dummyY, slitX, depth = PC 0}
+ where
+  pcN :: Int -> Int -> Text
+  pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j)
 
 
 wcsDummyY :: (MonadThrow m) => Header -> m (WCSAxis DummyYN)
 wcsDummyY l1 = do
-  keys <- requireWCS @DummyYN l1
-  let pc = DataAxes{dummyY = PC 999, slitX = PC 999, depth = PC 0}
-  pure $ WCSAxis{keys, pc}
+  keys <- requireWCS 3 l1
+  pcs <- requirePCs 3 l1
+  pure $ WCSAxis{keys, pcs}
 
 
--- DOING: Scale CRPIX and CDELT
 -- TODO: Copy PCs
-wcsSlitX :: (MonadThrow m) => Header -> m (WCSAxis SlitXN)
-wcsSlitX l1 = do
-  keys <- requireWCS @SlitXN l1
-  let pc = DataAxes{dummyY = PC 999, slitX = PC 999, depth = PC 0}
-  pure $ WCSAxis{keys, pc}
+wcsSlitX :: forall m. (MonadThrow m) => Sz Ix2 -> Header -> m (WCSAxis SlitXN)
+wcsSlitX sz l1 = do
+  scaleUp <- upFactor sz
+
+  keys <- requireWCS 1 l1
+  pcs <- requirePCs 1 l1
+  traceM $ show (keys.crpix, keys.cdelt)
+  pure $ WCSAxis{keys = scale scaleUp keys, pcs}
+ where
+  upFactor :: Sz Ix2 -> m Float
+  upFactor (Sz (newx :. _)) = do
+    oldx <- requireL1 "ZNAXIS1" toInt l1
+    pure $ fromIntegral oldx / fromIntegral newx
+
+  scale up ax =
+    WCSAxisKeywords
+      { cunit = ax.cunit
+      , ctype = ax.ctype
+      , crval = ax.crval
+      , crpix = scaleCrPix ax.crpix
+      , cdelt = scaleCDelt ax.cdelt
+      }
+   where
+    scaleCrPix (Key cp) = Key $ (cp - 1) / up + 1
+    scaleCDelt (Key cd) = Key $ cd * up
 
 
 wcsDepth :: (MonadThrow m) => m (WCSAxis DepthN)
@@ -224,8 +260,8 @@ wcsDepth = do
       cunit = Key ""
       ctype = Key "TAU--LOG"
   let keys = WCSAxisKeywords{..}
-  let pc = DataAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
-  pure $ WCSAxis{keys, pc}
+  let pcs = DataAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
+  pure $ WCSAxis{keys, pcs}
 
 
 -- GENERATE ------------------------------------------------------------
