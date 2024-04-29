@@ -3,6 +3,7 @@
 module NSO.Fits.Generate.DataHDU where
 
 import Effectful
+import Effectful.Error.Static
 import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
@@ -152,8 +153,8 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: Header -> Quantities [SlitX, Depth] -> [ImageHDU]
-quantitiesHDUs l1 q = runPureEff . execWriter $ do
+quantitiesHDUs :: (Error FitsGenError :> es) => Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
+quantitiesHDUs l1 q = execWriter $ do
   opticalDepth
   temperature
   electronPressure
@@ -181,33 +182,35 @@ quantitiesHDUs l1 q = runPureEff . execWriter $ do
 
 dataHDU
   :: forall info es
-   . (HeaderKeywords info, Writer [ImageHDU] :> es)
+   . (HeaderKeywords info, Writer [ImageHDU] :> es, Error FitsGenError :> es)
   => Header
   -> info
   -> Results Frame
   -> Eff es ()
 dataHDU l1 info res = do
-  let dat = DataHDUHeader info common
-
-  wc <- wcsCommon l1
-  wa <- wcsAxes (size res.array) l1
-
-  let header = Header $ mainSection dat <> wcsSection wc wa
-      darr = encodeArray res.array
-  tell [ImageHDU{header, dataArray = addDummyAxis darr}]
+  let darr = encodeArray res.array
+  hd <- writeHeader header
+  tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
  where
-  -- mainKeywords = fmap Keyword . headerKeywords
-  mainSection dat =
-    sectionHeader "Data HDU" "Headers describing the physical quantity"
-      <> fmap Keyword (headerKeywords dat)
-      <> [Comment "Example Comment"]
+  header = do
+    let dat = DataHDUHeader info common
+    wc <- wcsCommon l1
+    wm <- wcsAxes @WCSMain (size res.array) l1
+    wa <- wcsAxes @A (size res.array) l1
 
-  wcsSection wc wa =
-    sectionHeader "WCS" "WCS Related Keywords" <> fmap Keyword (wcsKeywords wc wa)
+    mainSection dat
+    wcsSection wc wm wa
 
-  wcsKeywords wc wa =
-    headerKeywords @WCSCommon wc
-      <> headerKeywords @(DataAxes WCSAxis) wa
+  mainSection dat = do
+    sectionHeader "Data HDU" "Headers describing the physical quantity. This is a really long message and should break into multiple lines"
+    addKeywords $ headerKeywords dat
+    tell [Comment "Example Comment"]
+
+  wcsSection wc wm wa = do
+    sectionHeader "WCS" "WCS Related Keywords"
+    addKeywords $ headerKeywords wc
+    addKeywords $ headerKeywords wm
+    addKeywords $ headerKeywords wa
 
   common = DataHDUCommon BZero BScale
 

@@ -5,6 +5,8 @@ module NSO.Fits.Generate where
 import Control.Monad.Catch (Exception, MonadThrow, throwM)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array
+import Effectful
+import Effectful.Error.Static
 import NSO.Fits.Generate.DataHDU (quantitiesHDUs)
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
@@ -17,8 +19,8 @@ import Telescope.Fits
 import Telescope.Fits.Types (HeaderRecord (..))
 
 
--- WARNING: VerifyWarning: Found a SIMPLE card but its format doesn't respect the FITS Standard [astropy.io.fits.hdu.hdulist]
--- TODO: WCS (CRPIX, CRVAL, CUNIT, CTYPE, etc)
+-- DONE: VerifyWarning: Found a SIMPLE card but its format doesn't respect the FITS Standard [astropy.io.fits.hdu.hdulist]
+-- DONE: WCS (CRPIX, CRVAL, CUNIT, CTYPE, etc)
 
 ------------------------------------------------------------------------------
 
@@ -58,12 +60,11 @@ test = do
   -- print dat.bitpix
   -- print $ BS.length dat.rawData
   --
-  fits <- quantitiesFits (Id "inv.TEST0") i1 f
+  fits <- runGenTestIO $ quantitiesFits (Id "inv.TEST0") i1 f
   print $ length fits.extensions
   let (Image e : _) = fits.extensions
   print $ e.header
 
-  --
   -- let (Image i : _) = fits.extensions
   -- -- print $ BS.length i.dataArray.rawData
   --
@@ -85,23 +86,37 @@ readLevel1 fp = do
 
 
 -- TODO: add primary HDU somewhere ...
-quantitiesFits :: (MonadThrow m) => Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> m Fits
+quantitiesFits :: (Error FitsGenError :> es) => Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> Eff es Fits
 quantitiesFits i l1 q = do
   prim <- primaryHDU i l1
-  pure $ Fits prim $ fmap Image $ quantitiesHDUs l1.header q
+  imgs <- quantitiesHDUs l1.header q
+  pure $ Fits prim $ fmap Image imgs
 
 
 -- What is supposed to go in here?
-primaryHDU :: (MonadThrow m) => Id Inversion -> BinTableHDU -> m PrimaryHDU
+primaryHDU :: (Error FitsGenError :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHDU
 primaryHDU di l1 = do
-  ph <- primaryHeader l1.header di
-  th <- telescopeHeader l1.header
-  pure $ PrimaryHDU (Header (primKeys ph <> teleKeys th)) emptyDataArray
+  hs <- writeHeader allKeys
+  pure $ PrimaryHDU (Header hs) emptyDataArray
  where
-  primKeys = section @PrimaryHeader "Primary Info" "Primary info goes here"
-  teleKeys = section @TelescopeHeader "Telescope" "Keys describing the pointing and op of the Telescope"
+  allKeys = do
+    ph <- primaryHeader l1.header di
+    th <- telescopeHeader l1.header
+    primKeys ph
+    teleKeys th
+
+  primKeys ph = do
+    sectionHeader "Primary Info" "Primary info goes here"
+    addKeywords $ headerKeywords @PrimaryHeader ph
+
+  teleKeys th = do
+    sectionHeader "Telescope" "Keys describing the pointing and op of the Telescope"
+    addKeywords $ headerKeywords @TelescopeHeader th
 
 
-data FitsGenError
-  = MissingL1 String
-  deriving (Show, Exception)
+runGenTestIO :: Eff '[Error FitsGenError, IOE] a -> IO a
+runGenTestIO eff = do
+  res <- runEff $ runErrorNoCallStack eff
+  case res of
+    Left e -> throwM e
+    Right a -> pure a

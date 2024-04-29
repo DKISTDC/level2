@@ -102,17 +102,6 @@ instance KeywordInfo Object where
   keyValue (Object s) = String s
 
 
-data PC (i :: Nat) (j :: Nat) = PC Float
-instance (KnownNat i, KnownNat j) => KeywordInfo (PC i j) where
-  keyword = "PC" <> showN @i Proxy <> "_" <> showN @j Proxy
-   where
-    showN :: forall n. (KnownNat n) => Proxy n -> Text
-    showN p = pack (show $ natVal p)
-  keytype = "PCi_j"
-  description = "Linear transformation matrix used with the Helioprojective coordinate system"
-  keyValue (PC n) = Float n
-
-
 -- Key Types ---------------------------------------------------------
 
 newtype MB = MB Float deriving (Generic)
@@ -200,3 +189,14 @@ instance KnownValue Km where
   knownValue = String $ pack $ show Km
 instance KnownValue Kg_m3 where
   knownValue = String $ pack $ show Kg_m3
+
+
+data WCSAlt
+  = WCSMain
+  | A
+
+
+instance KnownValue WCSMain where
+  knownValueText = ""
+instance KnownValue A where
+  knownValueText = "A"

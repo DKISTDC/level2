@@ -180,6 +180,13 @@ instance (Datatype d) => GTypeName (D1 d f) where
 
 class KnownValue a where
   knownValue :: Value
+  default knownValue :: Value
+  knownValue = String (knownValueText @a)
+
+
+  knownValueText :: Text
+  default knownValueText :: Text
+  knownValueText = ""
 
 
 instance KnownValue True where
