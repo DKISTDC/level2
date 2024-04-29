@@ -265,6 +265,11 @@ wcsDepth = do
 
 
 -- GENERATE ------------------------------------------------------------
+--
+
+add :: Int -> Int -> Int
+add a b = a + b
+
 
 primaryHeader :: (MonadThrow m) => Header -> Id Inversion -> m PrimaryHeader
 primaryHeader l1 i = do

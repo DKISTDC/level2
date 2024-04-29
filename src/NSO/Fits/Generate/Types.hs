@@ -41,7 +41,7 @@ instance (KnownValue unit) => KeywordInfo (BUnit unit) where
   keytype = "Unit"
   allowed = [keyValue @(BUnit unit) BUnit]
   description = "The unit of the values in the data array"
-  keyValue _ = String (pack $ knownValue @unit)
+  keyValue _ = knownValue @unit
 
 
 data Key ktype (description :: Symbol) = Key ktype
@@ -134,7 +134,7 @@ instance KeyType Degrees where
 
 data Constant c = Constant deriving (Generic)
 instance (KnownValue c) => KeyType (Constant c) where
-  typeValue _ = String (pack $ knownValue @c)
+  typeValue _ = knownValue @c
 
 
 data DateTime = DateTime Text deriving (Generic)
@@ -185,18 +185,18 @@ instance Show Unit where
 
 
 instance KnownValue N_m2 where
-  knownValue = show N_m2
+  knownValue = String $ pack $ show N_m2
 instance KnownValue Km_s where
-  knownValue = show Km_s
+  knownValue = String $ pack $ show Km_s
 instance KnownValue Dimensionless where
-  knownValue = show Dimensionless
+  knownValue = String $ pack $ show Dimensionless
 instance KnownValue Kelvin where
-  knownValue = show Kelvin
+  knownValue = String $ pack $ show Kelvin
 instance KnownValue Tesla where
-  knownValue = show Tesla
+  knownValue = String $ pack $ show Tesla
 instance KnownValue Deg where
-  knownValue = show Deg
+  knownValue = String $ pack $ show Deg
 instance KnownValue Km where
-  knownValue = show Km
+  knownValue = String $ pack $ show Km
 instance KnownValue Kg_m3 where
-  knownValue = show Kg_m3
+  knownValue = String $ pack $ show Kg_m3

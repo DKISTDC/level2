@@ -3,7 +3,7 @@
 
 module NSO.Fits.Generate.Keywords where
 
-import Data.Fits (KeywordRecord (..), Value (..))
+import Data.Fits (KeywordRecord (..), LogicalConstant (..), Value (..))
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.Generics
@@ -179,16 +179,12 @@ instance (Datatype d) => GTypeName (D1 d f) where
 
 
 class KnownValue a where
-  knownValue :: String
+  knownValue :: Value
 
 
 instance KnownValue True where
-  knownValue = "T"
-instance KnownValue 1 where
-  knownValue = "1"
-instance KnownValue 2 where
-  knownValue = "2"
-instance KnownValue 3 where
-  knownValue = "3"
+  knownValue = Logic T
+instance (KnownNat n) => KnownValue (n :: Nat) where
+  knownValue = Integer $ fromIntegral $ natVal @n Proxy
 instance (KnownSymbol s) => KnownValue s where
-  knownValue = symbolVal @s Proxy
+  knownValue = String $ pack $ symbolVal @s Proxy

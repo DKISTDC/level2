@@ -42,12 +42,12 @@ test = do
   print $ f.opticalDepth.array !> 20
   print $ f.opticalDepth.array !> 40
 
-  let hdus = quantitiesHDUs i1.header f
-  let (od : _) = hdus
-
-  putStrLn "\nCHECK HDUS"
-  print od.header
-  print od.dataArray.axes
+  -- let hdus = quantitiesHDUs i1.header f
+  -- let (od : _) = hdus
+  --
+  -- putStrLn "\nCHECK HDUS"
+  -- print od.header
+  -- print od.dataArray.axes
 
   -- print $ size f.temperature.array
 
@@ -60,6 +60,8 @@ test = do
   --
   fits <- quantitiesFits (Id "inv.TEST0") i1 f
   print $ length fits.extensions
+  let (Image e : _) = fits.extensions
+  print $ e.header
 
   --
   -- let (Image i : _) = fits.extensions
