@@ -4,7 +4,7 @@
 module NSO.Fits.Generate.Headers where
 
 import Control.Monad.Catch (Exception)
-import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
+import Data.Fits (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
 import Data.List qualified as L
 import Data.Massiv.Array (Ix2 (..), Sz (..))
 import Data.Text (pack, unpack)
@@ -32,8 +32,6 @@ import Telescope.Fits.Types (HeaderRecord (..))
 -- DONE: Support optional lifted L1 headers
 -- DONE: WCS
 
--- DOING: Make sure that the data are valid.. Too sleepy today
-
 -- TODO: DSETID - the inversion id?
 -- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size
 -- TODO: HEADVERS - current version number for the spec
@@ -43,6 +41,7 @@ import Telescope.Fits.Types (HeaderRecord (..))
 -- TODO: PROV_URL - create a provenance URL page... public domain?
 -- TODO: CHECKSUM
 -- TODO: DATASUM
+-- TODO: TIMESYS - missing from L1 input?
 --
 --
 -- TODO: Add support for Doubles to fits-parse? Or just always assume double...
@@ -53,29 +52,57 @@ import Telescope.Fits.Types (HeaderRecord (..))
 --
 -- how hard would it be to make custom ones for each?
 
-data PrimaryHeader = PrimaryHeader
-  { telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
-  , origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
+data ObservationHeader = ObservationHeader
+  { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
   , telescope :: Key (Constant "Daniel K. Inouye Solar Telescope") "The telescope used to acquire the data associated with the header."
   , obsrvtry :: Key (Constant "Haleakala High Altitude Observatory Site") "A character string identifying the physical entity, located in a defined location, which provides the resources necessary for the installation of an instrument"
   , network :: Key (Constant "NSF-DKIST") "Organizational entity of a series of instruments with similar characteristics or goals that operates in some coordinated manner or produces data with some common purpose"
+  , instrume :: Instrument
   , object :: Object
-  , dsetid :: Key (Id Inversion) "Unique ID of the dataset to which the frame belongs"
+  , telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
+  , dateBeg :: Key DateTime "Start date and time of light exposure for the frame"
+  , dateEnd :: Key DateTime "End date and time of light exposure for the frame"
+  , dateAvg :: Key DateTime "Date/Time of the midpoint of the frame. (DATE-END - DATE_BEG) / 2"
+  , timesys :: Key (Constant "UTC") "Time scale of the time related keywords"
+  , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
+  }
+  deriving (Generic, HeaderDoc, HeaderKeywords)
+
+
+data Datacenter = Datacenter
+  { dsetid :: Key (Id Inversion) "Unique ID of the dataset to which the frame belongs"
+  , fileId :: Key Text "Unique ID of this FITS file"
   , framevol :: Key MB "Size of the frame on disk."
   , proctype :: Key (Constant "L2") "Controlled value list representing the degree of processing the frame has undergone since receipt at the DKIST data center."
-  , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
   , filename :: Key Text "Name of current file"
   , level :: Key (Constant 2) "The level of the current data"
   , headvers :: Key Text "Version of this spec used during processing"
   , headUrl :: Key Url "Link to documentation for the headers of this frame"
   , infoUrl :: Key Url "Link to documentation for this frame"
-  , fileId :: Key Text "Unique ID of this FITS file"
+  , dkistver :: Key Text "Version of the DKIST FITS Header format from the summit"
   , provUrl :: Key Url "Link to provenance for this file"
-  , dateBeg :: Key DateTime "Start date and time of light exposure for the frame"
-  , dateEnd :: Key DateTime "End date and time of light exposure for the frame"
-  , dateAvg :: Key DateTime "Date/Time of the midpoint of the frame. (DATE-END - DATE_BEG) / 2"
+  , obsprId :: Key Text "Unique ID dynamically generated at the time the ObservingProgram was submitted for execution. This unique ID shall contain the ObservingProgramID (16 characters) as base ID, a subsequent period (‘.’), and a unique suffix containing of up to 17 characters, for a total of up to 34 characters"
+  , experId :: Key Text "Unique ID of the experiment associated with the generation of these data"
+  , propId :: Key Text "Unique ID of the proposal associated with the experiment associated with the generation of these data"
+  , dspId :: Key Text "Unique ID of the DataSetParameters used to configure the InstrumentProgram associated with these data"
+  , ipId :: Key Text "Unique ID dynamically generated at he time the InstrumentProgram was submitted for execution. This unique ID shall contain the InstrumentProgramID (16 characters) as base ID, a subsequent period (‘.’), and a unique suffix containing of up to 17 characters, for a total of up to 34 characters"
+  , hlsvers :: Key Text "Version of HLS (DKIST summit) software that produced the L0 observe frames from which this frame was produced"
+  , npropos :: Key Int "Number of proposals that contributed to the input data used to make this output. Must be > 0"
+  , nexpers :: Key Int "Number of experiments that contributed to the input data used to make this output. Must be > 0"
   }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
+  deriving (Generic, HeaderKeywords)
+
+
+data ContribExpProp = ContribExpProp [KeywordRecord]
+instance HeaderKeywords ContribExpProp where
+  headerKeywords (ContribExpProp krs) = filter (isProp `or_` isExpr) krs
+   where
+    or_ f g a = f a || g a
+    isProp kr = "PROPID" `T.isPrefixOf` kr._keyword
+    isExpr kr = "EXPRID" `T.isPrefixOf` kr._keyword
+instance HeaderDoc ContribExpProp where
+  -- TODO: manually add PROPID<rr>, and EXPRID<ee>
+  headerDoc = []
 
 
 -- TELESCOPE --------------------------------------------------------------------------
@@ -98,6 +125,22 @@ data TelescopeHeader = TelescopeHeader
   deriving (Generic, HeaderKeywords)
 
 
+data DKISTHeader = DKISTHeader
+  { ocsCtrl :: EnumKey "auto/manual" "Control mode the telescope was operated in: ‘Auto’: Data were acquired as part of a regular, automatic execution of an Observing Program ‘Manual’: Data were acquired executing either a part of an or a complete Observing Program manually"
+  , fidoCfg :: Key Text "The DKIST FIDO configuration in the following format: [M9aStatus,CL2,CL2a,CL3,CL3a,CL4]"
+  , dshealth :: EnumKey "good/bad/ill/unknown" "Worst health status of the data source (e.g. instrument arm) during data acquisition Good, Ill, Bad, Unknown"
+  , lightlvl :: Key Float "Value of the telescope light level at start of data acquisition"
+  }
+  deriving (Generic, HeaderKeywords)
+
+
+data AdaptiveOptics = AdaptiveOptics
+  { atmosR0 :: Key Float "Value of Fried’s parameter at start of data acquisition"
+  , aoLock :: Key Bool "Lock status of HOAO during data acquisition. False: HOAO was unlocked for some duration of data acquisition True: HOAO was locked for the complete duration of data acquisition"
+  }
+  deriving (Generic, HeaderKeywords)
+
+
 data Teltrack = Teltrack Text deriving (Generic)
 instance KeywordInfo Teltrack where
   keytype = "Teltrack"
@@ -109,7 +152,7 @@ instance KeywordInfo Teltrack where
 data Telscan = Telscan Text deriving (Generic)
 instance KeywordInfo Telscan where
   keytype = "Telscan"
-  description = "Scanning Mode of the Telescope."
+  description = "Scanning Mode of the Telescope"
   allowed = fmap String ["None", "Random", "Raster", "Spiral"]
   keyValue (Telscan s) = String s
 
@@ -295,27 +338,49 @@ add :: Int -> Int -> Int
 add a b = a + b
 
 
-primaryHeader :: (Error FitsGenError :> es) => Header -> Id Inversion -> Eff es PrimaryHeader
-primaryHeader l1 i = do
-  -- can I avoid typing these keys in twice?
+observationHeader :: (Error FitsGenError :> es) => Header -> Eff es ObservationHeader
+observationHeader l1 = do
   dateBeg <- requireL1 "DATE-BEG" toDate l1
   dateEnd <- requireL1 "DATE-END" toDate l1
   dateAvg <- requireL1 "DATE-AVG" toDate l1
   telapse <- requireL1 "TELAPSE" toFloat l1
   object <- requireL1 "OBJECT" toText l1
-  -- teltrack <- requireL1 "TELTRACK" toText l1
+  instrument <- requireL1 "INSTRUME" toText l1
 
   pure $
-    PrimaryHeader
+    ObservationHeader
       { telapse = Key (Seconds telapse)
+      , instrume = Instrument instrument
+      , timesys = Key Constant
       , telescope = Key Constant
       , obsrvtry = Key Constant
       , network = Key Constant
       , object = Object object
-      , dsetid = Key i
+      , solarnet = Key Constant
+      , origin = Key Constant
+      , dateBeg = Key dateBeg
+      , dateEnd = Key dateEnd
+      , dateAvg = Key dateAvg
+      }
+
+
+datacenterHeader :: (Error FitsGenError :> es) => Header -> Id Inversion -> Eff es Datacenter
+datacenterHeader l1 i = do
+  dateBeg <- requireL1 "DATE-BEG" toDate l1
+  dkistver <- requireL1 "DKISTVER" toText l1
+  obsprId <- Key <$> requireL1 "OBSPR_ID" toText l1
+  experId <- Key <$> requireL1 "EXPER_ID" toText l1
+  propId <- Key <$> requireL1 "PROP_ID" toText l1
+  dspId <- Key <$> requireL1 "DSP_ID" toText l1
+  ipId <- Key <$> requireL1 "IP_ID" toText l1
+  hlsvers <- Key <$> requireL1 "HLSVERS" toText l1
+  npropos <- Key <$> requireL1 "NPROPOS" toInt l1
+  nexpers <- Key <$> requireL1 "NEXPERS" toInt l1
+  pure $
+    Datacenter
+      { dsetid = Key i
       , framevol = Key $ MB 123
       , proctype = Key Constant
-      , solarnet = Key Constant
       , filename = Key $ frameFilename dateBeg i
       , level = Key Constant
       , headvers = Key "TODO"
@@ -323,11 +388,51 @@ primaryHeader l1 i = do
       , infoUrl = Key (Url "https://TODO")
       , fileId = Key "TODO"
       , provUrl = Key (Url "https://TODO")
-      , origin = Key Constant
-      , dateBeg = Key dateBeg
-      , dateEnd = Key dateEnd
-      , dateAvg = Key dateAvg
+      , dkistver = Key dkistver
+      , obsprId
+      , experId
+      , propId
+      , dspId
+      , ipId
+      , hlsvers
+      , npropos
+      , nexpers
       }
+
+
+contribExpProp :: (Error FitsGenError :> es) => Header -> Eff es ContribExpProp
+contribExpProp l1 = do
+  pure $ ContribExpProp (getKeywords l1)
+
+
+dkistHeader :: (Error FitsGenError :> es) => Header -> Eff es DKISTHeader
+dkistHeader l1 = do
+  ocsCtrl <- EnumKey <$> requireL1 "OCS_CTRL" toText l1
+  fidoCfg <- Key <$> requireL1 "FIDO_CFG" toText l1
+  dshealth <- EnumKey <$> requireL1 "DSHEALTH" toText l1
+  lightlvl <- Key <$> requireL1 "LIGHTLVL" toFloat l1
+  pure $
+    DKISTHeader
+      { ocsCtrl
+      , fidoCfg
+      , dshealth
+      , lightlvl
+      }
+
+
+adaptiveOpticsHeader :: (Error FitsGenError :> es) => Header -> Eff es AdaptiveOptics
+adaptiveOpticsHeader l1 = do
+  atmosR0 <- Key <$> requireL1 "ATMOS_R0" toFloat l1
+  aoLock <- Key <$> requireL1 "AO_LOCK" toBool l1
+  pure $
+    AdaptiveOptics
+      { atmosR0
+      , aoLock
+      }
+ where
+  toBool (Logic T) = Just True
+  toBool (Logic F) = Just False
+  toBool _ = Nothing
 
 
 -- TODO: this belongs in the data, not the primary!

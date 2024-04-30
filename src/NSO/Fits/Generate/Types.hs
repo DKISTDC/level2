@@ -1,6 +1,7 @@
 module NSO.Fits.Generate.Types where
 
 import Data.Text (pack)
+import Data.Text qualified as T
 import GHC.TypeLits
 import NSO.Fits.Generate.Keywords
 import NSO.Prelude
@@ -100,6 +101,30 @@ instance KeywordInfo Object where
   description = "The value field shall contain a character string giving a name for the observed object. Applicable standard values are TBD"
   allowed = fmap String ["unknown", "quietsun", "sunspot", "pore", "plages", "spicules", "filament", "prominence", "coronalhole", "quietcorona", "activecorona"]
   keyValue (Object s) = String s
+
+
+data Instrument = Instrument Text deriving (Generic)
+instance KeywordInfo Instrument where
+  keytype = "Instrument"
+  description = "The instrument used to acquire the data associated with the header"
+  allowed = fmap String ["VBI", "VISP", "VTF", "DL-NIRSP", "CRYO-NIRSP", "WFC"]
+  keyValue (Instrument s) = String s
+
+
+data OCSCtrl = OCSCtrl Text deriving (Generic)
+instance KeywordInfo OCSCtrl where
+  keytype = "OCSCtrl"
+  description = "Control mode the telescope was operated in: ‘Auto’: Data were acquired as part of a regular, automatic execution of an Observing Program ‘Manual’: Data were acquired executing either a part of an or a complete Observing Program manually"
+  allowed = fmap String ["auto", "manual"]
+  keyValue (OCSCtrl s) = String s
+
+
+data EnumKey (ss :: Symbol) (desc :: Symbol) = EnumKey Text deriving (Generic)
+instance (KnownSymbol desc, KnownSymbol ss) => KeywordInfo (EnumKey ss desc) where
+  keytype = "Enum"
+  description = pack $ symbolVal @desc Proxy
+  allowed = fmap String $ T.splitOn "/" $ pack $ symbolVal @ss Proxy
+  keyValue (EnumKey s) = String s
 
 
 -- Key Types ---------------------------------------------------------

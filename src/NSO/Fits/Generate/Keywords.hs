@@ -8,7 +8,7 @@ import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.Generics
 import GHC.TypeLits
-import Text.Casing (fromHumps, toKebab)
+import Text.Casing (fromHumps, toSnake)
 
 -- import NSO.Fits.Generate.Types
 import NSO.Prelude
@@ -75,7 +75,7 @@ instance {-# OVERLAPPING #-} (KeywordInfo a) => GenHeaderKeywords (K1 r (Maybe a
 
 
 cleanKeyword :: String -> Text
-cleanKeyword = T.toUpper . pack . toKebab . fromHumps
+cleanKeyword = T.toUpper . pack . toSnake . fromHumps
 
 
 -- class KeyValue a where
@@ -158,6 +158,11 @@ instance KeyType Int where
   typeName = "Int"
   typeComment = ""
   typeValue = Integer
+instance KeyType Bool where
+  typeName = "Bool"
+  typeComment = ""
+  typeValue True = Logic T
+  typeValue False = Logic F
 instance KeyType Float where
   -- TODO: change to Double. Don't support Float
   typeName = "Float"

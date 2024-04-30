@@ -2,6 +2,8 @@
 
 module NSO.Fits.Generate.DataHDU where
 
+import Data.Text (pack)
+import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Writer.Static.Local
@@ -149,12 +151,13 @@ instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
 data DataHDUCommon = DataHDUCommon
   { bzero :: BZero
   , bscale :: BScale
+  , date :: Key DateTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: (Error FitsGenError :> es) => Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
-quantitiesHDUs l1 q = execWriter $ do
+quantitiesHDUs :: (Error FitsGenError :> es) => UTCTime -> Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
+quantitiesHDUs now l1 q = execWriter $ do
   opticalDepth
   temperature
   electronPressure
@@ -167,33 +170,35 @@ quantitiesHDUs l1 q = execWriter $ do
   gasPressure
   density
  where
-  opticalDepth = dataHDU @OpticalDepth l1 DataHDUInfo q.opticalDepth
-  temperature = dataHDU @Temperature l1 DataHDUInfo q.temperature
-  electronPressure = dataHDU @ElectronPressure l1 DataHDUInfo q.electronPressure
-  microTurbulence = dataHDU @Microturbulence l1 DataHDUInfo q.microTurbulence
-  magStrength = dataHDU @MagStrength l1 DataHDUInfo q.magStrength
-  velocity = dataHDU @Velocity l1 DataHDUInfo q.velocity
-  magInclination = dataHDU @MagInclination l1 DataHDUInfo q.magInclination
-  magAzimuth = dataHDU @MagAzimuth l1 DataHDUInfo q.magAzimuth
-  geoHeight = dataHDU @GeoHeight l1 DataHDUInfo q.geoHeight
-  gasPressure = dataHDU @GasPressure l1 DataHDUInfo q.gasPressure
-  density = dataHDU @Density l1 DataHDUInfo q.density
+  opticalDepth = dataHDU @OpticalDepth now l1 DataHDUInfo q.opticalDepth
+  temperature = dataHDU @Temperature now l1 DataHDUInfo q.temperature
+  electronPressure = dataHDU @ElectronPressure now l1 DataHDUInfo q.electronPressure
+  microTurbulence = dataHDU @Microturbulence now l1 DataHDUInfo q.microTurbulence
+  magStrength = dataHDU @MagStrength now l1 DataHDUInfo q.magStrength
+  velocity = dataHDU @Velocity now l1 DataHDUInfo q.velocity
+  magInclination = dataHDU @MagInclination now l1 DataHDUInfo q.magInclination
+  magAzimuth = dataHDU @MagAzimuth now l1 DataHDUInfo q.magAzimuth
+  geoHeight = dataHDU @GeoHeight now l1 DataHDUInfo q.geoHeight
+  gasPressure = dataHDU @GasPressure now l1 DataHDUInfo q.gasPressure
+  density = dataHDU @Density now l1 DataHDUInfo q.density
 
 
 dataHDU
   :: forall info es
    . (HeaderKeywords info, Writer [ImageHDU] :> es, Error FitsGenError :> es)
-  => Header
+  => UTCTime
+  -> Header
   -> info
   -> Results Frame
   -> Eff es ()
-dataHDU l1 info res = do
+dataHDU now l1 info res = do
   let darr = encodeArray res.array
   hd <- writeHeader header
   tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
  where
   header = do
-    let dat = DataHDUHeader info common
+    cm <- common
+    let dat = DataHDUHeader info cm
     wc <- wcsCommon l1
     wm <- wcsAxes @WCSMain (size res.array) l1
     wa <- wcsAxes @A (size res.array) l1
@@ -202,9 +207,9 @@ dataHDU l1 info res = do
     wcsSection wc wm wa
 
   mainSection dat = do
-    sectionHeader "Data HDU" "Headers describing the physical quantity. This is a really long message and should break into multiple lines"
+    sectionHeader "Data HDU" "Headers describing the physical quantity"
     addKeywords $ headerKeywords dat
-    tell [Comment "Example Comment"]
+  -- tell [Comment "Example Comment"]
 
   wcsSection wc wm wa = do
     sectionHeader "WCS" "WCS Related Keywords"
@@ -212,7 +217,9 @@ dataHDU l1 info res = do
     addKeywords $ headerKeywords wm
     addKeywords $ headerKeywords wa
 
-  common = DataHDUCommon BZero BScale
+  common = do
+    let dt = Key . DateTime . pack . iso8601Show $ now
+    pure $ DataHDUCommon BZero BScale dt
 
   addDummyAxis :: DataArray -> DataArray
   addDummyAxis DataArray{bitpix, axes, rawData} =
