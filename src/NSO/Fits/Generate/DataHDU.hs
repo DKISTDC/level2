@@ -2,6 +2,7 @@
 
 module NSO.Fits.Generate.DataHDU where
 
+import Data.Massiv.Vector qualified as MV
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
@@ -151,6 +152,8 @@ instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
 data DataHDUCommon = DataHDUCommon
   { bzero :: BZero
   , bscale :: BScale
+  , datamin :: Key Float "The minimum data value"
+  , datamax :: Key Float "The maximum data value"
   , date :: Key DateTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
   deriving (Generic, HeaderDoc, HeaderKeywords)
@@ -197,29 +200,42 @@ dataHDU now l1 info res = do
   tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
  where
   header = do
+    dataSection
+    wcsSection
+  -- statsSection
+
+  dataSection = do
     cm <- common
     let dat = DataHDUHeader info cm
+    sectionHeader "Data HDU" "Headers describing the physical quantity"
+    addKeywords $ headerKeywords dat
+
+  wcsSection = do
     wc <- wcsCommon l1
     wm <- wcsAxes @WCSMain (size res.array) l1
     wa <- wcsAxes @A (size res.array) l1
-
-    mainSection dat
-    wcsSection wc wm wa
-
-  mainSection dat = do
-    sectionHeader "Data HDU" "Headers describing the physical quantity"
-    addKeywords $ headerKeywords dat
-  -- tell [Comment "Example Comment"]
-
-  wcsSection wc wm wa = do
     sectionHeader "WCS" "WCS Related Keywords"
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
     addKeywords $ headerKeywords wa
 
+  -- statsSection = do
+  --   sectionHeader "Statistics" "Statistical information about the data array contained in this FITS file"
+  --   ss <- statsHeader res
+  --   addKeywords $ headerKeywords ss
+
   common = do
-    let dt = Key . DateTime . pack . iso8601Show $ now
-    pure $ DataHDUCommon BZero BScale dt
+    let date = Key . DateTime . pack . iso8601Show $ now
+        datamax = Key $ maximum res.array
+        datamin = Key $ minimum res.array
+    pure $
+      DataHDUCommon
+        { bzero = BZero
+        , bscale = BScale
+        , date
+        , datamax
+        , datamin
+        }
 
   addDummyAxis :: DataArray -> DataArray
   addDummyAxis DataArray{bitpix, axes, rawData} =

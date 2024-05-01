@@ -72,5 +72,4 @@ library
     , tagged
     , text
     , time
-    , web-view
   default-language: GHC2021

@@ -3,15 +3,18 @@
 
 module NSO.Fits.Generate.Headers where
 
+import App.Version (appVersion)
 import Control.Monad.Catch (Exception)
 import Data.Fits (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
 import Data.List qualified as L
 import Data.Massiv.Array (Ix2 (..), Sz (..))
 import Data.Text (pack, unpack)
 import Data.Text qualified as T
+import Data.UUID qualified as UUID
 import Debug.Trace
 import Effectful
 import Effectful.Error.Static
+import Effectful.GenRandom
 import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
@@ -25,32 +28,43 @@ import Telescope.Fits as Fits
 import Telescope.Fits.Types (HeaderRecord (..))
 
 
+headerSpecVersion :: Text
+headerSpecVersion = "L2." <> pack appVersion
+
+
 -- DONE: automatic type-based comments
 -- DONE: custom comments with custom newtype (cleaner)
 -- DONE: comments for bitpix, naxes and other auto-gen keywords.
 -- DONE: FILENAME - based on input filename
 -- DONE: Support optional lifted L1 headers
 -- DONE: WCS
+-- DONE: DSETID - the inversion id?
+-- DONE: TIMESYS - missing from L1 input?
 
--- TODO: DSETID - the inversion id?
+-- DONE: HEADVERS - current version number for the spec
+-- DONE: FILE_ID - UUID for this frame - where do I need to store this?
+-- DONE: HEAD_URL - create a url that links to this
+-- DONE: INFO_URL - what's the difference? Is there another documentation page? Does it have a different spec?
+-- NOPE: PROV_URL - create a provenance URL page
+
+-- DONE: DATAMIN
+-- DONE: DATAMAX
+-- LATER: DATAMEAN
+-- LATER: DATAMEDN
+-- LATER: DATARMS
+-- LATER: DATAKURT
+-- LATER: DATASKEW
+-- NOPE: DATAP<pp>
+
+-- TODO: CHECKSUM - telescope
+-- TODO: DATASUM - telescope
+-- TODO: PCOUNT - telescope
+-- TODO: GCOUNT - telescope
+-- TODO: Doubles vs Floats - fits-parse
+
 -- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size
--- TODO: HEADVERS - current version number for the spec
--- TODO: HEAD_URL - create a url that links to this
--- TODO: INFO_URL - what's the difference? Is there another documentation page? Does it have a different spec?
--- TODO: FILE_ID - UUID for this frame - where do I need to store this?
--- TODO: PROV_URL - create a provenance URL page... public domain?
--- TODO: CHECKSUM
--- TODO: DATASUM
--- TODO: TIMESYS - missing from L1 input?
---
---
--- TODO: Add support for Doubles to fits-parse? Or just always assume double...
 
--- COMMENTS -----------------------------
--- 1. Some units (ktype) need a comment. some don't
--- 2. Some field names need units. some don't
---
--- how hard would it be to make custom ones for each?
+-- LATER: CONTINUE - if a url is too long. Or make sure they aren't too long :)
 
 data ObservationHeader = ObservationHeader
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
@@ -80,8 +94,8 @@ data Datacenter = Datacenter
   , headUrl :: Key Url "Link to documentation for the headers of this frame"
   , infoUrl :: Key Url "Link to documentation for this frame"
   , dkistver :: Key Text "Version of the DKIST FITS Header format from the summit"
-  , provUrl :: Key Url "Link to provenance for this file"
-  , obsprId :: Key Text "Unique ID dynamically generated at the time the ObservingProgram was submitted for execution. This unique ID shall contain the ObservingProgramID (16 characters) as base ID, a subsequent period (‘.’), and a unique suffix containing of up to 17 characters, for a total of up to 34 characters"
+  , -- , provUrl :: Key Url "Link to provenance for this file"
+    obsprId :: Key Text "Unique ID dynamically generated at the time the ObservingProgram was submitted for execution. This unique ID shall contain the ObservingProgramID (16 characters) as base ID, a subsequent period (‘.’), and a unique suffix containing of up to 17 characters, for a total of up to 34 characters"
   , experId :: Key Text "Unique ID of the experiment associated with the generation of these data"
   , propId :: Key Text "Unique ID of the proposal associated with the experiment associated with the generation of these data"
   , dspId :: Key Text "Unique ID of the DataSetParameters used to configure the InstrumentProgram associated with these data"
@@ -105,8 +119,18 @@ instance HeaderDoc ContribExpProp where
   headerDoc = []
 
 
--- TELESCOPE --------------------------------------------------------------------------
---
+-- data StatisticsHeader = StatisticsHeader
+--   { datamin :: Key Float "The minimum data value"
+--   , datamax :: Key Float "The maximum data value"
+--   -- , datamean :: Key Float "The average data value"
+--   -- , datamedn :: Key Float "The median data value"
+--   -- , datarms :: Key Float "The RMS deviation from the mean"
+--   -- , datakurt :: Key Float "The kurtosis"
+--   -- , dataskew :: Key Float "The skewness"
+--   }
+--   deriving (Generic, HeaderDoc, HeaderKeywords)
+
+-- TelescopeHeader -------------------------------------------------
 
 data TelescopeHeader = TelescopeHeader
   { tazimuth :: Key Degrees "Raw Telescope azimuth angle"
@@ -332,11 +356,6 @@ wcsDepth = do
 
 
 -- GENERATE ------------------------------------------------------------
---
-
-add :: Int -> Int -> Int
-add a b = a + b
-
 
 observationHeader :: (Error FitsGenError :> es) => Header -> Eff es ObservationHeader
 observationHeader l1 = do
@@ -364,7 +383,7 @@ observationHeader l1 = do
       }
 
 
-datacenterHeader :: (Error FitsGenError :> es) => Header -> Id Inversion -> Eff es Datacenter
+datacenterHeader :: (Error FitsGenError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
   dateBeg <- requireL1 "DATE-BEG" toDate l1
   dkistver <- requireL1 "DKISTVER" toText l1
@@ -376,6 +395,7 @@ datacenterHeader l1 i = do
   hlsvers <- Key <$> requireL1 "HLSVERS" toText l1
   npropos <- Key <$> requireL1 "NPROPOS" toInt l1
   nexpers <- Key <$> requireL1 "NEXPERS" toInt l1
+  fileId <- Key . UUID.toText <$> randomValue
   pure $
     Datacenter
       { dsetid = Key i
@@ -383,11 +403,10 @@ datacenterHeader l1 i = do
       , proctype = Key Constant
       , filename = Key $ frameFilename dateBeg i
       , level = Key Constant
-      , headvers = Key "TODO"
-      , headUrl = Key (Url "https://TODO")
-      , infoUrl = Key (Url "https://TODO")
-      , fileId = Key "TODO"
-      , provUrl = Key (Url "https://TODO")
+      , headvers = Key headerSpecVersion
+      , headUrl = Key (Url $ "https://docs.dkist.nso.edu/projects/data-products/en/" <> headerSpecVersion)
+      , infoUrl = Key (Url "https://docs.dkist.nso.edu")
+      , fileId
       , dkistver = Key dkistver
       , obsprId
       , experId
@@ -435,7 +454,7 @@ adaptiveOpticsHeader l1 = do
   toBool _ = Nothing
 
 
--- TODO: this belongs in the data, not the primary!
+-- TODO: this belongs in the data, not the primary! ?? Why? Required?
 telescopeHeader :: (Error FitsGenError :> es) => Header -> Eff es TelescopeHeader
 telescopeHeader l1 = do
   tazimuth <- Key . Degrees <$> requireL1 "TAZIMUTH" toFloat l1
@@ -450,9 +469,19 @@ telescopeHeader l1 = do
   obsgeoZ <- Key . Meters <$> requireL1 "OBSGEO-Z" toFloat l1
   rotcomp <- fmap Key <$> lookupL1 "ROTCOMP" toInt l1
   obsVr <- Key . Mps <$> requireL1 "OBS_VR" toFloat l1
-
   pure $ TelescopeHeader{..}
 
+
+-- statsHeader :: Results Frame -> Eff es StatisticsHeader
+-- statsHeader res = do
+--   let datamin = Key (minimum res.array)
+--       datamax = Key (maximum res.array)
+--   -- datamean = Key (sum res.array / fromIntegral (M.elemsCount res.array))
+--   -- datamedn = Key 0
+--   -- datarms = Key 0
+--   -- datakurt = Key 0
+--   -- dataskew = Key 0
+--   pure $ StatisticsHeader{..}
 
 lookupL1 :: (Monad m) => Text -> (Value -> Maybe a) -> Header -> m (Maybe a)
 lookupL1 k fromValue h =

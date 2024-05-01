@@ -2,12 +2,12 @@
 
 module NSO.Fits.Generate where
 
-import Control.Monad.Catch (Exception, MonadThrow, throwM)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array
 import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
+import Effectful.GenRandom
 import NSO.Fits.Generate.DataHDU (quantitiesHDUs)
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
@@ -18,9 +18,6 @@ import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits
 
-
--- DONE: VerifyWarning: Found a SIMPLE card but its format doesn't respect the FITS Standard [astropy.io.fits.hdu.hdulist]
--- DONE: WCS (CRPIX, CRVAL, CUNIT, CTYPE, etc)
 
 ------------------------------------------------------------------------------
 
@@ -87,7 +84,7 @@ readLevel1 fp = do
 
 
 -- TODO: add primary HDU somewhere ...
-quantitiesFits :: (Error FitsGenError :> es) => UTCTime -> Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> Eff es Fits
+quantitiesFits :: (Error FitsGenError :> es, GenRandom :> es) => UTCTime -> Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> Eff es Fits
 quantitiesFits now i l1 q = do
   prim <- primaryHDU i l1
   imgs <- quantitiesHDUs now l1.header q
@@ -95,7 +92,7 @@ quantitiesFits now i l1 q = do
 
 
 -- What is supposed to go in here?
-primaryHDU :: (Error FitsGenError :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHDU
+primaryHDU :: (Error FitsGenError :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHDU
 primaryHDU di l1 = do
   hs <- writeHeader allKeys
   pure $ PrimaryHDU (Header hs) emptyDataArray
@@ -135,9 +132,9 @@ primaryHDU di l1 = do
     addKeywords $ headerKeywords @AdaptiveOptics ao
 
 
-runGenTestIO :: Eff '[Error FitsGenError, IOE] a -> IO a
+runGenTestIO :: Eff '[GenRandom, Error FitsGenError, IOE] a -> IO a
 runGenTestIO eff = do
-  res <- runEff $ runErrorNoCallStack eff
+  res <- runEff $ runErrorNoCallStack $ runGenRandom eff
   case res of
     Left e -> throwM e
     Right a -> pure a

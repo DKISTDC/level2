@@ -71,6 +71,7 @@ dependencies:
   - fits-parse
   - massiv
   - telescope
+  - uuid
   # - amqp-worker >= 2.0
 
 
