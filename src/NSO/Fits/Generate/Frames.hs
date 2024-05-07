@@ -5,17 +5,78 @@ module NSO.Fits.Generate.Frames where
 
 import Data.ByteString qualified as BS
 import Data.Kind
-import Data.Massiv.Array hiding (mapM, mapM_, transposeOuter)
+import Data.Massiv.Array as M hiding (mapM, mapM_, transposeOuter, zip)
+import NSO.Fits.Generate.Results
 import NSO.Fits.Generate.Types
 import NSO.Prelude
-import GHC.TypeLits (KnownNat, natVal)
+import NSO.Types.Wavelength (Wavelength)
 import Telescope.Fits as Fits
 
 
--- Quantiies To Fits -------------------------------------------------
+-- Profiles ---------------------------------------------------------------------------------------
 
-type Frame = [SlitX, Depth]
+data Original
+data Fit
 
+
+data ProfileFrame a = ProfileFrame
+  { wav630 :: Results [SlitX, Wavelength 630, Stokes]
+  , wav854 :: Results [SlitX, Wavelength 854, Stokes]
+  }
+
+
+decodeProfileFrames :: forall a m. (MonadThrow m) => BS.ByteString -> m [ProfileFrame a]
+decodeProfileFrames inp = do
+  f <- decode inp
+  pro <- mainProfile f
+  -- wvs <- wavs f
+  wis <- wavIds f
+  mapM (fmap (uncurry ProfileFrame) . splitWavelengths wis) $ profileFrames pro
+ where
+  mainProfile :: (MonadThrow m) => Fits -> m (Results [Stokes, Wavs, FrameY, SlitX])
+  mainProfile f = do
+    a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
+    pure $ Results a
+
+  -- wavs :: (MonadThrow m) => Fits -> m (Results '[Wavs])
+  -- wavs f = do
+  --   case f.extensions of
+  --     (Image h : _) -> do
+  --       Results <$> decodeArray @Ix1 h.dataArray
+  --     _ -> throwM $ MissingProfileExtensions "Wavelength Values"
+
+  wavIds :: (MonadThrow m) => Fits -> m (Results '[WavIds])
+  wavIds f = do
+    case f.extensions of
+      [_, Image h] -> do
+        Results <$> decodeArray @Ix1 h.dataArray
+      _ -> throwM $ MissingProfileExtensions "Wavelength Values"
+
+
+profileFrames :: Results [Stokes, Wavs, FrameY, SlitX] -> [Results [SlitX, Wavs, Stokes]]
+profileFrames = fmap swapProfileDimensions . splitFrames
+
+
+swapProfileDimensions :: Results [Stokes, Wavs, SlitX] -> Results [SlitX, Wavs, Stokes]
+swapProfileDimensions =
+  transposeMajor . transposeMinor3 . transposeMajor
+
+
+-- TODO: implement splitWavelengths...
+splitWavelengths :: (MonadThrow m) => Results '[WavIds] -> Results [a, Wavs, c] -> m (Results [a, Wavelength 630, c], Results [a, Wavelength 854, c])
+splitWavelengths wavIds res = do
+  wx <- indexBreak wavIds
+  splitM1 wx res
+ where
+  indexBreak wds =
+    case group (M.toList wds.array) of
+      (w1 : _) -> pure $ length w1
+      _ -> throwM InvalidWavelengthGroups
+
+
+-- trace (show wavIds) $ Results arr
+
+-- Quantities --------------------------------------------------------------------------------------
 
 data Quantities (as :: [Type]) = Quantities
   { opticalDepth :: Results as
@@ -32,155 +93,52 @@ data Quantities (as :: [Type]) = Quantities
   }
 
 
--- Parse Quantities ---------------------------------------------------------------------------------
-
-readQuantitiesFrames :: (MonadIO m, MonadThrow m) => FilePath -> m [Quantities Frame]
-readQuantitiesFrames fp = do
-  inp <- liftIO $ BS.readFile fp
-  res <- decodeResults inp
+decodeQuantitiesFrames :: (MonadIO m, MonadThrow m) => BS.ByteString -> m [Quantities [SlitX, Depth]]
+decodeQuantitiesFrames inp = do
+  res <- decodeInversionResults inp
   resultsQuantities res
 
 
-decodeResults :: (MonadThrow m) => BS.ByteString -> m (Results [Quantity, Depth, FrameY, SlitX])
-decodeResults inp = do
+decodeInversionResults :: (MonadThrow m) => BS.ByteString -> m (Results [Quantity, Depth, FrameY, SlitX])
+decodeInversionResults inp = do
   f <- decode inp
   a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
   pure $ Results a
 
 
-resultsQuantities :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Quantities Frame]
+resultsQuantities :: (MonadThrow m) => Results [Quantity, Depth, FrameY, SlitX] -> m [Quantities [SlitX, Depth]]
 resultsQuantities res = do
-  mapM splitQuantitiesM $ resultsByFrame res
+  mapM splitQuantitiesM $ splitFrames res
 
 
-resultsByFrame :: Results [Quantity, Depth, FrameY, SlitX] -> [Results [Quantity, Depth, SlitX]]
-resultsByFrame res =
-   fmap sliceFrame [0 .. numFrames res - 1]
- where
-  numFrames :: Results [Quantity, Depth, FrameY, SlitX] -> Int
-  numFrames (Results arr) =
-    let Sz (_ :> _ :> nf :. _) = size arr
-     in nf
-
-  sliceFrame :: Int -> Results [Quantity, Depth, SlitX]
-  sliceFrame n = sliceM2 n res
-
-
-splitQuantitiesM :: (MonadThrow m) => Results [Quantity, Depth, SlitX] -> m (Quantities Frame)
+splitQuantitiesM :: (MonadThrow m) => Results [Quantity, Depth, SlitX] -> m (Quantities [SlitX, Depth])
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwM $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: Results [Quantity, Depth, SlitX] -> Maybe (Quantities Frame)
+splitQuantities :: Results [Quantity, Depth, SlitX] -> Maybe (Quantities [SlitX, Depth])
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
   [opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density] <- pure qs
   pure Quantities{..}
 
 
--- Results ------------------------------------------------------------------------------
+-- Frames -----------------------------------------------------------------------
 
-newtype Results (as :: [Type]) = Results
-  { array :: Array D (ResultsIx as) Float
-  }
-
-
-instance (Index (ResultsIx as)) => Eq (Results as) where
-  Results arr == Results arr2 = arr == arr2
-
-
-instance (Ragged L (ResultsIx as) Float) => Show (Results as) where
-  show (Results a) = show a
-
-
-class IsResults (as :: [Type]) where
-  type ResultsIx as :: Type
-  outerLength :: Results as -> Int
-
-
-instance IsResults '[a] where
-  type ResultsIx '[a] = Ix1
-  outerLength (Results a) =
-    let Sz s = size a in s
-
-
-instance IsResults '[a, b] where
-  type ResultsIx '[a, b] = Ix2
-  outerLength (Results a) =
-    let Sz (s :. _) = size a in s
-
-
-instance IsResults '[a, b, c] where
-  type ResultsIx '[a, b, c] = Ix3
-  outerLength (Results a) =
-    let Sz (s :> _) = size a in s
-
-
-instance IsResults '[a, b, c, d] where
-  type ResultsIx '[a, b, c, d] = Ix4
-  outerLength (Results a) =
-    let Sz (s :> _) = size a in s
-
-
-outerList
-  :: forall a as
-   . (Lower (ResultsIx (a : as)) ~ ResultsIx as, Index (ResultsIx as), Index (ResultsIx (a : as)))
-  => Results (a : as)
-  -> [Results as]
-outerList (Results a) = foldOuterSlice row a
+-- | Splits any Data Cube into frames when it is the 3/4 dimension
+splitFrames :: forall a b d. Results [a, b, FrameY, d] -> [Results [a, b, d]]
+splitFrames res =
+  fmap sliceFrame [0 .. numFrames res - 1]
  where
-  row :: Array D (ResultsIx as) Float -> [Results as]
-  row r = [Results r]
+  numFrames :: Results [a, b, FrameY, d] -> Int
+  numFrames (Results arr) =
+    let Sz (_ :> _ :> nf :. _) = size arr
+     in nf
 
-
-transposeMajor
-  :: (ResultsIx (a : b : xs) ~ ResultsIx (b : a : xs), Index (Lower (ResultsIx (b : a : xs))), Index (ResultsIx (b : a : xs)))
-  => Results (a : b : xs)
-  -> Results (b : a : xs)
-transposeMajor (Results arr) = Results $ transposeInner arr
-
-
--- Slice the 
-sliceM0
-  :: (Lower (ResultsIx (a : xs)) ~ ResultsIx xs, Index (ResultsIx xs), Index (ResultsIx (a : xs)))
-  => Int
-  -> Results (a : xs)
-  -> Results xs
-sliceM0 a (Results arr) = Results (arr !> a)
-
-
--- Slice the 2nd major dimension
-sliceM1
-  :: forall a b xs
-  . ( Lower (ResultsIx (a : b : xs)) ~ ResultsIx (a : xs)
-     , Index (ResultsIx (a : xs))
-     , Index (ResultsIx (a : b : xs))
-     , KnownNat (Dimensions (ResultsIx (a : b : xs)))
-     )
-  => Int
-  -> Results (a : b : xs)
-  -> Results (a : xs)
-sliceM1 b (Results arr) =
-  let dims = fromIntegral $ natVal @(Dimensions (ResultsIx (a : b : xs))) Proxy
-  in Results $ arr <!> (Dim (dims - 1), b)
-
--- Slice the 3rd major dimension
-sliceM2
-  :: forall a b c xs
-  . ( Lower (ResultsIx (a : b : c : xs)) ~ ResultsIx (a : b : xs)
-     , Index (ResultsIx (a : b : xs))
-     , Index (ResultsIx (a : b : c : xs))
-     , KnownNat (Dimensions (ResultsIx (a : b : c : xs)))
-     )
-  => Int
-  -> Results (a : b : c : xs)
-  -> Results (a : b : xs)
-sliceM2 c (Results arr) =
-  let dims = fromIntegral $ natVal @(Dimensions (ResultsIx (a : b : c : xs))) Proxy
-  in Results $ arr <!> (Dim (dims - 2), c)
-
+  sliceFrame :: Int -> Results [a, b, d]
+  sliceFrame n = sliceM2 n res
 
 
 -- Errors ------------------------------------------
@@ -189,4 +147,6 @@ data GenerateError
   = InvalidFrameShape (Sz Ix3)
   | InvalidFits String
   | FrameOutOfBounds (Sz Ix4) Int
+  | MissingProfileExtensions String
+  | InvalidWavelengthGroups
   deriving (Show, Eq, Exception)

@@ -12,6 +12,7 @@ import NSO.Fits.Generate.DataHDU (quantitiesHDUs)
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
+import NSO.Fits.Generate.Results
 import NSO.Fits.Generate.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
@@ -19,10 +20,22 @@ import NSO.Types.Inversion (Inversion)
 import Telescope.Fits
 
 
+-- TODO: Profile HDUs
+--   TODO: Split wavelengths
+--   TODO: Convert all values to Doubles before applying the wavelength offset
+
 ------------------------------------------------------------------------------
 
 testInput :: FilePath
 testInput = "/Users/seanhess/Data/scan1807/inv_res_mod.fits"
+
+
+testOriginalProfile :: FilePath
+testOriginalProfile = "/Users/seanhess/Data/scan1807/per_ori.fits"
+
+
+testResultProfile :: FilePath
+testResultProfile = "/Users/seanhess/Data/scan1807/inv_res_pre.fits"
 
 
 level1Input :: FilePath
@@ -32,15 +45,29 @@ level1Input = "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_59_513
 test :: IO ()
 test = do
   putStrLn "TEST"
-  (f : _) <- readQuantitiesFrames testInput
+  (f : _) <- decodeQuantitiesFrames =<< BS.readFile testInput
   i1 <- readLevel1 level1Input
 
-  putStrLn "\nCHECK OPTICAL DEPTH"
-  print $ size f.opticalDepth.array
-  print $ f.opticalDepth.array !> 0
-  print $ f.opticalDepth.array !> 20
-  print $ f.opticalDepth.array !> 40
+  (po : _) <- decodeProfileFrames @Original =<< BS.readFile testOriginalProfile
+  print $ size po.wav630.array
+  print $ size po.wav854.array
 
+  (pf : _) <- decodeProfileFrames @Fit =<< BS.readFile testResultProfile
+  print $ size pf.wav630.array
+  print $ size pf.wav854.array
+
+  -- (frp : _) <- decodeProfileFrames =<< BS.readFile testResultProfile
+  -- print $ size frp.array
+  --
+  -- print $ size oriProfile.array
+  -- print $ size resProfile.array
+
+  -- putStrLn "\nCHECK OPTICAL DEPTH"
+  -- print $ size f.opticalDepth.array
+  -- print $ f.opticalDepth.array !> 0
+  -- print $ f.opticalDepth.array !> 20
+  -- print $ f.opticalDepth.array !> 40
+  --
   -- let hdus = quantitiesHDUs i1.header f
   -- let (od : _) = hdus
   --
@@ -58,10 +85,11 @@ test = do
   -- print $ BS.length dat.rawData
 
   now <- getCurrentTime
-  fits <- runGenTestIO $ quantitiesFits now (Id "inv.TEST0") i1 f
-  print $ length fits.extensions
-  let (Image e : _) = fits.extensions
-  print $ e.header
+  fits <- runGenTestIO $ quantitiesFits now (Id "inv.TEST0") i1 f po pf
+
+  -- print $ length fits.extensions
+  -- let (Image e : _) = fits.extensions
+  -- print $ e.header
 
   -- let (Image i : _) = fits.extensions
   -- -- print $ BS.length i.dataArray.rawData
@@ -83,9 +111,16 @@ readLevel1 fp = do
     _ -> throwM $ MissingL1HDU fp
 
 
--- TODO: add primary HDU somewhere ...
-quantitiesFits :: (Error FitsGenError :> es, GenRandom :> es) => UTCTime -> Id Inversion -> BinTableHDU -> Quantities [SlitX, Depth] -> Eff es Fits
-quantitiesFits now i l1 q = do
+quantitiesFits
+  :: (Error FitsGenError :> es, GenRandom :> es)
+  => UTCTime
+  -> Id Inversion
+  -> BinTableHDU
+  -> Quantities [SlitX, Depth]
+  -> ProfileFrame Original
+  -> ProfileFrame Fit
+  -> Eff es Fits
+quantitiesFits now i l1 q po pf = do
   prim <- primaryHDU i l1
   imgs <- quantitiesHDUs now l1.header q
   pure $ Fits prim $ fmap Image imgs

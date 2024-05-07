@@ -2,7 +2,6 @@
 
 module NSO.Fits.Generate.DataHDU where
 
-import Data.Massiv.Vector qualified as MV
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
@@ -14,10 +13,11 @@ import NSO.Fits.Generate.Doc as Doc
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
+import NSO.Fits.Generate.Results
 import NSO.Fits.Generate.Types
 import NSO.Prelude
 import Telescope.Fits
-import Telescope.Fits.Types (Axes (..), HeaderRecord (..))
+import Telescope.Fits.Types (Axes (..))
 
 
 type OpticalDepth =
@@ -192,7 +192,7 @@ dataHDU
   => UTCTime
   -> Header
   -> info
-  -> Results Frame
+  -> Results [SlitX, Depth]
   -> Eff es ()
 dataHDU now l1 info res = do
   let darr = encodeArray res.array

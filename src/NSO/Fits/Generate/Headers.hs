@@ -11,7 +11,6 @@ import Data.Massiv.Array (Ix2 (..), Sz (..))
 import Data.Text (pack, unpack)
 import Data.Text qualified as T
 import Data.UUID qualified as UUID
-import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
@@ -56,15 +55,20 @@ headerSpecVersion = "L2." <> pack appVersion
 -- LATER: DATASKEW
 -- NOPE: DATAP<pp>
 
--- TODO: CHECKSUM - telescope
--- TODO: DATASUM - telescope
--- TODO: PCOUNT - telescope
--- TODO: GCOUNT - telescope
+-- DONE: CHECKSUM - telescope
+-- DONE: DATASUM - telescope
+-- DONE: PCOUNT - telescope
+-- DONE: GCOUNT - telescope
 -- TODO: Doubles vs Floats - fits-parse
 
--- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size
+-- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size. Waiting on Profile HDUs, etc
 
 -- LATER: CONTINUE - if a url is too long. Or make sure they aren't too long :)
+--
+-- TODO: Cleanup
+--   TODO: telescope - change exports to avoid fits-parse
+--   TODO: pubmit PR for fits-parse
+--   TODO: put primary in a separate gen file from Generate and export as required
 
 data ObservationHeader = ObservationHeader
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
@@ -321,7 +325,6 @@ wcsSlitX sz l1 = do
 
   keys <- requireWCS @alt 1 l1
   pcs <- requirePCs @alt 1 l1
-  traceM $ show (keys.crpix, keys.cdelt)
   pure $ WCSAxis{keys = scale scaleUp keys, pcs}
  where
   upFactor :: Sz Ix2 -> Eff es Float
@@ -349,7 +352,6 @@ wcsDepth = do
       cdelt = Key 0.1
       cunit = Key ""
       ctype = Key "TAU--LOG"
-      alt = WCSMain
   let keys = WCSAxisKeywords{..}
   let pcs = DataAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
   pure $ WCSAxis{keys, pcs}
@@ -417,7 +419,10 @@ datacenterHeader l1 i = do
       , npropos
       , nexpers
       }
+ where
 
+
+-- frameVolume = dataSize + headerSize
 
 contribExpProp :: (Error FitsGenError :> es) => Header -> Eff es ContribExpProp
 contribExpProp l1 = do

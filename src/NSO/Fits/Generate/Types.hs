@@ -12,7 +12,9 @@ data Depth
 data SlitX
 data FrameY
 data Quantity
-data DummyY
+data Wavs -- The combined wavelength array
+data Stokes
+data WavIds
 
 
 -- Keywords ------------------------------------------------------------------

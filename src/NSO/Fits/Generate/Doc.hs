@@ -15,13 +15,13 @@ docKey :: forall a. (KeywordInfo a) => DocKey
 docKey = DocKey (keyword @a) (keytype @a) (allowedValues $ allowed @a) (description @a)
  where
   allowedValues [] = Nothing
-  allowedValues as = Just $ fmap (pack . value) as
+  allowedValues as = Just $ fmap (pack . val) as
   -- TODO: this isn't exactly correct. Render them truly?
 
-  value (String s) = show s
-  value (Float f) = show f
-  value (Integer i) = show i
-  value (Logic l) = show l
+  val (String s) = show s
+  val (Float f) = show f
+  val (Integer i) = show i
+  val (Logic l) = show l
 
 
 data DocKey = DocKey
