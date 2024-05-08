@@ -9,11 +9,11 @@ import Effectful.Error.Static
 import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
+import NSO.Fits.Generate.DimArray
 import NSO.Fits.Generate.Doc as Doc
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
-import NSO.Fits.Generate.Results
 import NSO.Fits.Generate.Types
 import NSO.Prelude
 import Telescope.Fits
@@ -192,7 +192,7 @@ dataHDU
   => UTCTime
   -> Header
   -> info
-  -> Results [SlitX, Depth]
+  -> DimArray [SlitX, Depth]
   -> Eff es ()
 dataHDU now l1 info res = do
   let darr = encodeArray res.array

@@ -1,5 +1,7 @@
 module NSO.Fits.Generate.Types where
 
+import Control.Exception (Exception)
+import Data.Massiv.Array (Ix3, Ix4, Sz (..))
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.TypeLits
@@ -227,3 +229,13 @@ instance KnownValue WCSMain where
   knownValueText = ""
 instance KnownValue A where
   knownValueText = "A"
+
+
+-- Error -------------------------------------------------------------
+data GenerateError
+  = InvalidFrameShape (Sz Ix3)
+  | InvalidFits String
+  | FrameOutOfBounds (Sz Ix4) Int
+  | MissingProfileExtensions String
+  | InvalidWavelengthGroups
+  deriving (Show, Eq, Exception)

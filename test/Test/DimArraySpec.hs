@@ -1,7 +1,7 @@
-module Test.FrameSpec where
+module Test.DimArraySpec where
 
 import Data.Massiv.Array as M
-import NSO.Fits.Generate.Frames
+import NSO.Fits.Generate.DimArray
 import NSO.Prelude
 import Test.Syd
 
@@ -13,7 +13,7 @@ data Depth
 
 spec :: Spec
 spec = do
-  describe "Frames" $ do
+  describe "DimArray" $ do
     describe "assumptions" $ do
       it "should have expected size" $ do
         M.size sampleRC.array `shouldBe` Sz (2 :. 3)
@@ -53,13 +53,13 @@ spec = do
         toLists (computeAs P (sliceM2 2 sampleDRC).array) `shouldBe` [[2.0, 3.0]]
 
 
-sampleRC :: Results [Row, Column]
-sampleRC = Results $ M.makeArray Seq (Sz (2 :. 3)) sumIndex
+sampleRC :: DimArray [Row, Column]
+sampleRC = DimArray $ M.makeArray Seq (Sz (2 :. 3)) sumIndex
  where
   sumIndex (r :. c) = fromIntegral r + fromIntegral c
 
 
-sampleDRC :: Results [Depth, Row, Column]
-sampleDRC = Results $ M.makeArray @D @Ix3 Seq (Sz (1 :> 2 :. 3)) sumIndex
+sampleDRC :: DimArray [Depth, Row, Column]
+sampleDRC = DimArray $ M.makeArray @D @Ix3 Seq (Sz (1 :> 2 :. 3)) sumIndex
  where
   sumIndex (d :> r :. c) = fromIntegral d + fromIntegral r + fromIntegral c

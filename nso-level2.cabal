@@ -59,11 +59,12 @@ library
       NSO.Error
       NSO.Fits.Generate
       NSO.Fits.Generate.DataHDU
+      NSO.Fits.Generate.DimArray
       NSO.Fits.Generate.Doc
       NSO.Fits.Generate.Frames
       NSO.Fits.Generate.Headers
       NSO.Fits.Generate.Keywords
-      NSO.Fits.Generate.Results
+      NSO.Fits.Generate.Profile
       NSO.Fits.Generate.Types
       NSO.Level2
       NSO.Metadata
@@ -185,7 +186,8 @@ test-suite tests
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.FrameSpec
+      Test.DimArraySpec
+      Test.FitsGenSpec
       Test.ParseSpec
       Test.QualifySpec
       Paths_nso_level2

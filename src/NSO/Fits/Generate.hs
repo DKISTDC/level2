@@ -9,20 +9,23 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Fits.Generate.DataHDU (quantitiesHDUs)
+import NSO.Fits.Generate.DimArray
 import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
-import NSO.Fits.Generate.Results
 import NSO.Fits.Generate.Types
+import NSO.Fits.Generate.Profile
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits
 
 
--- TODO: Profile HDUs
---   TODO: Split wavelengths
---   TODO: Convert all values to Doubles before applying the wavelength offset
+-- DOING: Profile HDUs
+--   DONE: Split wavelengths
+--   DOING: Design headers for profile HDUs
+--   TODO: Design headers for profile HDUs
+--   TODO: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
 
 ------------------------------------------------------------------------------
 
@@ -48,13 +51,19 @@ test = do
   (f : _) <- decodeQuantitiesFrames =<< BS.readFile testInput
   i1 <- readLevel1 level1Input
 
-  (po : _) <- decodeProfileFrames @Original =<< BS.readFile testOriginalProfile
+  pos <- decodeProfileFrames @Original =<< BS.readFile testOriginalProfile
+
+  (po : _) <- pure pos.frames
   print $ size po.wav630.array
   print $ size po.wav854.array
 
-  (pf : _) <- decodeProfileFrames @Fit =<< BS.readFile testResultProfile
+  -- we need to calculate the exact axis of the wavelengths...
+  pfs <- decodeProfileFrames @Fit =<< BS.readFile testResultProfile
+  (pf : _) <- pure pfs.frames
   print $ size pf.wav630.array
   print $ size pf.wav854.array
+
+  -- print ("EQUAL FRAMES", length fs, length pos, length pfs)
 
   -- (frp : _) <- decodeProfileFrames =<< BS.readFile testResultProfile
   -- print $ size frp.array
