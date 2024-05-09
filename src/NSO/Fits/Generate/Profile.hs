@@ -3,20 +3,74 @@ module NSO.Fits.Generate.Profile where
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array qualified as M
+import Effectful.Error.Static
 import NSO.Fits.Generate.DimArray
-import NSO.Fits.Generate.Frames (splitFrames)
-import NSO.Fits.Generate.Types
+import NSO.Fits.Generate.Headers
+import NSO.Fits.Generate.Headers.Keywords
+import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Types
+import NSO.Fits.Generate.Headers.WCS
+import NSO.Fits.Generate.Quantities (DataHDUInfo (..), addDummyAxis, dataSection, splitFrames)
 import NSO.Prelude
 import NSO.Types.Wavelength (Wavelength)
 import Telescope.Fits as Fits
 import Prelude (truncate)
 
 
--- Profiles ---------------------------------------------------------------------------------------
-
 data Original
 data Fit
 
+
+-- Generating Profiles -------------------------------------------------------------------------------
+
+type ProfileInfo ext = DataHDUInfo ext "spect.line.profile" Dimensionless
+
+
+type OrigProfile630 = ProfileInfo "Original Profile 630.2nm"
+type OrigProfile854 = ProfileInfo "Original Profile 854.2nm"
+type FitProfile630 = ProfileInfo "Fit Profile 630.2nm"
+type FitProfile854 = ProfileInfo "Fit Profile 854.2nm"
+
+
+profileHDUs :: (Error LiftL1Error :> es) => UTCTime -> WavProfile 630 -> WavProfile 854 -> ProfileFrame Original -> ProfileFrame Fit -> Eff es [ImageHDU]
+profileHDUs now wp630 wp854 po pf =
+  sequence [orig630, orig854, fit630, fit854]
+ where
+  orig630 = profileHDU @OrigProfile630 now DataHDUInfo wp630 po.wav630
+  orig854 = profileHDU @OrigProfile854 now DataHDUInfo wp854 po.wav854
+  fit630 = profileHDU @FitProfile630 now DataHDUInfo wp630 pf.wav630
+  fit854 = profileHDU @FitProfile854 now DataHDUInfo wp854 pf.wav854
+
+
+profileHDU
+  :: (HeaderKeywords info, Error LiftL1Error :> es)
+  => UTCTime
+  -> info
+  -> WavProfile w
+  -> DimArray [SlitX, Wavelength w, Stokes]
+  -> Eff es ImageHDU
+profileHDU now info wp da = do
+  let darr = encodeArray da.array
+  hd <- writeHeader header
+  pure ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
+ where
+  header = do
+    sectionHeader "Spectrl Profile" "Headers describing the spectral profile"
+    dataSection now info da
+
+    sectionHeader "WCS" "WCS Related Keywords"
+    wcsSection
+
+  wcsSection = do
+    wc <- wcsCommon l1
+    wm <- wcsAxes @WCSMain (size res.array) l1
+    wa <- wcsAxes @A (size res.array) l1
+    addKeywords $ headerKeywords wc
+    addKeywords $ headerKeywords wm
+    addKeywords $ headerKeywords wa
+
+
+-- Decoding Profiles ---------------------------------------------------------------------------------------
 
 data ProfileFrame a = ProfileFrame
   { wav630 :: DimArray [SlitX, Wavelength 630, Stokes]

@@ -1,11 +1,11 @@
-module NSO.Fits.Generate.Types where
+module NSO.Fits.Generate.Headers.Types where
 
 import Control.Exception (Exception)
 import Data.Massiv.Array (Ix3, Ix4, Sz (..))
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.TypeLits
-import NSO.Fits.Generate.Keywords
+import NSO.Fits.Generate.Headers.Keywords
 import NSO.Prelude
 import Telescope.Fits (Value (..))
 

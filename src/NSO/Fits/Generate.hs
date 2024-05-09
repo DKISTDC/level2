@@ -8,13 +8,12 @@ import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Fits.Generate.DataHDU (quantitiesHDUs)
+import NSO.Fits.Generate.Quantities (quantitiesHDUs)
 import NSO.Fits.Generate.DimArray
-import NSO.Fits.Generate.Frames
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Keywords
-import NSO.Fits.Generate.Types
 import NSO.Fits.Generate.Profile
+import NSO.Fits.Generate.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
@@ -42,7 +41,7 @@ testResultProfile = "/Users/seanhess/Data/scan1807/inv_res_pre.fits"
 
 
 level1Input :: FilePath
-level1Input = "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits"
+level1Input = "/Users/seanhess/Data/pid_1_118/BVJVO/VISP_2022_06_02T22_13_41_664_00630205_I_BVJVO_L1.fits"
 
 
 test :: IO ()
@@ -94,7 +93,7 @@ test = do
   -- print $ BS.length dat.rawData
 
   now <- getCurrentTime
-  fits <- runGenTestIO $ quantitiesFits now (Id "inv.TEST0") i1 f po pf
+  fits <- runGenTestIO $ generateL2Fits now (Id "inv.TEST0") i1 f po pf
 
   -- print $ length fits.extensions
   -- let (Image e : _) = fits.extensions
@@ -120,7 +119,7 @@ readLevel1 fp = do
     _ -> throwM $ MissingL1HDU fp
 
 
-quantitiesFits
+generateL2Fits
   :: (Error FitsGenError :> es, GenRandom :> es)
   => UTCTime
   -> Id Inversion
@@ -129,7 +128,7 @@ quantitiesFits
   -> ProfileFrame Original
   -> ProfileFrame Fit
   -> Eff es Fits
-quantitiesFits now i l1 q po pf = do
+generateL2Fits now i l1 q po pf = do
   prim <- primaryHDU i l1
   imgs <- quantitiesHDUs now l1.header q
   pure $ Fits prim $ fmap Image imgs

@@ -7,7 +7,6 @@ import App.Version (appVersion)
 import Control.Monad.Catch (Exception)
 import Data.Fits (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
 import Data.List qualified as L
-import Data.Massiv.Array (Ix2 (..), Sz (..))
 import Data.Text (pack, unpack)
 import Data.Text qualified as T
 import Data.UUID qualified as UUID
@@ -16,10 +15,10 @@ import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.Writer.Static.Local
 import GHC.Generics
-import GHC.TypeLits
-import NSO.Fits.Generate.Doc as Doc
-import NSO.Fits.Generate.Keywords
-import NSO.Fits.Generate.Types
+import NSO.Fits.Generate.Headers.Doc as Doc
+import NSO.Fits.Generate.Headers.Keywords
+import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
@@ -193,173 +192,9 @@ instance KeywordInfo Ttbltrck where
   keyValue (Ttbltrck s) = String s
 
 
--- WCS --------------------------------------------------------------
-
-data WCSCommon = WCSCommon
-  { wcsvalid :: Key (Constant True) "WCI data are correct"
-  , wcsname :: Key (Constant "Helioprojective Cartesian") "Helioprojective Cartesian"
-  , wcsaxes :: Key (Constant 3) "Number of axes in the Helioprojective Cartesian WCS description" -- MUST precede other WCS keywords
-  , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
-  , wcsnamea :: Key (Constant "Equatorial equinox J2000") "Equatorial equinox J2000"
-  , wcsaxesa :: Key (Constant 3) "Number of axes in the Equatorial equinox J2000 WCS description" -- MUST precede other WCS keywords
-  , lonpolea :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
-  }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
-
-
-data WCSAxisKeywords (alt :: WCSAlt) (n :: Nat) = WCSAxisKeywords
-  { ctype :: Key Text "A string value labeling axis n of the Helioprojective Coordinate system."
-  , cunit :: Key Text "The unit of the value contained in CDELTn"
-  , crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n of the Helioprojective coordinate system, in units of the axis index. This value is based upon a counter that runs from 1 to NAXISn with an increment of 1 per pixel. The reference point value need not be that for the center of a pixel nor lie within the actual data array. Use comments to indicate the location of the index point relative to the pixel. DKIST pointing data will be relative to the boresight of the telescope defined by the WFC Context Viewer that will center an image of the GOS pinhole on its detector using a 10 nm wavelength band centered on 525 nm. The same pinhole image will be used by all instruments as reference for determining the pointing of the instrument in relation to the WFC Context Viewer."
-  , crval :: Key Float "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn. DKIST values for this entry will be determined at the wavelength of the WFC Context Viewer, which covers a band of 10 nm centered on 525 nm. The value will not be corrected for differential refraction of Earth’s atmosphere."
-  , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n of the Helioprojective coordinate system. This value must not be zero."
-  }
-  deriving (Generic)
-instance (KnownNat n, KnownValue alt) => HeaderKeywords (WCSAxisKeywords alt n) where
-  headerKeywords =
-    fmap modKey . genHeaderKeywords . from
-   where
-    modKey KeywordRecord{_keyword, _value, _comment} = KeywordRecord{_keyword = addA $ addN _keyword, _value, _comment}
-    addN k = k <> pack (show (natVal @n Proxy))
-    addA k = k <> knownValueText @alt
-
-
-data WCSAxis (alt :: WCSAlt) (n :: Nat) = WCSAxis
-  { keys :: WCSAxisKeywords alt n
-  , pcs :: DataAxes (PC alt n)
-  }
-
-
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (WCSAxis alt n) where
-  headerKeywords ax =
-    headerKeywords ax.keys
-      <> headerKeywords ax.pcs
-
-
-data PC (alt :: WCSAlt) (i :: Nat) (j :: Nat) = PC Float
-instance (KnownValue alt, KnownNat i, KnownNat j) => KeywordInfo (PC alt i j) where
-  keyword = "PC" <> showN @i Proxy <> "_" <> showN @j Proxy <> knownValueText @alt
-   where
-    showN :: forall n. (KnownNat n) => Proxy n -> Text
-    showN p = pack (show $ natVal p)
-  keytype = "PCi_j"
-  description = "Linear transformation matrix used with the Helioprojective coordinate system"
-  keyValue (PC n) = Float n
-
-
-type DummyYN = 3
-type SlitXN = 2
-type DepthN = 1
-
-
-wcsCommon :: forall es. (Error FitsGenError :> es) => Header -> Eff es WCSCommon
-wcsCommon l1 = do
-  lonpole <- Degrees <$> requireL1 "LONPOLE" toFloat l1
-  lonpolea <- Degrees <$> requireL1 "LONPOLEA" toFloat l1
-  pure $
-    WCSCommon
-      { wcsvalid = Key Constant
-      , wcsname = Key Constant
-      , wcsaxes = Key Constant
-      , lonpole = Key lonpole
-      , wcsnamea = Key Constant
-      , wcsaxesa = Key Constant
-      , lonpolea = Key lonpolea
-      }
-
-
-data DataAxes f = DataAxes
-  { dummyY :: f DummyYN
-  , slitX :: f SlitXN
-  , depth :: f DepthN
-  }
-  deriving (Generic)
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (DataAxes (PC alt n))
-instance (KnownValue alt) => HeaderKeywords (DataAxes (WCSAxis alt)) where
-  headerKeywords a =
-    headerKeywords @(WCSAxis alt DepthN) a.depth
-      <> headerKeywords @(WCSAxis alt SlitXN) a.slitX
-      <> headerKeywords @(WCSAxis alt DummyYN) a.dummyY
-
-
-wcsAxes :: forall alt es. (Error FitsGenError :> es, KnownValue alt) => Sz Ix2 -> Header -> Eff es (DataAxes (WCSAxis alt))
-wcsAxes sz h = do
-  dummyY <- wcsDummyY h
-  slitX <- wcsSlitX sz h
-  depth <- wcsDepth
-  pure $ DataAxes{..}
-
-
-requireWCS :: forall alt n es. (Error FitsGenError :> es, KnownValue alt) => Int -> Header -> Eff es (WCSAxisKeywords alt n)
-requireWCS n l1 = do
-  crpix <- Key <$> requireL1 (keyN "CRPIX") toFloat l1
-  crval <- Key <$> requireL1 (keyN "CRVAL") toFloat l1
-  cdelt <- Key <$> requireL1 (keyN "CDELT") toFloat l1
-  cunit <- Key <$> requireL1 (keyN "CUNIT") toText l1
-  ctype <- Key <$> requireL1 (keyN "CTYPE") toText l1
-  pure $ WCSAxisKeywords{cunit, ctype, crpix, crval, cdelt}
- where
-  keyN k = k <> pack (show n) <> knownValueText @alt
-
-
-requirePCs :: forall alt n es. (Error FitsGenError :> es, KnownValue alt) => Int -> Header -> Eff es (DataAxes (PC alt n))
-requirePCs n l1 = do
-  dummyY <- PC <$> requireL1 (pcN n 3) toFloat l1
-  slitX <- PC <$> requireL1 (pcN n 1) toFloat l1
-  pure $ DataAxes{dummyY, slitX, depth = PC 0}
- where
-  pcN :: Int -> Int -> Text
-  pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownValueText @alt
-
-
-wcsDummyY :: (Error FitsGenError :> es, KnownValue alt) => Header -> Eff es (WCSAxis alt DummyYN)
-wcsDummyY l1 = do
-  keys <- requireWCS 3 l1
-  pcs <- requirePCs 3 l1
-  pure $ WCSAxis{keys, pcs}
-
-
-wcsSlitX :: forall alt es. (Error FitsGenError :> es, KnownValue alt) => Sz Ix2 -> Header -> Eff es (WCSAxis alt SlitXN)
-wcsSlitX sz l1 = do
-  scaleUp <- upFactor sz
-
-  keys <- requireWCS @alt 1 l1
-  pcs <- requirePCs @alt 1 l1
-  pure $ WCSAxis{keys = scale scaleUp keys, pcs}
- where
-  upFactor :: Sz Ix2 -> Eff es Float
-  upFactor (Sz (newx :. _)) = do
-    oldx <- requireL1 "ZNAXIS1" toInt l1
-    pure $ fromIntegral oldx / fromIntegral newx
-
-  scale up ax =
-    WCSAxisKeywords
-      { cunit = ax.cunit
-      , ctype = ax.ctype
-      , crval = ax.crval
-      , crpix = scaleCrPix ax.crpix
-      , cdelt = scaleCDelt ax.cdelt
-      }
-   where
-    scaleCrPix (Key cp) = Key $ (cp - 1) / up + 1
-    scaleCDelt (Key cd) = Key $ cd * up
-
-
-wcsDepth :: (Monad m) => m (WCSAxis alt DepthN)
-wcsDepth = do
-  let crpix = Key 12
-      crval = Key 0
-      cdelt = Key 0.1
-      cunit = Key ""
-      ctype = Key "TAU--LOG"
-  let keys = WCSAxisKeywords{..}
-  let pcs = DataAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
-  pure $ WCSAxis{keys, pcs}
-
-
 -- GENERATE ------------------------------------------------------------
 
-observationHeader :: (Error FitsGenError :> es) => Header -> Eff es ObservationHeader
+observationHeader :: (Error LiftL1Error :> es) => Header -> Eff es ObservationHeader
 observationHeader l1 = do
   dateBeg <- requireL1 "DATE-BEG" toDate l1
   dateEnd <- requireL1 "DATE-END" toDate l1
@@ -385,7 +220,7 @@ observationHeader l1 = do
       }
 
 
-datacenterHeader :: (Error FitsGenError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
+datacenterHeader :: (Error LiftL1Error :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
   dateBeg <- requireL1 "DATE-BEG" toDate l1
   dkistver <- requireL1 "DKISTVER" toText l1
@@ -424,12 +259,12 @@ datacenterHeader l1 i = do
 
 -- frameVolume = dataSize + headerSize
 
-contribExpProp :: (Error FitsGenError :> es) => Header -> Eff es ContribExpProp
+contribExpProp :: (Error LiftL1Error :> es) => Header -> Eff es ContribExpProp
 contribExpProp l1 = do
   pure $ ContribExpProp (getKeywords l1)
 
 
-dkistHeader :: (Error FitsGenError :> es) => Header -> Eff es DKISTHeader
+dkistHeader :: (Error LiftL1Error :> es) => Header -> Eff es DKISTHeader
 dkistHeader l1 = do
   ocsCtrl <- EnumKey <$> requireL1 "OCS_CTRL" toText l1
   fidoCfg <- Key <$> requireL1 "FIDO_CFG" toText l1
@@ -444,7 +279,7 @@ dkistHeader l1 = do
       }
 
 
-adaptiveOpticsHeader :: (Error FitsGenError :> es) => Header -> Eff es AdaptiveOptics
+adaptiveOpticsHeader :: (Error LiftL1Error :> es) => Header -> Eff es AdaptiveOptics
 adaptiveOpticsHeader l1 = do
   atmosR0 <- Key <$> requireL1 "ATMOS_R0" toFloat l1
   aoLock <- Key <$> requireL1 "AO_LOCK" toBool l1
@@ -460,7 +295,7 @@ adaptiveOpticsHeader l1 = do
 
 
 -- TODO: this belongs in the data, not the primary! ?? Why? Required?
-telescopeHeader :: (Error FitsGenError :> es) => Header -> Eff es TelescopeHeader
+telescopeHeader :: (Error LiftL1Error :> es) => Header -> Eff es TelescopeHeader
 telescopeHeader l1 = do
   tazimuth <- Key . Degrees <$> requireL1 "TAZIMUTH" toFloat l1
   elevAng <- Key . Degrees <$> requireL1 "ELEV_ANG" toFloat l1
@@ -487,32 +322,6 @@ telescopeHeader l1 = do
 --   -- datakurt = Key 0
 --   -- dataskew = Key 0
 --   pure $ StatisticsHeader{..}
-
-lookupL1 :: (Monad m) => Text -> (Value -> Maybe a) -> Header -> m (Maybe a)
-lookupL1 k fromValue h =
-  let mk = Fits.lookup k h
-   in case fromValue =<< mk of
-        Nothing -> pure Nothing
-        Just t -> pure (Just t)
-
-
-requireL1 :: (Error FitsGenError :> es) => Text -> (Value -> Maybe a) -> Header -> Eff es a
-requireL1 k fromValue h =
-  let mk = Fits.lookup k h
-   in case fromValue =<< mk of
-        Nothing -> throwError (MissingL1Key (unpack k))
-        Just t -> pure t
-
-
-toDate :: Value -> Maybe DateTime
-toDate v = DateTime <$> toText v
-
-
-data FitsGenError
-  = MissingL1Key String
-  | MissingL1HDU FilePath
-  deriving (Show, Exception)
-
 
 -- VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits
 -- = INSTRUMENT DATETIME DATASET L1

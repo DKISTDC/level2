@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module NSO.Fits.Generate.Keywords where
+module NSO.Fits.Generate.Headers.Keywords where
 
 import Data.Fits (KeywordRecord (..), LogicalConstant (..), Value (..))
 import Data.Text (pack)

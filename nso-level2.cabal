@@ -58,14 +58,15 @@ library
       NSO.Data.Spectra
       NSO.Error
       NSO.Fits.Generate
-      NSO.Fits.Generate.DataHDU
       NSO.Fits.Generate.DimArray
-      NSO.Fits.Generate.Doc
-      NSO.Fits.Generate.Frames
       NSO.Fits.Generate.Headers
-      NSO.Fits.Generate.Keywords
+      NSO.Fits.Generate.Headers.Doc
+      NSO.Fits.Generate.Headers.Keywords
+      NSO.Fits.Generate.Headers.LiftL1
+      NSO.Fits.Generate.Headers.Types
+      NSO.Fits.Generate.Headers.WCS
       NSO.Fits.Generate.Profile
-      NSO.Fits.Generate.Types
+      NSO.Fits.Generate.Quantities
       NSO.Level2
       NSO.Metadata
       NSO.Steps
