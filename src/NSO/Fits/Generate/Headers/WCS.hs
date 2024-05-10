@@ -2,7 +2,8 @@ module NSO.Fits.Generate.Headers.WCS where
 
 import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
 import Data.Massiv.Array (Ix2 (..), Sz (..))
-import Data.Text (pack)
+import Data.Text (pack, unpack)
+import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics
@@ -13,6 +14,11 @@ import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Fits.Generate.Headers.Types
 import NSO.Prelude
 import Telescope.Fits as Fits
+import Text.Read (readMaybe)
+
+
+newtype X = X Int
+newtype Y = Y Int
 
 
 -- WCS --------------------------------------------------------------
@@ -46,15 +52,14 @@ instance (KnownNat n, KnownValue alt) => HeaderKeywords (WCSAxisKeywords alt n) 
     addA k = k <> knownValueText @alt
 
 
-data WCSAxis (alt :: WCSAlt) (n :: Nat) = WCSAxis
-  { keys :: WCSAxisKeywords alt n
-  , pcs :: QuantityAxes (PC alt n)
-  }
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (WCSAxis alt n) where
-  headerKeywords ax =
-    headerKeywords ax.keys
-      <> headerKeywords ax.pcs
-
+-- data WCSAxis (alt :: WCSAlt) axes (n :: Nat) = WCSAxis
+--   { keys :: WCSAxisKeywords alt n
+--   , pcs :: axes (PC alt n)
+--   }
+-- instance (KnownValue alt, KnownNat n, HeaderKeywords (axes (PC alt n))) => HeaderKeywords (WCSAxis alt axes n) where
+--   headerKeywords ax =
+--     headerKeywords ax.keys
+--       <> headerKeywords ax.pcs
 
 data PC (alt :: WCSAlt) (i :: Nat) (j :: Nat) = PC Float
 instance (KnownValue alt, KnownNat i, KnownNat j) => KeywordInfo (PC alt i j) where
@@ -65,12 +70,6 @@ instance (KnownValue alt, KnownNat i, KnownNat j) => KeywordInfo (PC alt i j) wh
   keytype = "PCi_j"
   description = "Linear transformation matrix used with the coordinate system"
   keyValue (PC n) = Float n
-
-
--- these types correspond to the order of the transformation
-type DummyYN = 3
-type SlitXN = 2
-type DepthN = 1
 
 
 wcsCommon :: forall es. (Error LiftL1Error :> es) => Header -> Eff es WCSCommon
@@ -89,20 +88,6 @@ wcsCommon l1 = do
       }
 
 
-data QuantityAxes f = QuantityAxes
-  { dummyY :: f DummyYN
-  , slitX :: f SlitXN
-  , depth :: f DepthN
-  }
-  deriving (Generic)
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxes (PC alt n))
-instance (KnownValue alt) => HeaderKeywords (QuantityAxes (WCSAxis alt)) where
-  headerKeywords a =
-    headerKeywords @(WCSAxis alt DepthN) a.depth
-      <> headerKeywords @(WCSAxis alt SlitXN) a.slitX
-      <> headerKeywords @(WCSAxis alt DummyYN) a.dummyY
-
-
 requireWCS :: forall alt n es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (WCSAxisKeywords alt n)
 requireWCS n l1 = do
   crpix <- Key <$> requireL1 (keyN "CRPIX") toFloat l1
@@ -115,33 +100,72 @@ requireWCS n l1 = do
   keyN k = k <> pack (show n) <> knownValueText @alt
 
 
-requirePCs :: forall alt n es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (QuantityAxes (PC alt n))
+findYAxis :: (Error LiftL1Error :> es) => Header -> Eff es Y
+findYAxis = fmap Y <$> findCtypeAxis "HPLN-TAN"
+
+
+findXAxis :: (Error LiftL1Error :> es) => Header -> Eff es X
+findXAxis = fmap X <$> findCtypeAxis "HPLT-TAN"
+
+
+findCtypeAxis :: (Error LiftL1Error :> es) => Text -> Header -> Eff es Int
+findCtypeAxis ctype l1 = do
+  case findL1 toCtypeN l1 of
+    Nothing -> throwError $ MissingCType (unpack ctype)
+    Just k -> pure k
+ where
+  toCtypeN :: KeywordRecord -> Maybe Int
+  toCtypeN k = do
+    guard (k._value == String ctype)
+    readMaybe $ drop 5 $ unpack k._keyword
+
+
+-- super confusing... the N is whatever you current axis is?
+requirePCs :: forall alt n x y es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (PC alt n y, PC alt n x)
 requirePCs n l1 = do
-  dummyY <- PC <$> requireL1 (pcN n 3) toFloat l1
-  slitX <- PC <$> requireL1 (pcN n 1) toFloat l1
-  pure $ QuantityAxes{dummyY, slitX, depth = PC 0}
+  xn <- findCtypeAxis "HPLT-TAN" l1
+  yn <- findCtypeAxis "HPLN-TAN" l1
+  dummyY <- PC <$> requireL1 (pcN n yn) toFloat l1
+  slitX <- PC <$> requireL1 (pcN n xn) toFloat l1
+  pure (dummyY, slitX)
  where
   pcN :: Int -> Int -> Text
   pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownValueText @alt
 
 
-wcsDummyY :: (Error LiftL1Error :> es, KnownValue alt) => Header -> Eff es (WCSAxis alt DummyYN)
-wcsDummyY l1 = do
-  keys <- requireWCS 3 l1
-  pcs <- requirePCs 3 l1
-  pure $ WCSAxis{keys, pcs}
+-- needs to construct PCs for you
+-- unless it can return them separately?
+wcsDummyYKeys :: (KnownValue alt, Error LiftL1Error :> es) => Header -> Eff es (WCSAxisKeywords alt n)
+wcsDummyYKeys l1 = do
+  let l1DummyY = 3
+  requireWCS l1DummyY l1
 
 
-wcsSlitX :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => Sz Ix2 -> Header -> Eff es (WCSAxis alt SlitXN)
-wcsSlitX sz l1 = do
-  scaleUp <- upFactor sz
+wcsDummyYPCs :: (KnownValue alt, Error LiftL1Error :> es) => Header -> Eff es (PC alt y y, PC alt y x)
+wcsDummyYPCs l1 = do
+  let l1DummyY = 3
+  requirePCs l1DummyY l1
 
-  keys <- requireWCS @alt 1 l1
-  pcs <- requirePCs @alt 1 l1
-  pure $ WCSAxis{keys = scale scaleUp keys, pcs}
+
+wcsSlitXPCs :: (KnownValue alt, Error LiftL1Error :> es) => Header -> Eff es (PC alt x y, PC alt x x)
+wcsSlitXPCs l1 = do
+  let l1SlitX = 1
+  requirePCs l1SlitX l1
+
+
+wcsSlitXKeys :: forall alt n es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (WCSAxisKeywords alt n)
+wcsSlitXKeys newx l1 = do
+  let l1SlitX = 1
+  scaleUp <- upFactor
+
+  keys <- requireWCS @alt l1SlitX l1
+
+  -- (y, x) <- requirePCs l1SlitX l1
+  -- pure $ WCSAxis{keys = scale scaleUp keys, pcs = toPCs y x}
+  pure $ scale scaleUp keys
  where
-  upFactor :: Sz Ix2 -> Eff es Float
-  upFactor (Sz (newx :. _)) = do
+  upFactor :: Eff es Float
+  upFactor = do
     oldx <- requireL1 "ZNAXIS1" toInt l1
     pure $ fromIntegral oldx / fromIntegral newx
 

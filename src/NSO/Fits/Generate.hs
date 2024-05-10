@@ -8,12 +8,13 @@ import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Fits.Generate.Quantities (quantitiesHDUs)
 import NSO.Fits.Generate.DimArray
 import NSO.Fits.Generate.Headers
-import NSO.Fits.Generate.Keywords
+import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
+import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))
+import NSO.Fits.Generate.Headers.Types (Depth, SlitX)
 import NSO.Fits.Generate.Profile
-import NSO.Fits.Generate.Types
+import NSO.Fits.Generate.Quantities (Quantities (..), decodeQuantitiesFrames, quantitiesHDUs)
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
@@ -40,8 +41,12 @@ testResultProfile :: FilePath
 testResultProfile = "/Users/seanhess/Data/scan1807/inv_res_pre.fits"
 
 
+-- WARNING: We are working with pid_1_118, but the headers are wrong there
+-- level1Input :: FilePath
+-- level1Input = "/Users/seanhess/Data/pid_1_118/BVJVO/VISP_2022_06_02T22_13_41_664_00630205_I_BVJVO_L1.fits"
+
 level1Input :: FilePath
-level1Input = "/Users/seanhess/Data/pid_1_118/BVJVO/VISP_2022_06_02T22_13_41_664_00630205_I_BVJVO_L1.fits"
+level1Input = "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits"
 
 
 test :: IO ()
@@ -52,13 +57,13 @@ test = do
 
   pos <- decodeProfileFrames @Original =<< BS.readFile testOriginalProfile
 
-  (po : _) <- pure pos.frames
+  (po : _) <- pure pos.frames :: IO [ProfileFrame Original]
   print $ size po.wav630.array
   print $ size po.wav854.array
 
   -- we need to calculate the exact axis of the wavelengths...
   pfs <- decodeProfileFrames @Fit =<< BS.readFile testResultProfile
-  (pf : _) <- pure pfs.frames
+  (pf : _) <- pure pfs.frames :: IO [ProfileFrame Fit]
   print $ size pf.wav630.array
   print $ size pf.wav854.array
 
@@ -93,7 +98,7 @@ test = do
   -- print $ BS.length dat.rawData
 
   now <- getCurrentTime
-  fits <- runGenTestIO $ generateL2Fits now (Id "inv.TEST0") i1 f po pf
+  fits <- runGenTestIO $ generateL2Fits now (Id "inv.TEST0") i1 f pos.wavProfiles pfs.wavProfiles po pf
 
   -- print $ length fits.extensions
   -- let (Image e : _) = fits.extensions
@@ -120,22 +125,25 @@ readLevel1 fp = do
 
 
 generateL2Fits
-  :: (Error FitsGenError :> es, GenRandom :> es)
+  :: (Error LiftL1Error :> es, GenRandom :> es)
   => UTCTime
   -> Id Inversion
   -> BinTableHDU
   -> Quantities [SlitX, Depth]
+  -> WavProfiles Original
+  -> WavProfiles Fit
   -> ProfileFrame Original
   -> ProfileFrame Fit
   -> Eff es Fits
-generateL2Fits now i l1 q po pf = do
+generateL2Fits now i l1 q wpo wpf po pf = do
   prim <- primaryHDU i l1
   imgs <- quantitiesHDUs now l1.header q
-  pure $ Fits prim $ fmap Image imgs
+  profs <- profileHDUs now l1.header wpo wpf po pf
+  pure $ Fits prim $ fmap Image imgs <> fmap Image profs
 
 
 -- What is supposed to go in here?
-primaryHDU :: (Error FitsGenError :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHDU
+primaryHDU :: (Error LiftL1Error :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHDU
 primaryHDU di l1 = do
   hs <- writeHeader allKeys
   pure $ PrimaryHDU (Header hs) emptyDataArray
@@ -175,7 +183,7 @@ primaryHDU di l1 = do
     addKeywords $ headerKeywords @AdaptiveOptics ao
 
 
-runGenTestIO :: Eff '[GenRandom, Error FitsGenError, IOE] a -> IO a
+runGenTestIO :: Eff '[GenRandom, Error LiftL1Error, IOE] a -> IO a
 runGenTestIO eff = do
   res <- runEff $ runErrorNoCallStack $ runGenRandom eff
   case res of

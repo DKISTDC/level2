@@ -1,7 +1,7 @@
 module NSO.Fits.Generate.Headers.LiftL1 where
 
 import Control.Monad.Catch (Exception)
-import Data.Fits (toText)
+import Data.Fits (KeywordRecord, getKeywords, toText)
 import Data.Text (unpack)
 import Effectful
 import Effectful.Error.Static
@@ -26,6 +26,11 @@ requireL1 k fromValue h =
         Just t -> pure t
 
 
+findL1 :: (KeywordRecord -> Maybe a) -> Header -> Maybe a
+findL1 p h = do
+  listToMaybe $ mapMaybe p $ getKeywords h
+
+
 toDate :: Value -> Maybe DateTime
 toDate v = DateTime <$> toText v
 
@@ -33,4 +38,5 @@ toDate v = DateTime <$> toText v
 data LiftL1Error
   = MissingL1Key String
   | MissingL1HDU FilePath
+  | MissingCType String
   deriving (Show, Exception)

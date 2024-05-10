@@ -10,6 +10,7 @@ import Data.Kind (Type)
 import Data.Massiv.Array (Index, Ix2 (..), IxN (..), Sz (..))
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
+import Debug.Trace (traceM)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Writer.Static.Local
@@ -214,23 +215,55 @@ dataHDU now l1 info res = do
     wcsSection
 
   wcsSection = do
+    let (Sz (newx :. _)) = size res.array
     wc <- wcsCommon l1
-    wm <- wcsAxes @WCSMain (size res.array) l1
-    wa <- wcsAxes @A (size res.array) l1
+    wm <- wcsAxes @WCSMain newx l1
+    wa <- wcsAxes @A newx l1
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
     addKeywords $ headerKeywords wa
 
 
-wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => Sz Ix2 -> Header -> Eff es (QuantityAxes (WCSAxis alt))
-wcsAxes sz h = do
-  dummyY <- wcsDummyY h
-  slitX <- wcsSlitX sz h
+data QuantityAxes f = QuantityAxes
+  { dummyY :: f 3
+  , slitX :: f 2
+  , depth :: f 1
+  }
+  deriving (Generic)
+instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxes (PC alt n))
+instance (KnownValue alt) => HeaderKeywords (QuantityAxes (QuantityAxis alt)) where
+  headerKeywords a =
+    headerKeywords @(QuantityAxis alt 1) a.depth
+      <> headerKeywords @(QuantityAxis alt 2) a.slitX
+      <> headerKeywords @(QuantityAxis alt 3) a.dummyY
+
+
+--
+data QuantityAxis alt n = QuantityAxis
+  { keys :: WCSAxisKeywords alt n
+  , pcs :: QuantityAxes (PC alt n)
+  }
+instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxis alt n) where
+  headerKeywords a =
+    headerKeywords a.keys <> headerKeywords a.pcs
+
+
+wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (QuantityAxes (QuantityAxis alt))
+wcsAxes newx h = do
+  yk <- wcsDummyYKeys h
+  (ypy, ypx) <- wcsDummyYPCs @alt h
+  let dummyY = QuantityAxis{keys = yk, pcs = QuantityAxes{dummyY = ypy, slitX = ypx, depth = PC 0}}
+
+  xk <- wcsSlitXKeys newx h
+  (xpy, xpx) <- wcsSlitXPCs @alt h
+  let slitX = QuantityAxis{keys = xk, pcs = QuantityAxes{dummyY = xpy, slitX = xpx, depth = PC 0}}
+
   depth <- wcsDepth
+
   pure $ QuantityAxes{..}
 
 
-wcsDepth :: (Monad m) => m (WCSAxis alt DepthN)
+wcsDepth :: (Monad m) => m (QuantityAxis alt n)
 wcsDepth = do
   let crpix = Key 12
       crval = Key 0
@@ -239,17 +272,7 @@ wcsDepth = do
       ctype = Key "TAU--LOG"
   let keys = WCSAxisKeywords{..}
   let pcs = QuantityAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
-  pure $ WCSAxis{keys, pcs}
-
-
-requirePCs :: forall alt n es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (QuantityAxes (PC alt n))
-requirePCs n l1 = do
-  dummyY <- PC <$> requireL1 (pcN n 3) toFloat l1
-  slitX <- PC <$> requireL1 (pcN n 1) toFloat l1
-  pure $ QuantityAxes{dummyY, slitX, depth = PC 0}
- where
-  pcN :: Int -> Int -> Text
-  pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownValueText @alt
+  pure $ QuantityAxis{keys, pcs}
 
 
 -- statsSection = do
