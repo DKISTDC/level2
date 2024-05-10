@@ -77,53 +77,81 @@ profileHDU now l1 info wp da = do
     wcsSection
 
   wcsSection = do
+    let bx = binnedX
     wc <- wcsCommon l1
-    wm <- wcsAxes @WCSMain wp da l1
-    wa <- wcsAxes @A wp da l1
+    wm <- wcsAxes @WCSMain bx wp l1
+    wa <- wcsAxes @A bx wp l1
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
     addKeywords $ headerKeywords wa
 
+  binnedX =
+    let (Sz (newx :> _)) = size da.array
+     in BinnedX newx
 
-data ProfileAxes f = ProfileAxes
-  { dummyY :: f 4
-  , slitX :: f 3
-  , wavelength :: f 2
-  , stokes :: f 1
+
+data ProfileAxes alt = ProfileAxes
+  { dummyY :: ProfileAxis alt Y
+  , slitX :: ProfileAxis alt X
+  , wavelength :: ProfileAxis alt Wav
+  , stokes :: ProfileAxis alt Stokes
   }
   deriving (Generic)
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (ProfileAxes (PC alt n))
-instance (KnownValue alt) => HeaderKeywords (ProfileAxes (ProfileAxis alt)) where
-  headerKeywords a =
-    headerKeywords @(ProfileAxis alt 1) a.stokes
-      <> headerKeywords @(ProfileAxis alt 2) a.wavelength
-      <> headerKeywords @(ProfileAxis alt 3) a.slitX
-      <> headerKeywords @(ProfileAxis alt 4) a.dummyY
+instance AxisOrder ProfileAxes Y where
+  axisN = 4
+instance AxisOrder ProfileAxes X where
+  axisN = 3
+instance AxisOrder ProfileAxes Wav where
+  axisN = 2
+instance AxisOrder ProfileAxes Stokes where
+  axisN = 1
+instance (KnownValue alt) => HeaderKeywords (ProfileAxes alt)
 
 
-data ProfileAxis alt n = ProfileAxis
-  { keys :: WCSAxisKeywords alt n
-  , pcs :: ProfileAxes (PC alt n)
+data ProfileAxis alt ax = ProfileAxis
+  { keys :: WCSAxisKeywords ProfileAxes alt ax
+  , pcs :: ProfilePCs alt ax
   }
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (ProfileAxis alt n) where
-  headerKeywords a =
-    headerKeywords a.keys <> headerKeywords a.pcs
+  deriving (Generic)
+instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfileAxis alt ax)
 
 
-wcsAxes :: forall alt w es. (Error LiftL1Error :> es, KnownValue alt) => WavProfile w -> DimArray [SlitX, Wavelength w, Stokes] -> Header -> Eff es (ProfileAxes (ProfileAxis alt))
-wcsAxes wp sz h = do
-  yk <- wcsDummyYKeys h
-  (ypy, ypx) <- wcsDummyYPCs @alt h
-  let dummyY = ProfileAxis{keys = yk, pcs = ProfileAxes{dummyY = ypy, slitX = ypx, wavelength = PC 0, stokes = PC 0}}
+-- instance (KnownValue alt, KnownNat n) => HeaderKeywords (ProfileAxis alt n) where
+--   headerKeywords a =
+--     headerKeywords a.keys <> headerKeywords a.pcs
 
-  xk <- wcsSlitXKeys (lengthSlitX sz) h
-  (xpy, xpx) <- wcsSlitXPCs @alt h
-  let slitX = ProfileAxis{keys = xk, pcs = ProfileAxes{dummyY = xpy, slitX = xpx, wavelength = PC 0, stokes = PC 0}}
+data ProfilePCs alt ax = ProfilePCs
+  { dummyY :: PC ProfileAxes alt ax Y
+  , slitX :: PC ProfileAxes alt ax X
+  , wavelength :: PC ProfileAxes alt ax Wav
+  , stokes :: PC ProfileAxes alt ax Stokes
+  }
+  deriving (Generic)
+instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePCs alt ax)
+
+
+wcsAxes :: forall alt w es. (Error LiftL1Error :> es, KnownValue alt) => BinnedX -> WavProfile w -> Header -> Eff es (ProfileAxes alt)
+wcsAxes bx wp h = do
+  (ax, ay) <- requireWCSAxes h
+  pcsl1 <- requirePCs ax ay h
+
+  yk <- wcsDummyY ay h
+  let yp = ProfilePCs{dummyY = pcsl1.yy, slitX = pcsl1.yx, wavelength = PC 0, stokes = PC 0}
+
+  xk <- wcsSlitX ax bx h
+  let xp = ProfilePCs{dummyY = pcsl1.xy, slitX = pcsl1.xx, wavelength = PC 0, stokes = PC 0}
 
   stokes <- wcsStokes
+
   wavelength <- wcsWavelength wp
 
-  pure $ ProfileAxes{..}
+  pure
+    $ ProfileAxes
+      { dummyY = ProfileAxis{keys = yk, pcs = yp}
+      , slitX = ProfileAxis{keys = xk, pcs = xp}
+      , stokes
+      , wavelength
+      }
 
 
 lengthSlitX :: DimArray [SlitX, Wavelength w, Stokes] -> Int
@@ -140,7 +168,7 @@ wcsStokes = do
       cunit = Key ""
       ctype = Key "STOKES"
   let keys = WCSAxisKeywords{..}
-  let pcs = ProfileAxes{stokes = PC 1.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 0}
+  let pcs = ProfilePCs{stokes = PC 1.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 0}
   pure $ ProfileAxis{keys, pcs}
 
 
@@ -152,7 +180,7 @@ wcsWavelength wp = do
       cunit = Key "nm"
       ctype = Key "AWAV"
   let keys = WCSAxisKeywords{..}
-  let pcs = ProfileAxes{stokes = PC 1.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 0}
+  let pcs = ProfilePCs{stokes = PC 1.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 0}
   pure $ ProfileAxis{keys, pcs}
 
 

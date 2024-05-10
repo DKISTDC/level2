@@ -215,52 +215,74 @@ dataHDU now l1 info res = do
     wcsSection
 
   wcsSection = do
-    let (Sz (newx :. _)) = size res.array
+    let bx = binnedX
     wc <- wcsCommon l1
-    wm <- wcsAxes @WCSMain newx l1
-    wa <- wcsAxes @A newx l1
+    wm <- wcsAxes @WCSMain bx l1
+    wa <- wcsAxes @A bx l1
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
     addKeywords $ headerKeywords wa
 
+  binnedX =
+    let (Sz (newx :. _)) = size res.array
+     in BinnedX newx
 
-data QuantityAxes f = QuantityAxes
-  { dummyY :: f 3
-  , slitX :: f 2
-  , depth :: f 1
+
+data QuantityAxes alt = QuantityAxes
+  { dummyY :: QuantityAxis alt Y
+  , slitX :: QuantityAxis alt X
+  , depth :: QuantityAxis alt Depth
   }
   deriving (Generic)
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxes (PC alt n))
-instance (KnownValue alt) => HeaderKeywords (QuantityAxes (QuantityAxis alt)) where
-  headerKeywords a =
-    headerKeywords @(QuantityAxis alt 1) a.depth
-      <> headerKeywords @(QuantityAxis alt 2) a.slitX
-      <> headerKeywords @(QuantityAxis alt 3) a.dummyY
+instance AxisOrder QuantityAxes Y where
+  axisN = 3
+instance AxisOrder QuantityAxes X where
+  axisN = 2
+instance AxisOrder QuantityAxes Depth where
+  axisN = 1
+instance (KnownValue alt) => HeaderKeywords (QuantityAxes alt)
 
 
---
-data QuantityAxis alt n = QuantityAxis
-  { keys :: WCSAxisKeywords alt n
-  , pcs :: QuantityAxes (PC alt n)
+data QuantityAxis alt ax = QuantityAxis
+  { keys :: WCSAxisKeywords QuantityAxes alt ax
+  , pcs :: QuantityPCs alt ax
   }
-instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxis alt n) where
-  headerKeywords a =
-    headerKeywords a.keys <> headerKeywords a.pcs
+  deriving (Generic)
+instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityAxis alt ax)
 
 
-wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (QuantityAxes (QuantityAxis alt))
-wcsAxes newx h = do
-  yk <- wcsDummyYKeys h
-  (ypy, ypx) <- wcsDummyYPCs @alt h
-  let dummyY = QuantityAxis{keys = yk, pcs = QuantityAxes{dummyY = ypy, slitX = ypx, depth = PC 0}}
+data QuantityPCs alt ax = QuantityPCs
+  { dummyY :: PC QuantityAxes alt ax Y
+  , slitX :: PC QuantityAxes alt ax X
+  , depth :: PC QuantityAxes alt ax Depth
+  }
+  deriving (Generic)
+instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
 
-  xk <- wcsSlitXKeys newx h
-  (xpy, xpx) <- wcsSlitXPCs @alt h
-  let slitX = QuantityAxis{keys = xk, pcs = QuantityAxes{dummyY = xpy, slitX = xpx, depth = PC 0}}
+
+-- instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxis alt n) where
+--   headerKeywords a =
+--     headerKeywords a.keys <> headerKeywords a.pcs
+
+wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => BinnedX -> Header -> Eff es (QuantityAxes alt)
+wcsAxes bx h = do
+  (ax, ay) <- requireWCSAxes h
+  pcsl1 <- requirePCs ax ay h
+
+  yk <- wcsDummyY ay h
+  let yp = QuantityPCs{dummyY = pcsl1.yy, slitX = pcsl1.yx, depth = PC 0}
+
+  xk <- wcsSlitX ax bx h
+  let xp = QuantityPCs{dummyY = pcsl1.xy, slitX = pcsl1.xx, depth = PC 0}
 
   depth <- wcsDepth
 
-  pure $ QuantityAxes{..}
+  pure $
+    QuantityAxes
+      { dummyY = QuantityAxis{keys = yk, pcs = yp}
+      , slitX = QuantityAxis{keys = xk, pcs = xp}
+      , depth = depth
+      }
 
 
 wcsDepth :: (Monad m) => m (QuantityAxis alt n)
@@ -271,7 +293,7 @@ wcsDepth = do
       cunit = Key ""
       ctype = Key "TAU--LOG"
   let keys = WCSAxisKeywords{..}
-  let pcs = QuantityAxes{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
+  let pcs = QuantityPCs{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
   pure $ QuantityAxis{keys, pcs}
 
 

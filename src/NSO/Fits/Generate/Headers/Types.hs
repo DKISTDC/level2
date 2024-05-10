@@ -57,6 +57,8 @@ instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (
   allowed = []
   comment = typeComment @ktype
   keyValue (Key t) = typeValue @ktype t
+instance (KeyType ktype, KnownSymbol desc) => HeaderKeywords (Key ktype desc) where
+  headerKeywords k = [keywordRecord k]
 
 
 instance (KnownValue kvalue, KnownSymbol desc) => KeywordInfo (Key (Constant kvalue) desc) where
@@ -89,6 +91,8 @@ instance KeywordInfo BZero where
   description = "This keyword represents the physical value corresponding to an array value of zero. The default value for this keyword is 0.0. This keyword, along with BSCALE, is used to linearly scale the array pixel values to transform them into the phyical values that they represent. physical_value = BZERO + BSCALE x array_value"
   allowed = [keyValue BZero]
   keyValue _ = Integer 0
+instance HeaderKeywords BZero where
+  headerKeywords b = [keywordRecord b]
 
 
 data BScale = BScale deriving (Generic)
@@ -97,6 +101,8 @@ instance KeywordInfo BScale where
   description = "This keyword represents the coefficient of the linear term in the scaling equation, the ratio of physical value to array value at zero offset. The default value for this keyword is 1.0. This keyword, along with BZERO, is used to linearly scale the array pixel values to transform them into the phyical values that they represent."
   allowed = [keyValue BScale]
   keyValue _ = Integer 1
+instance HeaderKeywords BScale where
+  headerKeywords b = [keywordRecord b]
 
 
 data Object = Object Text deriving (Generic)
@@ -105,6 +111,8 @@ instance KeywordInfo Object where
   description = "The value field shall contain a character string giving a name for the observed object. Applicable standard values are TBD"
   allowed = fmap String ["unknown", "quietsun", "sunspot", "pore", "plages", "spicules", "filament", "prominence", "coronalhole", "quietcorona", "activecorona"]
   keyValue (Object s) = String s
+instance HeaderKeywords Object where
+  headerKeywords b = [keywordRecord b]
 
 
 data Instrument = Instrument Text deriving (Generic)
@@ -113,6 +121,8 @@ instance KeywordInfo Instrument where
   description = "The instrument used to acquire the data associated with the header"
   allowed = fmap String ["VBI", "VISP", "VTF", "DL-NIRSP", "CRYO-NIRSP", "WFC"]
   keyValue (Instrument s) = String s
+instance HeaderKeywords Instrument where
+  headerKeywords b = [keywordRecord b]
 
 
 data OCSCtrl = OCSCtrl Text deriving (Generic)
@@ -129,6 +139,8 @@ instance (KnownSymbol desc, KnownSymbol ss) => KeywordInfo (EnumKey ss desc) whe
   description = pack $ symbolVal @desc Proxy
   allowed = fmap String $ T.splitOn "/" $ pack $ symbolVal @ss Proxy
   keyValue (EnumKey s) = String s
+instance (KnownSymbol desc, KnownSymbol ss) => HeaderKeywords (EnumKey ss desc) where
+  headerKeywords b = [keywordRecord b]
 
 
 -- Key Types ---------------------------------------------------------

@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module NSO.Fits.Generate.Headers.WCS where
 
 import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
@@ -13,15 +15,45 @@ import NSO.Fits.Generate.Headers.Keywords
 import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Fits.Generate.Headers.Types
 import NSO.Prelude
-import Telescope.Fits as Fits
+import Telescope.Fits as Fits hiding (Axis)
 import Text.Read (readMaybe)
 
 
-newtype X = X Int
-newtype Y = Y Int
+-- ints?
+
+newtype Axis a = Axis Int
+  deriving (Show, Eq)
+
+
+data X
+data Y
+data Wav
+
+
+type family AxisNumber a ax :: Natural
+
+
+class AxisOrder a ax where
+  axisN :: Natural
+
+
+-- axisIndex :: Proxy a -> Proxy ax -> Natural
+
+data PCL1 s (alt :: WCSAlt) = PCL1
+  { xx :: PC s alt X X
+  , xy :: PC s alt X Y
+  , yy :: PC s alt Y Y
+  , yx :: PC s alt Y X
+  }
 
 
 -- WCS --------------------------------------------------------------
+
+data Test = Test
+  { test :: Key Int "wahoo"
+  }
+  deriving (Generic, HeaderKeywords)
+
 
 data WCSCommon = WCSCommon
   { wcsvalid :: Key (Constant True) "WCI data are correct"
@@ -35,7 +67,7 @@ data WCSCommon = WCSCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-data WCSAxisKeywords (alt :: WCSAlt) (n :: Nat) = WCSAxisKeywords
+data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
   { ctype :: Key Text "A string value labeling the type of axis n"
   , cunit :: Key Text "The unit of the value contained in CDELTn"
   , crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n"
@@ -43,12 +75,12 @@ data WCSAxisKeywords (alt :: WCSAlt) (n :: Nat) = WCSAxisKeywords
   , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n"
   }
   deriving (Generic)
-instance (KnownNat n, KnownValue alt) => HeaderKeywords (WCSAxisKeywords alt n) where
+instance (AxisOrder s ax, KnownValue alt) => HeaderKeywords (WCSAxisKeywords s alt ax) where
   headerKeywords =
     fmap modKey . genHeaderKeywords . from
    where
     modKey KeywordRecord{_keyword, _value, _comment} = KeywordRecord{_keyword = addA $ addN _keyword, _value, _comment}
-    addN k = k <> pack (show (natVal @n Proxy))
+    addN k = k <> pack (show (axisN @s @ax))
     addA k = k <> knownValueText @alt
 
 
@@ -61,15 +93,15 @@ instance (KnownNat n, KnownValue alt) => HeaderKeywords (WCSAxisKeywords alt n) 
 --     headerKeywords ax.keys
 --       <> headerKeywords ax.pcs
 
-data PC (alt :: WCSAlt) (i :: Nat) (j :: Nat) = PC Float
-instance (KnownValue alt, KnownNat i, KnownNat j) => KeywordInfo (PC alt i j) where
-  keyword = "PC" <> showN @i Proxy <> "_" <> showN @j Proxy <> knownValueText @alt
-   where
-    showN :: forall n. (KnownNat n) => Proxy n -> Text
-    showN p = pack (show $ natVal p)
+-- it's a mapping of one axis type to another
+data PC s (alt :: WCSAlt) ai aj = PC Float
+instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => KeywordInfo (PC s alt ai aj) where
+  keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownValueText @alt
   keytype = "PCi_j"
   description = "Linear transformation matrix used with the coordinate system"
   keyValue (PC n) = Float n
+instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC s alt ai aj) where
+  headerKeywords p = [keywordRecord p]
 
 
 wcsCommon :: forall es. (Error LiftL1Error :> es) => Header -> Eff es WCSCommon
@@ -88,8 +120,8 @@ wcsCommon l1 = do
       }
 
 
-requireWCS :: forall alt n es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (WCSAxisKeywords alt n)
-requireWCS n l1 = do
+requireWCS :: forall s alt ax es. (Error LiftL1Error :> es, KnownValue alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
+requireWCS (Axis n) l1 = do
   crpix <- Key <$> requireL1 (keyN "CRPIX") toFloat l1
   crval <- Key <$> requireL1 (keyN "CRVAL") toFloat l1
   cdelt <- Key <$> requireL1 (keyN "CDELT") toFloat l1
@@ -100,16 +132,18 @@ requireWCS n l1 = do
   keyN k = k <> pack (show n) <> knownValueText @alt
 
 
-findYAxis :: (Error LiftL1Error :> es) => Header -> Eff es Y
-findYAxis = fmap Y <$> findCtypeAxis "HPLN-TAN"
+requireWCSAxes :: (Error LiftL1Error :> es) => Header -> Eff es (Axis X, Axis Y)
+requireWCSAxes h = do
+  y <- axisY h
+  x <- axisX h
+  pure (x, y)
+ where
+  axisY = fmap Axis <$> requireCtypeAxis "HPLN-TAN"
+  axisX = fmap Axis <$> requireCtypeAxis "HPLT-TAN"
 
 
-findXAxis :: (Error LiftL1Error :> es) => Header -> Eff es X
-findXAxis = fmap X <$> findCtypeAxis "HPLT-TAN"
-
-
-findCtypeAxis :: (Error LiftL1Error :> es) => Text -> Header -> Eff es Int
-findCtypeAxis ctype l1 = do
+requireCtypeAxis :: (Error LiftL1Error :> es) => Text -> Header -> Eff es Int
+requireCtypeAxis ctype l1 = do
   case findL1 toCtypeN l1 of
     Nothing -> throwError $ MissingCType (unpack ctype)
     Just k -> pure k
@@ -120,48 +154,35 @@ findCtypeAxis ctype l1 = do
     readMaybe $ drop 5 $ unpack k._keyword
 
 
--- super confusing... the N is whatever you current axis is?
-requirePCs :: forall alt n x y es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (PC alt n y, PC alt n x)
-requirePCs n l1 = do
-  xn <- findCtypeAxis "HPLT-TAN" l1
-  yn <- findCtypeAxis "HPLN-TAN" l1
-  dummyY <- PC <$> requireL1 (pcN n yn) toFloat l1
-  slitX <- PC <$> requireL1 (pcN n xn) toFloat l1
-  pure (dummyY, slitX)
+requirePCs :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
+requirePCs (Axis xn) (Axis yn) l1 = do
+  yy <- PC <$> requireL1 (pcN yn yn) toFloat l1
+  yx <- PC <$> requireL1 (pcN yn xn) toFloat l1
+  xx <- PC <$> requireL1 (pcN xn xn) toFloat l1
+  xy <- PC <$> requireL1 (pcN xn yn) toFloat l1
+  pure PCL1{yy, yx, xx, xy}
  where
   pcN :: Int -> Int -> Text
   pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownValueText @alt
 
 
--- needs to construct PCs for you
--- unless it can return them separately?
-wcsDummyYKeys :: (KnownValue alt, Error LiftL1Error :> es) => Header -> Eff es (WCSAxisKeywords alt n)
-wcsDummyYKeys l1 = do
-  let l1DummyY = 3
-  requireWCS l1DummyY l1
+wcsDummyY :: (KnownValue alt, Error LiftL1Error :> es) => Axis Y -> Header -> Eff es (WCSAxisKeywords s alt Y)
+wcsDummyY y l1 = do
+  requireWCS y l1
 
 
-wcsDummyYPCs :: (KnownValue alt, Error LiftL1Error :> es) => Header -> Eff es (PC alt y y, PC alt y x)
-wcsDummyYPCs l1 = do
-  let l1DummyY = 3
-  requirePCs l1DummyY l1
+newtype BinnedX = BinnedX Int
 
 
-wcsSlitXPCs :: (KnownValue alt, Error LiftL1Error :> es) => Header -> Eff es (PC alt x y, PC alt x x)
-wcsSlitXPCs l1 = do
-  let l1SlitX = 1
-  requirePCs l1SlitX l1
-
-
-wcsSlitXKeys :: forall alt n es. (Error LiftL1Error :> es, KnownValue alt) => Int -> Header -> Eff es (WCSAxisKeywords alt n)
-wcsSlitXKeys newx l1 = do
-  let l1SlitX = 1
+wcsSlitX :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> BinnedX -> Header -> Eff es (WCSAxisKeywords s alt X)
+wcsSlitX ax (BinnedX newx) l1 = do
   scaleUp <- upFactor
 
-  keys <- requireWCS @alt l1SlitX l1
+  keys <- requireWCS @s @alt ax l1
 
-  -- (y, x) <- requirePCs l1SlitX l1
-  -- pure $ WCSAxis{keys = scale scaleUp keys, pcs = toPCs y x}
+  let Header (wtf : _) = l1
+  traceM $ show (ax, keys.ctype, wtf)
+
   pure $ scale scaleUp keys
  where
   upFactor :: Eff es Float
@@ -169,16 +190,16 @@ wcsSlitXKeys newx l1 = do
     oldx <- requireL1 "ZNAXIS1" toInt l1
     pure $ fromIntegral oldx / fromIntegral newx
 
-  scale up ax =
+  scale up a =
     -- The L1 files have a large number of Slit X pixels.
     -- Our data is binned along the X axis, so we need to scale the CRPIXn and CDELTn headers
     -- to compensate for this
     WCSAxisKeywords
-      { cunit = ax.cunit
-      , ctype = ax.ctype
-      , crval = ax.crval
-      , crpix = scaleCrPix ax.crpix
-      , cdelt = scaleCDelt ax.cdelt
+      { cunit = a.cunit
+      , ctype = a.ctype
+      , crval = a.crval
+      , crpix = scaleCrPix a.crpix
+      , cdelt = scaleCDelt a.cdelt
       }
    where
     scaleCrPix (Key cp) = Key $ (cp - 1) / up + 1

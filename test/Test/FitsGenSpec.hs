@@ -31,154 +31,148 @@ ctypeX = "HPLT-TAN"
 
 specWCS :: Spec
 specWCS = describe "WCS" $ do
-  describe "golden 2_114 headers" $ do
-    it "should find yn" $ do
-      yn <- runErrorIO $ findCtypeAxis ctypeY keys_2_114
-      yn `shouldBe` 3
+  aroundAll (withKeys keys_2_114) $ describe "golden 2_114 headers" $ do
+    itWithOuter "should find yn xn" $ \h -> do
+      (x, y) <- runErrorIO $ requireWCSAxes h
+      y `shouldBe` Axis 3
+      x `shouldBe` Axis 1
 
-    it "should find xn" $ do
-      xn <- runErrorIO $ findCtypeAxis ctypeX keys_2_114
-      xn `shouldBe` 1
+    itWithOuter "wcs keys" $ \h -> do
+      (x, y) <- runErrorIO $ requireWCSAxes h
+      ky <- runErrorIO $ wcsDummyY @WCSMain y h
+      ky.ctype `shouldBe` Key ctypeY
 
-    it "wcsDummyYKeys" $ do
-      k <- runErrorIO $ wcsDummyYKeys @WCSMain keys_2_114
-      k.ctype `shouldBe` Key ctypeY
+      kx <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 237) h
+      kx.ctype `shouldBe` Key ctypeX
 
-    it "wcsDummyXKeys" $ do
-      k <- runErrorIO $ wcsSlitXKeys @WCSMain 237 keys_2_114
-      k.ctype `shouldBe` Key ctypeX
+  aroundAll (withKeys keys_1_118) $ describe "incorrect 1_118 headers" $ do
+    itWithOuter "should find yn xn" $ \h -> do
+      (x, y) <- runErrorIO $ requireWCSAxes h
+      x `shouldBe` Axis 2
+      y `shouldBe` Axis 3
 
-  describe "incorrect 1_118 headers" $ do
-    it "should find yn" $ do
-      yn <- runErrorIO $ findCtypeAxis ctypeY keys_1_118
-      yn `shouldBe` 3
+    itWithOuter "wcs keys y" $ \h -> do
+      (_, y) <- runErrorIO $ requireWCSAxes h
+      ky <- runErrorIO $ wcsDummyY @WCSMain y h
+      ky.ctype `shouldBe` Key ctypeY
 
-    it "should find xn" $ do
-      xn <- runErrorIO $ findCtypeAxis ctypeX keys_1_118
-      xn `shouldBe` 1
-
-    it "wcsDummyYKeys" $ do
-      k <- runErrorIO $ wcsDummyYKeys @WCSMain keys_1_118
-      k.ctype `shouldBe` Key ctypeY
-
-    it "wcsDummyXKeys" $ do
-      k <- runErrorIO $ wcsSlitXKeys @WCSMain 237 keys_1_118
-      k.ctype `shouldBe` Key ctypeX
+    itWithOuter "wcs keys x" $ \h -> do
+      (x, _) <- runErrorIO $ requireWCSAxes h
+      kx <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 237) h
+      kx.ctype `shouldBe` Key ctypeX
  where
+  withKeys :: [KeywordRecord] -> (Header -> IO a) -> IO a
+  withKeys ks m = do
+    m $ Header $ fmap Keyword ks
+
   keys_2_114 =
-    Header $
-      fmap
-        Keyword
-        [ KeywordRecord "CRPIX1" (Float 1244.1995308776818) Nothing
-        , KeywordRecord "CRPIX2" (Float 495.99999999999994) Nothing
-        , KeywordRecord "CRPIX3" (Float 1303.4156199186928) Nothing
-        , KeywordRecord "CRPIX1A" (Float 1244.200607073661) Nothing
-        , KeywordRecord "CRPIX2A" (Float 496.0000000000001) Nothing
-        , KeywordRecord "CRPIX3A" (Float 1303.4155132947976) Nothing
-        , KeywordRecord "CRVAL1" (Float 91.6717798950973) Nothing
-        , KeywordRecord "CRVAL2" (Float 589.60009) Nothing
-        , KeywordRecord "CRVAL3" (Float (-32.89313312887808)) Nothing
-        , KeywordRecord "CRVAL1A" (Float (-8.93437541160866)) Nothing
-        , KeywordRecord "CRVAL2A" (Float 589.60009) Nothing
-        , KeywordRecord "CRVAL3A" (Float 201.3284644221418) Nothing
-        , KeywordRecord "CDELT1" (Float 0.02385787624354498) Nothing
-        , KeywordRecord "CDELT2" (Float 0.001052397146603632) Nothing
-        , KeywordRecord "CDELT3" (Float 0.053406899773509015) Nothing
-        , KeywordRecord "CDELT1A" (Float 6.62718784542916E-06) Nothing
-        , KeywordRecord "CDELT2A" (Float 0.001052397146603632) Nothing
-        , KeywordRecord "CDELT3A" (Float 1.48352499370858E-05) Nothing
-        , KeywordRecord "CUNIT1" (String "arcsec  ") Nothing
-        , KeywordRecord "CUNIT2" (String "nm      ") Nothing
-        , KeywordRecord "CUNIT3" (String "arcsec  ") Nothing
-        , KeywordRecord "CUNIT1A" (String "deg     ") Nothing
-        , KeywordRecord "CUNIT2A" (String "nm      ") Nothing
-        , KeywordRecord "CUNIT3A" (String "deg     ") Nothing
-        , KeywordRecord "CUNIT3A" (String "deg     ") Nothing
-        , KeywordRecord "CTYPE1" (String "HPLT-TAN") Nothing
-        , KeywordRecord "CTYPE2" (String "AWAV    ") Nothing
-        , KeywordRecord "CTYPE3" (String "HPLN-TAN") Nothing
-        , KeywordRecord "CTYPE1A" (String "DEC--TAN") Nothing
-        , KeywordRecord "CTYPE2A" (String "AWAV    ") Nothing
-        , KeywordRecord "CTYPE3A" (String "RA---TAN") Nothing
-        , KeywordRecord "PC1_1" (Float 0.989725216270561) Nothing
-        , KeywordRecord "PC1_2" (Float 0.0) Nothing
-        , KeywordRecord "PC1_3" (Float 0.011515025422160527) Nothing
-        , KeywordRecord "PC2_1" (Float 0.0) Nothing
-        , KeywordRecord "PC2_2" (Float 1.0) Nothing
-        , KeywordRecord "PC2_3" (Float 0.0) Nothing
-        , KeywordRecord "PC3_1" (Float (-0.00232574119521603)) Nothing
-        , KeywordRecord "PC3_2" (Float 0.0) Nothing
-        , KeywordRecord "PC3_3" (Float 0.9896134027832052) Nothing
-        , KeywordRecord "PC1_1A" (Float 0.8847943667398696) Nothing
-        , KeywordRecord "PC1_2A" (Float 0.0) Nothing
-        , KeywordRecord "PC1_3A" (Float 0.987368510792844) Nothing
-        , KeywordRecord "PC2_1A" (Float 0.0) Nothing
-        , KeywordRecord "PC2_2A" (Float 1.0) Nothing
-        , KeywordRecord "PC2_3A" (Float 0.0) Nothing
-        , KeywordRecord "PC3_1A" (Float 0.19682287694734163) Nothing
-        , KeywordRecord "PC3_2A" (Float 0.0) Nothing
-        , KeywordRecord "PC3_3A" (Float (-0.8860769143505891)) Nothing
-        , KeywordRecord "LONPOLE" (Float 180.0) Nothing
-        , KeywordRecord "LONPOLEA" (Float 180.0) Nothing
-        , KeywordRecord "ZNAXIS1" (Integer 2545) Nothing
-        ]
+    [ KeywordRecord "CRPIX1" (Float 1244.1995308776818) Nothing
+    , KeywordRecord "CRPIX2" (Float 495.99999999999994) Nothing
+    , KeywordRecord "CRPIX3" (Float 1303.4156199186928) Nothing
+    , KeywordRecord "CRPIX1A" (Float 1244.200607073661) Nothing
+    , KeywordRecord "CRPIX2A" (Float 496.0000000000001) Nothing
+    , KeywordRecord "CRPIX3A" (Float 1303.4155132947976) Nothing
+    , KeywordRecord "CRVAL1" (Float 91.6717798950973) Nothing
+    , KeywordRecord "CRVAL2" (Float 589.60009) Nothing
+    , KeywordRecord "CRVAL3" (Float (-32.89313312887808)) Nothing
+    , KeywordRecord "CRVAL1A" (Float (-8.93437541160866)) Nothing
+    , KeywordRecord "CRVAL2A" (Float 589.60009) Nothing
+    , KeywordRecord "CRVAL3A" (Float 201.3284644221418) Nothing
+    , KeywordRecord "CDELT1" (Float 0.02385787624354498) Nothing
+    , KeywordRecord "CDELT2" (Float 0.001052397146603632) Nothing
+    , KeywordRecord "CDELT3" (Float 0.053406899773509015) Nothing
+    , KeywordRecord "CDELT1A" (Float 6.62718784542916E-06) Nothing
+    , KeywordRecord "CDELT2A" (Float 0.001052397146603632) Nothing
+    , KeywordRecord "CDELT3A" (Float 1.48352499370858E-05) Nothing
+    , KeywordRecord "CUNIT1" (String "arcsec  ") Nothing
+    , KeywordRecord "CUNIT2" (String "nm      ") Nothing
+    , KeywordRecord "CUNIT3" (String "arcsec  ") Nothing
+    , KeywordRecord "CUNIT1A" (String "deg     ") Nothing
+    , KeywordRecord "CUNIT2A" (String "nm      ") Nothing
+    , KeywordRecord "CUNIT3A" (String "deg     ") Nothing
+    , KeywordRecord "CUNIT3A" (String "deg     ") Nothing
+    , KeywordRecord "CTYPE1" (String "HPLT-TAN") Nothing
+    , KeywordRecord "CTYPE2" (String "AWAV    ") Nothing
+    , KeywordRecord "CTYPE3" (String "HPLN-TAN") Nothing
+    , KeywordRecord "CTYPE1A" (String "DEC--TAN") Nothing
+    , KeywordRecord "CTYPE2A" (String "AWAV    ") Nothing
+    , KeywordRecord "CTYPE3A" (String "RA---TAN") Nothing
+    , KeywordRecord "PC1_1" (Float 0.989725216270561) Nothing
+    , KeywordRecord "PC1_2" (Float 0.0) Nothing
+    , KeywordRecord "PC1_3" (Float 0.011515025422160527) Nothing
+    , KeywordRecord "PC2_1" (Float 0.0) Nothing
+    , KeywordRecord "PC2_2" (Float 1.0) Nothing
+    , KeywordRecord "PC2_3" (Float 0.0) Nothing
+    , KeywordRecord "PC3_1" (Float (-0.00232574119521603)) Nothing
+    , KeywordRecord "PC3_2" (Float 0.0) Nothing
+    , KeywordRecord "PC3_3" (Float 0.9896134027832052) Nothing
+    , KeywordRecord "PC1_1A" (Float 0.8847943667398696) Nothing
+    , KeywordRecord "PC1_2A" (Float 0.0) Nothing
+    , KeywordRecord "PC1_3A" (Float 0.987368510792844) Nothing
+    , KeywordRecord "PC2_1A" (Float 0.0) Nothing
+    , KeywordRecord "PC2_2A" (Float 1.0) Nothing
+    , KeywordRecord "PC2_3A" (Float 0.0) Nothing
+    , KeywordRecord "PC3_1A" (Float 0.19682287694734163) Nothing
+    , KeywordRecord "PC3_2A" (Float 0.0) Nothing
+    , KeywordRecord "PC3_3A" (Float (-0.8860769143505891)) Nothing
+    , KeywordRecord "LONPOLE" (Float 180.0) Nothing
+    , KeywordRecord "LONPOLEA" (Float 180.0) Nothing
+    , KeywordRecord "ZNAXIS1" (Integer 2545) Nothing
+    ]
 
   keys_1_118 =
-    Header $
-      fmap
-        Keyword
-        [ KeywordRecord "CRPIX1" (Float (-22.97932885096441)) Nothing
-        , KeywordRecord "CRPIX2" (Float 477.0) Nothing
-        , KeywordRecord "CRPIX3" (Float 17.52017812719757) Nothing
-        , KeywordRecord "CRPIX1A" (Float (-22.97938348623828)) Nothing
-        , KeywordRecord "CRPIX2A" (Float 477.0) Nothing
-        , KeywordRecord "CRPIX3A" (Float 17.5164360061172) Nothing
-        , KeywordRecord "CRVAL1" (Float 630.2051) Nothing
-        , KeywordRecord "CRVAL2" (Float (-407.0004378228302)) Nothing
-        , KeywordRecord "CRVAL3" (Float (-480.0037505031069)) Nothing
-        , KeywordRecord "CRVAL1A" (Float 630.2051) Nothing
-        , KeywordRecord "CRVAL2A" (Float 22.15633921882706) Nothing
-        , KeywordRecord "CRVAL3A" (Float 70.70918101801153) Nothing
-        , KeywordRecord "CDELT1" (Float 0.00162511509639976) Nothing
-        , KeywordRecord "CDELT2" (Float 0.2134568481952311) Nothing
-        , KeywordRecord "CDELT3" (Float 0.2134568481952311) Nothing
-        , KeywordRecord "CDELT1A" (Float 0.00162511509639976) Nothing
-        , KeywordRecord "CDELT2A" (Float 5.92935689431197E-05) Nothing
-        , KeywordRecord "CDELT3A" (Float 5.92935689431197E-05) Nothing
-        , KeywordRecord "CUNIT1" (String "nm      ") Nothing
-        , KeywordRecord "CUNIT2" (String "arcsec  ") Nothing
-        , KeywordRecord "CUNIT3" (String "arcsec  ") Nothing
-        , KeywordRecord "CUNIT1A" (String "nm      ") Nothing
-        , KeywordRecord "CUNIT2A" (String "deg     ") Nothing
-        , KeywordRecord "CUNIT3A" (String "deg     ") Nothing
-        , KeywordRecord "CTYPE1" (String "AWAV    ") Nothing
-        , KeywordRecord "CTYPE2" (String "HPLT-TAN") Nothing
-        , KeywordRecord "CTYPE3" (String "HPLN-TAN") Nothing
-        , KeywordRecord "CTYPE1A" (String "AWAV    ") Nothing
-        , KeywordRecord "CTYPE2A" (String "DEC--TAN") Nothing
-        , KeywordRecord "CTYPE3A" (String "RA---TAN") Nothing
-        , KeywordRecord "PC1_1" (Float 7.605732144392837) Nothing
-        , KeywordRecord "PC1_2" (Float 0.0) Nothing
-        , KeywordRecord "PC1_3" (Float (-0.00055119003270320)) Nothing
-        , KeywordRecord "PC2_1" (Float 0.02996987746323728) Nothing
-        , KeywordRecord "PC2_2" (Float 0.0) Nothing
-        , KeywordRecord "PC2_3" (Float 0.1400743319547421) Nothing
-        , KeywordRecord "PC3_1" (Float 0.0) Nothing
-        , KeywordRecord "PC3_2" (Float 615.3410316693107) Nothing
-        , KeywordRecord "PC3_3" (Float 0.0) Nothing
-        , KeywordRecord "PC1_1A" (Float (-7.364415206124172)) Nothing
-        , KeywordRecord "PC1_2A" (Float 0.0) Nothing
-        , KeywordRecord "PC1_3A" (Float (-0.03521686283739144)) Nothing
-        , KeywordRecord "PC2_1A" (Float (-1.907264089997582)) Nothing
-        , KeywordRecord "PC2_2A" (Float 0.0) Nothing
-        , KeywordRecord "PC2_3A" (Float 0.1355024888283506) Nothing
-        , KeywordRecord "PC3_1A" (Float 0.0) Nothing
-        , KeywordRecord "PC3_2A" (Float 615.3410316693107) Nothing
-        , KeywordRecord "PC3_3A" (Float 0.0) Nothing
-        , KeywordRecord "LONPOLE" (Float 180.0) Nothing
-        , KeywordRecord "LONPOLEA" (Float 180.0) Nothing
-        , KeywordRecord "ZNAXIS1" (Integer 2555) Nothing
-        ]
+    [ KeywordRecord "CRPIX1" (Float (-22.97932885096441)) Nothing
+    , KeywordRecord "CRPIX2" (Float 477.0) Nothing
+    , KeywordRecord "CRPIX3" (Float 17.52017812719757) Nothing
+    , KeywordRecord "CRPIX1A" (Float (-22.97938348623828)) Nothing
+    , KeywordRecord "CRPIX2A" (Float 477.0) Nothing
+    , KeywordRecord "CRPIX3A" (Float 17.5164360061172) Nothing
+    , KeywordRecord "CRVAL1" (Float 630.2051) Nothing
+    , KeywordRecord "CRVAL2" (Float (-407.0004378228302)) Nothing
+    , KeywordRecord "CRVAL3" (Float (-480.0037505031069)) Nothing
+    , KeywordRecord "CRVAL1A" (Float 630.2051) Nothing
+    , KeywordRecord "CRVAL2A" (Float 22.15633921882706) Nothing
+    , KeywordRecord "CRVAL3A" (Float 70.70918101801153) Nothing
+    , KeywordRecord "CDELT1" (Float 0.00162511509639976) Nothing
+    , KeywordRecord "CDELT2" (Float 0.2134568481952311) Nothing
+    , KeywordRecord "CDELT3" (Float 0.2134568481952311) Nothing
+    , KeywordRecord "CDELT1A" (Float 0.00162511509639976) Nothing
+    , KeywordRecord "CDELT2A" (Float 5.92935689431197E-05) Nothing
+    , KeywordRecord "CDELT3A" (Float 5.92935689431197E-05) Nothing
+    , KeywordRecord "CUNIT1" (String "nm      ") Nothing
+    , KeywordRecord "CUNIT2" (String "arcsec  ") Nothing
+    , KeywordRecord "CUNIT3" (String "arcsec  ") Nothing
+    , KeywordRecord "CUNIT1A" (String "nm      ") Nothing
+    , KeywordRecord "CUNIT2A" (String "deg     ") Nothing
+    , KeywordRecord "CUNIT3A" (String "deg     ") Nothing
+    , KeywordRecord "CTYPE1" (String "AWAV    ") Nothing
+    , KeywordRecord "CTYPE2" (String "HPLT-TAN") Nothing
+    , KeywordRecord "CTYPE3" (String "HPLN-TAN") Nothing
+    , KeywordRecord "CTYPE1A" (String "AWAV    ") Nothing
+    , KeywordRecord "CTYPE2A" (String "DEC--TAN") Nothing
+    , KeywordRecord "CTYPE3A" (String "RA---TAN") Nothing
+    , KeywordRecord "PC1_1" (Float 7.605732144392837) Nothing
+    , KeywordRecord "PC1_2" (Float 0.0) Nothing
+    , KeywordRecord "PC1_3" (Float (-0.00055119003270320)) Nothing
+    , KeywordRecord "PC2_1" (Float 0.02996987746323728) Nothing
+    , KeywordRecord "PC2_2" (Float 0.0) Nothing
+    , KeywordRecord "PC2_3" (Float 0.1400743319547421) Nothing
+    , KeywordRecord "PC3_1" (Float 0.0) Nothing
+    , KeywordRecord "PC3_2" (Float 615.3410316693107) Nothing
+    , KeywordRecord "PC3_3" (Float 0.0) Nothing
+    , KeywordRecord "PC1_1A" (Float (-7.364415206124172)) Nothing
+    , KeywordRecord "PC1_2A" (Float 0.0) Nothing
+    , KeywordRecord "PC1_3A" (Float (-0.03521686283739144)) Nothing
+    , KeywordRecord "PC2_1A" (Float (-1.907264089997582)) Nothing
+    , KeywordRecord "PC2_2A" (Float 0.0) Nothing
+    , KeywordRecord "PC2_3A" (Float 0.1355024888283506) Nothing
+    , KeywordRecord "PC3_1A" (Float 0.0) Nothing
+    , KeywordRecord "PC3_2A" (Float 615.3410316693107) Nothing
+    , KeywordRecord "PC3_3A" (Float 0.0) Nothing
+    , KeywordRecord "LONPOLE" (Float 180.0) Nothing
+    , KeywordRecord "LONPOLEA" (Float 180.0) Nothing
+    , KeywordRecord "ZNAXIS1" (Integer 2555) Nothing
+    ]
 
 
 specWavProfile :: Spec

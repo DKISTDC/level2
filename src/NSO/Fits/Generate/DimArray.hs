@@ -156,23 +156,22 @@ splitM1 b (DimArray arr) = do
   (arr1, arr2) <- M.splitAtM (Dim dims) b arr
   pure (DimArray arr1, DimArray arr2)
 
-
-sampleGen2 :: Ix2 -> Float
-sampleGen2 (r :. c) = fromIntegral r * 10 + fromIntegral c
-
-
-sampleGen3 :: Ix3 -> Float
-sampleGen3 (d :> d2) = fromIntegral d * 100 + sampleGen2 d2
-
-
-data X
-data Y
-data Z
-
-
-sample2 :: Ix2 -> DimArray [Y, X]
-sample2 ix = DimArray $ makeArray Seq (Sz ix) sampleGen2
-
-
-sample3 :: Ix3 -> DimArray [Z, Y, X]
-sample3 ix = DimArray $ makeArray Seq (Sz ix) sampleGen3
+-- sampleGen2 :: Ix2 -> Float
+-- sampleGen2 (r :. c) = fromIntegral r * 10 + fromIntegral c
+--
+--
+-- sampleGen3 :: Ix3 -> Float
+-- sampleGen3 (d :> d2) = fromIntegral d * 100 + sampleGen2 d2
+--
+--
+-- data DX'
+-- data Y'
+-- data Z'
+--
+--
+-- sample2 :: Ix2 -> DimArray [Y, X]
+-- sample2 ix = DimArray $ makeArray Seq (Sz ix) sampleGen2
+--
+--
+-- sample3 :: Ix3 -> DimArray [Z, Y, X]
+-- sample3 ix = DimArray $ makeArray Seq (Sz ix) sampleGen3

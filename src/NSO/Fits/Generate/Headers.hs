@@ -174,6 +174,8 @@ instance KeywordInfo Teltrack where
   description = "Tracking Mode of the Telescope"
   allowed = fmap String ["None", "Fixed Solar Rotation Tracking", "Standard Differential Rotation Tracking", "Custom Differential Rotation Tracking"]
   keyValue (Teltrack s) = String s
+instance HeaderKeywords Teltrack where
+  headerKeywords b = [keywordRecord b]
 
 
 data Telscan = Telscan Text deriving (Generic)
@@ -182,6 +184,8 @@ instance KeywordInfo Telscan where
   description = "Scanning Mode of the Telescope"
   allowed = fmap String ["None", "Random", "Raster", "Spiral"]
   keyValue (Telscan s) = String s
+instance HeaderKeywords Telscan where
+  headerKeywords b = [keywordRecord b]
 
 
 data Ttbltrck = Ttbltrck Text deriving (Generic)
@@ -190,6 +194,8 @@ instance KeywordInfo Ttbltrck where
   description = "Coude table tracking mode."
   allowed = fmap String ["(stepped) parallactic", "fixed angle on sun", "fixed difference-angle btwn", "coude and tel. azimuth", "fixed coude table angle"]
   keyValue (Ttbltrck s) = String s
+instance HeaderKeywords Ttbltrck where
+  headerKeywords b = [keywordRecord b]
 
 
 -- GENERATE ------------------------------------------------------------
