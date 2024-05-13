@@ -49,7 +49,7 @@ instance (KnownValue unit) => KeywordInfo (BUnit unit) where
   keyValue _ = knownValue @unit
 
 
-data Key ktype (description :: Symbol) = Key ktype
+data Key ktype (description :: Symbol) = Key {ktype :: ktype}
   deriving (Generic, Show, Eq)
 instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (Key ktype desc) where
   keytype = typeName @ktype

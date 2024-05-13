@@ -47,7 +47,7 @@ profileHDUs
   -> ProfileFrame Original
   -> ProfileFrame Fit
   -> Eff es [ImageHDU]
-profileHDUs now l1 wpo wpf po pf =
+profileHDUs now l1 wpo wpf po pf = do
   sequence [orig630, orig854, fit630, fit854]
  where
   orig630 = profileHDU @OrigProfile630 now l1 DataHDUInfo wpo.wav630 po.wav630

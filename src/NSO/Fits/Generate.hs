@@ -23,8 +23,7 @@ import Telescope.Fits
 
 -- DOING: Profile HDUs
 --   DONE: Split wavelengths
---   DOING: Design headers for profile HDUs
---   TODO: Design headers for profile HDUs
+--   DONE: Design headers for profile HDUs
 --   TODO: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
 
 ------------------------------------------------------------------------------
@@ -139,7 +138,7 @@ generateL2Fits now i l1 q wpo wpf po pf = do
   prim <- primaryHDU i l1
   imgs <- quantitiesHDUs now l1.header q
   profs <- profileHDUs now l1.header wpo wpf po pf
-  pure $ Fits prim $ fmap Image imgs <> fmap Image profs
+  pure $ Fits prim $ fmap Image $ imgs <> profs
 
 
 -- What is supposed to go in here?
