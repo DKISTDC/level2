@@ -5,12 +5,10 @@ module NSO.Fits.Generate.Quantities where
 
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString (ByteString)
-import Data.Fits (toFloat)
 import Data.Kind (Type)
 import Data.Massiv.Array (Index, Ix2 (..), IxN (..), Sz (..))
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
-import Debug.Trace (traceM)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Writer.Static.Local
@@ -216,11 +214,15 @@ dataHDU now l1 info res = do
 
   wcsSection = do
     let bx = binnedX
+
     wc <- wcsCommon l1
     wm <- wcsAxes @WCSMain bx l1
-    wa <- wcsAxes @A bx l1
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
+
+    wca <- wcsCommonA l1
+    wa <- wcsAxes @A bx l1
+    addKeywords $ headerKeywords wca
     addKeywords $ headerKeywords wa
 
   binnedX =
@@ -229,9 +231,9 @@ dataHDU now l1 info res = do
 
 
 data QuantityAxes alt = QuantityAxes
-  { dummyY :: QuantityAxis alt Y
+  { depth :: QuantityAxis alt Depth
   , slitX :: QuantityAxis alt X
-  , depth :: QuantityAxis alt Depth
+  , dummyY :: QuantityAxis alt Y
   }
   deriving (Generic)
 instance AxisOrder QuantityAxes Y where
@@ -252,17 +254,13 @@ instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (Quantity
 
 
 data QuantityPCs alt ax = QuantityPCs
-  { dummyY :: PC QuantityAxes alt ax Y
+  { depth :: PC QuantityAxes alt ax Depth
   , slitX :: PC QuantityAxes alt ax X
-  , depth :: PC QuantityAxes alt ax Depth
+  , dummyY :: PC QuantityAxes alt ax Y
   }
   deriving (Generic)
 instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
 
-
--- instance (KnownValue alt, KnownNat n) => HeaderKeywords (QuantityAxis alt n) where
---   headerKeywords a =
---     headerKeywords a.keys <> headerKeywords a.pcs
 
 wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => BinnedX -> Header -> Eff es (QuantityAxes alt)
 wcsAxes bx h = do

@@ -4,10 +4,9 @@
 module NSO.Fits.Generate.Headers where
 
 import App.Version (appVersion)
-import Control.Monad.Catch (Exception)
 import Data.Fits (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
 import Data.List qualified as L
-import Data.Text (pack, unpack)
+import Data.Text (pack)
 import Data.Text qualified as T
 import Data.UUID qualified as UUID
 import Effectful
@@ -63,6 +62,8 @@ headerSpecVersion = "L2." <> pack appVersion
 -- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size. Waiting on Profile HDUs, etc
 
 -- LATER: CONTINUE - if a url is too long. Or make sure they aren't too long :)
+--
+-- TODO: Telescope headers belongs in the data, not the primary! ?? Why? Are they Required for WCS?
 --
 -- TODO: Cleanup
 --   TODO: telescope - change exports to avoid fits-parse

@@ -165,6 +165,7 @@ instance KeyType Degrees where
 data Constant c = Constant deriving (Generic)
 instance (KnownValue c) => KeyType (Constant c) where
   typeValue _ = knownValue @c
+  typeComment = ""
 
 
 data DateTime = DateTime Text deriving (Generic)

@@ -7,7 +7,6 @@ import Data.ByteString qualified as BS
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Effectful.Error.Static
-import GHC.TypeLits (KnownNat (..))
 import NSO.Fits.Generate.DimArray
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords
@@ -22,6 +21,7 @@ import Prelude (truncate)
 
 
 -- BUG: generating profiles is slow. Or reading them? Unsure
+-- TODO: add wavelength WCS axis correctly
 
 data Original
 data Fit
@@ -80,9 +80,12 @@ profileHDU now l1 info wp da = do
     let bx = binnedX
     wc <- wcsCommon l1
     wm <- wcsAxes @WCSMain bx wp l1
-    wa <- wcsAxes @A bx wp l1
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
+
+    wca <- wcsCommonA l1
+    wa <- wcsAxes @A bx wp l1
+    addKeywords $ headerKeywords wca
     addKeywords $ headerKeywords wa
 
   binnedX =

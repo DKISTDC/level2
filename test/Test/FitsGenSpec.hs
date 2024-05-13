@@ -10,6 +10,7 @@ import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Fits.Generate.Profile
+import NSO.Fits.Generate.Quantities
 import NSO.Prelude
 import NSO.Types.Wavelength
 import Test.Syd
@@ -31,13 +32,23 @@ ctypeX = "HPLT-TAN"
 
 specWCS :: Spec
 specWCS = describe "WCS" $ do
-  aroundAll (withKeys keys_2_114) $ describe "golden 2_114 headers" $ do
-    itWithOuter "should find yn xn" $ \h -> do
+  describe "golden 2_114 headers" $ do
+    let h = Header $ fmap Keyword keys_2_114
+    it "should find yn xn" $ do
       (x, y) <- runErrorIO $ requireWCSAxes h
       y `shouldBe` Axis 3
       x `shouldBe` Axis 1
 
-    itWithOuter "wcs keys" $ \h -> do
+    it "requirePCs" $ do
+      pcs <- runErrorIO $ do
+        (x, y) <- requireWCSAxes h
+        requirePCs @WCSMain x y h
+      pcs.yy `shouldBe` PC 33
+      pcs.yx `shouldBe` PC 31
+      pcs.xx `shouldBe` PC 11
+      pcs.xy `shouldBe` PC 13
+
+    it "wcs keys" $ do
       (x, y) <- runErrorIO $ requireWCSAxes h
       ky <- runErrorIO $ wcsDummyY @WCSMain y h
       ky.ctype `shouldBe` Key ctypeY
@@ -45,26 +56,23 @@ specWCS = describe "WCS" $ do
       kx <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 237) h
       kx.ctype `shouldBe` Key ctypeX
 
-  aroundAll (withKeys keys_1_118) $ describe "incorrect 1_118 headers" $ do
-    itWithOuter "should find yn xn" $ \h -> do
+  describe "incorrect 1_118 headers" $ do
+    let h = Header $ fmap Keyword keys_1_118
+    it "should find yn xn" $ do
       (x, y) <- runErrorIO $ requireWCSAxes h
       x `shouldBe` Axis 2
       y `shouldBe` Axis 3
 
-    itWithOuter "wcs keys y" $ \h -> do
+    it "wcs keys y" $ do
       (_, y) <- runErrorIO $ requireWCSAxes h
       ky <- runErrorIO $ wcsDummyY @WCSMain y h
       ky.ctype `shouldBe` Key ctypeY
 
-    itWithOuter "wcs keys x" $ \h -> do
+    it "wcs keys x" $ do
       (x, _) <- runErrorIO $ requireWCSAxes h
       kx <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 237) h
       kx.ctype `shouldBe` Key ctypeX
  where
-  withKeys :: [KeywordRecord] -> (Header -> IO a) -> IO a
-  withKeys ks m = do
-    m $ Header $ fmap Keyword ks
-
   keys_2_114 =
     [ KeywordRecord "CRPIX1" (Float 1244.1995308776818) Nothing
     , KeywordRecord "CRPIX2" (Float 495.99999999999994) Nothing
@@ -97,15 +105,15 @@ specWCS = describe "WCS" $ do
     , KeywordRecord "CTYPE1A" (String "DEC--TAN") Nothing
     , KeywordRecord "CTYPE2A" (String "AWAV    ") Nothing
     , KeywordRecord "CTYPE3A" (String "RA---TAN") Nothing
-    , KeywordRecord "PC1_1" (Float 0.989725216270561) Nothing
-    , KeywordRecord "PC1_2" (Float 0.0) Nothing
-    , KeywordRecord "PC1_3" (Float 0.011515025422160527) Nothing
-    , KeywordRecord "PC2_1" (Float 0.0) Nothing
-    , KeywordRecord "PC2_2" (Float 1.0) Nothing
-    , KeywordRecord "PC2_3" (Float 0.0) Nothing
-    , KeywordRecord "PC3_1" (Float (-0.00232574119521603)) Nothing
-    , KeywordRecord "PC3_2" (Float 0.0) Nothing
-    , KeywordRecord "PC3_3" (Float 0.9896134027832052) Nothing
+    , KeywordRecord "PC1_1" (Float 11) Nothing
+    , KeywordRecord "PC1_2" (Float 12) Nothing
+    , KeywordRecord "PC1_3" (Float 13) Nothing
+    , KeywordRecord "PC2_1" (Float 21) Nothing
+    , KeywordRecord "PC2_2" (Float 22) Nothing
+    , KeywordRecord "PC2_3" (Float 23) Nothing
+    , KeywordRecord "PC3_1" (Float 31) Nothing
+    , KeywordRecord "PC3_2" (Float 32) Nothing
+    , KeywordRecord "PC3_3" (Float 33) Nothing
     , KeywordRecord "PC1_1A" (Float 0.8847943667398696) Nothing
     , KeywordRecord "PC1_2A" (Float 0.0) Nothing
     , KeywordRecord "PC1_3A" (Float 0.987368510792844) Nothing

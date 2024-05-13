@@ -3,9 +3,7 @@
 module NSO.Fits.Generate.Headers.WCS where
 
 import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
-import Data.Massiv.Array (Ix2 (..), Sz (..))
 import Data.Text (pack, unpack)
-import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics
@@ -60,7 +58,12 @@ data WCSCommon = WCSCommon
   , wcsname :: Key (Constant "Helioprojective Cartesian") "Helioprojective Cartesian"
   , wcsaxes :: Key Int "Number of axes in the Helioprojective Cartesian WCS description" -- MUST precede other WCS keywords
   , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
-  , wcsnamea :: Key (Constant "Equatorial equinox J2000") "Equatorial equinox J2000"
+  }
+  deriving (Generic, HeaderDoc, HeaderKeywords)
+
+
+data WCSCommonA = WCSCommonA
+  { wcsnamea :: Key (Constant "Equatorial equinox J2000") "Equatorial equinox J2000"
   , wcsaxesa :: Key Int "Number of axes in the Equatorial equinox J2000 WCS description" -- MUST precede other WCS keywords
   , lonpolea :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
@@ -95,6 +98,7 @@ instance (AxisOrder s ax, KnownValue alt) => HeaderKeywords (WCSAxisKeywords s a
 
 -- it's a mapping of one axis type to another
 data PC s (alt :: WCSAlt) ai aj = PC Float
+  deriving (Show, Eq)
 instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => KeywordInfo (PC s alt ai aj) where
   keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownValueText @alt
   keytype = "PCi_j"
@@ -107,14 +111,21 @@ instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC 
 wcsCommon :: forall es. (Error LiftL1Error :> es) => Header -> Eff es WCSCommon
 wcsCommon l1 = do
   lonpole <- Degrees <$> requireL1 "LONPOLE" toFloat l1
-  lonpolea <- Degrees <$> requireL1 "LONPOLEA" toFloat l1
   pure $
     WCSCommon
       { wcsvalid = Key Constant
       , wcsname = Key Constant
       , wcsaxes = Key 3
       , lonpole = Key lonpole
-      , wcsnamea = Key Constant
+      }
+
+
+wcsCommonA :: forall es. (Error LiftL1Error :> es) => Header -> Eff es WCSCommonA
+wcsCommonA l1 = do
+  lonpolea <- Degrees <$> requireL1 "LONPOLEA" toFloat l1
+  pure $
+    WCSCommonA
+      { wcsnamea = Key Constant
       , wcsaxesa = Key 3
       , lonpolea = Key lonpolea
       }
@@ -181,7 +192,6 @@ wcsSlitX ax (BinnedX newx) l1 = do
   keys <- requireWCS @s @alt ax l1
 
   let Header (wtf : _) = l1
-  traceM $ show (ax, keys.ctype, wtf)
 
   pure $ scale scaleUp keys
  where
