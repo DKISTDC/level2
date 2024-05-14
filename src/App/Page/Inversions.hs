@@ -48,8 +48,6 @@ isActive inv =
 
 viewInversion :: Inversion -> View c ()
 viewInversion inv = do
-  -- TODO: Show more detailed status for each one... which step are we on?
-  -- what are the dates that things have been happening
   row (gap 10) $ do
     -- route (Route.Program inv.programId) Style.link $
     --   text inv.programId.fromId

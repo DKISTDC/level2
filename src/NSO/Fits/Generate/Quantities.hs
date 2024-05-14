@@ -6,7 +6,7 @@ module NSO.Fits.Generate.Quantities where
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString (ByteString)
 import Data.Kind (Type)
-import Data.Massiv.Array (Index, Ix2 (..), IxN (..), Sz (..))
+import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
 import Data.Maybe (isJust)
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
@@ -180,17 +180,51 @@ quantitiesHDUs now l1 q = execWriter $ do
   gasPressure
   density
  where
-  opticalDepth = dataHDU @OpticalDepth now l1 DataHDUInfo q.opticalDepth
-  temperature = dataHDU @Temperature now l1 DataHDUInfo q.temperature
-  electronPressure = dataHDU @ElectronPressure now l1 DataHDUInfo q.electronPressure
-  microTurbulence = dataHDU @Microturbulence now l1 DataHDUInfo q.microTurbulence
+  opticalDepth =
+    dataHDU @OpticalDepth now l1 DataHDUInfo q.opticalDepth
+
+  temperature =
+    dataHDU @Temperature now l1 DataHDUInfo q.temperature
+
+  electronPressure =
+    dataHDU @ElectronPressure now l1 DataHDUInfo $
+      convert dyneCmToNm q.electronPressure
+
+  microTurbulence =
+    dataHDU @Microturbulence now l1 DataHDUInfo $
+      convert cmsToKms q.microTurbulence
+
   magStrength = dataHDU @MagStrength now l1 DataHDUInfo q.magStrength
-  velocity = dataHDU @Velocity now l1 DataHDUInfo q.velocity
-  magInclination = dataHDU @MagInclination now l1 DataHDUInfo q.magInclination
-  magAzimuth = dataHDU @MagAzimuth now l1 DataHDUInfo q.magAzimuth
-  geoHeight = dataHDU @GeoHeight now l1 DataHDUInfo q.geoHeight
-  gasPressure = dataHDU @GasPressure now l1 DataHDUInfo q.gasPressure
-  density = dataHDU @Density now l1 DataHDUInfo q.density
+
+  velocity =
+    dataHDU @Velocity now l1 DataHDUInfo $
+      convert cmsToKms q.velocity
+
+  magInclination =
+    dataHDU @MagInclination now l1 DataHDUInfo q.magInclination
+
+  magAzimuth =
+    dataHDU @MagAzimuth now l1 DataHDUInfo q.magAzimuth
+
+  geoHeight =
+    dataHDU @GeoHeight now l1 DataHDUInfo q.geoHeight
+
+  gasPressure =
+    dataHDU @GasPressure now l1 DataHDUInfo $
+      convert dyneCmToNm q.gasPressure
+
+  density =
+    dataHDU @Density now l1 DataHDUInfo $
+      convert gcmToKgm q.density
+
+  convert f da =
+    DimArray $ M.map f da.array
+
+  cmsToKms = (/ 100000)
+
+  gcmToKgm = (* 1000)
+
+  dyneCmToNm = (/ 10)
 
 
 dataHDU

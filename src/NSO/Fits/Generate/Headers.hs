@@ -42,6 +42,7 @@ headerSpecVersion = "L2." <> pack appVersion
 -- DONE: FILE_ID - UUID for this frame - where do I need to store this?
 -- DONE: HEAD_URL - create a url that links to this
 -- DONE: INFO_URL - what's the difference? Is there another documentation page? Does it have a different spec?
+-- DONE: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size. Waiting on Profile HDUs, etc
 -- NOPE: PROV_URL - create a provenance URL page
 
 -- DONE: DATAMIN
@@ -58,12 +59,8 @@ headerSpecVersion = "L2." <> pack appVersion
 -- DONE: PCOUNT - telescope
 -- DONE: GCOUNT - telescope
 -- TODO: Doubles vs Floats - fits-parse
-
--- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size. Waiting on Profile HDUs, etc
-
--- LATER: CONTINUE - if a url is too long. Or make sure they aren't too long :)
-
--- TODO: Telescope headers belongs in the data, not the primary! ?? Why? Are they Required for WCS?
+--
+-- NOPE: CONTINUE - if a url is too long. Or make sure they aren't too long :)
 
 -- TODO: Cleanup
 --   TODO: telescope - change exports to avoid fits-parse
@@ -119,7 +116,6 @@ instance HeaderKeywords ContribExpProp where
     isProp kr = "PROPID" `T.isPrefixOf` kr._keyword
     isExpr kr = "EXPRID" `T.isPrefixOf` kr._keyword
 instance HeaderDoc ContribExpProp where
-  -- TODO: manually add PROPID<rr>, and EXPRID<ee>
   headerDoc = []
 
 
@@ -298,7 +294,6 @@ adaptiveOpticsHeader l1 = do
   toBool _ = Nothing
 
 
--- TODO: this belongs in the data, not the primary! ?? Why? Required?
 telescopeHeader :: (Error LiftL1Error :> es) => Header -> Eff es TelescopeHeader
 telescopeHeader l1 = do
   tazimuth <- Key . Degrees <$> requireL1 "TAZIMUTH" toFloat l1

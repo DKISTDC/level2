@@ -174,7 +174,6 @@ instance KeyType Bool where
   typeValue True = Logic T
   typeValue False = Logic F
 instance KeyType Float where
-  -- TODO: change to Double. Don't support Float
   typeName = "Float"
   typeComment = ""
   typeValue = Float

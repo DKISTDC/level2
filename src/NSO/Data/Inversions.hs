@@ -353,11 +353,9 @@ validateGitCommit (GitRepo repo) gc
 newtype GitRepo = GitRepo (Url Https)
 
 
--- TODO: Get correct repo
 preprocessRepo :: GitRepo
 preprocessRepo = GitRepo $ https "github.com" /: "DKISTDC" /: "level2-preprocess"
 
 
--- TODO: Get correct repo. Need to move into the data center?
 desireRepo :: GitRepo
 desireRepo = GitRepo $ https "github.com" /: "han-uitenbroek" /: "RH"

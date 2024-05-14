@@ -27,7 +27,7 @@ import Telescope.Fits.Encoding (replaceKeywordLine)
 --   DONE: Design headers for profile HDUs
 --   DONE: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
 
--- TODO: Unit conversion
+-- TODO: Check Units. Conversion?
 
 ------------------------------------------------------------------------------
 

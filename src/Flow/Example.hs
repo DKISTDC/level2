@@ -23,7 +23,6 @@ dataset :: (MyFlow es) => Eff es Dataset
 dataset = ask
 
 
--- TODO: I want workflow to look like this! Really easy to see the network
 workflow :: (MyFlow es) => Eff es Final
 workflow = do
   a <- stepA
