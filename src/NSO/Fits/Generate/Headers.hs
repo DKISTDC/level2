@@ -62,13 +62,13 @@ headerSpecVersion = "L2." <> pack appVersion
 -- TODO: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size. Waiting on Profile HDUs, etc
 
 -- LATER: CONTINUE - if a url is too long. Or make sure they aren't too long :)
---
+
 -- TODO: Telescope headers belongs in the data, not the primary! ?? Why? Are they Required for WCS?
---
+
 -- TODO: Cleanup
 --   TODO: telescope - change exports to avoid fits-parse
 --   TODO: pubmit PR for fits-parse
---   TODO: put primary in a separate gen file from Generate and export as required
+--   TODO: Refactor primary to a separate gen file from Generate and export as required
 
 data ObservationHeader = ObservationHeader
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
@@ -243,7 +243,7 @@ datacenterHeader l1 i = do
   pure $
     Datacenter
       { dsetid = Key i
-      , framevol = Key $ MB 123
+      , framevol = Key $ MB 0
       , proctype = Key Constant
       , filename = Key $ frameFilename dateBeg i
       , level = Key Constant
@@ -261,10 +261,7 @@ datacenterHeader l1 i = do
       , npropos
       , nexpers
       }
- where
 
-
--- frameVolume = dataSize + headerSize
 
 contribExpProp :: (Error LiftL1Error :> es) => Header -> Eff es ContribExpProp
 contribExpProp l1 = do

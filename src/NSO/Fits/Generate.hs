@@ -19,12 +19,13 @@ import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits
+import Telescope.Fits.Encoding (replaceKeywordLine)
 
 
--- DOING: Profile HDUs
+-- DONE: Profile HDUs
 --   DONE: Split wavelengths
 --   DONE: Design headers for profile HDUs
---   TODO: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
+--   DONE: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
 
 -- TODO: Unit conversion
 
@@ -110,8 +111,10 @@ test = do
   --
   -- print fits.primaryHDU.dataArray.rawData
 
-  let out = encode fits
+  let out = encodeL2 fits
       path = "code/notebooks/data/out.fits"
+
+  print $ BS.drop (BS.length out - 100) out
   BS.writeFile ("/Users/seanhess/" <> path) out
   putStrLn $ "\nWROTE : " <> path
 
@@ -123,6 +126,13 @@ readLevel1 fp = do
   case fits.extensions of
     [BinTable b] -> pure b
     _ -> throwM $ MissingL1HDU fp
+
+
+encodeL2 :: Fits -> BS.ByteString
+encodeL2 f =
+  let out = encode f
+      mb = fromIntegral (BS.length out) / 1000000
+   in out -- replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
 
 
 generateL2Fits
