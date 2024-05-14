@@ -54,7 +54,7 @@ data Test = Test
 
 
 data WCSCommon = WCSCommon
-  { wcsvalid :: Key (Constant True) "WCI data are correct"
+  { wcsvalid :: Key Bool "WCI data are correct"
   , wcsname :: Key (Constant "Helioprojective Cartesian") "Helioprojective Cartesian"
   , wcsaxes :: Key Int "Number of axes in the Helioprojective Cartesian WCS description" -- MUST precede other WCS keywords
   , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
@@ -97,7 +97,7 @@ instance (AxisOrder s ax, KnownValue alt) => HeaderKeywords (WCSAxisKeywords s a
 --       <> headerKeywords ax.pcs
 
 -- it's a mapping of one axis type to another
-data PC s (alt :: WCSAlt) ai aj = PC Float
+data PC s (alt :: WCSAlt) ai aj = PC {value :: Float}
   deriving (Show, Eq)
 instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => KeywordInfo (PC s alt ai aj) where
   keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownValueText @alt
@@ -108,12 +108,12 @@ instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC 
   headerKeywords p = [keywordRecord p]
 
 
-wcsCommon :: forall es. (Error LiftL1Error :> es) => Header -> Eff es WCSCommon
-wcsCommon l1 = do
+wcsCommon :: forall es. (Error LiftL1Error :> es) => Bool -> Header -> Eff es WCSCommon
+wcsCommon valid l1 = do
   lonpole <- Degrees <$> requireL1 "LONPOLE" toFloat l1
   pure $
     WCSCommon
-      { wcsvalid = Key Constant
+      { wcsvalid = Key valid
       , wcsname = Key Constant
       , wcsaxes = Key 3
       , lonpole = Key lonpole
@@ -143,6 +143,7 @@ requireWCS (Axis n) l1 = do
   keyN k = k <> pack (show n) <> knownValueText @alt
 
 
+-- | Look up the order of the spatial axes and report which is which
 requireWCSAxes :: (Error LiftL1Error :> es) => Header -> Eff es (Axis X, Axis Y)
 requireWCSAxes h = do
   y <- axisY h
@@ -165,6 +166,7 @@ requireCtypeAxis ctype l1 = do
     readMaybe $ drop 5 $ unpack k._keyword
 
 
+-- can we detect that they are incorrect here?
 requirePCs :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
 requirePCs (Axis xn) (Axis yn) l1 = do
   yy <- PC <$> requireL1 (pcN yn yn) toFloat l1
@@ -175,6 +177,11 @@ requirePCs (Axis xn) (Axis yn) l1 = do
  where
   pcN :: Int -> Int -> Text
   pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownValueText @alt
+
+
+isPCsValid :: PCL1 s alt -> Bool
+isPCsValid pcs =
+  0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 
 
 wcsDummyY :: (KnownValue alt, Error LiftL1Error :> es) => Axis Y -> Header -> Eff es (WCSAxisKeywords s alt Y)

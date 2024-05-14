@@ -26,6 +26,8 @@ import Telescope.Fits
 --   DONE: Design headers for profile HDUs
 --   TODO: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
 
+-- TODO: Unit conversion
+
 ------------------------------------------------------------------------------
 
 testInput :: FilePath
@@ -41,12 +43,12 @@ testResultProfile = "/Users/seanhess/Data/scan1807/inv_res_pre.fits"
 
 
 -- WARNING: We are working with pid_1_118, but the headers are wrong there
-level1Input :: FilePath
-level1Input = "/Users/seanhess/Data/pid_1_118/BVJVO/VISP_2022_06_02T22_13_41_664_00630205_I_BVJVO_L1.fits"
-
-
 -- level1Input :: FilePath
--- level1Input = "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits"
+-- level1Input = "/Users/seanhess/Data/pid_1_118/BVJVO/VISP_2022_06_02T22_13_41_664_00630205_I_BVJVO_L1.fits"
+
+level1Input :: FilePath
+level1Input = "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits"
+
 
 test :: IO ()
 test = do

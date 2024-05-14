@@ -7,6 +7,7 @@ import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString (ByteString)
 import Data.Kind (Type)
 import Data.Massiv.Array (Index, Ix2 (..), IxN (..), Sz (..))
+import Data.Maybe (isJust)
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
@@ -215,8 +216,8 @@ dataHDU now l1 info res = do
   wcsSection = do
     let bx = binnedX
 
-    wc <- wcsCommon l1
     wm <- wcsAxes @WCSMain bx l1
+    wc <- wcsCommon (isWcsValid wm) l1
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
 
@@ -228,6 +229,10 @@ dataHDU now l1 info res = do
   binnedX =
     let (Sz (newx :. _)) = size res.array
      in BinnedX newx
+
+  isWcsValid :: QuantityAxes alt -> Bool
+  isWcsValid axs =
+    isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
 
 
 data QuantityAxes alt = QuantityAxes
@@ -247,7 +252,7 @@ instance (KnownValue alt) => HeaderKeywords (QuantityAxes alt)
 
 data QuantityAxis alt ax = QuantityAxis
   { keys :: WCSAxisKeywords QuantityAxes alt ax
-  , pcs :: QuantityPCs alt ax
+  , pcs :: Maybe (QuantityPCs alt ax)
   }
   deriving (Generic)
 instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityAxis alt ax)
@@ -268,19 +273,23 @@ wcsAxes bx h = do
   pcsl1 <- requirePCs ax ay h
 
   yk <- wcsDummyY ay h
-  let yp = QuantityPCs{dummyY = pcsl1.yy, slitX = pcsl1.yx, depth = PC 0}
-
   xk <- wcsSlitX ax bx h
-  let xp = QuantityPCs{dummyY = pcsl1.xy, slitX = pcsl1.xx, depth = PC 0}
-
   depth <- wcsDepth
 
   pure $
     QuantityAxes
-      { dummyY = QuantityAxis{keys = yk, pcs = yp}
-      , slitX = QuantityAxis{keys = xk, pcs = xp}
+      { dummyY = QuantityAxis{keys = yk, pcs = pcsY pcsl1}
+      , slitX = QuantityAxis{keys = xk, pcs = pcsX pcsl1}
       , depth = depth
       }
+ where
+  pcsY p = do
+    guard (isPCsValid p)
+    pure QuantityPCs{dummyY = p.yy, slitX = p.yx, depth = PC 0}
+
+  pcsX p = do
+    guard (isPCsValid p)
+    pure QuantityPCs{dummyY = p.xy, slitX = p.xx, depth = PC 0}
 
 
 wcsDepth :: (Monad m) => m (QuantityAxis alt n)
@@ -292,7 +301,7 @@ wcsDepth = do
       ctype = Key "TAU--LOG"
   let keys = WCSAxisKeywords{..}
   let pcs = QuantityPCs{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
-  pure $ QuantityAxis{keys, pcs}
+  pure $ QuantityAxis{keys, pcs = Just pcs}
 
 
 -- statsSection = do

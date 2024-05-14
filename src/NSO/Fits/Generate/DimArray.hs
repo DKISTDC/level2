@@ -125,15 +125,13 @@ sliceM2 c (DimArray arr) =
 
 
 splitM0
-  :: forall a ax ay xs m
+  :: forall a xs m
    . ( Index (IndexOf (a : xs))
-     , IndexOf (a : xs) ~ IndexOf (ax : xs)
-     , IndexOf (a : xs) ~ IndexOf (ay : xs)
      , MonadThrow m
      )
   => Int
   -> DimArray (a : xs)
-  -> m (DimArray (ax : xs), DimArray (ay : xs))
+  -> m (DimArray (a : xs), DimArray (a : xs))
 splitM0 a (DimArray arr) = do
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : xs))) Proxy
   (arr1, arr2) <- M.splitAtM (Dim dims) a arr
@@ -141,16 +139,16 @@ splitM0 a (DimArray arr) = do
 
 
 splitM1
-  :: forall a b bx by xs m
+  :: forall a b xs m
    . ( Index (IndexOf (a : xs))
      , Index (IndexOf (a : b : xs))
-     , IndexOf (a : b : xs) ~ IndexOf (a : bx : xs)
-     , IndexOf (a : b : xs) ~ IndexOf (a : by : xs)
+     , IndexOf (a : b : xs) ~ IndexOf (a : b : xs)
+     , IndexOf (a : b : xs) ~ IndexOf (a : b : xs)
      , MonadThrow m
      )
   => Int
   -> DimArray (a : b : xs)
-  -> m (DimArray (a : bx : xs), DimArray (a : by : xs))
+  -> m (DimArray (a : b : xs), DimArray (a : b : xs))
 splitM1 b (DimArray arr) = do
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : xs))) Proxy
   (arr1, arr2) <- M.splitAtM (Dim dims) b arr

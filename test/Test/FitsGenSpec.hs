@@ -2,7 +2,7 @@ module Test.FitsGenSpec where
 
 import Control.Monad.Catch (throwM)
 import Data.Fits
-import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists')
+import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists', toList)
 import Effectful
 import Effectful.Error.Static
 import NSO.Fits.Generate.DimArray
@@ -213,43 +213,43 @@ specWavProfile = do
   describe "wavProfile" $ do
     describe "delta" $ do
       it "avgDelta should calc simple" $ do
-        avgDelta simpleNums `shouldBe` 0.1
+        avgDelta simpleNums `shouldBe` 1000
 
       it "should calc simple delta" $ do
-        (wavProfile simple).delta `shouldBe` 0.1
+        (wavProfile FeI simple).delta `shouldBe` 0.1
 
       it "should calc regular delta" $ do
-        (wavProfile wav630).delta `shouldBe` (0.00128 * 10)
+        round5 (wavProfile FeI wav630).delta `shouldBe` round5 (0.00128 * 10)
 
     describe "pixel" $ do
       it "should be exactly center in simple" $ do
-        pixel0 0.1 simpleNums `shouldBe` 3.5
+        pixel0 1000 simpleNums `shouldBe` 3.5
 
       it "< positive index in wav630" $ do
-        let px = (wavProfile wav630).pixel
-        px `shouldSatisfy` (< 4)
+        let p = (wavProfile FeI wav630)
+        p.pixel `shouldSatisfy` (< 4)
 
       it "> last negative index in wav630" $ do
-        let px = (wavProfile wav630).pixel
+        let px = (wavProfile FeI wav630).pixel
         px `shouldSatisfy` (> 3)
 
 
-simple :: DimArray '[Wavelength 630]
+simple :: DimArray '[Wavelength (Center 630 MA)]
 simple = DimArray $ M.delay @Ix1 @P $ M.fromLists' Seq simpleNums
 
 
 simpleNums :: [Float]
-simpleNums = [-0.25, -0.15, -0.05, 0.05, 0.15, 0.25, 0.35, 0.45]
+simpleNums = [-2500, -1500, -500, 500, 1500, 2500, 3500, 4500]
 
 
--- Actual data. Every 10th element (so the spacing is larger than normal)
-wav630 :: DimArray '[Wavelength 630]
+-- Actual raw data from profile. In original milliangstroms
+wav630 :: DimArray '[Wavelength (Center 630 MA)]
 wav630 =
   DimArray $
     M.delay @Ix1 @P $
       M.fromLists'
         Seq
-        [-0.02888, -0.01608, -0.00328, 0.00952, 0.02232, 0.03512, 0.04792, 0.06072, 0.07352, 0.08632, 0.09912, 0.11191999, 0.12471999, 0.13752, 0.15031999]
+        [-288.79998779, -160.80000305, -32.79999924, 95.19999695, 223.19999695, 351.20001221, 479.20001221, 607.20001221, 735.20001221, 863.20001221, 991.20001221, 1119.19995117, 1247.19995117, 1375.19995117, 1503.19995117]
 
 
 runErrorIO :: Eff [Error LiftL1Error, IOE] a -> IO a

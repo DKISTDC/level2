@@ -6,7 +6,9 @@ import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
+import Data.Maybe (isJust)
 import Effectful.Error.Static
+import NSO.Data.Spectra (midPoint)
 import NSO.Fits.Generate.DimArray
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords
@@ -15,13 +17,12 @@ import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Fits.Generate.Quantities (DataHDUInfo (..), addDummyAxis, dataSection, splitFrames)
 import NSO.Prelude
-import NSO.Types.Wavelength (Wavelength)
+import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Fits as Fits
-import Prelude (truncate)
 
 
--- BUG: generating profiles is slow. Or reading them? Unsure
--- TODO: add wavelength WCS axis correctly
+-- DONE: add wavelength WCS axis correctly
+-- BUG: PC self_self is wrong
 
 data Original
 data Fit
@@ -77,20 +78,24 @@ profileHDU now l1 info wp da = do
     wcsSection
 
   wcsSection = do
-    let bx = binnedX
-    wc <- wcsCommon l1
-    wm <- wcsAxes @WCSMain bx wp l1
+    wm <- wcsAxes @WCSMain binnedX wp l1
+    wc <- wcsCommon (isWcsValid wm) l1
+
     addKeywords $ headerKeywords wc
     addKeywords $ headerKeywords wm
 
     wca <- wcsCommonA l1
-    wa <- wcsAxes @A bx wp l1
+    wa <- wcsAxes @A binnedX wp l1
     addKeywords $ headerKeywords wca
     addKeywords $ headerKeywords wa
 
   binnedX =
     let (Sz (newx :> _)) = size da.array
      in BinnedX newx
+
+  isWcsValid :: ProfileAxes alt -> Bool
+  isWcsValid axs =
+    and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
 
 
 data ProfileAxes alt = ProfileAxes
@@ -113,15 +118,11 @@ instance (KnownValue alt) => HeaderKeywords (ProfileAxes alt)
 
 data ProfileAxis alt ax = ProfileAxis
   { keys :: WCSAxisKeywords ProfileAxes alt ax
-  , pcs :: ProfilePCs alt ax
+  , pcs :: Maybe (ProfilePCs alt ax)
   }
   deriving (Generic)
 instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfileAxis alt ax)
 
-
--- instance (KnownValue alt, KnownNat n) => HeaderKeywords (ProfileAxis alt n) where
---   headerKeywords a =
---     headerKeywords a.keys <> headerKeywords a.pcs
 
 data ProfilePCs alt ax = ProfilePCs
   { dummyY :: PC ProfileAxes alt ax Y
@@ -133,28 +134,37 @@ data ProfilePCs alt ax = ProfilePCs
 instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePCs alt ax)
 
 
-wcsAxes :: forall alt w es. (Error LiftL1Error :> es, KnownValue alt) => BinnedX -> WavProfile w -> Header -> Eff es (ProfileAxes alt)
+wcsAxes
+  :: forall alt w es
+   . (Error LiftL1Error :> es, KnownValue alt)
+  => BinnedX
+  -> WavProfile w
+  -> Header
+  -> Eff es (ProfileAxes alt)
 wcsAxes bx wp h = do
   (ax, ay) <- requireWCSAxes h
   pcsl1 <- requirePCs ax ay h
 
   yk <- wcsDummyY ay h
-  let yp = ProfilePCs{dummyY = pcsl1.yy, slitX = pcsl1.yx, wavelength = PC 0, stokes = PC 0}
-
   xk <- wcsSlitX ax bx h
-  let xp = ProfilePCs{dummyY = pcsl1.xy, slitX = pcsl1.xx, wavelength = PC 0, stokes = PC 0}
-
   stokes <- wcsStokes
-
   wavelength <- wcsWavelength wp
 
-  pure
-    $ ProfileAxes
-      { dummyY = ProfileAxis{keys = yk, pcs = yp}
-      , slitX = ProfileAxis{keys = xk, pcs = xp}
+  pure $
+    ProfileAxes
+      { dummyY = ProfileAxis{keys = yk, pcs = pcsY pcsl1}
+      , slitX = ProfileAxis{keys = xk, pcs = pcsX pcsl1}
       , stokes
       , wavelength
       }
+ where
+  pcsY p = do
+    guard (isPCsValid p)
+    pure $ ProfilePCs{dummyY = p.yy, slitX = p.yx, wavelength = PC 0, stokes = PC 0}
+
+  pcsX p = do
+    guard (isPCsValid p)
+    pure $ ProfilePCs{dummyY = p.xy, slitX = p.xx, wavelength = PC 0, stokes = PC 0}
 
 
 lengthSlitX :: DimArray [SlitX, Wavelength w, Stokes] -> Int
@@ -172,33 +182,48 @@ wcsStokes = do
       ctype = Key "STOKES"
   let keys = WCSAxisKeywords{..}
   let pcs = ProfilePCs{stokes = PC 1.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 0}
-  pure $ ProfileAxis{keys, pcs}
+  pure $ ProfileAxis{keys, pcs = Just pcs}
 
 
 wcsWavelength :: (Monad m) => WavProfile w -> m (ProfileAxis alt n)
 wcsWavelength wp = do
-  let crpix = Key 0
-      crval = Key 0
-      cdelt = Key 0
+  let Wavelength w = midPoint wp.line
+  let crpix = Key wp.pixel
+      crval = Key (realToFrac w)
+      cdelt = Key wp.delta
       cunit = Key "nm"
       ctype = Key "AWAV"
   let keys = WCSAxisKeywords{..}
-  let pcs = ProfilePCs{stokes = PC 1.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 0}
-  pure $ ProfileAxis{keys, pcs}
+  let pcs = ProfilePCs{stokes = PC 0.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 1.0}
+  pure $ ProfileAxis{keys, pcs = Just pcs}
 
 
 -- Decoding Profiles ---------------------------------------------------------------------------------------
 
+-- The wavelength data is combined into a single axis, containing both 630 and 854 sections
+-- these are both in milliangstroms
+data Wavs
+
+
+-- Milliangstroms
+data MA
+
+
+data Center wl unit
+
+
 data ProfileFrame a = ProfileFrame
-  { wav630 :: DimArray [SlitX, Wavelength 630, Stokes]
-  , wav854 :: DimArray [SlitX, Wavelength 854, Stokes]
+  { wav630 :: DimArray [SlitX, Wavelength (Center 630 Nm), Stokes]
+  , wav854 :: DimArray [SlitX, Wavelength (Center 854 Nm), Stokes]
   }
 
 
 data WavProfile n = WaveProfile
   { pixel :: Float
   , delta :: Float
+  , line :: SpectralLine
   }
+  deriving (Show, Eq)
 
 
 newtype WavBreakIndex = WavBreakIndex Int
@@ -211,9 +236,10 @@ data ProfileFrames a = ProfileFrames
 
 
 data WavProfiles a = WavProfiles
-  { wav630 :: WavProfile 630
-  , wav854 :: WavProfile 854
+  { wav630 :: WavProfile (Center 630 Nm)
+  , wav854 :: WavProfile (Center 854 Nm)
   }
+  deriving (Show, Eq)
 
 
 decodeProfileFrames :: forall a m. (MonadThrow m) => BS.ByteString -> m (ProfileFrames a)
@@ -224,38 +250,25 @@ decodeProfileFrames inp = do
   wds <- wavIds f
   bx <- indexOfWavBreak wds
 
-  (w630, w854) <- wavs bx f
-  let wp630 = wavProfile w630
-      wp854 = wavProfile w854
+  wvs <- wavs f
+  (w630, w854) <- splitWavs bx wvs
+  let wp630 = wavProfile FeI w630
+      wp854 = wavProfile (CaII CaII_854) w854
 
   let pfrs = profileFrameArrays pro
   fs <- mapM (toProfileFrame bx) pfrs
 
   pure $ ProfileFrames fs (WavProfiles wp630 wp854)
  where
-  -- mapM (fmap (uncurry ProfileFrame) . splitResultsAlongWavelength bx) $ profileFrames pro
-
   mainProfile :: (MonadThrow m) => Fits -> m (DimArray [Stokes, Wavs, FrameY, SlitX])
   mainProfile f = do
     a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
     pure $ DimArray a
 
-  indexOfWavBreak :: DimArray '[WavIds] -> m WavBreakIndex
-  indexOfWavBreak wds =
-    case group (M.toList wds.array) of
-      (w1 : _) -> pure $ WavBreakIndex (length w1)
-      _ -> throwM InvalidWavelengthGroups
-
-  wavs :: (MonadThrow m) => WavBreakIndex -> Fits -> m (DimArray '[Wavelength 630], DimArray '[Wavelength 854])
-  wavs (WavBreakIndex bx) f = do
+  wavs :: (MonadThrow m) => Fits -> m (DimArray '[Wavs])
+  wavs f = do
     case f.extensions of
-      (Image h : _) -> do
-        wvs <- DimArray <$> decodeArray @Ix1 h.dataArray
-
-        -- WARNING: wvs is in milliangstroms
-        -- TODO: convert to nm
-
-        splitM0 bx wvs
+      (Image h : _) -> DimArray <$> decodeArray @Ix1 h.dataArray
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
   wavIds :: (MonadThrow m) => Fits -> m (DimArray '[WavIds])
@@ -266,14 +279,35 @@ decodeProfileFrames inp = do
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
 
-wavProfile :: DimArray '[Wavelength n] -> WavProfile n
-wavProfile (DimArray arr) =
-  let ws = M.toList arr
+splitWavs :: (MonadThrow m) => WavBreakIndex -> DimArray '[Wavs] -> m (DimArray '[Wavelength (Center 630 MA)], DimArray '[Wavelength (Center 854 MA)])
+splitWavs (WavBreakIndex bx) wvs = do
+  (w630, w854) <- splitM0 bx wvs
+  pure (centered w630, centered w854)
+ where
+  centered (DimArray a) = DimArray a
+
+
+indexOfWavBreak :: (MonadThrow m) => DimArray '[WavIds] -> m WavBreakIndex
+indexOfWavBreak wds =
+  case group (M.toList wds.array) of
+    (w1 : _) -> pure $ WavBreakIndex (length w1)
+    _ -> throwM InvalidWavelengthGroups
+
+
+wavProfile :: SpectralLine -> DimArray '[Wavelength (Center n MA)] -> WavProfile (Center n Nm)
+wavProfile l da =
+  let DimArray arr = toNanometers da
+      ws = M.toList arr
       delta = avgDelta ws
    in WaveProfile
         { delta
         , pixel = pixel0 delta ws
+        , line = l
         }
+ where
+  -- convert from milliangstroms to nanometers, and affirm that the type is correct
+  toNanometers :: DimArray '[Wavelength (Center w MA)] -> DimArray '[Wavelength (Center w Nm)]
+  toNanometers (DimArray a) = DimArray $ M.map (/ 10000) a
 
 
 avgDelta :: [Float] -> Float
@@ -282,10 +316,12 @@ avgDelta ws = round5 $ sum (differences ws) / fromIntegral (length ws - 1)
   differences :: (Num a) => [a] -> [a]
   differences lst = zipWith (-) (tail lst) lst
 
-  round5 :: Float -> Float
-  round5 x = fromIntegral @Int (truncate $ x * 10 ^ (5 :: Int)) / 10 ^ (5 :: Int)
+
+round5 :: Float -> Float
+round5 x = fromIntegral @Int (round $ x * 10 ^ (5 :: Int)) / 10 ^ (5 :: Int)
 
 
+-- the interpolated pixel offset of a zero value
 pixel0 :: Float -> [Float] -> Float
 pixel0 dlt as =
   let mn = minimum as
@@ -296,9 +332,14 @@ profileFrameArrays :: DimArray [Stokes, Wavs, FrameY, SlitX] -> [DimArray [SlitX
 profileFrameArrays = fmap swapProfileDimensions . splitFrames
 
 
-toProfileFrame :: (MonadThrow m) => WavBreakIndex -> DimArray [SlitX, Wavs, Stokes] -> m (ProfileFrame a)
-toProfileFrame (WavBreakIndex bx) =
-  fmap (uncurry ProfileFrame) <$> splitM1 bx
+toProfileFrame :: (MonadThrow m) => WavBreakIndex -> DimArray [SlitX, Wavs, Stokes] -> m (ProfileFrame w)
+toProfileFrame (WavBreakIndex bx) da = do
+  (w630, w854) <- splitM1 bx da
+  pure $ ProfileFrame (fromWavs w630) (fromWavs w854)
+ where
+  -- we can convert from Wavs to (Wavelength n), because there isn't any wavelength data here
+  -- it's just one of the pixel axes. And we've successfully split them up here
+  fromWavs (DimArray arr) = DimArray arr
 
 
 swapProfileDimensions :: DimArray [Stokes, Wavs, SlitX] -> DimArray [SlitX, Wavs, Stokes]

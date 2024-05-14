@@ -35,10 +35,9 @@ class HeaderKeywords a where
 -- instance (KeywordInfo a) => HeaderKeywords a where
 --   headerKeywords a = [keywordRecord a]
 
-instance (KeywordInfo a) => HeaderKeywords (Maybe a) where
-  headerKeywords (Just a) = [keywordRecord a]
-  headerKeywords Nothing = []
-
+-- instance (KeywordInfo a) => HeaderKeywords (Maybe a) where
+--   headerKeywords (Just a) = [keywordRecord a]
+--   headerKeywords Nothing = []
 
 -- headerComments :: a -> [(Text, Text)]
 -- default headerComments :: a -> [(Text, Text)]
@@ -80,9 +79,10 @@ instance (HeaderKeywords a) => GenHeaderKeywords (K1 r a) where
   genHeaderKeywords (K1 a) = headerKeywords a
 
 
--- instance {-# OVERLAPPING #-} (KeywordInfo a) => GenHeaderKeywords (K1 r (Maybe a)) where
---   genHeaderKeywords (K1 Nothing) = []
---   genHeaderKeywords (K1 (Just a)) = [keywordRecord a]
+instance {-# OVERLAPPING #-} (HeaderKeywords a) => GenHeaderKeywords (K1 r (Maybe a)) where
+  genHeaderKeywords (K1 Nothing) = []
+  genHeaderKeywords (K1 (Just a)) = headerKeywords a
+
 
 cleanKeyword :: String -> Text
 cleanKeyword = T.toUpper . pack . toSnake . fromHumps
