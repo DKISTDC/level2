@@ -62,11 +62,6 @@ headerSpecVersion = "L2." <> pack appVersion
 --
 -- NOPE: CONTINUE - if a url is too long. Or make sure they aren't too long :)
 
--- TODO: Cleanup
---   TODO: telescope - change exports to avoid fits-parse
---   TODO: pubmit PR for fits-parse
---   TODO: Refactor primary to a separate gen file from Generate and export as required
-
 data ObservationHeader = ObservationHeader
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
   , telescope :: Key (Constant "Daniel K. Inouye Solar Telescope") "The telescope used to acquire the data associated with the header."

@@ -26,8 +26,13 @@ import Telescope.Fits.Encoding (replaceKeywordLine)
 --   DONE: Split wavelengths
 --   DONE: Design headers for profile HDUs
 --   DONE: Make sure axes are good: CRPIX / CRVAL needs to be calculated accurately
+-- DONE: Convert units
 
--- TODO: Check Units. Conversion?
+-- TODO: Cleanup
+--   TODO: telescope - change exports to avoid fits-parse
+--   TODO: pubmit PR for fits-parse
+--   TODO: Refactor primary to a separate gen file from Generate and export as required
+
 
 ------------------------------------------------------------------------------
 
@@ -132,7 +137,7 @@ encodeL2 :: Fits -> BS.ByteString
 encodeL2 f =
   let out = encode f
       mb = fromIntegral (BS.length out) / 1000000
-   in out -- replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
+   in replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
 
 
 generateL2Fits
