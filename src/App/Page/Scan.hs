@@ -24,12 +24,12 @@ import Web.Hyperbole
 -- import NSO.Data.Types
 
 data ScanView = ScanView
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 
 
 data PageEvent
   = RunScan
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
 instance HyperView ScanView where
@@ -38,11 +38,11 @@ instance HyperView ScanView where
 
 page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Page es Response
 page = do
-  hyper pageEvent
+  handle pageEvent
 
   load $ do
     appLayout Scan $ do
-      viewId ScanView $ viewScan Nothing
+      hyper ScanView $ viewScan Nothing
 
 
 pageEvent :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())

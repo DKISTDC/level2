@@ -16,9 +16,8 @@ import Numeric (showFFloat)
 import Web.Hyperbole
 
 
-newtype ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
-  deriving stock (Show, Read)
-  deriving anyclass (Param)
+data ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
+  deriving (Generic, ViewId)
 
 
 data SortField
@@ -31,7 +30,7 @@ data SortField
   | Stokes
   | WaveMin
   | WaveMax
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
 instance HyperView ProgramDatasets where

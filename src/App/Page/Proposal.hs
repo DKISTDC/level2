@@ -23,7 +23,7 @@ page
   => Id Proposal
   -> Page es Response
 page pid = do
-  hyper DatasetsTable.actionSort
+  handle DatasetsTable.actionSort
 
   load $ do
     ds <- send $ Datasets.Query (ByProposal pid)

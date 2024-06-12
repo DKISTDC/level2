@@ -30,13 +30,13 @@ page
   => Id InstrumentProgram
   -> Page es Response
 page ip = do
-  hyper $ inversions (clearInversion ip)
-  hyper programInversions
-  hyper DatasetsTable.actionSort
-  hyper inversionCommit
-  hyper preprocessCommit
-  hyper downloadTransfer
-  hyper uploadTransfer
+  handle $ inversions (clearInversion ip)
+  handle programInversions
+  handle DatasetsTable.actionSort
+  handle inversionCommit
+  handle preprocessCommit
+  handle downloadTransfer
+  handle uploadTransfer
 
   load $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram ip)
@@ -59,13 +59,13 @@ page ip = do
 
         -- viewExperimentDescription d.experimentDescription
 
-        viewId (ProgramInversions ip) $ viewProgramInversions invs steps
+        hyper (ProgramInversions ip) $ viewProgramInversions invs steps
 
         col Style.card $ do
           el (Style.cardHeader Secondary) "Instrument Program Details"
           col (gap 15 . pad 15) $ do
             viewDatasets now (NE.filter (.latest) ds) invs
-            viewId (ProgramDatasets ip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
+            hyper (ProgramDatasets ip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -111,7 +111,7 @@ viewDatasets now (d : ds) is = do
 
 
 data ProgramInversions = ProgramInversions (Id InstrumentProgram)
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 instance HyperView ProgramInversions where
   type Action ProgramInversions = InvsAction
 
@@ -119,7 +119,7 @@ instance HyperView ProgramInversions where
 data InvsAction
   = CreateInversion
   | ReloadAll
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
 programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
@@ -133,7 +133,7 @@ programInversions (ProgramInversions ip) = \case
 
 viewProgramInversions :: [Inversion] -> [CurrentStep] -> View ProgramInversions ()
 viewProgramInversions (inv : is) (step : ss) = do
-  viewId (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
+  hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
   col (gap 10 . pad 10) $ do
     zipWithM_ viewOldInversion is ss
     row id $ do

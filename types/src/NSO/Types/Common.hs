@@ -10,7 +10,8 @@ import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
-import Web.Hyperbole (Param (..), Route)
+import Web.Hyperbole (Route)
+import Web.Hyperbole.Param
 
 
 newtype Id a = Id {fromId :: Text}
@@ -85,5 +86,5 @@ instance Semigroup StokesParameters where
 data Instrument
   = VBI
   | VISP
-  deriving (Show, Ord, Eq, Read, Param)
+  deriving (Show, Ord, Eq, Read, Generic, Param)
   deriving (DBType) via ReadShow Instrument

@@ -6,6 +6,7 @@ import Data.Aeson
 import Data.Diverse.Many
 import NSO.Prelude
 import Rel8
+import Web.Hyperbole.Forms (FormField)
 
 
 data ProgramStatus
@@ -18,6 +19,8 @@ data ProgramStatus
 
 newtype GitCommit = GitCommit Text
   deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord)
+  deriving (Generic)
+  deriving anyclass (FormField)
 
 
 data Created = Created {timestamp :: UTCTime}

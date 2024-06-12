@@ -105,7 +105,7 @@ library
     , hasql
     , http-api-data
     , http-types
-    , hyperbole ==0.3.4
+    , hyperbole >=0.4
     , lens
     , massiv
     , modern-uri
@@ -122,7 +122,7 @@ library
     , uuid
     , wai-extra
     , warp ==3.3.31
-    , web-view >=0.2.3
+    , web-view >=0.4.0
   default-language: GHC2021
 
 executable level2
@@ -162,7 +162,7 @@ executable level2
     , hasql
     , http-api-data
     , http-types
-    , hyperbole ==0.3.4
+    , hyperbole >=0.4
     , lens
     , massiv
     , modern-uri
@@ -180,7 +180,7 @@ executable level2
     , uuid
     , wai-extra
     , warp ==3.3.31
-    , web-view >=0.2.3
+    , web-view >=0.4.0
   default-language: GHC2021
 
 test-suite tests
@@ -227,7 +227,7 @@ test-suite tests
     , hasql
     , http-api-data
     , http-types
-    , hyperbole ==0.3.4
+    , hyperbole >=0.4
     , lens
     , massiv
     , modern-uri

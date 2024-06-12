@@ -37,6 +37,7 @@ main = do
   putStrLn "NSO Level 2"
   config <- initConfig onRel8Error
   putStrLn $ "Starting on :" <> show config.app.port
+  putStrLn $ "Develop using https://localhost/"
   Warp.run config.app.port $
     addHeaders [("app-version", cs appVersion)] $
       app config
@@ -49,7 +50,7 @@ app config =
   --    (runApp . routeRequest $ router)
   --    (runApp . routeRequest $ router)
   -- where
-  waiApp
+  liveApp
     document
     (runApp . routeRequest $ router)
  where

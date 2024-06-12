@@ -21,7 +21,7 @@ data TransferAction
   = CheckTransfer
   | TaskFailed
   | TaskSucceeded
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
 -- I want it to reload itself and call these when necessary
@@ -92,21 +92,15 @@ progress p = do
 data CommitAction
   = CheckCommitValid GitCommit
   | LoadValid
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
-data CommitForm a = CommitForm
-  { gitCommit :: Field a Text
-  }
-  deriving (Generic, Form)
-
-
-validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated GitCommit)
+validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated fs GitCommit)
 validate i repo gc lbl onValid = do
   isValid <- send $ ValidateGitCommit repo gc
   checkValid i gc lbl isValid
   onValid
-  pure $ Valid gc
+  pure Valid
 
 
 checkValid :: (Hyperbole :> es, HyperView id, Action id ~ CommitAction) => id -> GitCommit -> Text -> Bool -> Eff es ()
@@ -114,57 +108,51 @@ checkValid _ _ _ True = pure ()
 checkValid i gc lbl False = do
   -- inv <- send (Inversions.ById ii) >>= expectFound
   respondEarly i $ do
-    commitForm (Invalid gc) lbl
+    commitForm (Just gc) (Invalid "Git Commit not found in remote repository") lbl
 
 
 loadValid :: (Hyperbole :> es, HyperView id, Action id ~ CommitAction) => Text -> Eff es (View id ())
 loadValid lbl = do
-  f <- parseForm @CommitForm
-  let gc = GitCommit f.gitCommit
+  gc <- formField @GitCommit
   pure $ loadingForm gc lbl
 
 
 loadingForm :: (HyperView id, Action id ~ CommitAction) => GitCommit -> Text -> View id ()
 loadingForm gc lbl = do
   onLoad (CheckCommitValid gc) 0 $ do
-    el Style.disabled $ commitForm (Prevalid gc) lbl
+    el Style.disabled $ commitForm (Just gc) NotInvalid lbl
 
 
-data Validated a
-  = Valid a
-  | Invalid a
-  | Prevalid a
-  | Empty
+fromExistingCommit :: Maybe GitCommit -> Validated fs GitCommit
+fromExistingCommit Nothing = NotInvalid
+fromExistingCommit (Just _) = Valid
 
 
-fromExistingCommit :: Maybe GitCommit -> Validated GitCommit
-fromExistingCommit Nothing = Empty
-fromExistingCommit (Just c) = Valid c
-
-
-commitForm :: (HyperView id, Action id ~ CommitAction) => Validated GitCommit -> Text -> View id ()
-commitForm vg lbl = do
-  form @CommitForm LoadValid (gap 10) $ \f -> do
-    field id $ do
+commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> Validated '[GitCommit] GitCommit -> Text -> View id ()
+commitForm gc vg lbl = do
+  let val = validateWith vg
+  form LoadValid val (gap 10) $ do
+    field @GitCommit valStyle $ do
       label lbl
-      input TextInput (value (commitText vg) . Style.input (validationColor vg)) f.gitCommit
-    validationFeedback vg
+      input TextInput (inputValue gc . Style.input)
+      el (color Danger) invalidText
+    -- validationFeedback vg
     submit (validationButton vg . grow) "Save Commit"
  where
-  validationFeedback (Invalid _) =
-    el (color Danger) "Invalid Git Commit"
-  validationFeedback _ = none
+  -- validationFeedback (Invalid _) =
+  --   el (color Danger) "Invalid Git Commit"
+  -- validationFeedback _ = none
 
-  validationColor (Invalid _) = Danger
-  validationColor (Valid _) = Success
-  validationColor _ = Gray
+  inputValue Nothing = id
+  inputValue (Just (GitCommit c)) = value c
 
-  commitText (Valid (GitCommit t)) = t
-  commitText (Invalid (GitCommit t)) = t
-  commitText (Prevalid (GitCommit t)) = t
-  commitText _ = ""
+  valStyle v = color (valColor v)
+
+  valColor (Invalid _) = Danger
+  valColor Valid = Success
+  valColor _ = Black
 
 
-validationButton :: Validated a -> Mod
-validationButton (Valid _) = Style.btnOutline Success
+validationButton :: Validated fs GitCommit -> Mod
+validationButton Valid = Style.btnOutline Success
 validationButton _ = Style.btn Primary

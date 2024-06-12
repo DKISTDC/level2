@@ -46,7 +46,8 @@ import Network.HTTP.Types (QueryItem)
 import System.FilePath
 import Web.FormUrlEncoded (parseMaybe)
 import Web.Hyperbole
-import Web.Hyperbole.Effect (Host (..))
+import Web.Hyperbole.Effect (Host (..), Request (..))
+import Web.Hyperbole.Forms
 import Web.View as WebView
 
 
@@ -112,32 +113,32 @@ fileManagerUrl lmt r lbl req =
     serverUrl $ routePath r
 
 
-data TransferForm a = TransferForm
-  { label :: Field a Text
-  , endpoint :: Field a Text
-  , path :: Field a Text
-  , endpoint_id :: Field a Text
+data TransferForm = TransferForm
+  { label :: Field Text
+  , -- , endpoint :: Field Text
+    path :: Field Text
+  , endpoint_id :: Field Text
   }
   deriving (Generic, Form)
 
 
-data DownloadFolder a = DownloadFolder
-  { folder :: Field a (Maybe FilePath)
+data DownloadFolder = DownloadFolder
+  { folder :: Maybe FilePath
   }
   deriving (Generic)
 instance Form DownloadFolder where
-  fromForm f = do
+  formParse f = do
     DownloadFolder <$> parseMaybe "folder[0]" f
 
 
-data UploadFiles a = UploadFiles
-  { invResPre :: Field a FilePath
-  , invResMod :: Field a FilePath
-  , perOri :: Field a FilePath
+data UploadFiles = UploadFiles
+  { invResPre :: FilePath
+  , invResMod :: FilePath
+  , perOri :: FilePath
   }
   deriving (Generic)
 instance Form UploadFiles where
-  fromForm f = do
+  formParse f = do
     fs <- multi "file"
     invResPre <- findFile "inv_res_pre.fits" fs
     invResMod <- findFile "inv_res_mod.fits" fs
@@ -172,7 +173,7 @@ initTransfer toRequest = do
   pure $ Id res.task_id.unTagged
 
 
-initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm Identity -> UploadFiles Identity -> Id Inversion -> Eff es (Id Task)
+initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm -> UploadFiles -> Id Inversion -> Eff es (Id Task)
 initUpload tform up ii = do
   initTransfer transferRequest
  where
@@ -181,8 +182,8 @@ initUpload tform up ii = do
     TransferRequest
       { data_type = DataType
       , submission_id
-      , label = Just tform.label
-      , source_endpoint = Tagged tform.endpoint_id
+      , label = Just tform.label.value
+      , source_endpoint = Tagged tform.endpoint_id.value
       , destination_endpoint = level2Scratch
       , data_ = map transferItem [up.invResMod, up.invResPre, up.perOri]
       , sync_level = SyncChecksum
@@ -192,7 +193,7 @@ initUpload tform up ii = do
   transferItem f =
     TransferItem
       { data_type = DataType
-      , source_path = cs tform.path </> f
+      , source_path = cs tform.path.value </> f
       , destination_path = scratchPath </> f
       , recursive = False
       }
@@ -204,7 +205,7 @@ initUpload tform up ii = do
   level2Scratch = Tagged "20fa4840-366a-494c-b009-063280ecf70d"
 
 
-initDownload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (Id Task)
+initDownload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (Id Task)
 initDownload tform df ds = do
   initTransfer downloadTransferRequest
  where
@@ -213,9 +214,9 @@ initDownload tform df ds = do
     TransferRequest
       { data_type = DataType
       , submission_id
-      , label = Just tform.label
+      , label = Just tform.label.value
       , source_endpoint = dkistDataTransfer
-      , destination_endpoint = Tagged tform.endpoint_id
+      , destination_endpoint = Tagged tform.endpoint_id.value
       , data_ = map transferItem ds
       , sync_level = SyncChecksum
       }
@@ -242,8 +243,8 @@ initDownload tform df ds = do
     destinationFolder =
       -- If they didn't select a folder, use the current folder
       case df.folder of
-        Just f -> cs tform.path </> cs f
-        Nothing -> cs tform.path
+        Just f -> cs tform.path.value </> cs f
+        Nothing -> cs tform.path.value
 
 
 -- Authentication!

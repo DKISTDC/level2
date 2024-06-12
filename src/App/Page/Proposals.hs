@@ -24,7 +24,7 @@ page
   :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
   => Page es Response
 page = do
-  hyper proposals
+  handle proposals
   -- pageAction handleIPRow
   load $ do
     exs <- Programs.loadAllProposals
@@ -33,7 +33,7 @@ page = do
     let fs = Filters{isVBI = False, isVISP = True, inversionStatus = Any}
 
     appLayout Proposals $ do
-      viewId PView $ do
+      hyper PView $ do
         viewProposals now fs exs
 
 
@@ -46,11 +46,11 @@ loading = el_ "loading..."
 -----------------------------------------------------
 
 data PView = PView
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 
 
 data PEvent = Filter Filters
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
 instance HyperView PView where

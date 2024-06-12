@@ -3,7 +3,7 @@ module App.Page.Inversion where
 import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
-import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..), Validated (..))
+import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..))
 import App.Page.Inversions.InvForm qualified as InvForm
 import App.Route as Route
 import App.Style qualified as Style
@@ -18,6 +18,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
+import Web.Hyperbole.Forms (formFields)
 
 
 page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es) => Id Inversion -> InversionRoute -> Page es Response
@@ -28,11 +29,11 @@ page i SubmitUpload = pageSubmitUpload i
 
 pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es) => Id Inversion -> Page es Response
 pageMain i = do
-  hyper $ inversions redirectHome
-  hyper inversionCommit
-  hyper preprocessCommit
-  hyper downloadTransfer
-  hyper uploadTransfer
+  handle $ inversions redirectHome
+  handle inversionCommit
+  handle preprocessCommit
+  handle downloadTransfer
+  handle uploadTransfer
   load $ do
     inv <- loadInversion i
     step <- currentStep inv.step
@@ -48,14 +49,14 @@ pageMain i = do
             route (Program inv.programId) Style.link $ do
               text inv.programId.fromId
 
-        viewId (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
+        hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
 
 
 pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
 pageSubmitUpload ii = do
   load $ do
-    tfrm <- parseForm @TransferForm
-    tup <- parseForm @UploadFiles
+    tfrm <- formFields @TransferForm
+    tup <- formFields @UploadFiles
     it <- Globus.initUpload tfrm tup ii
     send $ Inversions.SetUploading ii it
 
@@ -65,8 +66,8 @@ pageSubmitUpload ii = do
 pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
 pageSubmitDownload ii = do
   load $ do
-    tfrm <- parseForm @TransferForm
-    tfls <- parseForm @DownloadFolder
+    tfrm <- formFields @TransferForm
+    tfls <- formFields @DownloadFolder
     inv <- loadInversion ii
     ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
     it <- Globus.initDownload tfrm tfls ds
@@ -96,7 +97,7 @@ redirectHome = do
 -- ----------------------------------------------------------------
 
 data InversionStatus = InversionStatus (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 instance HyperView InversionStatus where
   type Action InversionStatus = InversionAction
 
@@ -108,19 +109,15 @@ data InversionAction
   | PostProcess
   | Publish
   | Reload
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewAction)
 
 
-data PreprocessForm a = PreprocessForm
-  { preprocessSoftware :: Field a Text
-  }
-  deriving (Generic, Form)
+data PreprocessSoftware = PreprocessSoftware Text
+  deriving (Generic, FormField)
 
 
-data InversionForm a = InversionForm
-  { inversionSoftware :: Field a Text
-  }
-  deriving (Generic, Form)
+data InversionSoftware = InversionSoftware Text
+  deriving (Generic, FormField)
 
 
 inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
@@ -194,7 +191,7 @@ viewInversion inv step = do
 -- ----------------------------------------------------------------
 
 data DownloadTransfer = DownloadTransfer (Id InstrumentProgram) (Id Inversion) (Id Task)
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 instance HyperView DownloadTransfer where
   type Action DownloadTransfer = TransferAction
 
@@ -206,12 +203,12 @@ downloadTransfer (DownloadTransfer ip ii ti) = \case
     pure $ do
       col (gap 10) $ do
         InvForm.viewTransferFailed ti
-        viewId (InversionStatus ip ii) $ stepDownload inv Select
+        hyper (InversionStatus ip ii) $ stepDownload inv Select
   TaskSucceeded -> do
     -- need to get the datasets used???
     ds <- send $ Datasets.Query $ Datasets.ByProgram ip
     send (Inversions.SetDownloaded ii (map (.datasetId) ds))
-    pure $ viewId (InversionStatus ip ii) $ onLoad Reload 0 none
+    pure $ hyper (InversionStatus ip ii) $ onLoad Reload 0 none
   CheckTransfer -> InvForm.checkTransfer ti
 
 
@@ -223,7 +220,7 @@ stepDownload _ Select = do
     button Download (Style.btn Primary . grow) "Choose Folder"
     button Cancel (Style.btnOutline Secondary) "Cancel"
 stepDownload inv (Transferring it) = do
-  viewId (DownloadTransfer inv.programId inv.inversionId it) InvForm.viewLoadTransfer
+  hyper (DownloadTransfer inv.programId inv.inversionId it) InvForm.viewLoadTransfer
 
 
 -- ----------------------------------------------------------------
@@ -231,7 +228,7 @@ stepDownload inv (Transferring it) = do
 -- ----------------------------------------------------------------
 
 data PreprocessCommit = PreprocessCommit (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 instance HyperView PreprocessCommit where
   type Action PreprocessCommit = CommitAction
 
@@ -253,7 +250,7 @@ preprocessCommitLabel = "Preprocess Git Commit"
 
 stepPreprocess :: Inversion -> View InversionStatus ()
 stepPreprocess inv = do
-  viewId (PreprocessCommit inv.programId inv.inversionId) $ InvForm.commitForm Empty preprocessCommitLabel
+  hyper (PreprocessCommit inv.programId inv.inversionId) $ InvForm.commitForm Nothing NotInvalid preprocessCommitLabel
 
 
 -- ----------------------------------------------------------------
@@ -261,7 +258,7 @@ stepPreprocess inv = do
 -- ----------------------------------------------------------------
 
 data InversionCommit = InversionCommit (Id Inversion)
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 instance HyperView InversionCommit where
   type Action InversionCommit = CommitAction
 
@@ -274,7 +271,7 @@ inversionCommit (InversionCommit ii) = action
     vg <- InvForm.validate (InversionCommit ii) desireRepo gc inversionCommitLabel $ do
       send $ SetInversion ii gc
 
-    checkInvertReload ii $ InvForm.commitForm vg inversionCommitLabel
+    checkInvertReload ii $ InvForm.commitForm (Just gc) vg inversionCommitLabel
 
 
 inversionCommitLabel :: Text
@@ -282,7 +279,7 @@ inversionCommitLabel = "DeSIRe Git Commit"
 
 
 data UploadTransfer = UploadTransfer (Id InstrumentProgram) (Id Inversion) (Id Task)
-  deriving (Show, Read, Param)
+  deriving (Generic, ViewId)
 instance HyperView UploadTransfer where
   type Action UploadTransfer = TransferAction
 
@@ -293,10 +290,10 @@ uploadTransfer (UploadTransfer ip ii ti) = \case
     pure $ do
       col (gap 10) $ do
         InvForm.viewTransferFailed ti
-        viewId (InversionStatus ip ii) $ uploadSelect (Invalid ti)
+        hyper (InversionStatus ip ii) $ uploadSelect (Invalid "Upload Task Failed")
   TaskSucceeded -> do
     send (Inversions.SetUploaded ii)
-    checkInvertReload ii $ viewId (InversionStatus ip ii) $ uploadSelect (Valid ti) -- onLoad Reload 1000 none
+    checkInvertReload ii $ hyper (InversionStatus ip ii) $ uploadSelect Valid
   CheckTransfer -> InvForm.checkTransfer ti
 
 
@@ -305,37 +302,37 @@ checkInvertReload ii vw = do
   inv <- loadInversion ii
   curr <- currentStep inv.step
   pure $ case curr of
-    Generating -> viewId (InversionStatus inv.programId inv.inversionId) $ onLoad Reload 0 none
+    Generating -> hyper (InversionStatus inv.programId inv.inversionId) $ onLoad Reload 0 none
     _ -> vw
 
 
 stepInvert :: InvertStep -> Inversion -> View InversionStatus ()
 stepInvert (InvertStep mc mt) inv = do
-  viewId (InversionCommit inv.inversionId) $ InvForm.commitForm (InvForm.fromExistingCommit mc) "DeSIRe GIt Commit"
+  hyper (InversionCommit inv.inversionId) $ InvForm.commitForm mc (InvForm.fromExistingCommit mc) "DeSIRe GIt Commit"
   viewUploadTransfer mt
  where
   viewUploadTransfer (Just it) = do
-    viewId (UploadTransfer inv.programId inv.inversionId it) InvForm.viewLoadTransfer
+    hyper (UploadTransfer inv.programId inv.inversionId it) InvForm.viewLoadTransfer
   viewUploadTransfer Nothing = do
-    uploadSelect Empty
+    uploadSelect NotInvalid
 
 
-uploadSelect :: Validated (Id Task) -> View InversionStatus ()
-uploadSelect vid = do
-  col (gap 5 . file vid) $ do
+uploadSelect :: Validated fs (Id Task) -> View InversionStatus ()
+uploadSelect val = do
+  col (gap 5 . file val) $ do
     el bold "Upload Inversion Results"
-    instructions vid
+    instructions val
     tag "li" id "inv_res_pre.fits"
     tag "li" id "per_ori.fits"
     tag "li" id "inv_res_mod.fits"
-    case vid of
-      Valid _ -> button Upload (Style.btnOutline Success . grow) "Select New Files"
+    case val of
+      Valid -> button Upload (Style.btnOutline Success . grow) "Select New Files"
       _ -> button Upload (Style.btn Primary . grow) "Select Files"
  where
-  file (Valid _) = color Success
+  file Valid = color Success
   file _ = color Black
 
-  instructions (Valid _) = none
+  instructions Valid = none
   instructions _ = el_ "Please select the following files for upload. You will be redirected to Globus"
 
 
