@@ -12,7 +12,7 @@ import Web.View qualified as WebView
 
 appLayout :: forall es c. (Auth :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
 appLayout r content = do
-  login <- send LoginUrl
+  login <- loginUrl
   mtok <- getAccessToken
   pure $ layout login r mtok content
 

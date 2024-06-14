@@ -61,6 +61,7 @@ library
       NSO.Error
       NSO.Fits.Generate
       NSO.Fits.Generate.DataCube
+      NSO.Fits.Generate.FetchL1
       NSO.Fits.Generate.Headers
       NSO.Fits.Generate.Headers.Doc
       NSO.Fits.Generate.Headers.Keywords

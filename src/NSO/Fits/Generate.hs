@@ -9,6 +9,7 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Fits.Generate.DataCube
+import NSO.Fits.Generate.FetchL1
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
 import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))

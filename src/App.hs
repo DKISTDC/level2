@@ -20,6 +20,7 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
 import Effectful.Concurrent.Chan
+import Effectful.Concurrent.STM
 import Effectful.Debug as Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -61,10 +62,11 @@ main = do
 
 runWebServer :: (IOE :> es, Concurrent :> es) => Config -> Eff es ()
 runWebServer config = do
+  adtok <- newTVarIO Nothing
   liftIO $
     Warp.run config.app.port $
       addHeaders [("app-version", cs appVersion)] $
-        webServer config
+        webServer config adtok
 
 
 runCPUWorkers :: (IOE :> es, Concurrent :> es) => Eff es () -> Eff es ()
@@ -90,8 +92,8 @@ availableWorkerCPUs = do
   pure $ cores - saveCoresForWebserver
 
 
-webServer :: Config -> Application
-webServer config =
+webServer :: Config -> TVar (Maybe (Token Access)) -> Application
+webServer config adtok =
   --  liveApp
   --    document
   --    (runApp . routeRequest $ router)
@@ -103,7 +105,7 @@ webServer config =
  where
   -- (runApp . routeRequest $ router)
 
-  router Dashboard = page Dashboard.page
+  router Dashboard = page $ Dashboard.page adtok
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page
   router (Inversion i r) = page $ Inversion.page i r
@@ -118,14 +120,19 @@ webServer config =
     redirect (pathUrl . routePath $ Proposals)
   router Redirect = do
     code <- reqParam "code"
-    red <- send RedirectUri
+    red <- getRedirectUri
     tok <- Globus.accessToken red (Tagged code)
     saveAccessToken tok
+
+    atomically $ writeTVar adtok $ Just tok
+
+    -- redirect back to current url instead?
     redirect $ pathUrl $ routePath Proposals
 
-  runApp :: (IOE :> es) => Eff (Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
+      . runConcurrent
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
       . runGlobus config.globus

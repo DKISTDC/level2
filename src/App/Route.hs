@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedLists #-}
-
 module App.Route where
 
 import App.Globus as Globus

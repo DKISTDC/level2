@@ -1,6 +1,7 @@
 module NSO.Data.Qualify where
 
 import Data.Grouped
+import Data.List.NonEmpty qualified as NE
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (DayOfYear, toOrdinalDate)
 import NSO.Data.Datasets
@@ -42,7 +43,7 @@ qualify g = do
 qualifyVISP :: Grouped InstrumentProgram Dataset -> Either String ()
 qualifyVISP g = do
   -- let ds = NE.toList ip.datasets
-  let sls = identifyLines g.items
+  let sls = identifyLines (NE.toList g.items)
   check "On Disk" $ qualifyOnDisk g
   check "FeI" $ qualifyLine FeI sls
   check "CaII 854" $ qualifyLine (CaII CaII_854) sls

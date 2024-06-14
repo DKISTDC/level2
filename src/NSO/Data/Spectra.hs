@@ -1,13 +1,12 @@
 module NSO.Data.Spectra where
 
-import Data.List.NonEmpty qualified as NE
 import NSO.Data.Datasets
 import NSO.Prelude
 
 
 -- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py
-identifyLine :: Wavelength Nm -> Wavelength Nm -> Maybe SpectralLine
-identifyLine mn mx = find matchesLine allLines
+lineForWaves :: Wavelength Nm -> Wavelength Nm -> Maybe SpectralLine
+lineForWaves mn mx = find matchesLine allLines
  where
   allLines = [HeI, Ha, FeI] <> fmap CaII [minBound .. maxBound]
 
@@ -20,8 +19,12 @@ identifyLine mn mx = find matchesLine allLines
     wiggleRoom = Wavelength 1
 
 
-identifyLines :: NonEmpty Dataset -> [SpectralLine]
-identifyLines = mapMaybe (\d -> identifyLine d.wavelengthMin d.wavelengthMax) . NE.toList
+identifyLines :: [Dataset] -> [SpectralLine]
+identifyLines = mapMaybe identifyLine
+
+
+identifyLine :: Dataset -> Maybe SpectralLine
+identifyLine d = lineForWaves d.wavelengthMin d.wavelengthMax
 
 
 midPoint :: SpectralLine -> Wavelength Nm

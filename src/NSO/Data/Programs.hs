@@ -106,7 +106,7 @@ instrumentProgram gd ivs =
   midWave d = (d.wavelengthMin + d.wavelengthMax) / 2
 
   identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
-  identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d.wavelengthMin d.wavelengthMax
+  identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d
 
 
 data WithDatasets = WithDatasets
