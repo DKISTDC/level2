@@ -47,6 +47,8 @@ library
       App.View.Inversions
       App.View.Layout
       App.View.ProposalDetails
+      App.Worker.FitsGenWorker
+      App.Worker.Scanner
       Flow
       Flow.Example
       Flow.Node

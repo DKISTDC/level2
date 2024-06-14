@@ -317,7 +317,7 @@ stepInvert (InvertStep mc mt) inv = do
     uploadSelect NotInvalid
 
 
-uploadSelect :: Validated fs (Id Task) -> View InversionStatus ()
+uploadSelect :: Validated (Id Task) -> View InversionStatus ()
 uploadSelect val = do
   col (gap 5 . file val) $ do
     el bold "Upload Inversion Results"

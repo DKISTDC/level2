@@ -95,7 +95,7 @@ data CommitAction
   deriving (Generic, ViewAction)
 
 
-validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated fs GitCommit)
+validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated GitCommit)
 validate i repo gc lbl onValid = do
   isValid <- send $ ValidateGitCommit repo gc
   checkValid i gc lbl isValid
@@ -123,14 +123,14 @@ loadingForm gc lbl = do
     el Style.disabled $ commitForm (Just gc) NotInvalid lbl
 
 
-fromExistingCommit :: Maybe GitCommit -> Validated fs GitCommit
+fromExistingCommit :: Maybe GitCommit -> Validated GitCommit
 fromExistingCommit Nothing = NotInvalid
 fromExistingCommit (Just _) = Valid
 
 
-commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> Validated '[GitCommit] GitCommit -> Text -> View id ()
+commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> Validated GitCommit -> Text -> View id ()
 commitForm gc vg lbl = do
-  let val = validateWith vg
+  let val = validateWith @GitCommit @'[GitCommit] vg
   form LoadValid val (gap 10) $ do
     field @GitCommit valStyle $ do
       label lbl
@@ -153,6 +153,6 @@ commitForm gc vg lbl = do
   valColor _ = Black
 
 
-validationButton :: Validated fs GitCommit -> Mod
+validationButton :: Validated GitCommit -> Mod
 validationButton Valid = Style.btnOutline Success
 validationButton _ = Style.btn Primary

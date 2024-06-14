@@ -47,11 +47,10 @@ data PCL1 s (alt :: WCSAlt) = PCL1
 
 -- WCS --------------------------------------------------------------
 
-data Test = Test
-  { test :: Key Int "wahoo"
-  }
-  deriving (Generic, HeaderKeywords)
-
+-- data Test = Test
+--   { test :: Key Int "wahoo"
+--   }
+--   deriving (Generic, HeaderKeywords)
 
 data WCSCommon = WCSCommon
   { wcsvalid :: Key Bool "WCI data are correct"
@@ -197,8 +196,6 @@ wcsSlitX ax (BinnedX newx) l1 = do
   scaleUp <- upFactor
 
   keys <- requireWCS @s @alt ax l1
-
-  let Header (wtf : _) = l1
 
   pure $ scale scaleUp keys
  where

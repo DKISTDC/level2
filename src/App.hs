@@ -12,8 +12,14 @@ import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
+import App.Worker.FitsGenWorker qualified as FitsGenWorker
+import App.Worker.Scanner qualified as Scanner
+import Control.Monad (forever, void)
 import Control.Monad.Catch
 import Effectful
+import Effectful.Concurrent
+import Effectful.Concurrent.Async
+import Effectful.Concurrent.Chan
 import Effectful.Debug as Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -37,14 +43,55 @@ main = do
   putStrLn "NSO Level 2"
   config <- initConfig onRel8Error
   putStrLn $ "Starting on :" <> show config.app.port
-  putStrLn $ "Develop using https://localhost/"
-  Warp.run config.app.port $
-    addHeaders [("app-version", cs appVersion)] $
-      app config
+  putStrLn "Develop using https://localhost/"
+
+  void $ runEff $ runConcurrent $ do
+    fits <- newChan
+
+    mapConcurrently_
+      id
+      [ runWebServer config
+      , forever $ do
+          Scanner.scan fits
+      , runWork fits FitsGenWorker.workTask
+      ]
+
+    pure ()
 
 
-app :: Config -> Application
-app config =
+runWebServer :: (IOE :> es, Concurrent :> es) => Config -> Eff es ()
+runWebServer config = do
+  liftIO $
+    Warp.run config.app.port $
+      addHeaders [("app-version", cs appVersion)] $
+        webServer config
+
+
+runCPUWorkers :: (IOE :> es, Concurrent :> es) => Eff es () -> Eff es ()
+runCPUWorkers work = do
+  n <- availableWorkerCPUs
+  -- start one per core
+  void $ pooledForConcurrentlyN (max 1 n) [1 .. n :: Int] $ const $ do
+    work
+
+
+runWork :: (IOE :> es, Concurrent :> es) => Chan a -> (a -> Eff es ()) -> Eff es ()
+runWork chan work = do
+  putStrLn "STARTED CPU "
+  forever $ do
+    task <- readChan chan
+    work task
+
+
+availableWorkerCPUs :: (Concurrent :> es) => Eff es Int
+availableWorkerCPUs = do
+  let saveCoresForWebserver = 1
+  cores <- getNumCapabilities
+  pure $ cores - saveCoresForWebserver
+
+
+webServer :: Config -> Application
+webServer config =
   --  liveApp
   --    document
   --    (runApp . routeRequest $ router)

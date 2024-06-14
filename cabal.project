@@ -1,8 +1,12 @@
 packages:
   .
+  ./types/
+
   -- https://hackage.haskell.org/package/hyperbole-0.3.5/candidate/hyperbole-0.3.5.tar.gz
   ../hyperbole/
-  ./types/
-  ../fits-parse/
+
   ../globus/
+
   ../telescope/
+  ../fits-parse/
+  -- https://hackage.haskell.org/package/telescope-0.1.1/candidate/telescope-0.1.1.tar.gz
