@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module NSO.Fits.Generate.DimArray where
+module NSO.Fits.Generate.DataCube where
 
 import Data.Kind
 import Data.Massiv.Array as M hiding (mapM)
@@ -10,17 +10,17 @@ import NSO.Prelude
 
 -- Results ------------------------------------------------------------------------------
 
-newtype DimArray (as :: [Type]) = DimArray
+newtype DataCube (as :: [Type]) = DataCube
   { array :: Array D (IndexOf as) Float
   }
 
 
-instance (Index (IndexOf as)) => Eq (DimArray as) where
-  DimArray arr == DimArray arr2 = arr == arr2
+instance (Index (IndexOf as)) => Eq (DataCube as) where
+  DataCube arr == DataCube arr2 = arr == arr2
 
 
-instance (Ragged L (IndexOf as) Float) => Show (DimArray as) where
-  show (DimArray a) = show a
+instance (Ragged L (IndexOf as) Float) => Show (DataCube as) where
+  show (DataCube a) = show a
 
 
 class HasIndex (as :: [Type]) where
@@ -50,34 +50,34 @@ instance HasIndex '[a, b, c, d] where
 outerList
   :: forall a as
    . (Lower (IndexOf (a : as)) ~ IndexOf as, Index (IndexOf as), Index (IndexOf (a : as)))
-  => DimArray (a : as)
-  -> [DimArray as]
-outerList (DimArray a) = foldOuterSlice row a
+  => DataCube (a : as)
+  -> [DataCube as]
+outerList (DataCube a) = foldOuterSlice row a
  where
-  row :: Array D (IndexOf as) Float -> [DimArray as]
-  row r = [DimArray r]
+  row :: Array D (IndexOf as) Float -> [DataCube as]
+  row r = [DataCube r]
 
 
 transposeMajor
   :: (IndexOf (a : b : xs) ~ IndexOf (b : a : xs), Index (Lower (IndexOf (b : a : xs))), Index (IndexOf (b : a : xs)))
-  => DimArray (a : b : xs)
-  -> DimArray (b : a : xs)
-transposeMajor (DimArray arr) = DimArray $ transposeInner arr
+  => DataCube (a : b : xs)
+  -> DataCube (b : a : xs)
+transposeMajor (DataCube arr) = DataCube $ transposeInner arr
 
 
 transposeMinor4
-  :: DimArray [a, b, c, d]
-  -> DimArray [a, b, d, c]
-transposeMinor4 (DimArray arr) = DimArray $ transposeOuter arr
+  :: DataCube [a, b, c, d]
+  -> DataCube [a, b, d, c]
+transposeMinor4 (DataCube arr) = DataCube $ transposeOuter arr
 
 
 transposeMinor3
-  :: DimArray [a, b, c]
-  -> DimArray [a, c, b]
-transposeMinor3 (DimArray arr) = DimArray $ transposeOuter arr
+  :: DataCube [a, b, c]
+  -> DataCube [a, c, b]
+transposeMinor3 (DataCube arr) = DataCube $ transposeOuter arr
 
 
---  DimArray $ -- foldOuterSlice each arr
+--  DataCube $ -- foldOuterSlice each arr
 -- where
 --  each :: Array P Ix2 Float -> Array P Ix3 Float
 --  each = _
@@ -89,9 +89,9 @@ sliceM0
      , Index (IndexOf (a : xs))
      )
   => Int
-  -> DimArray (a : xs)
-  -> DimArray xs
-sliceM0 a (DimArray arr) = DimArray (arr !> a)
+  -> DataCube (a : xs)
+  -> DataCube xs
+sliceM0 a (DataCube arr) = DataCube (arr !> a)
 
 
 -- Slice along the 2nd major dimension
@@ -102,11 +102,11 @@ sliceM1
      , Index (IndexOf (a : b : xs))
      )
   => Int
-  -> DimArray (a : b : xs)
-  -> DimArray (a : xs)
-sliceM1 b (DimArray arr) =
+  -> DataCube (a : b : xs)
+  -> DataCube (a : xs)
+sliceM1 b (DataCube arr) =
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : b : xs))) Proxy
-   in DimArray $ arr <!> (Dim (dims - 1), b)
+   in DataCube $ arr <!> (Dim (dims - 1), b)
 
 
 -- Slice along the 3rd major dimension
@@ -117,11 +117,11 @@ sliceM2
      , Index (IndexOf (a : b : c : xs))
      )
   => Int
-  -> DimArray (a : b : c : xs)
-  -> DimArray (a : b : xs)
-sliceM2 c (DimArray arr) =
+  -> DataCube (a : b : c : xs)
+  -> DataCube (a : b : xs)
+sliceM2 c (DataCube arr) =
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : b : c : xs))) Proxy
-   in DimArray $ arr <!> (Dim (dims - 2), c)
+   in DataCube $ arr <!> (Dim (dims - 2), c)
 
 
 splitM0
@@ -130,12 +130,12 @@ splitM0
      , MonadThrow m
      )
   => Int
-  -> DimArray (a : xs)
-  -> m (DimArray (a : xs), DimArray (a : xs))
-splitM0 a (DimArray arr) = do
+  -> DataCube (a : xs)
+  -> m (DataCube (a : xs), DataCube (a : xs))
+splitM0 a (DataCube arr) = do
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : xs))) Proxy
   (arr1, arr2) <- M.splitAtM (Dim dims) a arr
-  pure (DimArray arr1, DimArray arr2)
+  pure (DataCube arr1, DataCube arr2)
 
 
 splitM1
@@ -147,12 +147,12 @@ splitM1
      , MonadThrow m
      )
   => Int
-  -> DimArray (a : b : xs)
-  -> m (DimArray (a : b : xs), DimArray (a : b : xs))
-splitM1 b (DimArray arr) = do
+  -> DataCube (a : b : xs)
+  -> m (DataCube (a : b : xs), DataCube (a : b : xs))
+splitM1 b (DataCube arr) = do
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : xs))) Proxy
   (arr1, arr2) <- M.splitAtM (Dim dims) b arr
-  pure (DimArray arr1, DimArray arr2)
+  pure (DataCube arr1, DataCube arr2)
 
 -- sampleGen2 :: Ix2 -> Float
 -- sampleGen2 (r :. c) = fromIntegral r * 10 + fromIntegral c
@@ -167,9 +167,9 @@ splitM1 b (DimArray arr) = do
 -- data Z'
 --
 --
--- sample2 :: Ix2 -> DimArray [Y, X]
--- sample2 ix = DimArray $ makeArray Seq (Sz ix) sampleGen2
+-- sample2 :: Ix2 -> DataCube [Y, X]
+-- sample2 ix = DataCube $ makeArray Seq (Sz ix) sampleGen2
 --
 --
--- sample3 :: Ix3 -> DimArray [Z, Y, X]
--- sample3 ix = DimArray $ makeArray Seq (Sz ix) sampleGen3
+-- sample3 :: Ix3 -> DataCube [Z, Y, X]
+-- sample3 ix = DataCube $ makeArray Seq (Sz ix) sampleGen3

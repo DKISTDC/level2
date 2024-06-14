@@ -15,7 +15,7 @@ import Effectful.Error.Static
 import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Fits.Generate.DimArray
+import NSO.Fits.Generate.DataCube
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Doc as Doc
 import NSO.Fits.Generate.Headers.Keywords
@@ -218,7 +218,7 @@ quantitiesHDUs now l1 q = execWriter $ do
       convert gcmToKgm q.density
 
   convert f da =
-    DimArray $ M.map f da.array
+    DataCube $ M.map f da.array
 
   cmsToKms = (/ 100000)
 
@@ -233,7 +233,7 @@ dataHDU
   => UTCTime
   -> Header
   -> info
-  -> DimArray [SlitX, Depth]
+  -> DataCube [SlitX, Depth]
   -> Eff es ()
 dataHDU now l1 info res = do
   let darr = encodeArray res.array
@@ -353,7 +353,7 @@ dataSection
   :: (Writer [HeaderRecord] :> es, Index (IndexOf as), HeaderKeywords info)
   => UTCTime
   -> info
-  -> DimArray as
+  -> DataCube as
   -> Eff es ()
 dataSection now info res = do
   cm <- dataCommon now res
@@ -361,7 +361,7 @@ dataSection now info res = do
   addKeywords $ headerKeywords dat
 
 
-dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DimArray as -> m DataHDUCommon
+dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as -> m DataHDUCommon
 dataCommon now res = do
   let date = Key . DateTime . pack . iso8601Show $ now
       datamax = Key $ maximum res.array
@@ -379,17 +379,17 @@ dataCommon now res = do
 -- Decode Quantities ----------------------------------------------------------------------------------
 
 data Quantities (as :: [Type]) = Quantities
-  { opticalDepth :: DimArray as
-  , temperature :: DimArray as
-  , electronPressure :: DimArray as
-  , microTurbulence :: DimArray as
-  , magStrength :: DimArray as
-  , velocity :: DimArray as
-  , magInclination :: DimArray as
-  , magAzimuth :: DimArray as
-  , geoHeight :: DimArray as
-  , gasPressure :: DimArray as
-  , density :: DimArray as
+  { opticalDepth :: DataCube as
+  , temperature :: DataCube as
+  , electronPressure :: DataCube as
+  , microTurbulence :: DataCube as
+  , magStrength :: DataCube as
+  , velocity :: DataCube as
+  , magInclination :: DataCube as
+  , magAzimuth :: DataCube as
+  , geoHeight :: DataCube as
+  , gasPressure :: DataCube as
+  , density :: DataCube as
   }
 
 
@@ -399,26 +399,26 @@ decodeQuantitiesFrames inp = do
   resultsQuantities res
 
 
-decodeInversion :: (MonadThrow m) => ByteString -> m (DimArray [Quantity, Depth, FrameY, SlitX])
+decodeInversion :: (MonadThrow m) => ByteString -> m (DataCube [Quantity, Depth, FrameY, SlitX])
 decodeInversion inp = do
   f <- decode inp
   a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
-  pure $ DimArray a
+  pure $ DataCube a
 
 
-resultsQuantities :: (MonadThrow m) => DimArray [Quantity, Depth, FrameY, SlitX] -> m [Quantities [SlitX, Depth]]
+resultsQuantities :: (MonadThrow m) => DataCube [Quantity, Depth, FrameY, SlitX] -> m [Quantities [SlitX, Depth]]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrames res
 
 
-splitQuantitiesM :: (MonadThrow m) => DimArray [Quantity, Depth, SlitX] -> m (Quantities [SlitX, Depth])
+splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity, Depth, SlitX] -> m (Quantities [SlitX, Depth])
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwM $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: DimArray [Quantity, Depth, SlitX] -> Maybe (Quantities [SlitX, Depth])
+splitQuantities :: DataCube [Quantity, Depth, SlitX] -> Maybe (Quantities [SlitX, Depth])
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
   [opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density] <- pure qs
@@ -428,14 +428,14 @@ splitQuantities res = do
 -- Frames -----------------------------------------------------------------------
 
 -- | Splits any Data Cube into frames when it is the 3/4 dimension
-splitFrames :: forall a b d. DimArray [a, b, FrameY, d] -> [DimArray [a, b, d]]
+splitFrames :: forall a b d. DataCube [a, b, FrameY, d] -> [DataCube [a, b, d]]
 splitFrames res =
   fmap sliceFrame [0 .. numFrames res - 1]
  where
-  numFrames :: DimArray [a, b, FrameY, d] -> Int
-  numFrames (DimArray arr) =
+  numFrames :: DataCube [a, b, FrameY, d] -> Int
+  numFrames (DataCube arr) =
     let Sz (_ :> _ :> nf :. _) = size arr
      in nf
 
-  sliceFrame :: Int -> DimArray [a, b, d]
+  sliceFrame :: Int -> DataCube [a, b, d]
   sliceFrame n = sliceM2 n res

@@ -60,7 +60,7 @@ library
       NSO.Data.Spectra
       NSO.Error
       NSO.Fits.Generate
-      NSO.Fits.Generate.DimArray
+      NSO.Fits.Generate.DataCube
       NSO.Fits.Generate.Headers
       NSO.Fits.Generate.Headers.Doc
       NSO.Fits.Generate.Headers.Keywords
@@ -189,7 +189,7 @@ test-suite tests
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.DimArraySpec
+      Test.DataCubeSpec
       Test.FitsGenSpec
       Test.ParseSpec
       Test.QualifySpec

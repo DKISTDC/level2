@@ -8,7 +8,7 @@ import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Fits.Generate.DimArray
+import NSO.Fits.Generate.DataCube
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
 import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))
@@ -32,7 +32,6 @@ import Telescope.Fits.Encoding (replaceKeywordLine)
 --   TODO: telescope - change exports to avoid fits-parse
 --   TODO: pubmit PR for fits-parse
 --   TODO: Refactor primary to a separate gen file from Generate and export as required
-
 
 ------------------------------------------------------------------------------
 

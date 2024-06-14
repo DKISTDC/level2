@@ -5,7 +5,7 @@ import Data.Fits
 import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists', toList)
 import Effectful
 import Effectful.Error.Static
-import NSO.Fits.Generate.DimArray
+import NSO.Fits.Generate.DataCube
 import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
@@ -234,8 +234,8 @@ specWavProfile = do
         px `shouldSatisfy` (> 3)
 
 
-simple :: DimArray '[Wavelength (Center 630 MA)]
-simple = DimArray $ M.delay @Ix1 @P $ M.fromLists' Seq simpleNums
+simple :: DataCube '[Wavelength (Center 630 MA)]
+simple = DataCube $ M.delay @Ix1 @P $ M.fromLists' Seq simpleNums
 
 
 simpleNums :: [Float]
@@ -243,9 +243,9 @@ simpleNums = [-2500, -1500, -500, 500, 1500, 2500, 3500, 4500]
 
 
 -- Actual raw data from profile. In original milliangstroms
-wav630 :: DimArray '[Wavelength (Center 630 MA)]
+wav630 :: DataCube '[Wavelength (Center 630 MA)]
 wav630 =
-  DimArray $
+  DataCube $
     M.delay @Ix1 @P $
       M.fromLists'
         Seq

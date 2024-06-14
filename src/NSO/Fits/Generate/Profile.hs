@@ -9,7 +9,7 @@ import Data.Massiv.Array qualified as M
 import Data.Maybe (isJust)
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
-import NSO.Fits.Generate.DimArray
+import NSO.Fits.Generate.DataCube
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords
 import NSO.Fits.Generate.Headers.LiftL1
@@ -63,7 +63,7 @@ profileHDU
   -> Header
   -> info
   -> WavProfile w
-  -> DimArray [SlitX, Wavelength w, Stokes]
+  -> DataCube [SlitX, Wavelength w, Stokes]
   -> Eff es ImageHDU
 profileHDU now l1 info wp da = do
   let darr = encodeArray da.array
@@ -167,7 +167,7 @@ wcsAxes bx wp h = do
     pure $ ProfilePCs{dummyY = p.xy, slitX = p.xx, wavelength = PC 0, stokes = PC 0}
 
 
-lengthSlitX :: DimArray [SlitX, Wavelength w, Stokes] -> Int
+lengthSlitX :: DataCube [SlitX, Wavelength w, Stokes] -> Int
 lengthSlitX res =
   let Sz (x :> _ :. _) = size res.array
    in x
@@ -213,8 +213,8 @@ data Center wl unit
 
 
 data ProfileFrame a = ProfileFrame
-  { wav630 :: DimArray [SlitX, Wavelength (Center 630 Nm), Stokes]
-  , wav854 :: DimArray [SlitX, Wavelength (Center 854 Nm), Stokes]
+  { wav630 :: DataCube [SlitX, Wavelength (Center 630 Nm), Stokes]
+  , wav854 :: DataCube [SlitX, Wavelength (Center 854 Nm), Stokes]
   }
 
 
@@ -260,43 +260,43 @@ decodeProfileFrames inp = do
 
   pure $ ProfileFrames fs (WavProfiles wp630 wp854)
  where
-  mainProfile :: (MonadThrow m) => Fits -> m (DimArray [Stokes, Wavs, FrameY, SlitX])
+  mainProfile :: (MonadThrow m) => Fits -> m (DataCube [Stokes, Wavs, FrameY, SlitX])
   mainProfile f = do
     a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
-    pure $ DimArray a
+    pure $ DataCube a
 
-  wavs :: (MonadThrow m) => Fits -> m (DimArray '[Wavs])
+  wavs :: (MonadThrow m) => Fits -> m (DataCube '[Wavs])
   wavs f = do
     case f.extensions of
-      (Image h : _) -> DimArray <$> decodeArray @Ix1 h.dataArray
+      (Image h : _) -> DataCube <$> decodeArray @Ix1 h.dataArray
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
-  wavIds :: (MonadThrow m) => Fits -> m (DimArray '[WavIds])
+  wavIds :: (MonadThrow m) => Fits -> m (DataCube '[WavIds])
   wavIds f = do
     case f.extensions of
       [_, Image h] -> do
-        DimArray <$> decodeArray @Ix1 h.dataArray
+        DataCube <$> decodeArray @Ix1 h.dataArray
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
 
-splitWavs :: (MonadThrow m) => WavBreakIndex -> DimArray '[Wavs] -> m (DimArray '[Wavelength (Center 630 MA)], DimArray '[Wavelength (Center 854 MA)])
+splitWavs :: (MonadThrow m) => WavBreakIndex -> DataCube '[Wavs] -> m (DataCube '[Wavelength (Center 630 MA)], DataCube '[Wavelength (Center 854 MA)])
 splitWavs (WavBreakIndex bx) wvs = do
   (w630, w854) <- splitM0 bx wvs
   pure (centered w630, centered w854)
  where
-  centered (DimArray a) = DimArray a
+  centered (DataCube a) = DataCube a
 
 
-indexOfWavBreak :: (MonadThrow m) => DimArray '[WavIds] -> m WavBreakIndex
+indexOfWavBreak :: (MonadThrow m) => DataCube '[WavIds] -> m WavBreakIndex
 indexOfWavBreak wds =
   case group (M.toList wds.array) of
     (w1 : _) -> pure $ WavBreakIndex (length w1)
     _ -> throwM InvalidWavelengthGroups
 
 
-wavProfile :: SpectralLine -> DimArray '[Wavelength (Center n MA)] -> WavProfile (Center n Nm)
+wavProfile :: SpectralLine -> DataCube '[Wavelength (Center n MA)] -> WavProfile (Center n Nm)
 wavProfile l da =
-  let DimArray arr = toNanometers da
+  let DataCube arr = toNanometers da
       ws = M.toList arr
       delta = avgDelta ws
    in WaveProfile
@@ -306,8 +306,8 @@ wavProfile l da =
         }
  where
   -- convert from milliangstroms to nanometers, and affirm that the type is correct
-  toNanometers :: DimArray '[Wavelength (Center w MA)] -> DimArray '[Wavelength (Center w Nm)]
-  toNanometers (DimArray a) = DimArray $ M.map (/ 10000) a
+  toNanometers :: DataCube '[Wavelength (Center w MA)] -> DataCube '[Wavelength (Center w Nm)]
+  toNanometers (DataCube a) = DataCube $ M.map (/ 10000) a
 
 
 avgDelta :: [Float] -> Float
@@ -328,20 +328,20 @@ pixel0 dlt as =
    in negate mn / dlt + 1
 
 
-profileFrameArrays :: DimArray [Stokes, Wavs, FrameY, SlitX] -> [DimArray [SlitX, Wavs, Stokes]]
+profileFrameArrays :: DataCube [Stokes, Wavs, FrameY, SlitX] -> [DataCube [SlitX, Wavs, Stokes]]
 profileFrameArrays = fmap swapProfileDimensions . splitFrames
 
 
-toProfileFrame :: (MonadThrow m) => WavBreakIndex -> DimArray [SlitX, Wavs, Stokes] -> m (ProfileFrame w)
+toProfileFrame :: (MonadThrow m) => WavBreakIndex -> DataCube [SlitX, Wavs, Stokes] -> m (ProfileFrame w)
 toProfileFrame (WavBreakIndex bx) da = do
   (w630, w854) <- splitM1 bx da
   pure $ ProfileFrame (fromWavs w630) (fromWavs w854)
  where
   -- we can convert from Wavs to (Wavelength n), because there isn't any wavelength data here
   -- it's just one of the pixel axes. And we've successfully split them up here
-  fromWavs (DimArray arr) = DimArray arr
+  fromWavs (DataCube arr) = DataCube arr
 
 
-swapProfileDimensions :: DimArray [Stokes, Wavs, SlitX] -> DimArray [SlitX, Wavs, Stokes]
+swapProfileDimensions :: DataCube [Stokes, Wavs, SlitX] -> DataCube [SlitX, Wavs, Stokes]
 swapProfileDimensions =
   transposeMajor . transposeMinor3 . transposeMajor
