@@ -1,7 +1,7 @@
 module Test.QualifySpec where
 
 import NSO.Data.Qualify
-import NSO.Data.Spectra (identifyLine)
+import NSO.Data.Spectra (lineForWaves)
 import NSO.Prelude
 import NSO.Types.Dataset
 import NSO.Types.Wavelength
@@ -24,18 +24,18 @@ spec = do
   describe "Spectra - identify lines" $ do
     it "should identify normal case 630.2" $ do
       -- Dataset: ADGGO
-      identifyLine 629.4 631.0 `shouldBe` Just FeI
+      lineForWaves 629.4 631.0 `shouldBe` Just FeI
 
     it "should catch slightly above 630.2" $ do
       -- Dataset: BVJVO
-      identifyLine 630.239 634.38 `shouldBe` Just FeI
+      lineForWaves 630.239 634.38 `shouldBe` Just FeI
 
     it "should catch slightly above 854.2 nm" $ do
       -- Dataset: BWKXP
-      identifyLine 854.201 856.8 `shouldBe` Just (CaII CaII_854)
+      lineForWaves 854.201 856.8 `shouldBe` Just (CaII CaII_854)
 
     it "should not identify 589.1" $ do
-      identifyLine 589.1 590.1 `shouldBe` Nothing
+      lineForWaves 589.1 590.1 `shouldBe` Nothing
 
   describe "Qualify" $ do
     describe "bounding box near edge" $ do

@@ -6,7 +6,6 @@ module App.Globus
   , fileManagerUrl
   , transferStatus
   , Uri
-  , Id
   , Token
   , Task (..)
   , TaskStatus (..)
@@ -28,22 +27,24 @@ module App.Globus
   , Auth (..)
   , runAuth
   , requireLogin
+  , runWithAccess
   , loginUrl
   , getRedirectUri
   , RedirectPath (..)
+  , GlobusEndpoint (..)
   ) where
 
 import App.Types
 import Data.Tagged
-import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Globus hiding (Id)
+import Effectful.Globus
 import Effectful.Globus qualified as Globus
+import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
-import NSO.Types.Common
+import NSO.Types.Common as App
 import NSO.Types.Dataset
 import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
@@ -54,7 +55,6 @@ import Web.Hyperbole.Effect (Host (..), Request (..))
 import Web.Hyperbole.Forms
 import Web.Hyperbole.Route (Route (..))
 import Web.View as WebView
-import Web.View.Types.Url (Segment)
 
 
 authUrl :: (Globus :> es) => Uri Redirect -> Eff es WebView.Url
@@ -165,52 +165,54 @@ instance Form UploadFiles where
         else Left $ "Missing required file: " <> cs file
 
 
-transferStatus :: (Hyperbole :> es, Globus :> es, Auth :> es) => Id Task -> Eff es Task
+transferStatus :: (Hyperbole :> es, Globus :> es, Auth :> es) => App.Id Task -> Eff es Task
 transferStatus (Id ti) = do
   tok <- getAccessToken >>= expectAuth
   send $ StatusTask tok (Tagged ti)
 
 
-initTransfer :: (Hyperbole :> es, Globus :> es, Auth :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
+-- initTransfer :: (Hyperbole :> es, Globus :> es, Auth :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
+-- initTransfer toRequest = do
+
+initTransfer :: (Globus :> es, Reader (Token Access) :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (App.Id Task)
 initTransfer toRequest = do
-  acc <- getAccessToken >>= expectAuth
-  initTransferWithAccess acc toRequest
-
-
-initTransferWithAccess :: (Globus :> es) => Token Access -> (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
-initTransferWithAccess acc toRequest = do
+  acc <- ask
   sub <- send $ Globus.SubmissionId acc
   res <- send $ Globus.Transfer acc $ toRequest sub
   pure $ Id res.task_id.unTagged
 
 
-initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm -> UploadFiles -> Id Inversion -> Eff es (Id Task)
+initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es, Reader (GlobusEndpoint App) :> es) => TransferForm -> UploadFiles -> App.Id Inversion -> Eff es (App.Id Task)
 initUpload tform up ii = do
-  initTransfer transferRequest
+  level2 <- ask @(GlobusEndpoint App)
+  requireLogin $ initTransfer (transferRequest level2)
  where
-  transferRequest :: Globus.Id Submission -> TransferRequest
-  transferRequest submission_id =
+  transferRequest :: GlobusEndpoint App -> Globus.Id Submission -> TransferRequest
+  transferRequest endpoint submission_id =
     TransferRequest
       { data_type = DataType
       , submission_id
       , label = Just tform.label.value
       , source_endpoint = Tagged tform.endpoint_id.value
-      , destination_endpoint = level2Scratch
+      , destination_endpoint = endpoint.collection
       , data_ = map transferItem [up.invResMod, up.invResPre, up.perOri]
       , sync_level = SyncChecksum
       }
+   where
+    transferItem :: String -> TransferItem
+    transferItem f =
+      TransferItem
+        { data_type = DataType
+        , source_path = cs tform.path.value </> f
+        , destination_path = inversionScratchPath </> f
+        , recursive = False
+        }
 
-  transferItem :: String -> TransferItem
-  transferItem f =
-    TransferItem
-      { data_type = DataType
-      , source_path = cs tform.path.value </> f
-      , destination_path = inversionScratchPath ii </> f
-      , recursive = False
-      }
+    inversionScratchPath :: FilePath
+    inversionScratchPath = endpoint.path </> cs ii.fromId
 
 
-initDownload :: (Hyperbole :> es, Globus :> es, Auth :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (Id Task)
+initDownload :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
 initDownload tform df ds = do
   initTransfer downloadTransferRequest
  where
@@ -234,45 +236,33 @@ initDownload tform df ds = do
         Nothing -> cs tform.path.value
 
 
-initTransferDataset :: (Globus :> es) => Token Access -> Dataset -> Eff es (Id Task, FilePath)
-initTransferDataset acc d = do
-  t <- initTransferWithAccess acc transfer
+initTransferDataset :: (Globus :> es, Reader (Token Access) :> es, Reader (GlobusEndpoint App) :> es) => Dataset -> Eff es (App.Id Task, FilePath)
+initTransferDataset d = do
+  endpoint <- ask
+  t <- initTransfer (transfer endpoint)
   -- we have to add the folder, because it's auto-added, I think
-  let destFolder = datasetScratchPath d </> cs d.datasetId.fromId
+  let destFolder = datasetScratchPath endpoint d
   pure (t, destFolder)
  where
-  transfer :: Globus.Id Submission -> TransferRequest
-  transfer submission_id =
+  transfer :: GlobusEndpoint App -> Globus.Id Submission -> TransferRequest
+  transfer endpoint submission_id =
     TransferRequest
       { data_type = DataType
       , submission_id
       , label = Just $ "Dataset " <> d.datasetId.fromId
       , source_endpoint = dkistEndpoint
-      , destination_endpoint = level2Scratch
-      , data_ = [datasetTransferItem (datasetScratchPath d) d]
+      , destination_endpoint = endpoint.collection
+      , data_ = [datasetTransferItem (datasetScratchPath endpoint d) d]
       , sync_level = SyncChecksum
       }
+
+  datasetScratchPath :: GlobusEndpoint App -> Dataset -> FilePath
+  datasetScratchPath endpoint _ =
+    endpoint.path </> cs d.primaryProposalId.fromId </> cs d.datasetId.fromId
 
 
 dkistEndpoint :: Globus.Id Collection
 dkistEndpoint = Tagged "d26bd00b-62dc-40d2-9179-7aece2b8c437"
-
-
-level2Scratch :: Globus.Id Collection
-level2Scratch = Tagged "20fa4840-366a-494c-b009-063280ecf70d"
-
-
-level2ScratchPath :: FilePath
-level2ScratchPath = "~/level2"
-
-
-inversionScratchPath :: Id Inversion -> FilePath
-inversionScratchPath ii = level2ScratchPath </> cs ii.fromId
-
-
-datasetScratchPath :: Dataset -> FilePath
-datasetScratchPath _ =
-  level2ScratchPath
 
 
 datasetTransferItem :: FilePath -> Dataset -> TransferItem
@@ -358,10 +348,14 @@ clearAccessToken :: (Hyperbole :> es) => Eff es ()
 clearAccessToken = clearSession "globus"
 
 
-requireLogin :: (Hyperbole :> es, Auth :> es) => Eff es ()
-requireLogin = do
-  _ <- getAccessToken >>= expectAuth
-  pure ()
+runWithAccess :: Token Access -> Eff (Reader (Token Access) : es) a -> Eff es a
+runWithAccess = runReader
+
+
+requireLogin :: (Hyperbole :> es, Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
+requireLogin eff = do
+  acc <- getAccessToken >>= expectAuth
+  runWithAccess acc eff
 
 
 newtype RedirectPath = RedirectPath [Segment]
@@ -372,3 +366,9 @@ instance Route RedirectPath where
   defRoute = RedirectPath []
   routePath (RedirectPath ss) = ss
   matchRoute ss = Just $ RedirectPath ss
+
+
+data GlobusEndpoint a = GlobusEndpoint
+  { collection :: Globus.Id Collection
+  , path :: FilePath
+  }

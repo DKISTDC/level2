@@ -72,6 +72,7 @@ dependencies:
   - massiv
   - telescope
   - uuid
+  - megaparsec
   # - amqp-worker >= 2.0
 
 

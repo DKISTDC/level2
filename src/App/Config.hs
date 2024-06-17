@@ -11,18 +11,22 @@ module App.Config
   , Tagged (..)
   , AppDomain
   , document
+  , GlobusInfo (..)
+  , GlobusEndpoint (..)
   ) where
 
-import App.Globus (GlobusClient (..))
+import App.Globus (GlobusClient (..), GlobusEndpoint (..), Id' (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
 import Data.Tagged
+import Data.Text
 import Effectful
 import Effectful.Error.Static
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
+import Network.Globus.Types qualified as Globus
 import System.Environment
 import Text.Read (readMaybe)
 import Web.Hyperbole
@@ -32,13 +36,19 @@ data Config = Config
   { services :: Services
   , servicesIsMock :: Bool
   , app :: App
-  , globus :: GlobusClient
+  , globus :: GlobusInfo
   , db :: Rel8.Connection
   }
 
 
 data Services = Services
   {metadata :: Service}
+
+
+data GlobusInfo = GlobusInfo
+  { client :: GlobusClient
+  , level2 :: GlobusEndpoint App
+  }
 
 
 initConfig :: (Rel8Error -> Eff '[IOE] Connection) -> IO Config
@@ -68,11 +78,21 @@ parseService u =
     Just s -> pure s
 
 
-initGlobus :: IO GlobusClient
+initGlobus :: IO GlobusInfo
 initGlobus = do
   clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
   clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
-  pure $ GlobusClient{clientId, clientSecret}
+  level2Collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT" :: IO (Globus.Id Collection)
+  level2Path <- getEnv "GLOBUS_LEVEL2_PATH"
+  pure $
+    GlobusInfo
+      { client = GlobusClient{clientId, clientSecret}
+      , level2 =
+          GlobusEndpoint
+            { collection = level2Collection
+            , path = level2Path
+            }
+      }
 
 
 initDb :: (Rel8Error -> Eff '[IOE] Connection) -> IO Rel8.Connection

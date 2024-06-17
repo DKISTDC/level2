@@ -1,7 +1,7 @@
 module App.Route where
 
-import App.Globus as Globus
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion

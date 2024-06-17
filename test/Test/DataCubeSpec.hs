@@ -1,4 +1,4 @@
-module Test.DataCube where
+module Test.DataCubeSpec where
 
 import Data.Massiv.Array as M
 import NSO.Fits.Generate.DataCube

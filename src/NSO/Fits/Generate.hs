@@ -9,7 +9,6 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Fits.Generate.DataCube
-import NSO.Fits.Generate.FetchL1
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
 import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))
@@ -56,8 +55,16 @@ level1Input :: FilePath
 level1Input = "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits"
 
 
-test :: IO ()
-test = do
+-- test :: IO ()
+-- test = do
+--   let ip = Id "id.118958.452436"
+--   print ip
+--   let tok = "Ag6XJzONoxwB7w7KkgyK8K2pOM3j6V5nrq2jJw44b8Ka6QnmxMh2Cyyne49KX3QpMK7neq896Kp4zpF7J00X1FDQV8v" :: Token Access
+--   md <- findCanonicalDataset ip
+--   print md
+
+testOld :: IO ()
+testOld = do
   putStrLn "TEST"
   (f : _) <- decodeQuantitiesFrames =<< BS.readFile testInput
   i1 <- readLevel1 level1Input

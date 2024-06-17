@@ -4,7 +4,6 @@ import App.Colors
 import App.Globus as Globus
 import App.Route
 import Effectful
-import Effectful.Dispatch.Dynamic
 import NSO.Prelude
 import Web.Hyperbole hiding (layout)
 import Web.View qualified as WebView

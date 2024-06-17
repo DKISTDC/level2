@@ -3,15 +3,19 @@ module Test.FitsGenSpec where
 import Control.Monad.Catch (throwM)
 import Data.Fits
 import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists', toList)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..))
 import Effectful
 import Effectful.Error.Static
 import NSO.Fits.Generate.DataCube
+import NSO.Fits.Generate.FetchL1
 import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Fits.Generate.Profile
 import NSO.Fits.Generate.Quantities
 import NSO.Prelude
+import NSO.Types.Common (Stokes (..))
 import NSO.Types.Wavelength
 import Test.Syd
 
@@ -20,6 +24,7 @@ spec :: Spec
 spec = describe "Fits Generation" $ do
   specWavProfile
   specWCS
+  specL1Frames
 
 
 ctypeY :: Text
@@ -258,3 +263,24 @@ runErrorIO eff = do
   case res of
     Left e -> throwM e
     Right a -> pure a
+
+
+specL1Frames :: Spec
+specL1Frames = do
+  describe "l1 frame parse" $ do
+    let path = Path "VISP_2023_05_01T19_14_27_229_00630200_I_AOPPO_L1.fits"
+    it "should parse stokes" $ do
+      Just f <- pure $ runParseFileName path
+      f.stokes `shouldBe` I
+
+    it "should parse wavelength" $ do
+      Just f <- pure $ runParseFileName path
+      f.wavelength `shouldBe` Wavelength 630.2
+
+    it "should parse datetime" $ do
+      Just f <- pure $ runParseFileName path
+      show f.timestamp `shouldBe` "2023-05-01 19:14:27.229 UTC"
+
+    it "should include original filename" $ do
+      Just f <- pure $ runParseFileName path
+      Path f.file `shouldBe` path
