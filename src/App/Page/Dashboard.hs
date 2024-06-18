@@ -23,7 +23,7 @@ import Web.Hyperbole
 
 page
   :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Reader (GlobusEndpoint App) :> es)
-  => TVar (Maybe (Token Access))
+  => TMVar (Token Access)
   -> TaskChan FitsGenWorker.Task
   -> Page es Response
 page adtok fits = do
@@ -31,7 +31,7 @@ page adtok fits = do
   handle $ work fits
   load $ do
     login <- loginUrl
-    mtok <- readTVarIO adtok
+    mtok <- atomically $ tryReadTMVar adtok
 
     appLayout Dashboard (mainView login mtok)
  where
@@ -67,13 +67,13 @@ instance HyperView Test where
 
 
 -- "~/Data/pid_2_95/AOPPO"
-test :: (Log :> es, FileSystem :> es, Concurrent :> es, Datasets :> es, Globus :> es, Reader (GlobusEndpoint App) :> es) => TVar (Maybe (Token Access)) -> Test -> TestAction -> Eff es (View Test ())
+test :: (Log :> es, FileSystem :> es, Concurrent :> es, Datasets :> es, Globus :> es, Reader (GlobusEndpoint App) :> es) => TMVar (Token Access) -> Test -> TestAction -> Eff es (View Test ())
 test adtok _ DownloadL1 = do
   logDebug "TEST"
   let ip = Id "id.118958.452436" :: Id InstrumentProgram
   logTrace "IP" ip
 
-  t <- fromMaybe (error "Missing admin token") <$> readTVarIO adtok
+  t <- fromMaybe (error "Missing admin token") <$> atomically (tryReadTMVar adtok)
   d <- fromMaybe (error "Missing canonical dataset") <$> findCanonicalDataset ip
   (task, fp) <- runWithAccess t $ transferCanonicalDataset d
   logTrace "Task" task

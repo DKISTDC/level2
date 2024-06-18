@@ -16,12 +16,12 @@ import NSO.Prelude
 -- The Puppeteer checks the status of systems and starts jobs as necessary
 manageMinions :: (Concurrent :> es, Inversions :> es, Datasets :> es, Log :> es) => TaskChan FitsGenWorker.Task -> Eff es ()
 manageMinions fits = do
-  logDebug "Let the show begin!"
+  logDebug "GO MY MINIONS"
 
   -- ts <- getChanContents fits
   -- logTrace "FitsTasks" ts
   ts <- scanNeedsGenerate
-  mapM_ (logTrace "Inversion") ts
+  -- mapM_ (logTrace "Inversion") ts
 
   (wt, wk) <- atomically $ do
     mapM_ (taskAdd fits) ts
@@ -29,31 +29,27 @@ manageMinions fits = do
     wk <- taskChanWorking fits
     pure (wt, wk)
 
-  logTrace "WORK" (Set.size wk)
-  logTrace "WAIT" (Set.size wt)
+  -- logTrace "WORK" (Set.size wk)
+  -- logTrace "WAIT" (Set.size wt)
 
   -- scan for
 
   -- forM_ [0 .. 10 :: Int] $ \n -> do
   --   writeChan fits $ FitsGenWorker.Task (Id (pack $ show n))
 
-  threadDelay (5 * 1000 * 1000)
+  threadDelay (10 * 1000 * 1000)
 
 
 scanNeedsGenerate :: (Inversions :> es, Datasets :> es) => Eff es [FitsGenWorker.Task]
 scanNeedsGenerate = do
-  is <- inversionsOnGenerateStep
-  pure is
+  AllInversions ivs <- send Inversions.All
+  pure $ map fitsGenTask $ filter (isGenerate . (.step)) ivs
  where
-  inversionsOnGenerateStep = do
-    AllInversions ivs <- send Inversions.All
-    pure $ map fitsGenTask $ filter (isGenerate . (.step)) ivs
-
   isGenerate :: InversionStep -> Bool
   isGenerate = \case
     StepInverted _ -> True
     StepGenerating _ -> True
-    StepDownloading _ -> True
+    -- StepDownloading _ -> True
     _ -> False
 
   fitsGenTask i = FitsGenWorker.Task i.inversionId i.programId

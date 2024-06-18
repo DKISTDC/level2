@@ -58,6 +58,13 @@ data Invert = Invert
   deriving (Show, Eq)
 
 
+data Generate = Generate
+  { taskId :: Text
+  , frameDir :: FilePath
+  }
+  deriving (Show, Eq)
+
+
 -- Data Diverse Many: https://github.com/louispan/data-diverse/blob/master/test/Data/Diverse/ManySpec.hs
 -- Each step requires all previous steps to exist
 type StepCreated = '[Created]
@@ -67,7 +74,7 @@ type StepPreprocessed = Preprocessed : StepDownloaded
 type StepInverted = Inverted : StepPreprocessed
 type StepInverting = Invert : StepPreprocessed
 type StepGenerated = Generated : StepInverted
-type StepGenerating = Transfer : StepInverted
+type StepGenerating = Generate : StepInverted
 type StepPublished = Published : StepGenerated
 
 

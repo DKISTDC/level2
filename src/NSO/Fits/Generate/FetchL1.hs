@@ -24,7 +24,7 @@ import Text.Megaparsec.Char.Lexer
 import Text.Read (readMaybe)
 
 
-newtype Path a = Path FilePath
+newtype Path a = Path {filePath :: FilePath}
   deriving newtype (Show, Read, Eq)
 
 

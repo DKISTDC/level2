@@ -52,7 +52,7 @@ main = do
 
   void $ runEff $ runConcurrent $ do
     fits <- atomically taskChanNew
-    adtok <- newTVarIO Nothing
+    adtok <- newEmptyTMVarIO
 
     mapConcurrently_
       id
@@ -81,7 +81,7 @@ main = do
       . runDebugIO
 
 
-runWebServer :: (IOE :> es, Concurrent :> es) => Config -> TVar (Maybe (Token Access)) -> TaskChan Fits.Task -> Eff es ()
+runWebServer :: (IOE :> es, Concurrent :> es) => Config -> TMVar (Token Access) -> TaskChan Fits.Task -> Eff es ()
 runWebServer config adtok fits = do
   liftIO $
     Warp.run config.app.port $
@@ -113,7 +113,7 @@ availableWorkerCPUs = do
   pure $ cores - saveCoresForWebserver
 
 
-webServer :: Config -> TVar (Maybe (Token Access)) -> TaskChan Fits.Task -> Application
+webServer :: Config -> TMVar (Token Access) -> TaskChan Fits.Task -> Application
 webServer config adtok fits =
   liveApp
     document
@@ -137,7 +137,9 @@ webServer config adtok fits =
     red <- getRedirectUri
     tok <- Globus.accessToken red (Tagged code)
     saveAccessToken tok
-    atomically $ writeTVar adtok $ Just tok
+    logDebug "SETTING TOKEN"
+    _ <- atomically $ tryPutTMVar adtok tok
+    logDebug " - done"
     redirect $ pathUrl $ routePath Proposals
 
   runApp :: (IOE :> es) => Eff (Log : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Concurrent : Time : es) a -> Eff es a

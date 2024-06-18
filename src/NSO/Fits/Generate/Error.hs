@@ -1,11 +1,12 @@
 module NSO.Fits.Generate.Error where
 
+import App.Globus qualified as Globus
 import Control.Exception
 import Data.Massiv.Array
 import NSO.Prelude
-import App.Globus qualified as Globus
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Inversion
 
 
 -- Error -------------------------------------------------------------
@@ -17,4 +18,5 @@ data GenerateError
   | InvalidWavelengthGroups
   | NoCanonicalDataset (Id InstrumentProgram)
   | L1TransferFailed (Id Globus.Task)
+  | MissingInversion (Id Inversion)
   deriving (Show, Eq, Exception)

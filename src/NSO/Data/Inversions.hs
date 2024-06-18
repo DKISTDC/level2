@@ -47,6 +47,7 @@ data Inversions :: Effect where
   SetUploaded :: Id Inversion -> Inversions m ()
   SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
   SetGenerated :: Id Inversion -> Inversions m ()
+  SetGenerating :: Id Inversion -> Id Task -> FilePath -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
   -- maybe doesn't belong on Inversions?
   ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
@@ -151,7 +152,8 @@ fromRow row = maybe err pure $ do
   generating = do
     prev <- inverted
     tsk <- row.generateTaskId
-    pure $ Transfer tsk ./ prev
+    fdir <- cs <$> row.generateL1FrameDir
+    pure $ Generate tsk fdir ./ prev
 
   published :: Maybe (Many StepPublished)
   published = do
@@ -177,6 +179,7 @@ runDataInversions = interpret $ \_ -> \case
   SetUploading iid tid -> setUploading iid tid
   SetInversion iid soft -> setInversion iid soft
   SetGenerated iid -> setGenerated iid
+  SetGenerating iid tid fdir -> setGenerating iid tid fdir
   SetPublished iid -> setPublished iid
   ValidateGitCommit repo gc -> validateGitCommit repo gc
  where
@@ -232,40 +235,35 @@ runDataInversions = interpret $ \_ -> \case
   setUpdated :: UTCTime -> InversionRow Expr -> InversionRow Expr
   setUpdated now InversionRow{..} = InversionRow{updated = lit now, ..}
 
-  setDownloading :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
   setDownloading iid tid = do
     updateInversion iid $ \r -> r{downloadTaskId = lit (Just tid.fromId)}
 
-  setDownloaded :: (Rel8 :> es, Time :> es) => Id Inversion -> [Id Dataset] -> Eff es ()
   setDownloaded iid ds = do
     now <- currentTime
     updateInversion iid $ \r -> r{download = lit (Just now), downloadDatasets = lit $ map (.fromId) ds}
 
-  setUploading :: (Rel8 :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
   setUploading iid tid = do
     updateInversion iid $ \r -> r{uploadTaskId = lit (Just tid.fromId)}
 
-  setUploaded :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
   setUploaded iid = do
     now <- currentTime
     updateInversion iid $ \r -> r{upload = lit (Just now)}
 
-  setPreprocessed :: (Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setPreprocessed iid url = do
     now <- currentTime
     updateInversion iid $ \r -> r{preprocess = lit (Just now), preprocessSoftware = lit (Just url)}
 
-  setInversion :: (Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setInversion iid soft = do
     now <- currentTime
     updateInversion iid $ \r -> r{inversion = lit (Just now), inversionSoftware = lit (Just soft)}
 
-  setGenerated :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
   setGenerated iid = do
     now <- currentTime
     updateInversion iid $ \r -> r{generate = lit (Just now)}
 
-  setPublished :: (Rel8 :> es, Time :> es) => Id Inversion -> Eff es ()
+  setGenerating iid tid fdir = do
+    updateInversion iid $ \r -> r{generateTaskId = lit (Just tid.fromId), generateL1FrameDir = lit (Just (cs fdir))}
+
   setPublished iid = do
     now <- currentTime
     updateInversion iid $ \r -> r{publish = lit (Just now)}
@@ -302,6 +300,7 @@ runDataInversions = interpret $ \_ -> \case
         , inversionSoftware = Nothing
         , generate = Nothing
         , generateTaskId = Nothing
+        , generateL1FrameDir = Nothing
         , publish = Nothing
         }
 
@@ -328,6 +327,7 @@ inversions =
           , inversionSoftware = "inversion_software"
           , generate = "generate"
           , generateTaskId = "generate_task_id"
+          , generateL1FrameDir = "generate_l1_frame_dir"
           , publish = "publish"
           }
     }

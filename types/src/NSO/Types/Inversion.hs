@@ -41,6 +41,7 @@ data InversionRow f = InversionRow
   , inversionSoftware :: Column f (Maybe GitCommit)
   , generate :: Column f (Maybe UTCTime)
   , generateTaskId :: Column f (Maybe Text)
+  , generateL1FrameDir :: Column f (Maybe Text)
   , publish :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)
