@@ -61,6 +61,7 @@ library
     , data-diverse
     , effectful
     , exceptions
+    , globus
     , hasql
     , hyperbole
     , lens

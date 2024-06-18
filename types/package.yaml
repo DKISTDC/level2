@@ -52,6 +52,7 @@ dependencies:
   - containers
   - bytestring
   - aeson
+  - globus
 
 
 library:

@@ -76,7 +76,7 @@ waitForL1Transfer ii ip = do
   startTransferIfNeeded = \case
     StepGenerating info -> do
       let g = grab @Generate info
-      pure (Id g.taskId, Path g.frameDir)
+      pure (g.taskId, Path g.frameDir)
     _ ->
       Fetch.fetchCanonicalDataset ip
 

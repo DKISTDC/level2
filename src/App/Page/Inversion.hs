@@ -375,12 +375,12 @@ currentStep = \case
   StepCreated _ -> pure (Downloading Select)
   StepDownloading dwn -> do
     let t = grab @Transfer dwn :: Transfer
-    pure $ Downloading $ Transferring (Id t.taskId)
+    pure $ Downloading $ Transferring t.taskId
   StepDownloaded _ -> pure Preprocessing
   StepPreprocessed _ -> pure (Inverting mempty)
   StepInverting inv -> do
     let i = grab @Invert inv
-    pure $ Inverting $ InvertStep i.commit (Id <$> i.taskId)
+    pure $ Inverting $ InvertStep i.commit i.taskId
   StepInverted _ -> pure Generating
   StepGenerated _ -> pure Publishing
   StepGenerating _ -> pure Generating

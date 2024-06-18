@@ -9,8 +9,10 @@ module NSO.Types.Inversion
 import Data.Time.Clock
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Status
+import Network.Globus (Task)
 import Rel8
 
 
@@ -31,16 +33,16 @@ data InversionRow f = InversionRow
   , created :: Column f UTCTime
   , updated :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)
-  , downloadTaskId :: Column f (Maybe Text)
-  , downloadDatasets :: Column f [Text]
+  , downloadTaskId :: Column f (Maybe (Id Task))
+  , downloadDatasets :: Column f [Id Dataset]
   , preprocess :: Column f (Maybe UTCTime)
   , preprocessSoftware :: Column f (Maybe GitCommit)
   , upload :: Column f (Maybe UTCTime)
-  , uploadTaskId :: Column f (Maybe Text)
+  , uploadTaskId :: Column f (Maybe (Id Task))
   , inversion :: Column f (Maybe UTCTime)
   , inversionSoftware :: Column f (Maybe GitCommit)
   , generate :: Column f (Maybe UTCTime)
-  , generateTaskId :: Column f (Maybe Text)
+  , generateTaskId :: Column f (Maybe (Id Task))
   , generateL1FrameDir :: Column f (Maybe Text)
   , publish :: Column f (Maybe UTCTime)
   }

@@ -5,6 +5,8 @@ module NSO.Types.Status where
 import Data.Aeson
 import Data.Diverse.Many
 import NSO.Prelude
+import NSO.Types.Common
+import Network.Globus (Task)
 import Rel8
 import Web.Hyperbole.Forms (FormField)
 
@@ -27,7 +29,7 @@ data Created = Created {timestamp :: UTCTime}
   deriving (Show, Eq)
 
 
-data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Text, datasets :: [Text]}
+data Downloaded = Downloaded {timestamp :: UTCTime, taskId :: Id Task, datasets :: [Text]}
   deriving (Show, Eq)
 
 
@@ -35,7 +37,7 @@ data Preprocessed = Preprocessed {timestamp :: UTCTime, preprocessSoftware :: Gi
   deriving (Show, Eq)
 
 
-data Inverted = Inverted {inverted :: UTCTime, inversionSoftware :: GitCommit, uploaded :: UTCTime, uploadedTaskId :: Text}
+data Inverted = Inverted {inverted :: UTCTime, inversionSoftware :: GitCommit, uploaded :: UTCTime, uploadedTaskId :: Id Task}
   deriving (Show, Eq)
 
 
@@ -47,19 +49,19 @@ data Published = Published {timestamp :: UTCTime}
   deriving (Show, Eq)
 
 
-data Transfer = Transfer {taskId :: Text}
+data Transfer = Transfer {taskId :: Id Task}
   deriving (Show, Eq)
 
 
 data Invert = Invert
   { commit :: Maybe GitCommit
-  , taskId :: Maybe Text
+  , taskId :: Maybe (Id Task)
   }
   deriving (Show, Eq)
 
 
 data Generate = Generate
-  { taskId :: Text
+  { taskId :: Id Task
   , frameDir :: FilePath
   }
   deriving (Show, Eq)

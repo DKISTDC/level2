@@ -110,7 +110,7 @@ fromRow row = maybe err pure $ do
     prev <- started
     down <- row.download
     task <- row.downloadTaskId
-    let dtss = row.downloadDatasets
+    let dtss = fmap (.fromId) row.downloadDatasets
     pure $ Downloaded down task dtss ./ prev
 
   downloading :: Maybe (Many StepDownloading)
@@ -236,14 +236,14 @@ runDataInversions = interpret $ \_ -> \case
   setUpdated now InversionRow{..} = InversionRow{updated = lit now, ..}
 
   setDownloading iid tid = do
-    updateInversion iid $ \r -> r{downloadTaskId = lit (Just tid.fromId)}
+    updateInversion iid $ \r -> r{downloadTaskId = lit (Just tid)}
 
   setDownloaded iid ds = do
     now <- currentTime
-    updateInversion iid $ \r -> r{download = lit (Just now), downloadDatasets = lit $ map (.fromId) ds}
+    updateInversion iid $ \r -> r{download = lit (Just now), downloadDatasets = lit ds}
 
   setUploading iid tid = do
-    updateInversion iid $ \r -> r{uploadTaskId = lit (Just tid.fromId)}
+    updateInversion iid $ \r -> r{uploadTaskId = lit (Just tid)}
 
   setUploaded iid = do
     now <- currentTime
@@ -262,7 +262,7 @@ runDataInversions = interpret $ \_ -> \case
     updateInversion iid $ \r -> r{generate = lit (Just now)}
 
   setGenerating iid tid fdir = do
-    updateInversion iid $ \r -> r{generateTaskId = lit (Just tid.fromId), generateL1FrameDir = lit (Just (cs fdir))}
+    updateInversion iid $ \r -> r{generateTaskId = lit (Just tid), generateL1FrameDir = lit (Just (cs fdir))}
 
   setPublished iid = do
     now <- currentTime
