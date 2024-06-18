@@ -17,7 +17,7 @@ import NSO.Data.Spectra (identifyLine)
 import NSO.Fits.Generate.Error
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
-import System.FilePath (takeExtensions)
+import System.FilePath (takeExtensions, (</>))
 import Text.Megaparsec hiding (Token)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer
@@ -71,9 +71,10 @@ transferCanonicalDataset d = do
 
 
 -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
-listL1Frames :: (FileSystem :> es) => Path L1FrameDir -> Eff es [L1Frame]
+listL1Frames :: (FileSystem :> es, Reader (GlobusEndpoint App) :> es) => Path L1FrameDir -> Eff es [L1Frame]
 listL1Frames (Path dir) = do
-  fs <- fmap Path <$> listDirectory dir
+  g <- ask @(GlobusEndpoint App)
+  fs <- fmap Path <$> listDirectory (g.mount </> dir)
   pure $ mapMaybe runParseFileName $ filter isL1File fs
  where
   isL1File (Path f) = takeExtensions f == ".fits"

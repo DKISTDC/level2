@@ -240,6 +240,7 @@ initTransferDataset :: (Globus :> es, Reader (Token Access) :> es, Reader (Globu
 initTransferDataset d = do
   endpoint <- ask
   t <- initTransfer (transfer endpoint)
+
   -- we have to add the folder, because it's auto-added, I think
   let destFolder = datasetScratchPath endpoint d
   pure (t, destFolder)
@@ -371,4 +372,5 @@ instance Route RedirectPath where
 data GlobusEndpoint a = GlobusEndpoint
   { collection :: Globus.Id Collection
   , path :: FilePath
+  , mount :: FilePath
   }

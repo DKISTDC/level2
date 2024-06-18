@@ -84,6 +84,7 @@ initGlobus = do
   clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
   level2Collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT" :: IO (Globus.Id Collection)
   level2Path <- getEnv "GLOBUS_LEVEL2_PATH"
+  level2Mount <- getEnv "GLOBUS_LEVEL2_MOUNT"
   pure $
     GlobusInfo
       { client = GlobusClient{clientId, clientSecret}
@@ -91,6 +92,7 @@ initGlobus = do
           GlobusEndpoint
             { collection = level2Collection
             , path = level2Path
+            , mount = level2Mount
             }
       }
 
