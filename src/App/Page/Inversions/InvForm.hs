@@ -27,7 +27,7 @@ data TransferAction
 -- I want it to reload itself and call these when necessary
 checkTransfer :: (HyperView id, Action id ~ TransferAction, Hyperbole :> es, Globus :> es, Auth :> es) => Id Task -> Eff es (View id ())
 checkTransfer it = do
-  task <- Globus.transferStatus it
+  task <- requireLogin $ Globus.transferStatus it
   pure $ viewTransfer it task
 
 

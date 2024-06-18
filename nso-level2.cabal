@@ -48,7 +48,8 @@ library
       App.View.Layout
       App.View.ProposalDetails
       App.Worker.FitsGenWorker
-      App.Worker.Scanner
+      App.Worker.PuppetMaster
+      App.Worker.TaskChan
       Flow
       Flow.Example
       Flow.Node
@@ -61,6 +62,7 @@ library
       NSO.Error
       NSO.Fits.Generate
       NSO.Fits.Generate.DataCube
+      NSO.Fits.Generate.Error
       NSO.Fits.Generate.FetchL1
       NSO.Fits.Generate.Headers
       NSO.Fits.Generate.Headers.Doc
@@ -113,6 +115,7 @@ library
     , massiv
     , megaparsec
     , modern-uri
+    , monad-loops
     , nso-level2-types
     , random
     , rel8 ==1.4.1.0
@@ -171,6 +174,7 @@ executable level2
     , massiv
     , megaparsec
     , modern-uri
+    , monad-loops
     , nso-level2
     , nso-level2-types
     , random
@@ -237,6 +241,7 @@ test-suite tests
     , massiv
     , megaparsec
     , modern-uri
+    , monad-loops
     , nso-level2
     , nso-level2-types
     , random

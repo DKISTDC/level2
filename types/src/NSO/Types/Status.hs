@@ -67,6 +67,7 @@ type StepPreprocessed = Preprocessed : StepDownloaded
 type StepInverted = Inverted : StepPreprocessed
 type StepInverting = Invert : StepPreprocessed
 type StepGenerated = Generated : StepInverted
+type StepGenerating = Transfer : StepInverted
 type StepPublished = Published : StepGenerated
 
 
@@ -80,5 +81,6 @@ data InversionStep
     StepInverted (Many StepInverted)
   | StepInverting (Many StepInverting)
   | StepGenerated (Many StepGenerated)
+  | StepGenerating (Many StepGenerating)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)

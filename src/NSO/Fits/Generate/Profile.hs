@@ -10,6 +10,7 @@ import Data.Maybe (isJust)
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
 import NSO.Fits.Generate.DataCube
+import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords
 import NSO.Fits.Generate.Headers.LiftL1

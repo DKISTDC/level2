@@ -9,10 +9,12 @@ import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
 import Data.Void (Void)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.FileSystem
 import Effectful.Reader.Dynamic
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
+import NSO.Fits.Generate.Error
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions)
@@ -38,9 +40,19 @@ data L1Frame = L1Frame
 data L1FrameDir
 
 
+fetchCanonicalDataset
+  :: (Datasets :> es, Error GenerateError :> es, Reader (Token Access) :> es, Reader (GlobusEndpoint App) :> es, Globus :> es)
+  => Id InstrumentProgram
+  -> Eff es (Id Task, Path L1FrameDir)
+fetchCanonicalDataset ip = do
+  md <- findCanonicalDataset ip
+  d <- maybe (throwError (NoCanonicalDataset ip)) pure md
+  transferCanonicalDataset d
+
+
 findCanonicalDataset :: (Datasets :> es) => Id InstrumentProgram -> Eff es (Maybe Dataset)
-findCanonicalDataset ip = do
-  ds <- send $ Query (ByProgram ip)
+findCanonicalDataset ip' = do
+  ds <- send $ Query (ByProgram ip')
   pure $ L.find isCanonicalDataset ds
 
 

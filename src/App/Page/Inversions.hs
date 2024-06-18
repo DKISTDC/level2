@@ -39,12 +39,6 @@ page = do
   sortProgram i = i.programId
 
 
-isActive :: Inversion -> Bool
-isActive inv =
-  case inv.step of
-    StepPublished _ -> False
-    _ -> True
-
 
 viewInversion :: Inversion -> View c ()
 viewInversion inv = do

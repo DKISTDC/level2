@@ -23,6 +23,7 @@ library
       Effectful.Debug
       Effectful.GenRandom
       Effectful.GraphQL
+      Effectful.Log
       Effectful.Rel8
       Effectful.Time
       NSO.Prelude

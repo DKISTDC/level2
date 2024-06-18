@@ -241,13 +241,3 @@ instance KnownValue WCSMain where
   knownValueText = ""
 instance KnownValue A where
   knownValueText = "A"
-
-
--- Error -------------------------------------------------------------
-data GenerateError
-  = InvalidFrameShape (Sz Ix3)
-  | InvalidFits String
-  | FrameOutOfBounds (Sz Ix4) Int
-  | MissingProfileExtensions String
-  | InvalidWavelengthGroups
-  deriving (Show, Eq, Exception)

@@ -11,13 +11,13 @@ module NSO.Data.Inversions
   , desireRepo
   , preprocessRepo
   , GitRepo
+  , isActive
   ) where
 
 import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
 import Data.Text qualified as Text
 import Effectful
-import Effectful.Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
@@ -92,6 +92,7 @@ fromRow row = maybe err pure $ do
   step =
     (StepPublished <$> published)
       <|> (StepGenerated <$> generated)
+      <|> (StepGenerating <$> generating)
       <|> (StepInverted <$> inverted)
       <|> (StepInverting <$> inverting)
       <|> (StepPreprocessed <$> preprocessed)
@@ -110,6 +111,12 @@ fromRow row = maybe err pure $ do
     task <- row.downloadTaskId
     let dtss = row.downloadDatasets
     pure $ Downloaded down task dtss ./ prev
+
+  downloading :: Maybe (Many StepDownloading)
+  downloading = do
+    prev <- started
+    task <- row.downloadTaskId
+    pure $ Transfer task ./ prev
 
   preprocessed :: Maybe (Many StepPreprocessed)
   preprocessed = do
@@ -140,21 +147,21 @@ fromRow row = maybe err pure $ do
     proc <- row.generate
     pure $ Generated proc ./ prev
 
+  generating :: Maybe (Many StepGenerating)
+  generating = do
+    prev <- inverted
+    tsk <- row.generateTaskId
+    pure $ Transfer tsk ./ prev
+
   published :: Maybe (Many StepPublished)
   published = do
     prev <- generated
     publ <- row.publish
     pure $ Published publ ./ prev
 
-  downloading :: Maybe (Many StepDownloading)
-  downloading = do
-    prev <- started
-    task <- row.downloadTaskId
-    pure $ Transfer task ./ prev
-
 
 runDataInversions
-  :: (IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es, Debug :> es)
+  :: (IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
   => Eff (Inversions : es) a
   -> Eff es a
 runDataInversions = interpret $ \_ -> \case
@@ -243,12 +250,12 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{upload = lit (Just now)}
 
-  setPreprocessed :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
+  setPreprocessed :: (Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setPreprocessed iid url = do
     now <- currentTime
     updateInversion iid $ \r -> r{preprocess = lit (Just now), preprocessSoftware = lit (Just url)}
 
-  setInversion :: (Debug :> es, Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
+  setInversion :: (Rel8 :> es, Time :> es) => Id Inversion -> GitCommit -> Eff es ()
   setInversion iid soft = do
     now <- currentTime
     updateInversion iid $ \r -> r{inversion = lit (Just now), inversionSoftware = lit (Just soft)}
@@ -294,6 +301,7 @@ runDataInversions = interpret $ \_ -> \case
         , inversion = Nothing
         , inversionSoftware = Nothing
         , generate = Nothing
+        , generateTaskId = Nothing
         , publish = Nothing
         }
 
@@ -319,6 +327,7 @@ inversions =
           , inversion = "inversion"
           , inversionSoftware = "inversion_software"
           , generate = "generate"
+          , generateTaskId = "generate_task_id"
           , publish = "publish"
           }
     }
@@ -359,3 +368,10 @@ preprocessRepo = GitRepo $ https "github.com" /: "DKISTDC" /: "level2-preprocess
 
 desireRepo :: GitRepo
 desireRepo = GitRepo $ https "github.com" /: "han-uitenbroek" /: "RH"
+
+
+isActive :: Inversion -> Bool
+isActive inv =
+  case inv.step of
+    StepPublished _ -> False
+    _ -> True

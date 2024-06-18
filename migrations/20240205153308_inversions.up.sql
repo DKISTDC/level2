@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS inversions (
   inversion_software TEXT,
 
   generate TIMESTAMP,
+  generate_task_id TEXT,
 
   publish TIMESTAMP
 );

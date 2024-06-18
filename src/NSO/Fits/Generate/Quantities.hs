@@ -16,6 +16,7 @@ import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.DataCube
+import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Doc as Doc
 import NSO.Fits.Generate.Headers.Keywords

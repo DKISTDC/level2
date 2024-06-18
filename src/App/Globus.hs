@@ -165,10 +165,10 @@ instance Form UploadFiles where
         else Left $ "Missing required file: " <> cs file
 
 
-transferStatus :: (Hyperbole :> es, Globus :> es, Auth :> es) => App.Id Task -> Eff es Task
+transferStatus :: (Reader (Token Access) :> es, Globus :> es) => App.Id Task -> Eff es Task
 transferStatus (Id ti) = do
-  tok <- getAccessToken >>= expectAuth
-  send $ StatusTask tok (Tagged ti)
+  acc <- ask
+  send $ StatusTask acc (Tagged ti)
 
 
 -- initTransfer :: (Hyperbole :> es, Globus :> es, Auth :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)

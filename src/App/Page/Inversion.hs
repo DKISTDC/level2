@@ -7,12 +7,14 @@ import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..))
 import App.Page.Inversions.InvForm qualified as InvForm
 import App.Route as Route
 import App.Style qualified as Style
+import App.Types
 import App.View.Icons qualified as Icons
 import App.View.Layout
 import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Reader.Dynamic
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
@@ -21,7 +23,7 @@ import Web.Hyperbole
 import Web.Hyperbole.Forms (formFields)
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es) => Id Inversion -> InversionRoute -> Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Reader (GlobusEndpoint App) :> es) => Id Inversion -> InversionRoute -> Page es Response
 page i Inv = pageMain i
 page i SubmitDownload = pageSubmitDownload i
 page i SubmitUpload = pageSubmitUpload i
@@ -52,7 +54,7 @@ pageMain i = do
         hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
 
 
-pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
+pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Reader (GlobusEndpoint App) :> es) => Id Inversion -> Page es Response
 pageSubmitUpload ii = do
   load $ do
     tfrm <- formFields @TransferForm
@@ -70,7 +72,7 @@ pageSubmitDownload ii = do
     tfls <- formFields @DownloadFolder
     inv <- loadInversion ii
     ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
-    it <- Globus.initDownload tfrm tfls ds
+    it <- requireLogin $ Globus.initDownload tfrm tfls ds
     send $ Inversions.SetDownloading ii it
 
     redirect $ routeUrl (Route.Inversion ii Inv)
@@ -127,12 +129,12 @@ inversions onCancel (InversionStatus ip ii) = \case
     onCancel
   Download -> do
     r <- request
-    requireLogin
-    redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
+    requireLogin $ do
+      redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> ip.fromId) r
   Upload -> do
     r <- request
-    requireLogin
-    redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
+    requireLogin $ do
+      redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
   PostProcess -> do
     send $ Inversions.SetGenerated ii
     refresh
@@ -381,6 +383,7 @@ currentStep = \case
     pure $ Inverting $ InvertStep i.commit (Id <$> i.taskId)
   StepInverted _ -> pure Generating
   StepGenerated _ -> pure Publishing
+  StepGenerating _ -> pure Generating
   StepPublished _ -> pure Complete
 
 
