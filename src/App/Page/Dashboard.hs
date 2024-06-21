@@ -7,10 +7,9 @@ import App.Style qualified as Style
 import App.Types
 import App.Version
 import App.View.Layout
-import App.Worker.FitsGenWorker qualified as FitsGenWorker
-import Data.Map qualified as Map
 import Effectful
 import Effectful.Concurrent.STM
+import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -24,13 +23,12 @@ import Web.Hyperbole
 
 
 page
-  :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Reader (GlobusEndpoint App) :> es)
+  :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Reader (GlobusEndpoint App) :> es, Worker GenTask :> es)
   => TMVar (Token Access)
-  -> TaskChan GenTask
   -> Page es Response
-page adtok fits = do
+page adtok = do
   handle $ test adtok
-  handle $ work fits
+  handle work
   load $ do
     login <- loginUrl
     mtok <- atomically $ tryReadTMVar adtok
@@ -51,7 +49,7 @@ page adtok fits = do
           Just _ -> el (color Success) "System Access Token Saved!"
 
     hyper Test testView
-    hyper Work $ workView $ TaskChanStatus mempty mempty
+    hyper Work $ workView [] []
 
 
 data Test = Test
@@ -109,21 +107,22 @@ instance HyperView Work where
   type Action Work = WorkAction
 
 
-work :: (Concurrent :> es) => TaskChan GenTask -> Work -> WorkAction -> Eff es (View Work ())
-work fits _ Refresh = do
-  s <- atomically $ taskChanStatus fits
-  pure $ workView s
+work :: (Concurrent :> es, Worker GenTask :> es) => Work -> WorkAction -> Eff es (View Work ())
+work _ Refresh = do
+  wt <- send TasksWaiting
+  wk <- send TasksWorking
+  pure $ workView wt wk
 
 
-workView :: TaskChanStatus GenTask -> View Work ()
-workView fits =
+workView :: [GenTask] -> [(GenTask, GenStatus)] -> View Work ()
+workView waiting working =
   onLoad Refresh 1000 $ do
     el (bold . fontSize 18) "Fits Working"
-    forM_ (Map.toList fits.work) $ \(t, s) -> do
+    forM_ working $ \(t, s) -> do
       row (gap 5) $ do
         el_ $ text $ cs $ show t
         el_ $ text $ cs $ show s
 
     el (bold . fontSize 18) "Fits Waiting"
-    forM_ fits.wait $ \t -> do
+    forM_ waiting $ \t -> do
       el_ $ text $ cs $ show t

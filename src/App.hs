@@ -56,17 +56,17 @@ main = do
 
     mapConcurrently_
       id
-      [ runLogger "Server" $ runWebServer config adtok fits
-      , runWorker config fits "PuppetMaster" $ forever $ do
+      [ runLogger "Server" $ startWebServer config adtok fits
+      , runAppWorker config "PuppetMaster" $ forever $ do
           PuppetMaster.manageMinions fits
-      , runWorker config fits "FitsGen" $ do
+      , runAppWorker config "FitsGen" $ do
           waitForGlobusAccess adtok $ do
-            runWork fits Fits.workTask
+            startWorker fits Fits.workTask
       ]
 
     pure ()
  where
-  runWorker config fits t =
+  runAppWorker config t =
     runLogger t
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
@@ -77,33 +77,25 @@ main = do
       . runTime
       . runFileSystem
       . runGlobus config.globus.client
-      . runDataInversions fits
+      . runDataInversions
       . runDataDatasets
       . runDebugIO
 
 
-runWebServer :: (IOE :> es, Concurrent :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
-runWebServer config adtok fits = do
+startWebServer :: (IOE :> es, Concurrent :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
+startWebServer config adtok fits = do
   liftIO $
     Warp.run config.app.port $
       addHeaders [("app-version", cs appVersion)] $
         webServer config adtok fits
 
 
-runCPUWorkers :: (Log :> es, Concurrent :> es) => Eff es () -> Eff es ()
-runCPUWorkers work = do
+startCPUWorkers :: (Log :> es, Concurrent :> es) => Eff es () -> Eff es ()
+startCPUWorkers work = do
   n <- availableWorkerCPUs
   -- start one per core
   void $ pooledForConcurrentlyN (max 1 n) [1 .. n :: Int] $ const $ do
     work
-
-
-runWork :: (Log :> es, Concurrent :> es, Ord a, WorkerTask a) => TaskChan a -> (TaskChan a -> a -> Eff es ()) -> Eff es ()
-runWork chan work = do
-  forever $ do
-    task <- atomically $ taskNext chan
-    work chan task
-    atomically $ taskDone chan task
 
 
 waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> Eff (Reader (Token Access) : es) () -> Eff es ()
@@ -126,7 +118,7 @@ webServer config adtok fits =
     document
     (runApp . routeRequest $ router)
  where
-  router Dashboard = page $ Dashboard.page adtok fits
+  router Dashboard = page $ Dashboard.page adtok
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page
   router (Inversion i r) = page $ Inversion.page i r
@@ -147,7 +139,7 @@ webServer config adtok fits =
     _ <- atomically $ tryPutTMVar adtok tok
     redirect $ pathUrl $ routePath Proposals
 
-  runApp :: (IOE :> es) => Eff (Log : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Worker GenTask : Log : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
@@ -161,11 +153,12 @@ webServer config adtok fits =
       . runMetadata config.services.metadata
       . runDebugIO
       . runDataDatasets
-      . runDataInversions fits
+      . runDataInversions
       . runAuth config.app.domain Redirect
       . runReader config.globus.level2
       . runFileSystem
       . runLogger "App"
+      . runWorker fits
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

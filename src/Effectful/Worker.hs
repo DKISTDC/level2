@@ -2,11 +2,14 @@
 
 module Effectful.Worker where
 
+import Control.Monad (forever)
 import Data.Kind (Type)
 import Data.Map qualified as Map
 import Data.Set (Set)
 import Data.Set qualified as Set
+import Effectful
 import Effectful.Concurrent.STM
+import Effectful.Dispatch.Dynamic
 import NSO.Prelude
 
 
@@ -19,12 +22,6 @@ data TaskChan t = TaskChan
   { wait :: TVar (Set t)
   , work :: TVar (Map t (Status t))
   , queue :: TQueue t
-  }
-
-
-data TaskChanStatus t = TaskChanStatus
-  { wait :: Set t
-  , work :: Map t (Status t)
   }
 
 
@@ -79,8 +76,41 @@ taskChanWorking chan =
   readTVar chan.work
 
 
-taskChanStatus :: TaskChan t -> STM (TaskChanStatus t)
-taskChanStatus chan = do
-  wait <- taskChanWaiting chan
-  work <- taskChanWorking chan
-  pure $ TaskChanStatus{wait, work}
+data Worker t :: Effect where
+  TaskGetStatus :: t -> Worker t m (Status t)
+  TaskSetStatus :: t -> Status t -> Worker t m ()
+  TaskNext :: Worker t m t
+  TaskDone :: t -> Worker t m ()
+  TasksWaiting :: Worker t m [t]
+  TasksWorking :: Worker t m [(t, Status t)]
+type instance DispatchOf (Worker t) = 'Dynamic
+
+
+runWorker
+  :: (Concurrent :> es, Ord t, WorkerTask t)
+  => TaskChan t
+  -> Eff (Worker t : es) a
+  -> Eff es a
+runWorker chan = interpret $ \_ -> \case
+  TaskGetStatus t -> do
+    atomically $ taskStatus chan t
+  TaskSetStatus t s -> do
+    atomically $ taskSetStatus chan t s
+  TaskNext -> do
+    atomically $ taskNext chan
+  TaskDone t -> do
+    atomically $ taskDone chan t
+  TasksWaiting -> do
+    s <- atomically $ taskChanWaiting chan
+    pure $ Set.toList s
+  TasksWorking -> do
+    s <- atomically $ taskChanWorking chan
+    pure $ Map.toList s
+
+
+startWorker :: (Concurrent :> es, Ord t, WorkerTask t) => TaskChan t -> (t -> Eff (Worker t : es) ()) -> Eff es ()
+startWorker chan work = runWorker chan $ do
+  forever $ do
+    task <- send TaskNext
+    work task
+    send $ TaskDone task

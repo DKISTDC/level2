@@ -18,6 +18,7 @@ import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
 import Effectful.Time
+import Effectful.Worker
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
@@ -26,7 +27,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Worker GenTask :> es)
   => Id InstrumentProgram
   -> Page es Response
 page ip = do
@@ -93,8 +94,8 @@ latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
   sortLatest = sortOn (Down . (.updated))
 
 
-inversionStep :: (Globus :> es) => Inversion -> Eff es CurrentStep
-inversionStep inv = currentStep inv.step
+inversionStep :: (Globus :> es, Worker GenTask :> es) => Inversion -> Eff es CurrentStep
+inversionStep inv = currentStep inv.inversionId inv.step
 
 
 viewDatasets :: UTCTime -> [Dataset] -> [Inversion] -> View c ()
@@ -123,7 +124,7 @@ data InvsAction
   deriving (Generic, ViewAction)
 
 
-programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
+programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Worker GenTask :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
 programInversions (ProgramInversions ip) = \case
   CreateInversion -> do
     _ <- send $ Inversions.Create ip
@@ -152,7 +153,7 @@ viewOldInversion inv _ = row (gap 4) $ do
   el_ $ text $ inversionStatusLabel inv.step
 
 
-refreshInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
+refreshInversions :: (Inversions :> es, Globus :> es, Worker GenTask :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
 refreshInversions ip = do
   invs <- latestInversions ip
   steps <- mapM inversionStep invs

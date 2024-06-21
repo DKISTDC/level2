@@ -10,7 +10,6 @@ import Control.Monad.Loops
 import Data.Diverse.Many
 import Effectful
 import Effectful.Concurrent
-import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.FileSystem
@@ -26,20 +25,28 @@ import NSO.Types.InstrumentProgram
 
 
 workTask
-  :: (Reader (Token Access) :> es, Globus :> es, FileSystem :> es, Datasets :> es, Inversions :> es, Reader (GlobusEndpoint App) :> es, Log :> es, Concurrent :> es, Error GenerateError :> es)
-  => TaskChan GenTask
-  -> GenTask
+  :: ( Reader (Token Access) :> es
+     , Globus :> es
+     , FileSystem :> es
+     , Datasets :> es
+     , Inversions :> es
+     , Reader (GlobusEndpoint App) :> es
+     , Log :> es
+     , Concurrent :> es
+     , Error GenerateError :> es
+     , Worker GenTask :> es
+     )
+  => GenTask
   -> Eff es ()
-workTask chan t = do
+workTask t = do
   logDebug "START"
 
-  atomically $ taskSetStatus chan t GenStarted
+  send $ TaskSetStatus t GenStarted
 
   inv <- loadInversion t.inversionId
   (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
   send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
-
-  atomically $ taskSetStatus chan t GenTransferring
+  send $ TaskSetStatus t GenTransferring
 
   logDebug " - waiting..."
   untilM_ delay (isTransferComplete taskId)
@@ -50,14 +57,13 @@ workTask chan t = do
   logTrace " - frames" (length l1)
   logDebug " - ready to build fits!"
 
-  atomically $ taskSetStatus chan t $ GenCreating 0 0
+  send $ TaskSetStatus t $ GenCreating 0 100
 
-  -- we need to go through all of them
+  forM_ [0 .. 40] $ \n -> do
+    send $ TaskSetStatus t $ GenCreating n 40
+    threadDelay (200 * 1000)
 
-  -- how do we know how many frames?
-  -- should we record that it is uploaded? Probably
-  -- send $ Inversions.SetGenerated t.inversionId
-  threadDelay (20 * 1000 * 1000)
+  send $ Inversions.SetGenerated t.inversionId
   logDebug " - done"
 
 

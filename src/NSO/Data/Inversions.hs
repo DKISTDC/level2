@@ -54,7 +54,6 @@ data Inversions :: Effect where
   DelGenerating :: Id Inversion -> Inversions m ()
   SetGenerating :: Id Inversion -> Id Task -> FilePath -> Inversions m ()
   SetGenTransferred :: Id Inversion -> Inversions m ()
-  GenStatus :: Id Inversion -> Inversions m GenStatus
   SetPublished :: Id Inversion -> Inversions m ()
   -- maybe doesn't belong on Inversions?
   ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
@@ -66,7 +65,7 @@ newtype AllInversions = AllInversions [Inversion]
 
 
 newtype GenTask = GenTask {inversionId :: Id Inversion}
-  deriving (Ord, Eq, Show)
+  deriving newtype (Ord, Eq, Show)
 
 
 data GenStatus
@@ -74,7 +73,7 @@ data GenStatus
   | GenStarted
   | GenTransferring
   | GenCreating Int Int
-  deriving (Show)
+  deriving (Show, Ord, Eq)
 
 
 instance WorkerTask GenTask where
@@ -195,10 +194,9 @@ fromRow row = maybe err pure $ do
 
 runDataInversions
   :: (Concurrent :> es, IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
-  => TaskChan GenTask
-  -> Eff (Inversions : es) a
+  => Eff (Inversions : es) a
   -> Eff es a
-runDataInversions chan = interpret $ \_ -> \case
+runDataInversions = interpret $ \_ -> \case
   All -> queryAll
   ByProgram pid -> queryInstrumentProgram pid
   ById iid -> queryById iid
@@ -216,8 +214,6 @@ runDataInversions chan = interpret $ \_ -> \case
   SetGenTransferred iid -> setGenTransferred iid
   SetPublished iid -> setPublished iid
   ValidateGitCommit repo gc -> validateGitCommit repo gc
-  GenStatus iid -> do
-    atomically $ taskStatus chan (GenTask iid)
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
