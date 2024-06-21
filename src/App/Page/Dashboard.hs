@@ -8,13 +8,15 @@ import App.Types
 import App.Version
 import App.View.Layout
 import App.Worker.FitsGenWorker qualified as FitsGenWorker
-import App.Worker.Job
+import Data.Map qualified as Map
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.FileSystem
 import Effectful.Log
 import Effectful.Reader.Dynamic
+import Effectful.Worker
 import NSO.Data.Datasets
+import NSO.Data.Inversions
 import NSO.Fits.Generate.FetchL1
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -24,7 +26,7 @@ import Web.Hyperbole
 page
   :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Reader (GlobusEndpoint App) :> es)
   => TMVar (Token Access)
-  -> TaskChan FitsGenWorker.Task
+  -> TaskChan GenTask
   -> Page es Response
 page adtok fits = do
   handle $ test adtok
@@ -107,18 +109,20 @@ instance HyperView Work where
   type Action Work = WorkAction
 
 
-work :: (Concurrent :> es) => TaskChan FitsGenWorker.Task -> Work -> WorkAction -> Eff es (View Work ())
+work :: (Concurrent :> es) => TaskChan GenTask -> Work -> WorkAction -> Eff es (View Work ())
 work fits _ Refresh = do
   s <- atomically $ taskChanStatus fits
   pure $ workView s
 
 
-workView :: TaskChanStatus FitsGenWorker.Task -> View Work ()
+workView :: TaskChanStatus GenTask -> View Work ()
 workView fits =
   onLoad Refresh 1000 $ do
     el (bold . fontSize 18) "Fits Working"
-    forM_ fits.work $ \t -> do
-      el_ $ text $ cs $ show t
+    forM_ (Map.toList fits.work) $ \(t, s) -> do
+      row (gap 5) $ do
+        el_ $ text $ cs $ show t
+        el_ $ text $ cs $ show s
 
     el (bold . fontSize 18) "Fits Waiting"
     forM_ fits.wait $ \t -> do

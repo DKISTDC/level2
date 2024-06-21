@@ -13,7 +13,6 @@ import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
 import App.Worker.FitsGenWorker qualified as Fits
-import App.Worker.Job as Job
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import Control.Monad (forever, void)
 import Control.Monad.Catch
@@ -30,8 +29,9 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
 import Effectful.Time
+import Effectful.Worker
 import NSO.Data.Datasets (Datasets, runDataDatasets)
-import NSO.Data.Inversions (Inversions, runDataInversions)
+import NSO.Data.Inversions (GenTask, Inversions, runDataInversions)
 import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
@@ -57,15 +57,16 @@ main = do
     mapConcurrently_
       id
       [ runLogger "Server" $ runWebServer config adtok fits
-      , runWorker config "PuppetMaster" $ forever $ do
+      , runWorker config fits "PuppetMaster" $ forever $ do
           PuppetMaster.manageMinions fits
-      , runWorker config "FitsGen" $ do
-          runWork fits $ Job.waitForGlobusAccess adtok . Fits.workTask
+      , runWorker config fits "FitsGen" $ do
+          waitForGlobusAccess adtok $ do
+            runWork fits Fits.workTask
       ]
 
     pure ()
  where
-  runWorker config t =
+  runWorker config fits t =
     runLogger t
       . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
@@ -76,12 +77,12 @@ main = do
       . runTime
       . runFileSystem
       . runGlobus config.globus.client
-      . runDataInversions
+      . runDataInversions fits
       . runDataDatasets
       . runDebugIO
 
 
-runWebServer :: (IOE :> es, Concurrent :> es) => Config -> TMVar (Token Access) -> TaskChan Fits.Task -> Eff es ()
+runWebServer :: (IOE :> es, Concurrent :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
 runWebServer config adtok fits = do
   liftIO $
     Warp.run config.app.port $
@@ -97,12 +98,19 @@ runCPUWorkers work = do
     work
 
 
-runWork :: (Log :> es, Concurrent :> es, Ord a) => TaskChan a -> (a -> Eff es ()) -> Eff es ()
+runWork :: (Log :> es, Concurrent :> es, Ord a, WorkerTask a) => TaskChan a -> (TaskChan a -> a -> Eff es ()) -> Eff es ()
 runWork chan work = do
   forever $ do
     task <- atomically $ taskNext chan
-    work task
+    work chan task
     atomically $ taskDone chan task
+
+
+waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> Eff (Reader (Token Access) : es) () -> Eff es ()
+waitForGlobusAccess advar work = do
+  logDebug "Waiting for Admin Globus Access Token"
+  acc <- atomically $ readTMVar advar
+  Globus.runWithAccess acc work
 
 
 availableWorkerCPUs :: (Concurrent :> es) => Eff es Int
@@ -112,7 +120,7 @@ availableWorkerCPUs = do
   pure $ cores - saveCoresForWebserver
 
 
-webServer :: Config -> TMVar (Token Access) -> TaskChan Fits.Task -> Application
+webServer :: Config -> TMVar (Token Access) -> TaskChan GenTask -> Application
 webServer config adtok fits =
   liveApp
     document
@@ -153,7 +161,7 @@ webServer config adtok fits =
       . runMetadata config.services.metadata
       . runDebugIO
       . runDataDatasets
-      . runDataInversions
+      . runDataInversions fits
       . runAuth config.app.domain Redirect
       . runReader config.globus.level2
       . runFileSystem

@@ -1,24 +1,30 @@
-module App.Worker.Job where
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
-import App.Globus as Globus
+module Effectful.Worker where
+
+import Data.Kind (Type)
+import Data.Map qualified as Map
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Effectful.Concurrent.STM
-import Effectful.Log
-import Effectful.Reader.Dynamic
 import NSO.Prelude
+
+
+class WorkerTask t where
+  type Status t :: Type
+  idle :: Status t
 
 
 data TaskChan t = TaskChan
   { wait :: TVar (Set t)
-  , work :: TVar (Set t)
+  , work :: TVar (Map t (Status t))
   , queue :: TQueue t
   }
 
 
 data TaskChanStatus t = TaskChanStatus
   { wait :: Set t
-  , work :: Set t
+  , work :: Map t (Status t)
   }
 
 
@@ -34,22 +40,33 @@ taskAdd :: (Ord t) => TaskChan t -> t -> STM ()
 taskAdd chan t = do
   wait <- readTVar chan.wait
   work <- readTVar chan.work
-  when (Set.notMember t wait && Set.notMember t work) $ do
+  when (Set.notMember t wait && Map.notMember t work) $ do
     writeTVar chan.wait $ Set.insert t wait
     writeTQueue chan.queue t
 
 
-taskNext :: (Ord t) => TaskChan t -> STM t
+taskNext :: forall t. (Ord t, WorkerTask t) => TaskChan t -> STM t
 taskNext chan = do
   t <- readTQueue chan.queue
   modifyTVar chan.wait $ Set.delete t
-  modifyTVar chan.work $ Set.insert t
+  modifyTVar chan.work $ Map.insert t (idle @t)
   pure t
 
 
 taskDone :: (Ord t) => TaskChan t -> t -> STM ()
 taskDone chan t = do
-  modifyTVar chan.work $ Set.delete t
+  modifyTVar chan.work $ Map.delete t
+
+
+taskSetStatus :: (Ord t, WorkerTask t) => TaskChan t -> t -> Status t -> STM ()
+taskSetStatus chan t s = do
+  modifyTVar chan.work $ Map.insert t s
+
+
+taskStatus :: forall t. (Ord t, WorkerTask t) => TaskChan t -> t -> STM (Status t)
+taskStatus chan t = do
+  work <- readTVar chan.work
+  pure $ fromMaybe (idle @t) $ Map.lookup t work
 
 
 taskChanWaiting :: TaskChan t -> STM (Set t)
@@ -57,7 +74,7 @@ taskChanWaiting chan =
   readTVar chan.wait
 
 
-taskChanWorking :: TaskChan t -> STM (Set t)
+taskChanWorking :: TaskChan t -> STM (Map t (Status t))
 taskChanWorking chan =
   readTVar chan.work
 
@@ -67,10 +84,3 @@ taskChanStatus chan = do
   wait <- taskChanWaiting chan
   work <- taskChanWorking chan
   pure $ TaskChanStatus{wait, work}
-
-
-waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> Eff (Reader (Token Access) : es) () -> Eff es ()
-waitForGlobusAccess advar work = do
-  logDebug "Waiting for Admin Globus Access Token"
-  acc <- atomically $ readTMVar advar
-  Globus.runWithAccess acc work

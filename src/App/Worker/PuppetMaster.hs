@@ -1,20 +1,19 @@
 module App.Worker.PuppetMaster where
 
-import App.Worker.FitsGenWorker qualified as FitsGenWorker
-import App.Worker.Job
 import Data.Set qualified as Set
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
+import Effectful.Worker
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 
 
 -- The Puppeteer checks the status of systems and starts jobs as necessary
-manageMinions :: (Concurrent :> es, Inversions :> es, Datasets :> es, Log :> es) => TaskChan FitsGenWorker.Task -> Eff es ()
+manageMinions :: (Concurrent :> es, Inversions :> es, Datasets :> es, Log :> es) => TaskChan GenTask -> Eff es ()
 manageMinions fits = do
   logDebug "GO MY MINIONS"
 
@@ -40,11 +39,13 @@ manageMinions fits = do
   threadDelay (10 * 1000 * 1000)
 
 
-scanNeedsGenerate :: (Inversions :> es, Datasets :> es) => Eff es [FitsGenWorker.Task]
+scanNeedsGenerate :: (Inversions :> es, Datasets :> es) => Eff es [GenTask]
 scanNeedsGenerate = do
   AllInversions ivs <- send Inversions.All
-  pure $ map fitsGenTask $ filter (isGenerate . (.step)) ivs
+  pure $ map genTask $ filter (isGenerate . (.step)) ivs
  where
+  genTask inv = GenTask inv.inversionId
+
   isGenerate :: InversionStep -> Bool
   isGenerate = \case
     StepInverted _ -> True
@@ -52,5 +53,3 @@ scanNeedsGenerate = do
     StepGenTransfer _ -> True
     -- StepDownloading _ -> True
     _ -> False
-
-  fitsGenTask i = FitsGenWorker.Task i.inversionId i.programId

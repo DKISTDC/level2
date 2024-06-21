@@ -12,17 +12,21 @@ module NSO.Data.Inversions
   , preprocessRepo
   , GitRepo
   , isActive
+  , GenStatus (..)
+  , GenTask (..)
   ) where
 
 import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
 import Data.Text qualified as Text
 import Effectful
+import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
+import Effectful.Worker
 import NSO.Error
 import NSO.Prelude
 import NSO.Types.Common
@@ -50,6 +54,7 @@ data Inversions :: Effect where
   DelGenerating :: Id Inversion -> Inversions m ()
   SetGenerating :: Id Inversion -> Id Task -> FilePath -> Inversions m ()
   SetGenTransferred :: Id Inversion -> Inversions m ()
+  GenStatus :: Id Inversion -> Inversions m GenStatus
   SetPublished :: Id Inversion -> Inversions m ()
   -- maybe doesn't belong on Inversions?
   ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
@@ -58,6 +63,23 @@ type instance DispatchOf Inversions = 'Dynamic
 
 -- | Provenance of EVERY Instrument Program
 newtype AllInversions = AllInversions [Inversion]
+
+
+newtype GenTask = GenTask {inversionId :: Id Inversion}
+  deriving (Ord, Eq, Show)
+
+
+data GenStatus
+  = GenWaiting
+  | GenStarted
+  | GenTransferring
+  | GenCreating Int Int
+  deriving (Show)
+
+
+instance WorkerTask GenTask where
+  type Status GenTask = GenStatus
+  idle = GenWaiting
 
 
 empty :: (Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
@@ -172,10 +194,11 @@ fromRow row = maybe err pure $ do
 
 
 runDataInversions
-  :: (IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
-  => Eff (Inversions : es) a
+  :: (Concurrent :> es, IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
+  => TaskChan GenTask
+  -> Eff (Inversions : es) a
   -> Eff es a
-runDataInversions = interpret $ \_ -> \case
+runDataInversions chan = interpret $ \_ -> \case
   All -> queryAll
   ByProgram pid -> queryInstrumentProgram pid
   ById iid -> queryById iid
@@ -193,6 +216,8 @@ runDataInversions = interpret $ \_ -> \case
   SetGenTransferred iid -> setGenTransferred iid
   SetPublished iid -> setPublished iid
   ValidateGitCommit repo gc -> validateGitCommit repo gc
+  GenStatus iid -> do
+    atomically $ taskStatus chan (GenTask iid)
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions

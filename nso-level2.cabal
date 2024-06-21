@@ -48,8 +48,8 @@ library
       App.View.Layout
       App.View.ProposalDetails
       App.Worker.FitsGenWorker
-      App.Worker.Job
       App.Worker.PuppetMaster
+      Effectful.Worker
       Flow
       Flow.Example
       Flow.Node

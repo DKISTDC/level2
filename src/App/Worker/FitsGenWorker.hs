@@ -1,21 +1,22 @@
 module App.Worker.FitsGenWorker
-  ( Task (..)
-  , workTask
+  ( workTask
   , GenerateError
   ) where
 
-import App.Globus (Globus, GlobusEndpoint, TaskStatus (..), Token, Token' (Access))
+import App.Globus (Globus, GlobusEndpoint, Token, Token' (Access))
 import App.Globus qualified as Globus
 import App.Types
 import Control.Monad.Loops
 import Data.Diverse.Many
 import Effectful
 import Effectful.Concurrent
+import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.FileSystem
 import Effectful.Log
 import Effectful.Reader.Dynamic
+import Effectful.Worker
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate.Error
@@ -24,23 +25,21 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 
 
-data Task = Task
-  { inversionId :: Id Inversion
-  , instrumentProgramId :: Id InstrumentProgram
-  }
-  deriving (Show, Eq, Ord)
-
-
 workTask
   :: (Reader (Token Access) :> es, Globus :> es, FileSystem :> es, Datasets :> es, Inversions :> es, Reader (GlobusEndpoint App) :> es, Log :> es, Concurrent :> es, Error GenerateError :> es)
-  => Task
+  => TaskChan GenTask
+  -> GenTask
   -> Eff es ()
-workTask t = do
+workTask chan t = do
   logDebug "START"
 
+  atomically $ taskSetStatus chan t GenStarted
+
   inv <- loadInversion t.inversionId
-  (taskId, frameDir) <- startTransferIfNeeded t.instrumentProgramId inv.step
+  (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
   send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
+
+  atomically $ taskSetStatus chan t GenTransferring
 
   logDebug " - waiting..."
   untilM_ delay (isTransferComplete taskId)
@@ -50,6 +49,8 @@ workTask t = do
   l1 <- Fetch.listL1Frames frameDir
   logTrace " - frames" (length l1)
   logDebug " - ready to build fits!"
+
+  atomically $ taskSetStatus chan t $ GenCreating 0 0
 
   -- we need to go through all of them
 
@@ -79,8 +80,8 @@ isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Err
 isTransferComplete it = do
   task <- Globus.transferStatus it
   case task.status of
-    Succeeded -> pure True
-    Failed -> throwError $ L1TransferFailed it
+    Globus.Succeeded -> pure True
+    Globus.Failed -> throwError $ L1TransferFailed it
     _ -> do
       logTrace "Transfer" $ Globus.taskPercentComplete task
       pure False
