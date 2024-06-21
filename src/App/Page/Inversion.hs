@@ -361,7 +361,9 @@ generateTransfer (GenerateTransfer ip ii ti) = \case
         button RestartGen (Style.btn Primary) "Restart Transfer"
   TaskSucceeded -> do
     -- reload immediately... it should be marked as uploaded and go somewhere else
-    pure $ viewGenerateWait ip ii
+    pure $ do
+      target (InversionStatus ip ii) $ onLoad Reload 5000 $ do
+        viewGenerateWait
   CheckTransfer -> do
     vw <- InvForm.checkTransfer ti
     pure $ viewGenerateDownload vw
@@ -377,20 +379,19 @@ stepGenerate inv = \case
     hyper (GenerateTransfer inv.programId inv.inversionId taskId) $ do
       viewGenerateDownload InvForm.viewLoadTransfer
   GenConverting -> do
-    el bold "Generating Frames"
+    viewGenerateWait
 
 
 viewGenerateDownload :: View GenerateTransfer () -> View GenerateTransfer ()
-viewGenerateDownload vw = col (gap 10) $ do
+viewGenerateDownload vw = col (gap 5) $ do
   el bold "Downloading L1 Files"
   vw
 
 
-viewGenerateWait :: Id InstrumentProgram -> Id Inversion -> View GenerateTransfer ()
-viewGenerateWait ip ii = do
-  target (InversionStatus ip ii) $ onLoad Reload 5000 $ do
-    el bold "Generate Frames"
-    el_ "Waiting..."
+viewGenerateWait :: View InversionStatus ()
+viewGenerateWait = col (gap 5) $ do
+  el bold "Generate Frames"
+  el_ "Creating Frame... "
 
 
 data GenerateStep
@@ -460,7 +461,7 @@ invProgress curr = do
     prgDown curr "1" "DOWNLOAD"
     prgStep Preprocessing "2" "PREPROCESS"
     prgInv curr "3" "INVERT"
-    prgStep (Generating GenWaitStart) "4" "GENERATE"
+    prgGen curr "4" "GENERATE"
     prgStep Publishing "5" "PUBLISH"
  where
   stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
@@ -491,6 +492,13 @@ invProgress curr = do
     let clr = statColor (Inverting mempty)
     stat clr (statIcon (Inverting mempty) icn) lbl
     line clr
+
+  prgGen (Generating _) icn lbl = do
+    stat Info icn lbl
+    line Info
+  prgGen s icn lbl = do
+    stat (statColor s) (statIcon s icn) lbl
+    line (lineColor s)
 
   -- prgGen (Generating _) icn lbl = do
   --   stat Info icn lbl

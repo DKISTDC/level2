@@ -51,8 +51,10 @@ workTask t = do
   logTrace " - frames" (length l1)
   logDebug " - ready to build fits!"
 
-  -- should we record that it is uploaded? Probably
+  -- we need to go through all of them
 
+  -- how do we know how many frames?
+  -- should we record that it is uploaded? Probably
   -- send $ Inversions.SetGenerated t.inversionId
   threadDelay (20 * 1000 * 1000)
   logDebug " - done"
