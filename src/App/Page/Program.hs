@@ -36,6 +36,7 @@ page ip = do
   handle inversionCommit
   handle preprocessCommit
   handle downloadTransfer
+  handle generateTransfer
   handle uploadTransfer
 
   load $ do

@@ -8,7 +8,7 @@ import App.Types
 import App.Version
 import App.View.Layout
 import App.Worker.FitsGenWorker qualified as FitsGenWorker
-import App.Worker.TaskChan
+import App.Worker.Job
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.FileSystem

@@ -1,8 +1,11 @@
-module App.Worker.TaskChan where
+module App.Worker.Job where
 
+import App.Globus as Globus
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Effectful.Concurrent.STM
+import Effectful.Log
+import Effectful.Reader.Dynamic
 import NSO.Prelude
 
 
@@ -64,3 +67,10 @@ taskChanStatus chan = do
   wait <- taskChanWaiting chan
   work <- taskChanWorking chan
   pure $ TaskChanStatus{wait, work}
+
+
+waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> Eff (Reader (Token Access) : es) () -> Eff es ()
+waitForGlobusAccess advar work = do
+  logDebug "Waiting for Admin Globus Access Token"
+  acc <- atomically $ readTMVar advar
+  Globus.runWithAccess acc work

@@ -32,6 +32,7 @@ page i SubmitUpload = pageSubmitUpload i
 pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es) => Id Inversion -> Page es Response
 pageMain i = do
   handle $ inversions redirectHome
+  handle generateTransfer
   handle inversionCommit
   handle preprocessCommit
   handle downloadTransfer
@@ -111,6 +112,7 @@ data InversionAction
   | PostProcess
   | Publish
   | Reload
+  | RestartGen
   deriving (Generic, ViewAction)
 
 
@@ -143,6 +145,9 @@ inversions onCancel (InversionStatus ip ii) = \case
     refresh
   Reload -> do
     refresh
+  RestartGen -> do
+    send $ Inversions.DelGenerating ii
+    refresh
  where
   refresh = do
     inv <- loadInversion ii
@@ -174,15 +179,12 @@ viewInversion inv step = do
   viewStep (Downloading ts) = stepDownload inv ts
   viewStep Preprocessing = stepPreprocess inv
   viewStep (Inverting is) = stepInvert is inv
-  viewStep Generating = stepGenerate
+  viewStep (Generating g) = stepGenerate inv g
   viewStep Publishing = stepPublish
   viewStep Complete = stepDone
 
-  stepGenerate = do
-    button PostProcess (Style.btn Primary . grow) "Save FITS Generation"
-
   stepPublish = do
-    button Publish (Style.btn Primary . grow) "Save Publish"
+    button Publish (Style.btn Primary . grow) "Publish to Portal"
 
   stepDone = do
     el_ "Done"
@@ -304,7 +306,7 @@ checkInvertReload ii vw = do
   inv <- loadInversion ii
   curr <- currentStep inv.step
   pure $ case curr of
-    Generating -> hyper (InversionStatus inv.programId inv.inversionId) $ onLoad Reload 0 none
+    Generating _ -> hyper (InversionStatus inv.programId inv.inversionId) $ onLoad Reload 0 none
     _ -> vw
 
 
@@ -324,9 +326,9 @@ uploadSelect val = do
   col (gap 5 . file val) $ do
     el bold "Upload Inversion Results"
     instructions val
-    tag "li" id "inv_res_pre.fits"
-    tag "li" id "per_ori.fits"
-    tag "li" id "inv_res_mod.fits"
+    li id "inv_res_pre.fits"
+    li id "per_ori.fits"
+    li id "inv_res_mod.fits"
     case val of
       Valid -> button Upload (Style.btnOutline Success . grow) "Select New Files"
       _ -> button Upload (Style.btn Primary . grow) "Select Files"
@@ -334,8 +336,68 @@ uploadSelect val = do
   file Valid = color Success
   file _ = color Black
 
+  li = tag "li"
+
   instructions Valid = none
   instructions _ = el_ "Please select the following files for upload. You will be redirected to Globus"
+
+
+-- ----------------------------------------------------------------
+-- STEP GENERATE
+-- ----------------------------------------------------------------
+
+data GenerateTransfer = GenerateTransfer (Id InstrumentProgram) (Id Inversion) (Id Task)
+  deriving (Generic, ViewId)
+instance HyperView GenerateTransfer where
+  type Action GenerateTransfer = TransferAction
+
+
+generateTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => GenerateTransfer -> TransferAction -> Eff es (View GenerateTransfer ())
+generateTransfer (GenerateTransfer ip ii ti) = \case
+  TaskFailed -> do
+    pure $ viewGenerateDownload $ do
+      InvForm.viewTransferFailed ti
+      target (InversionStatus ip ii) $ do
+        button RestartGen (Style.btn Primary) "Restart Transfer"
+  TaskSucceeded -> do
+    -- reload immediately... it should be marked as uploaded and go somewhere else
+    pure $ viewGenerateWait ip ii
+  CheckTransfer -> do
+    vw <- InvForm.checkTransfer ti
+    pure $ viewGenerateDownload vw
+
+
+stepGenerate :: Inversion -> GenerateStep -> View InversionStatus ()
+stepGenerate inv = \case
+  GenWaitStart -> do
+    onLoad Reload 1000 $ do
+      el bold "Generate"
+      el_ "Waiting for job to start"
+  GenTransfering taskId -> do
+    hyper (GenerateTransfer inv.programId inv.inversionId taskId) $ do
+      viewGenerateDownload InvForm.viewLoadTransfer
+  GenConverting -> do
+    el bold "Generating Frames"
+
+
+viewGenerateDownload :: View GenerateTransfer () -> View GenerateTransfer ()
+viewGenerateDownload vw = col (gap 10) $ do
+  el bold "Downloading L1 Files"
+  vw
+
+
+viewGenerateWait :: Id InstrumentProgram -> Id Inversion -> View GenerateTransfer ()
+viewGenerateWait ip ii = do
+  target (InversionStatus ip ii) $ onLoad Reload 5000 $ do
+    el bold "Generate Frames"
+    el_ "Waiting..."
+
+
+data GenerateStep
+  = GenWaitStart
+  | GenTransfering (Id Task)
+  | GenConverting
+  deriving (Eq, Show, Ord)
 
 
 -- ----------------------------------------------------------------
@@ -346,7 +408,7 @@ data CurrentStep
   = Downloading TransferStep
   | Preprocessing
   | Inverting InvertStep
-  | Generating
+  | Generating GenerateStep
   | Publishing
   | Complete
   deriving (Eq, Ord, Show)
@@ -381,9 +443,14 @@ currentStep = \case
   StepInverting inv -> do
     let i = grab @Invert inv
     pure $ Inverting $ InvertStep i.commit i.taskId
-  StepInverted _ -> pure Generating
+  StepInverted _ -> pure $ Generating GenWaitStart
   StepGenerated _ -> pure Publishing
-  StepGenerating _ -> pure Generating
+  StepGenTransfer inv -> do
+    let t = grab @GenTransfer inv
+    pure $ Generating $ GenTransfering t.taskId
+  StepGenerating _ -> do
+    -- let g = grab @Generate inv
+    pure $ Generating GenConverting
   StepPublished _ -> pure Complete
 
 
@@ -393,7 +460,7 @@ invProgress curr = do
     prgDown curr "1" "DOWNLOAD"
     prgStep Preprocessing "2" "PREPROCESS"
     prgInv curr "3" "INVERT"
-    prgStep Generating "4" "GENERATE"
+    prgStep (Generating GenWaitStart) "4" "GENERATE"
     prgStep Publishing "5" "PUBLISH"
  where
   stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
@@ -424,6 +491,14 @@ invProgress curr = do
     let clr = statColor (Inverting mempty)
     stat clr (statIcon (Inverting mempty) icn) lbl
     line clr
+
+  -- prgGen (Generating _) icn lbl = do
+  --   stat Info icn lbl
+  --   line Gray
+  -- prgGen _ icn lbl = do
+  --   let clr = statColor (Generating (Id mempty))
+  --   stat clr (statIcon (Generating (Id mempty)) icn) lbl
+  --   line clr
 
   prgStep s icn lbl = do
     stat (statColor s) (statIcon s icn) lbl

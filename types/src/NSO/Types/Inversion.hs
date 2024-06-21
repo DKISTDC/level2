@@ -44,6 +44,7 @@ data InversionRow f = InversionRow
   , generate :: Column f (Maybe UTCTime)
   , generateTaskId :: Column f (Maybe (Id Task))
   , generateL1FrameDir :: Column f (Maybe Text)
+  , generateTaskCompleted :: Column f (Maybe UTCTime)
   , publish :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)

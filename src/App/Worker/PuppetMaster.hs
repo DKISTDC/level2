@@ -1,7 +1,7 @@
 module App.Worker.PuppetMaster where
 
 import App.Worker.FitsGenWorker qualified as FitsGenWorker
-import App.Worker.TaskChan
+import App.Worker.Job
 import Data.Set qualified as Set
 import Effectful
 import Effectful.Concurrent
@@ -49,6 +49,7 @@ scanNeedsGenerate = do
   isGenerate = \case
     StepInverted _ -> True
     StepGenerating _ -> True
+    StepGenTransfer _ -> True
     -- StepDownloading _ -> True
     _ -> False
 

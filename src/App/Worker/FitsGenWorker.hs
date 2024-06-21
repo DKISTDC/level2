@@ -11,7 +11,6 @@ import Control.Monad.Loops
 import Data.Diverse.Many
 import Effectful
 import Effectful.Concurrent
-import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.FileSystem
@@ -22,9 +21,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (L1FrameDir, Path (..), fetchCanonicalDataset, listL1Frames)
 import NSO.Prelude
-import NSO.Types.Common
 import NSO.Types.InstrumentProgram
-import NSO.Types.Inversion
 
 
 data Task = Task
@@ -35,50 +32,45 @@ data Task = Task
 
 
 workTask
-  :: (Globus :> es, FileSystem :> es, Datasets :> es, Inversions :> es, Reader (GlobusEndpoint App) :> es, Log :> es, Concurrent :> es, Error GenerateError :> es)
-  => TMVar (Token Access)
-  -> Task
-  -> Eff es ()
-workTask advar t = do
-  logInfo $ "FitsGenTask: " <> show t
-  logDebug " - Waiting for admin access token..."
-  acc <- atomically $ readTMVar advar
-  Globus.runWithAccess acc $ workTaskWithAccess t
-
-
-workTaskWithAccess
   :: (Reader (Token Access) :> es, Globus :> es, FileSystem :> es, Datasets :> es, Inversions :> es, Reader (GlobusEndpoint App) :> es, Log :> es, Concurrent :> es, Error GenerateError :> es)
   => Task
   -> Eff es ()
-workTaskWithAccess t = do
-  logDebug " - fetching..."
-  frameDir <- waitForL1Transfer t.inversionId t.instrumentProgramId
+workTask t = do
+  logDebug "START"
+
+  inv <- loadInversion t.inversionId
+  (taskId, frameDir) <- startTransferIfNeeded t.instrumentProgramId inv.step
+  send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
+
+  logDebug " - waiting..."
+  untilM_ delay (isTransferComplete taskId)
+  send $ Inversions.SetGenTransferred t.inversionId
+
+  logDebug " - done, getting frames..."
   l1 <- Fetch.listL1Frames frameDir
   logTrace " - frames" (length l1)
   logDebug " - ready to build fits!"
 
-  send $ Inversions.SetGenerated t.inversionId
+  -- should we record that it is uploaded? Probably
+
+  -- send $ Inversions.SetGenerated t.inversionId
+  threadDelay (20 * 1000 * 1000)
   logDebug " - done"
 
 
 -- DONE: Fetch L1 Files, poll for status
 -- TODO: Generate frames... all of em!
 
-waitForL1Transfer :: (Log :> es, Reader (GlobusEndpoint App) :> es, Concurrent :> es, Globus :> es, Reader (Token Access) :> es, Inversions :> es, Datasets :> es, Error GenerateError :> es) => Id Inversion -> Id InstrumentProgram -> Eff es (Path L1FrameDir)
-waitForL1Transfer ii ip = do
-  inv <- loadInversion ii
-  logTrace "WAIT L1" inv
-  (taskId, frameDir) <- startTransferIfNeeded inv.step
-  send $ Inversions.SetGenerating ii taskId frameDir.filePath
-  untilM_ delay (isTransferComplete taskId)
-  pure frameDir
- where
-  startTransferIfNeeded = \case
-    StepGenerating info -> do
-      let g = grab @Generate info
-      pure (g.taskId, Path g.frameDir)
-    _ ->
-      Fetch.fetchCanonicalDataset ip
+startTransferIfNeeded :: (Error GenerateError :> es, Reader (Token Access) :> es, Reader (GlobusEndpoint App) :> es, Datasets :> es, Globus :> es) => Id InstrumentProgram -> InversionStep -> Eff es (Id Globus.Task, Path L1FrameDir)
+startTransferIfNeeded ip = \case
+  StepGenTransfer info -> do
+    let t = grab @GenTransfer info
+    pure (t.taskId, Path t.frameDir)
+  StepGenerating info -> do
+    let g = grab @GenTransfer info
+    pure (g.taskId, Path g.frameDir)
+  _ ->
+    Fetch.fetchCanonicalDataset ip
 
 
 isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error GenerateError :> es) => Id Globus.Task -> Eff es Bool

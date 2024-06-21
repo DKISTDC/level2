@@ -13,8 +13,8 @@ import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
 import App.Worker.FitsGenWorker qualified as Fits
+import App.Worker.Job as Job
 import App.Worker.PuppetMaster qualified as PuppetMaster
-import App.Worker.TaskChan
 import Control.Monad (forever, void)
 import Control.Monad.Catch
 import Effectful
@@ -60,7 +60,7 @@ main = do
       , runWorker config "PuppetMaster" $ forever $ do
           PuppetMaster.manageMinions fits
       , runWorker config "FitsGen" $ do
-          runWork fits $ Fits.workTask adtok
+          runWork fits $ Job.waitForGlobusAccess adtok . Fits.workTask
       ]
 
     pure ()
@@ -100,7 +100,6 @@ runCPUWorkers work = do
 runWork :: (Log :> es, Concurrent :> es, Ord a) => TaskChan a -> (a -> Eff es ()) -> Eff es ()
 runWork chan work = do
   forever $ do
-    logDebug "Checking Work"
     task <- atomically $ taskNext chan
     work task
     atomically $ taskDone chan task
@@ -137,9 +136,7 @@ webServer config adtok fits =
     red <- getRedirectUri
     tok <- Globus.accessToken red (Tagged code)
     saveAccessToken tok
-    logDebug "SETTING TOKEN"
     _ <- atomically $ tryPutTMVar adtok tok
-    logDebug " - done"
     redirect $ pathUrl $ routePath Proposals
 
   runApp :: (IOE :> es) => Eff (Log : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Concurrent : Time : es) a -> Eff es a

@@ -60,9 +60,15 @@ data Invert = Invert
   deriving (Show, Eq)
 
 
-data Generate = Generate
+data GenTransfer = GenTransfer
   { taskId :: Id Task
   , frameDir :: FilePath
+  }
+  deriving (Show, Eq)
+
+
+data Generate = Generate
+  { taskCompleted :: UTCTime
   }
   deriving (Show, Eq)
 
@@ -76,7 +82,8 @@ type StepPreprocessed = Preprocessed : StepDownloaded
 type StepInverted = Inverted : StepPreprocessed
 type StepInverting = Invert : StepPreprocessed
 type StepGenerated = Generated : StepInverted
-type StepGenerating = Generate : StepInverted
+type StepGenTransfer = GenTransfer : StepInverted
+type StepGenerating = Generate : GenTransfer : StepInverted
 type StepPublished = Published : StepGenerated
 
 
@@ -91,5 +98,6 @@ data InversionStep
   | StepInverting (Many StepInverting)
   | StepGenerated (Many StepGenerated)
   | StepGenerating (Many StepGenerating)
+  | StepGenTransfer (Many StepGenTransfer)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)

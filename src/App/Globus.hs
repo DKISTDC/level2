@@ -224,7 +224,7 @@ initDownload tform df ds = do
       , label = Just tform.label.value
       , source_endpoint = dkistEndpoint
       , destination_endpoint = Tagged tform.endpoint_id.value
-      , data_ = map (datasetTransferItem destinationFolder) ds
+      , data_ = map (\d -> datasetTransferItem (destinationPath d) d) ds
       , sync_level = SyncChecksum
       }
    where
@@ -235,6 +235,10 @@ initDownload tform df ds = do
         Just f -> cs tform.path.value </> cs f
         Nothing -> cs tform.path.value
 
+    destinationPath :: Dataset -> FilePath
+    destinationPath d =
+      destinationFolder </> cs d.instrumentProgramId.fromId </> cs d.datasetId.fromId
+
 
 initTransferDataset :: (Globus :> es, Reader (Token Access) :> es, Reader (GlobusEndpoint App) :> es) => Dataset -> Eff es (App.Id Task, FilePath)
 initTransferDataset d = do
@@ -242,7 +246,7 @@ initTransferDataset d = do
   t <- initTransfer (transfer endpoint)
 
   -- we have to add the folder, because it's auto-added, I think
-  let destFolder = datasetScratchPath endpoint d
+  let destFolder = datasetScratchPath endpoint
   pure (t, destFolder)
  where
   transfer :: GlobusEndpoint App -> Globus.Id Submission -> TransferRequest
@@ -253,12 +257,12 @@ initTransferDataset d = do
       , label = Just $ "Dataset " <> d.datasetId.fromId
       , source_endpoint = dkistEndpoint
       , destination_endpoint = endpoint.collection
-      , data_ = [datasetTransferItem (datasetScratchPath endpoint d) d]
+      , data_ = [datasetTransferItem (datasetScratchPath endpoint) d]
       , sync_level = SyncChecksum
       }
 
-  datasetScratchPath :: GlobusEndpoint App -> Dataset -> FilePath
-  datasetScratchPath endpoint _ =
+  datasetScratchPath :: GlobusEndpoint App -> FilePath
+  datasetScratchPath endpoint =
     endpoint.path </> cs d.primaryProposalId.fromId </> cs d.datasetId.fromId
 
 
