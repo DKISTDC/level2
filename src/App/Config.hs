@@ -28,7 +28,6 @@ import Effectful.Fail
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
-import Network.Globus.Types qualified as Globus
 import Text.Read (readMaybe)
 import Web.Hyperbole
 

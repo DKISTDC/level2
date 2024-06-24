@@ -60,7 +60,7 @@ pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, I
 pageSubmitUpload ii = do
   load $ do
     tfrm <- formFields @TransferForm
-    tup <- formFields @UploadFiles
+    tup <- formFields @(UploadFiles Filename)
     it <- Globus.initUpload tfrm tup ii
     send $ Inversions.SetUploading ii it
 

@@ -394,7 +394,7 @@ data Quantities (as :: [Type]) = Quantities
   }
 
 
-decodeQuantitiesFrames :: (MonadIO m, MonadThrow m) => ByteString -> m [Quantities [SlitX, Depth]]
+decodeQuantitiesFrames :: (MonadThrow m) => ByteString -> m [Quantities [SlitX, Depth]]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res

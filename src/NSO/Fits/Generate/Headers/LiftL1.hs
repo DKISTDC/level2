@@ -39,4 +39,4 @@ data LiftL1Error
   = MissingL1Key String
   | MissingL1HDU FilePath
   | MissingCType String
-  deriving (Show, Exception)
+  deriving (Show, Exception, Eq)

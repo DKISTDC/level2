@@ -6,6 +6,7 @@ module App.Worker.FitsGenWorker
 import App.Globus (Globus, GlobusEndpoint, Token, Token' (Access))
 import App.Globus qualified as Globus
 import App.Types
+import Control.Monad (zipWithM)
 import Control.Monad.Loops
 import Data.Diverse.Many
 import Effectful
@@ -13,13 +14,17 @@ import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.FileSystem
+import Effectful.GenRandom
 import Effectful.Log
 import Effectful.Reader.Dynamic
+import Effectful.Time
 import Effectful.Worker
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.FetchL1 as Fetch (L1FrameDir, Path (..), fetchCanonicalDataset, listL1Frames)
+import NSO.Fits.Generate.FetchL1 as Fetch (L1FrameDir, canonicalL1Frames, fetchCanonicalDataset, readTimestamps)
+import NSO.Fits.Generate.Profile (ProfileFrames (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 
@@ -30,11 +35,13 @@ workTask
      , FileSystem :> es
      , Datasets :> es
      , Inversions :> es
+     , Time :> es
      , Reader (GlobusEndpoint App) :> es
      , Log :> es
      , Concurrent :> es
      , Error GenerateError :> es
      , Worker GenTask :> es
+     , GenRandom :> es
      )
   => GenTask
   -> Eff es ()
@@ -53,18 +60,33 @@ workTask t = do
   send $ Inversions.SetGenTransferred t.inversionId
 
   logDebug " - done, getting frames..."
-  l1 <- Fetch.listL1Frames frameDir
-  logTrace " - frames" (length l1)
-  logDebug " - ready to build fits!"
+  u <- Globus.inversionUploadedFiles t.inversionId
+  logTrace "InvResults" u.invResults
+  logTrace "InvProfile" u.invProfile
+  logTrace "OrigProfile" u.origProfile
+  logTrace "Timestamps" u.timestamps
 
+  qfs <- Gen.readQuantitiesFrames u.invResults
+  pfs <- Gen.readFitProfileFrames u.invProfile
+  pos <- Gen.readOrigProfileFrames u.origProfile
+  ts <- Fetch.readTimestamps u.timestamps
+  logTrace "Frames" (length qfs, length pfs.frames, length pos.frames, length ts)
+  l1 <- Fetch.canonicalL1Frames frameDir ts
+  gfs <- collateFrames qfs pfs.frames pos.frames l1
+  let totalFrames = length gfs
+
+  logTrace "Ready to Build!" (length gfs)
   send $ TaskSetStatus t $ GenCreating 0 100
+  fitss <- zipWithM (workFrame totalFrames pos.wavProfiles pfs.wavProfiles) [0 ..] gfs
 
-  forM_ [0 .. 40] $ \n -> do
-    send $ TaskSetStatus t $ GenCreating n 40
-    threadDelay (200 * 1000)
-
+  logTrace "COMPLETE" (length fitss)
   send $ Inversions.SetGenerated t.inversionId
   logDebug " - done"
+ where
+  workFrame tot wpo wpf n g = do
+    send $ TaskSetStatus t $ GenCreating n tot
+    now <- currentTime
+    Gen.generateL2Fits now t.inversionId wpo wpf g
 
 
 -- DONE: Fetch L1 Files, poll for status

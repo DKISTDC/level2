@@ -88,3 +88,14 @@ data Instrument
   | VISP
   deriving (Show, Ord, Eq, Read, Generic, Param)
   deriving (DBType) via ReadShow Instrument
+
+
+newtype Path' t a = Path {filePath :: FilePath}
+  deriving newtype (Show, Read, Eq)
+type Path = Path' ()
+
+
+data Abs
+data Dir
+data File
+data Filename

@@ -22,7 +22,7 @@ module App.Globus
   , initTransferDataset
   , FileLimit (..)
   , TransferForm
-  , UploadFiles
+  , UploadFiles (..)
   , DownloadFolder
   , Auth (..)
   , runAuth
@@ -32,6 +32,11 @@ module App.Globus
   , getRedirectUri
   , RedirectPath (..)
   , GlobusEndpoint (..)
+  , inversionUploadedFiles
+  , Timestamps
+  , InvResults
+  , InvProfile
+  , OrigProfile
   ) where
 
 import App.Types
@@ -137,19 +142,21 @@ instance Form DownloadFolder where
     DownloadFolder <$> parseMaybe "folder[0]" f
 
 
-data UploadFiles = UploadFiles
-  { invResPre :: FilePath
-  , invResMod :: FilePath
-  , perOri :: FilePath
+data UploadFiles t = UploadFiles
+  { invProfile :: Path' t InvProfile
+  , invResults :: Path' t InvResults
+  , origProfile :: Path' t OrigProfile
+  , timestamps :: Path' t Timestamps
   }
-  deriving (Generic)
-instance Form UploadFiles where
+  deriving (Generic, Show)
+instance Form (UploadFiles Filename) where
   formParse f = do
     fs <- multi "file"
-    invResPre <- findFile "inv_res_pre.fits" fs
-    invResMod <- findFile "inv_res_mod.fits" fs
-    perOri <- findFile "per_ori.fits" fs
-    pure UploadFiles{invResPre, invResMod, perOri}
+    invProfile <- findFile fileInvProfile fs
+    invResults <- findFile fileInvResults fs
+    origProfile <- findFile fileOrigProfile fs
+    timestamps <- findFile fileTimestamps fs
+    pure UploadFiles{invResults, invProfile, origProfile, timestamps}
    where
     sub :: Text -> Int -> Text
     sub t n = t <> "[" <> cs (show n) <> "]"
@@ -158,10 +165,11 @@ instance Form UploadFiles where
       sub1 <- parseMaybe (sub t 1) f
       sub2 <- parseMaybe (sub t 2) f
       pure $ catMaybes [sub0, sub1, sub2]
-    findFile :: FilePath -> [FilePath] -> Either Text FilePath
-    findFile file fs = do
+
+    findFile :: Path' Filename a -> [FilePath] -> Either Text (Path' Filename a)
+    findFile (Path file) fs = do
       if file `elem` fs
-        then pure file
+        then pure $ Path file
         else Left $ "Missing required file: " <> cs file
 
 
@@ -182,7 +190,7 @@ initTransfer toRequest = do
   pure $ Id res.task_id.unTagged
 
 
-initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es, Reader (GlobusEndpoint App) :> es) => TransferForm -> UploadFiles -> App.Id Inversion -> Eff es (App.Id Task)
+initUpload :: (Hyperbole :> es, Globus :> es, Auth :> es, Reader (GlobusEndpoint App) :> es) => TransferForm -> UploadFiles Filename -> App.Id Inversion -> Eff es (App.Id Task)
 initUpload tform up ii = do
   level2 <- ask @(GlobusEndpoint App)
   requireLogin $ initTransfer (transferRequest level2)
@@ -195,21 +203,19 @@ initUpload tform up ii = do
       , label = Just tform.label.value
       , source_endpoint = Tagged tform.endpoint_id.value
       , destination_endpoint = endpoint.collection
-      , data_ = map transferItem [up.invResMod, up.invResPre, up.perOri]
+      , data_ = map transferItem [genericFile up.invResults, genericFile up.invProfile, genericFile up.origProfile]
       , sync_level = SyncChecksum
       }
    where
-    transferItem :: String -> TransferItem
-    transferItem f =
-      TransferItem
-        { data_type = DataType
-        , source_path = cs tform.path.value </> f
-        , destination_path = inversionScratchPath </> f
-        , recursive = False
-        }
-
-    inversionScratchPath :: FilePath
-    inversionScratchPath = endpoint.path </> cs ii.fromId
+    transferItem :: Path' Filename () -> TransferItem
+    transferItem (Path f) =
+      let (Path sf) = inversionScratchFile endpoint ii (Path f)
+       in TransferItem
+            { data_type = DataType
+            , source_path = cs tform.path.value </> f
+            , destination_path = sf
+            , recursive = False
+            }
 
 
 initDownload :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
@@ -378,3 +384,52 @@ data GlobusEndpoint a = GlobusEndpoint
   , path :: FilePath
   , mount :: FilePath
   }
+
+
+inversionScratchFile :: GlobusEndpoint App -> App.Id Inversion -> Path' Filename a -> Path' Scratch a
+inversionScratchFile endpoint ii (Path f) =
+  Path $ endpoint.path </> cs ii.fromId </> f
+
+
+inversionUploadedFiles :: forall es. (Reader (GlobusEndpoint App) :> es) => App.Id Inversion -> Eff es (UploadFiles Abs)
+inversionUploadedFiles ii = do
+  invResults <- absPath fileInvResults
+  invProfile <- absPath fileInvProfile
+  origProfile <- absPath fileOrigProfile
+  timestamps <- absPath fileTimestamps
+  pure $ UploadFiles{invResults, invProfile, origProfile, timestamps}
+ where
+  absPath :: Path' Filename a -> Eff es (Path' Abs a)
+  absPath pf = do
+    g <- ask @(GlobusEndpoint App)
+    let Path s = inversionScratchFile g ii pf
+    pure $ Path $ g.mount </> s
+
+
+data InvProfile
+data InvResults
+data OrigProfile
+data Timestamps
+
+
+data Scratch
+
+
+fileInvResults :: Path' Filename InvResults
+fileInvResults = Path "inv_res_mod.fits"
+
+
+fileInvProfile :: Path' Filename InvProfile
+fileInvProfile = Path "inv_res_pre.fits"
+
+
+fileOrigProfile :: Path' Filename OrigProfile
+fileOrigProfile = Path "per_ori.fits"
+
+
+fileTimestamps :: Path' Filename Timestamps
+fileTimestamps = Path "timestamps.tsv"
+
+
+genericFile :: Path' Filename a -> Path' Filename ()
+genericFile (Path f) = Path f
