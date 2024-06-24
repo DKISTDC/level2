@@ -21,7 +21,9 @@ import Effectful.Concurrent
 import Effectful.Concurrent.Async
 import Effectful.Concurrent.STM
 import Effectful.Debug as Debug
+import Effectful.Environment
 import Effectful.Error.Static
+import Effectful.Fail
 import Effectful.FileSystem
 import Effectful.GenRandom
 import Effectful.GraphQL
@@ -45,30 +47,35 @@ main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
-  putStrLn "NSO Level 2"
-  config <- initConfig onRel8Error
-  putStrLn $ "Starting on :" <> show config.app.port
-  putStrLn "Develop using https://localhost/"
 
-  void $ runEff $ runConcurrent $ do
-    fits <- atomically taskChanNew
-    adtok <- newEmptyTMVarIO
+  runEff $ runInit $ do
+    logInfo "NSO Level 2"
+    config <- initConfig
 
-    mapConcurrently_
-      id
-      [ runLogger "Server" $ startWebServer config adtok fits
-      , runAppWorker config "PuppetMaster" $ forever $ do
-          PuppetMaster.manageMinions fits
-      , runAppWorker config "FitsGen" $ do
-          waitForGlobusAccess adtok $ do
-            startWorker fits Fits.workTask
-      ]
+    runConcurrent $ do
+      fits <- atomically taskChanNew
+      adtok <- newEmptyTMVarIO
 
-    pure ()
+      mapConcurrently_
+        id
+        [ runLogger "Server" $ startWebServer config adtok fits
+        , runAppWorker config "Puppets" $ forever $ do
+            PuppetMaster.manageMinions fits
+        , runAppWorker config "FitsGen" $ do
+            waitForGlobusAccess adtok $ do
+              startWorker fits Fits.workTask
+        ]
+
+      pure ()
  where
+  runInit =
+    runLogger "Init"
+      . runErrorNoCallStackWith @Rel8Error onRel8Error
+      . runFailIO
+      . runEnvironment
+
   runAppWorker config t =
     runLogger t
-      . runErrorNoCallStackWith @Rel8Error onRel8Error
       . runErrorNoCallStackWith @DataError onDataError
       . runErrorNoCallStackWith @Fits.GenerateError onFitsGenError
       . runReader config.globus.level2
@@ -79,11 +86,12 @@ main = do
       . runGlobus config.globus.client
       . runDataInversions
       . runDataDatasets
-      . runDebugIO
 
 
-startWebServer :: (IOE :> es, Concurrent :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
+startWebServer :: (IOE :> es, Concurrent :> es, Log :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
 startWebServer config adtok fits = do
+  logDebug $ "Starting on :" <> show config.app.port
+  logDebug "Develop using https://localhost/"
   liftIO $
     Warp.run config.app.port $
       addHeaders [("app-version", cs appVersion)] $

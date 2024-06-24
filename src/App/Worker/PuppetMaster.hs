@@ -1,6 +1,6 @@
 module App.Worker.PuppetMaster where
 
-import Data.Set qualified as Set
+-- import Data.Set qualified as Set
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
@@ -15,14 +15,14 @@ import NSO.Prelude
 -- The Puppeteer checks the status of systems and starts jobs as necessary
 manageMinions :: (Concurrent :> es, Inversions :> es, Datasets :> es, Log :> es) => TaskChan GenTask -> Eff es ()
 manageMinions fits = do
-  logDebug "GO MY MINIONS"
+  logDebug "GO FORTH MY MINIONS"
 
   -- ts <- getChanContents fits
   -- logTrace "FitsTasks" ts
   ts <- scanNeedsGenerate
   -- mapM_ (logTrace "Inversion") ts
 
-  (wt, wk) <- atomically $ do
+  (_, _) <- atomically $ do
     mapM_ (taskAdd fits) ts
     wt <- taskChanWaiting fits
     wk <- taskChanWorking fits
