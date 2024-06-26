@@ -3,6 +3,7 @@ module App.Page.Inversions.InvForm where
 import App.Colors
 import App.Globus as Globus
 import App.Style qualified as Style
+import App.View.Common qualified as View
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
@@ -57,7 +58,7 @@ viewTransferProgress it task = do
     el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
     space
     activityLink it
-  progress (taskPercentComplete task)
+  View.progress (taskPercentComplete task)
  where
   rate :: String
   rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
@@ -76,13 +77,6 @@ activityLink it =
   WebView.link activityUrl Style.link "View Transfer on Globus"
  where
   activityUrl = Url "https://" "app.globus.org" ["activity", it.fromId] []
-
-
-progress :: Float -> View c ()
-progress p = do
-  row (bg Gray . height 20) $ do
-    el (width (Pct p) . bg (light Info)) $ do
-      space
 
 
 -----------------------------------------------------

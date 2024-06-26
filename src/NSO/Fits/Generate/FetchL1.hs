@@ -40,9 +40,6 @@ data L1Frame = L1Frame
   deriving (Show)
 
 
-data L1FrameDir
-
-
 newtype DateBegTimestamp = DateBegTimestamp {text :: Text}
   deriving newtype (Eq, Show)
 

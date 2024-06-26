@@ -22,11 +22,16 @@ import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.FetchL1 as Fetch (L1FrameDir, canonicalL1Frames, fetchCanonicalDataset, readTimestamps)
+import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, fetchCanonicalDataset, readTimestamps)
 import NSO.Fits.Generate.Profile (ProfileFrames (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 
+
+-- BUG: UI Doesn't update under certain conditions. When GenWaiting?
+-- BUG: It's creating frames even with 487 timestamps vs 486 frames
+-- TODO: parallelize!
+-- DONE: progress bar
 
 workTask
   :: forall es

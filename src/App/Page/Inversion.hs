@@ -8,6 +8,7 @@ import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..))
 import App.Page.Inversions.InvForm qualified as InvForm
 import App.Route as Route
 import App.Style qualified as Style
+import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Layout
 import Data.Diverse.Many
@@ -409,6 +410,18 @@ viewGenerateWait s =
   onLoad Reload 1000 $ do
     col (gap 5) $ do
       el bold "Generate Frames"
+      viewStatus s
+ where
+  viewStatus = \case
+    GenCreating n tot -> do
+      row (gap 5) $ do
+        el_ "Creating"
+        space
+        el_ $ text $ cs $ show n
+        el_ " / "
+        el_ $ text $ cs $ show tot
+      View.progress (fromIntegral n / fromIntegral tot)
+    _ ->
       el_ $ text $ cs $ show s
 
 

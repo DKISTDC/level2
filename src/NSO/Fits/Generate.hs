@@ -42,7 +42,7 @@ import Telescope.Fits.Encoding (replaceKeywordLine)
 
 -- TODO: Cleanup
 --   TODO: telescope - change exports to avoid fits-parse
---   TODO: pubmit PR for fits-parse
+--   DONE: pubmit PR for fits-parse
 --   TODO: Refactor primary to a separate gen file from Generate and export as required
 
 ------------------------------------------------------------------------------
