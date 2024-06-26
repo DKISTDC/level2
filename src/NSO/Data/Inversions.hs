@@ -22,12 +22,10 @@ import Data.Text qualified as Text
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
 import Effectful.Worker
-import NSO.Error
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -51,10 +49,11 @@ data Inversions :: Effect where
   SetUploaded :: Id Inversion -> Inversions m ()
   SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
   SetGenerated :: Id Inversion -> Inversions m ()
-  DelGenerating :: Id Inversion -> Inversions m ()
+  ResetGenerating :: Id Inversion -> Inversions m ()
   SetGenerating :: Id Inversion -> Id Task -> FilePath -> Inversions m ()
   SetGenTransferred :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
+  SetError :: Id Inversion -> Text -> Inversions m ()
   -- maybe doesn't belong on Inversions?
   ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
 type instance DispatchOf Inversions = 'Dynamic
@@ -92,25 +91,24 @@ empty ip = do
       , programId = ip
       , created = now
       , updated = now
+      , invError = Nothing
       , step = StepCreated (start ./ nil)
       }
 
 
-fromRow :: InversionRow Identity -> Either String Inversion
-fromRow row = maybe err pure $ do
+fromRow :: InversionRow Identity -> Inversion
+fromRow row =
   -- Parse each step. Try the last one first
-  stp <- step
-  pure $
-    Inversion
-      { inversionId = row.inversionId
-      , programId = row.programId
-      , created = row.created
-      , updated = row.updated
-      , step = stp
-      }
+  let stp = fromMaybe (StepCreated started) step
+   in Inversion
+        { inversionId = row.inversionId
+        , programId = row.programId
+        , created = row.created
+        , updated = row.updated
+        , invError = row.invError
+        , step = stp
+        }
  where
-  err = Left $ "Bad Step: " <> cs row.inversionId.fromId
-
   -- go through each possibility in reverse order. If published exists, load all previous steps
   -- if any are missing skip
   step =
@@ -123,15 +121,15 @@ fromRow row = maybe err pure $ do
       <|> (StepPreprocessed <$> preprocessed)
       <|> (StepDownloaded <$> downloaded)
       <|> (StepDownloading <$> downloading)
-      <|> (StepCreated <$> started)
+  -- <|> (StepCreated <$> started)
 
-  started :: Maybe (Many StepCreated)
+  started :: Many StepCreated
   started = do
-    pure $ Created row.created ./ nil
+    Created row.created ./ nil
 
   downloaded :: Maybe (Many StepDownloaded)
   downloaded = do
-    prev <- started
+    let prev = started
     down <- row.download
     task <- row.downloadTaskId
     let dtss = fmap (.fromId) row.downloadDatasets
@@ -139,7 +137,7 @@ fromRow row = maybe err pure $ do
 
   downloading :: Maybe (Many StepDownloading)
   downloading = do
-    prev <- started
+    let prev = started
     task <- row.downloadTaskId
     pure $ Transfer task ./ prev
 
@@ -176,7 +174,8 @@ fromRow row = maybe err pure $ do
   generating = do
     prev <- genTransfer
     tc <- row.generateTaskCompleted
-    pure $ Generate tc ./ prev
+    let e = row.invError
+    pure $ Generate tc e ./ prev
 
   genTransfer :: Maybe (Many StepGenTransfer)
   genTransfer = do
@@ -193,7 +192,7 @@ fromRow row = maybe err pure $ do
 
 
 runDataInversions
-  :: (Concurrent :> es, IOE :> es, Rel8 :> es, Error DataError :> es, Time :> es, GenRandom :> es)
+  :: (Concurrent :> es, IOE :> es, Rel8 :> es, Time :> es, GenRandom :> es)
   => Eff (Inversions : es) a
   -> Eff es a
 runDataInversions = interpret $ \_ -> \case
@@ -209,34 +208,37 @@ runDataInversions = interpret $ \_ -> \case
   SetUploading iid tid -> setUploading iid tid
   SetInversion iid soft -> setInversion iid soft
   SetGenerated iid -> setGenerated iid
-  DelGenerating iid -> delGenerating iid
   SetGenerating iid tid fdir -> setGenerating iid tid fdir
   SetGenTransferred iid -> setGenTransferred iid
   SetPublished iid -> setPublished iid
   ValidateGitCommit repo gc -> validateGitCommit repo gc
+  SetError iid e -> do
+    updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit (Just e), ..}
+  ResetGenerating iid -> do
+    updateInversion iid $ \r -> r{generateTaskId = lit Nothing, generateL1FrameDir = lit Nothing, generateTaskCompleted = lit Nothing, invError = lit Nothing}
  where
   -- TODO: only return the "latest" inversion for each instrument program
-  queryAll :: (Rel8 :> es, Error DataError :> es) => Eff es AllInversions
+  queryAll :: (Rel8 :> es) => Eff es AllInversions
   queryAll = do
     irs <- runQuery () $ select $ do
       each inversions
-    AllInversions <$> toInversions irs
+    pure $ AllInversions $ map fromRow irs
 
-  queryById :: (Rel8 :> es, Error DataError :> es) => Id Inversion -> Eff es [Inversion]
+  queryById :: (Rel8 :> es) => Id Inversion -> Eff es [Inversion]
   queryById iid = do
     irs <- runQuery () $ select $ do
       row <- each inversions
       where_ (row.inversionId ==. lit iid)
       pure row
-    toInversions irs
+    pure $ map fromRow irs
 
-  queryInstrumentProgram :: (Rel8 :> es, Error DataError :> es) => Id InstrumentProgram -> Eff es [Inversion]
+  queryInstrumentProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Inversion]
   queryInstrumentProgram ip = do
     irs <- runQuery () $ select $ do
       row <- each inversions
       where_ (row.programId ==. lit ip)
       return row
-    toInversions irs
+    pure $ map fromRow irs
 
   remove :: (Rel8 :> es) => Id Inversion -> Eff es ()
   remove iid = do
@@ -300,9 +302,6 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{generateTaskCompleted = lit (Just now)}
 
-  delGenerating iid = do
-    updateInversion iid $ \r -> r{generateTaskId = lit Nothing, generateL1FrameDir = lit Nothing}
-
   setPublished iid = do
     now <- currentTime
     updateInversion iid $ \r -> r{publish = lit (Just now)}
@@ -328,6 +327,7 @@ runDataInversions = interpret $ \_ -> \case
         , programId = inv.programId
         , created = inv.created
         , updated = inv.created
+        , invError = Nothing
         , download = Nothing
         , downloadTaskId = Nothing
         , downloadDatasets = []
@@ -356,6 +356,7 @@ inversions =
           , programId = "program_id"
           , created = "created"
           , updated = "updated"
+          , invError = "error"
           , download = "download"
           , downloadTaskId = "download_task_id"
           , downloadDatasets = "download_datasets"
@@ -372,13 +373,6 @@ inversions =
           , publish = "publish"
           }
     }
-
-
-toInversions :: (Error DataError :> es) => [InversionRow Identity] -> Eff es [Inversion]
-toInversions irs = do
-  case traverse fromRow irs of
-    Left err -> throwError $ ValidationError err
-    Right ivs -> pure ivs
 
 
 validateGitCommit :: (MonadIO m) => GitRepo -> GitCommit -> m Bool

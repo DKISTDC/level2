@@ -51,7 +51,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Effectful
 import GHC.Generics (Generic)
-import Prelude hiding (Real, even, head, last, odd, print, putStr, putStrLn, readFile, reverse, truncate, writeFile, (!!))
+import Prelude hiding (Real, even, head, last, log, odd, print, putStr, putStrLn, readFile, reverse, truncate, writeFile, (!!))
 import Prelude qualified
 
 

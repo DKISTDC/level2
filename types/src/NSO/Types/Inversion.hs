@@ -22,6 +22,7 @@ data Inversion = Inversion
   , created :: UTCTime
   , updated :: UTCTime
   , step :: InversionStep
+  , invError :: Maybe Text
   }
   deriving (Show)
 
@@ -46,6 +47,7 @@ data InversionRow f = InversionRow
   , generateL1FrameDir :: Column f (Maybe Text)
   , generateTaskCompleted :: Column f (Maybe UTCTime)
   , publish :: Column f (Maybe UTCTime)
+  , invError :: Column f (Maybe Text)
   }
   deriving (Generic, Rel8able)
 

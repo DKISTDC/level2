@@ -1,6 +1,8 @@
 module App.Worker.PuppetMaster where
 
 -- import Data.Set qualified as Set
+
+import Data.Maybe (isNothing)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
@@ -15,7 +17,7 @@ import NSO.Prelude
 -- The Puppeteer checks the status of systems and starts jobs as necessary
 manageMinions :: (Concurrent :> es, Inversions :> es, Datasets :> es, Log :> es) => TaskChan GenTask -> Eff es ()
 manageMinions fits = do
-  logDebug "GO FORTH MY MINIONS"
+  -- log Debug "GO FORTH MY MINIONS"
 
   -- ts <- getChanContents fits
   -- logTrace "FitsTasks" ts
@@ -42,12 +44,12 @@ manageMinions fits = do
 scanNeedsGenerate :: (Inversions :> es, Datasets :> es) => Eff es [GenTask]
 scanNeedsGenerate = do
   AllInversions ivs <- send Inversions.All
-  pure $ map genTask $ filter (isGenerate . (.step)) ivs
+  pure $ map genTask $ filter (\i -> isGenerateStep i.step && isNothing i.invError) ivs
  where
   genTask inv = GenTask inv.inversionId
 
-  isGenerate :: InversionStep -> Bool
-  isGenerate = \case
+  isGenerateStep :: InversionStep -> Bool
+  isGenerateStep = \case
     StepInverted _ -> True
     StepGenerating _ -> True
     StepGenTransfer _ -> True

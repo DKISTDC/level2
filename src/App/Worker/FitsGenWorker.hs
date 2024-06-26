@@ -30,7 +30,8 @@ import NSO.Types.InstrumentProgram
 
 
 workTask
-  :: ( Reader (Token Access) :> es
+  :: forall es
+   . ( Reader (Token Access) :> es
      , Globus :> es
      , FileSystem :> es
      , Datasets :> es
@@ -39,58 +40,63 @@ workTask
      , Reader (GlobusEndpoint App) :> es
      , Log :> es
      , Concurrent :> es
-     , Error GenerateError :> es
      , Worker GenTask :> es
      , GenRandom :> es
      )
   => GenTask
   -> Eff es ()
 workTask t = do
-  logDebug "START"
-
-  send $ TaskSetStatus t GenStarted
-
-  inv <- loadInversion t.inversionId
-  (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
-  send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
-  send $ TaskSetStatus t GenTransferring
-
-  logDebug " - waiting..."
-  untilM_ delay (isTransferComplete taskId)
-  send $ Inversions.SetGenTransferred t.inversionId
-
-  logDebug " - done, getting frames..."
-  u <- Globus.inversionUploadedFiles t.inversionId
-  logTrace "InvResults" u.invResults
-  logTrace "InvProfile" u.invProfile
-  logTrace "OrigProfile" u.origProfile
-  logTrace "Timestamps" u.timestamps
-
-  qfs <- Gen.readQuantitiesFrames u.invResults
-  pfs <- Gen.readFitProfileFrames u.invProfile
-  pos <- Gen.readOrigProfileFrames u.origProfile
-  ts <- Fetch.readTimestamps u.timestamps
-  logTrace "Frames" (length qfs, length pfs.frames, length pos.frames, length ts)
-  l1 <- Fetch.canonicalL1Frames frameDir ts
-  gfs <- collateFrames qfs pfs.frames pos.frames l1
-  let totalFrames = length gfs
-
-  logTrace "Ready to Build!" (length gfs)
-  send $ TaskSetStatus t $ GenCreating 0 100
-  fitss <- zipWithM (workFrame totalFrames pos.wavProfiles pfs.wavProfiles) [0 ..] gfs
-
-  logTrace "COMPLETE" (length fitss)
-  send $ Inversions.SetGenerated t.inversionId
-  logDebug " - done"
+  res <- runErrorNoCallStack workWithError
+  either failed pure res
  where
+  workWithError = do
+    log Debug "START"
+
+    send $ TaskSetStatus t GenStarted
+
+    inv <- loadInversion t.inversionId
+    (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
+    send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
+    send $ TaskSetStatus t GenTransferring
+
+    log Debug " - waiting..."
+    untilM_ delay (isTransferComplete taskId)
+    send $ Inversions.SetGenTransferred t.inversionId
+
+    log Debug " - done, getting frames..."
+    u <- Globus.inversionUploadedFiles t.inversionId
+    log Debug $ dump "InvResults" u.invResults
+    log Debug $ dump "InvProfile" u.invProfile
+    log Debug $ dump "OrigProfile" u.origProfile
+    log Debug $ dump "Timestamps" u.timestamps
+
+    qfs <- Gen.readQuantitiesFrames u.invResults
+    pfs <- Gen.readFitProfileFrames u.invProfile
+    pos <- Gen.readOrigProfileFrames u.origProfile
+    ts <- Fetch.readTimestamps u.timestamps
+    log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length ts)
+    l1 <- Fetch.canonicalL1Frames frameDir ts
+    gfs <- collateFrames qfs pfs.frames pos.frames l1
+    let totalFrames = length gfs
+
+    log Debug $ dump "Ready to Build!" (length gfs)
+    send $ TaskSetStatus t $ GenCreating 0 100
+    zipWithM_ (workFrame totalFrames pos.wavProfiles pfs.wavProfiles) [0 ..] gfs
+
+    send $ Inversions.SetGenerated t.inversionId
+    log Debug " - done"
+
   workFrame tot wpo wpf n g = do
     send $ TaskSetStatus t $ GenCreating n tot
     now <- currentTime
-    Gen.generateL2Fits now t.inversionId wpo wpf g
+    (_, dateBeg) <- Gen.generateL2Fits now t.inversionId wpo wpf g
+    log Debug $ dump "FITS DATE" dateBeg
+    pure ()
 
+  failed :: GenerateError -> Eff es ()
+  failed err = do
+    send $ Inversions.SetError t.inversionId (cs $ show err)
 
--- DONE: Fetch L1 Files, poll for status
--- TODO: Generate frames... all of em!
 
 startTransferIfNeeded :: (Error GenerateError :> es, Reader (Token Access) :> es, Reader (GlobusEndpoint App) :> es, Datasets :> es, Globus :> es) => Id InstrumentProgram -> InversionStep -> Eff es (Id Globus.Task, Path L1FrameDir)
 startTransferIfNeeded ip = \case
@@ -111,7 +117,7 @@ isTransferComplete it = do
     Globus.Succeeded -> pure True
     Globus.Failed -> throwError $ L1TransferFailed it
     _ -> do
-      logTrace "Transfer" $ Globus.taskPercentComplete task
+      log Debug $ dump "Transfer" $ Globus.taskPercentComplete task
       pure False
 
 

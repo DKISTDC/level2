@@ -4,10 +4,11 @@ module NSO.Types.Status where
 
 import Data.Aeson
 import Data.Diverse.Many
+import Data.Diverse.TypeLevel
 import NSO.Prelude
 import NSO.Types.Common
 import Network.Globus (Task)
-import Rel8
+import Rel8 hiding (select)
 import Web.Hyperbole.Forms (FormField)
 
 
@@ -69,6 +70,7 @@ data GenTransfer = GenTransfer
 
 data Generate = Generate
   { taskCompleted :: UTCTime
+  , genError :: Maybe Text
   }
   deriving (Show, Eq)
 
@@ -101,3 +103,35 @@ data InversionStep
   | StepGenTransfer (Many StepGenTransfer)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)
+
+
+stepInverted :: InversionStep -> Maybe (Many StepInverted)
+stepInverted = \case
+  StepInverted inv -> pure $ selectInverted inv
+  StepGenerated inv -> pure $ selectInverted inv
+  StepGenerating inv -> pure $ selectInverted inv
+  StepGenTransfer inv -> pure $ selectInverted inv
+  StepPublished inv -> pure $ selectInverted inv
+  _ -> Nothing
+
+
+findInverted :: InversionStep -> Maybe Inverted
+findInverted s = do
+  i <- stepInverted s
+  pure $ grab @Inverted i
+
+
+selectCreated :: (UniqueMember Created xs) => Many xs -> Many StepCreated
+selectCreated m = grab @Created m ./ nil
+
+
+selectDownloaded :: (UniqueMembers StepDownloaded xs) => Many xs -> Many StepDownloaded
+selectDownloaded m = grab @Downloaded m ./ selectCreated m
+
+
+selectPreprocessed :: (UniqueMembers StepPreprocessed xs) => Many xs -> Many StepPreprocessed
+selectPreprocessed m = grab @Preprocessed m ./ selectDownloaded m
+
+
+selectInverted :: (UniqueMembers StepInverted xs) => Many xs -> Many StepInverted
+selectInverted m = grab @Inverted m ./ selectPreprocessed m

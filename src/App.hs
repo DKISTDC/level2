@@ -20,7 +20,6 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
 import Effectful.Concurrent.STM
-import Effectful.Debug as Debug
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
@@ -49,7 +48,7 @@ main = do
   hSetBuffering stderr LineBuffering
 
   runEff $ runInit $ do
-    logInfo "NSO Level 2"
+    log Info "NSO Level 2"
     config <- initConfig
 
     runConcurrent $ do
@@ -70,14 +69,12 @@ main = do
  where
   runInit =
     runLogger "Init"
-      . runErrorNoCallStackWith @Rel8Error onRel8Error
+      . runErrorWith @Rel8Error crashWithError
       . runFailIO
       . runEnvironment
 
   runAppWorker config t =
     runLogger t
-      . runErrorNoCallStackWith @DataError onDataError
-      . runErrorNoCallStackWith @Fits.GenerateError onFitsGenError
       . runReader config.globus.level2
       . runRel8 config.db
       . runGenRandom
@@ -90,8 +87,8 @@ main = do
 
 startWebServer :: (IOE :> es, Concurrent :> es, Log :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
 startWebServer config adtok fits = do
-  logDebug $ "Starting on :" <> show config.app.port
-  logDebug "Develop using https://localhost/"
+  log Debug $ "Starting on :" <> show config.app.port
+  log Debug "Develop using https://localhost/"
   liftIO $
     Warp.run config.app.port $
       addHeaders [("app-version", cs appVersion)] $
@@ -108,7 +105,7 @@ startCPUWorkers work = do
 
 waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> Eff (Reader (Token Access) : es) () -> Eff es ()
 waitForGlobusAccess advar work = do
-  logDebug "Waiting for Admin Globus Access Token"
+  log Debug "Waiting for Admin Globus Access Token"
   acc <- atomically $ readTMVar advar
   Globus.runWithAccess acc work
 
@@ -147,44 +144,32 @@ webServer config adtok fits =
     _ <- atomically $ tryPutTMVar adtok tok
     redirect $ pathUrl $ routePath Proposals
 
-  runApp :: (IOE :> es) => Eff (Worker GenTask : Log : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Debug : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Worker GenTask : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
-      . runErrorNoCallStackWith @Rel8Error onRel8Error
-      . runErrorNoCallStackWith @DataError onDataError
+      . runLogger "App"
+      . runErrorWith @Rel8Error crashWithError
+      . runErrorWith @DataError crashWithError
       . runGlobus config.globus.client
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
       . runGraphQL' config.servicesIsMock
       . runMetadata config.services.metadata
-      . runDebugIO
       . runDataDatasets
       . runDataInversions
       . runAuth config.app.domain Redirect
       . runReader config.globus.level2
       . runFileSystem
-      . runLogger "App"
       . runWorker fits
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL
 
 
-onDataError :: (IOE :> es) => DataError -> Eff es a
-onDataError e = do
-  putStrLn "CAUGHT Data Error"
-  liftIO $ throwM e
-
-
-onRel8Error :: (IOE :> es) => Rel8Error -> Eff es a
-onRel8Error e = do
-  putStrLn "CAUGHT Rel8Error"
-  liftIO $ throwM e
-
-
-onFitsGenError :: (IOE :> es) => Fits.GenerateError -> Eff es a
-onFitsGenError e = do
-  putStrLn "CAUGHT FitsGenError"
+crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a
+crashWithError c e = do
+  log Err "Caught: Crashing"
+  log Err $ prettyCallStack c
   liftIO $ throwM e

@@ -4,17 +4,18 @@ import App.Globus as Globus
 import App.Types
 import Control.Monad (replicateM, void)
 import Data.ByteString (ByteString)
+import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Text qualified as T
 import Data.Time.Calendar (Day, fromGregorian)
 import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
-import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.Void (Void)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.FileSystem
 import Effectful.FileSystem.IO.ByteString
+import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
@@ -23,15 +24,17 @@ import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions, (</>))
-import Telescope.Fits
+import Telescope.Fits as Fits
 import Text.Megaparsec hiding (Token)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer
 import Text.Read (readMaybe)
 
 
+-- import Data.Time.Format.ISO8601 (iso8601Show)
+
 data L1Frame = L1Frame
-  { file :: Path L1Frame
+  { file :: Path' Filename L1Frame
   , timestamp :: UTCTime
   , wavelength :: Wavelength Nm
   , stokes :: Stokes
@@ -74,35 +77,38 @@ transferCanonicalDataset d = do
   pure (t, Path dir)
 
 
-canonicalL1Frames :: (Error GenerateError :> es, FileSystem :> es, Reader (GlobusEndpoint App) :> es) => Path L1FrameDir -> [DateBegTimestamp] -> Eff es [BinTableHDU]
+canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, FileSystem :> es, Reader (GlobusEndpoint App) :> es) => Path L1FrameDir -> [DateBegTimestamp] -> Eff es [BinTableHDU]
 canonicalL1Frames fdir ts = do
   fs <- allL1Frames fdir
-  ufs <- usedL1Frames fs
-  mapM (readLevel1File . (.file)) ufs
+  -- log Debug $ dump "L1s" $ take 5 fs
+  log Debug $ dump "TS" $ length ts
+  frs <- mapM (readLevel1File fdir) fs
+  usedL1Frames frs
  where
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
-  allL1Frames :: (FileSystem :> es, Reader (GlobusEndpoint App) :> es) => Path L1FrameDir -> Eff es [L1Frame]
+  allL1Frames :: Path L1FrameDir -> Eff es [L1Frame]
   allL1Frames (Path dir) = do
     g <- ask @(GlobusEndpoint App)
     fs <- fmap Path <$> listDirectory (g.mount </> dir)
-    pure $ mapMaybe runParseFileName $ filter isL1File fs
+    pure $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
 
-  isL1File (Path f) = takeExtensions f == ".fits"
+  isL1IntensityFile (Path f) =
+    takeExtensions f == ".fits"
+      && "_I_" `L.isInfixOf` f
 
-  usedL1Frames fs = do
-    let ufs = filter (isFrameUsed ts) fs
+  usedL1Frames frs = do
+    let ufs = filter (isFrameUsed ts) frs
     case ufs of
-      [] -> throwError $ InvalidTimestamps (length ts)
+      [] -> do
+        throwError $ InvalidTimestamps (length ts)
       _ -> pure ufs
 
 
-isFrameUsed :: [DateBegTimestamp] -> L1Frame -> Bool
-isFrameUsed dbts f =
-  frameTimestamp `elem` dbts
- where
-  -- well, we want to associate it exactly, but we aren't looking at the header anymore
-  frameTimestamp :: DateBegTimestamp
-  frameTimestamp = DateBegTimestamp $ cs $ iso8601Show f.timestamp
+isFrameUsed :: [DateBegTimestamp] -> BinTableHDU -> Bool
+isFrameUsed dbts hdu =
+  case Fits.lookup "DATE-BEG" hdu.header of
+    Just (String d) -> DateBegTimestamp d `elem` dbts
+    _ -> False
 
 
 readTimestamps :: (FileSystem :> es) => Path' Abs Timestamps -> Eff es [DateBegTimestamp]
@@ -115,13 +121,18 @@ parseTimestampsFile inp =
   map DateBegTimestamp $ T.splitOn "\n" $ cs inp
 
 
-readLevel1File :: (FileSystem :> es, Error GenerateError :> es) => Path L1Frame -> Eff es BinTableHDU
-readLevel1File f = do
-  inp <- readFile f.filePath
-  fits <- decode inp
+readLevel1File :: forall es. (Reader (GlobusEndpoint App) :> es, Log :> es, FileSystem :> es, Error GenerateError :> es) => Path L1FrameDir -> L1Frame -> Eff es BinTableHDU
+readLevel1File dir frame = do
+  inp <- readFile =<< absPath
+  fits <- Fits.decode inp
   case fits.extensions of
     [BinTable b] -> pure b
-    _ -> throwError $ LiftL1 $ MissingL1HDU f.filePath
+    _ -> throwError $ LiftL1 $ MissingL1HDU frame.file.filePath
+ where
+  absPath :: Eff es FilePath
+  absPath = do
+    g <- ask @(GlobusEndpoint App)
+    pure $ g.mount </> dir.filePath </> frame.file.filePath
 
 
 -- Filename Parser ----------------------------------------

@@ -114,6 +114,7 @@ data InversionAction
   | Publish
   | Reload
   | RestartGen
+  | GoStepInv
   deriving (Generic, ViewAction)
 
 
@@ -147,8 +148,17 @@ inversions onCancel (InversionStatus ip ii) = \case
   Reload -> do
     refresh
   RestartGen -> do
-    send $ Inversions.DelGenerating ii
+    send $ Inversions.ResetGenerating ii
     refresh
+  GoStepInv -> do
+    inv <- loadInversion ii
+    let mi = findInverted inv.step
+    case mi of
+      Nothing -> do
+        step <- currentStep ii inv.step
+        pure $ viewInversion inv step
+      Just i ->
+        pure $ viewInversion inv (Inverting (InvertStep (Just i.inversionSoftware) (Just i.uploadedTaskId)))
  where
   refresh = do
     inv <- loadInversion ii
@@ -382,6 +392,11 @@ stepGenerate inv = \case
       viewGenerateDownload InvForm.viewLoadTransfer
   GenConverting s -> do
     viewGenerateWait s
+  GenConvError e -> do
+    el bold "Generate Error!"
+    el_ $ text $ cs $ show e
+    button RestartGen (Style.btn Primary) "Restart Generation"
+    button GoStepInv (Style.btnOutline Secondary) "Go Back to Inversion"
 
 
 viewGenerateDownload :: View GenerateTransfer () -> View GenerateTransfer ()
@@ -402,6 +417,7 @@ data GenerateStep
   = GenWaitStart
   | GenTransfering (Id Task)
   | GenConverting GenStatus
+  | GenConvError Text
   deriving (Eq, Show, Ord)
 
 
@@ -453,10 +469,13 @@ currentStep ii = \case
   StepGenTransfer inv -> do
     let t = grab @GenTransfer inv
     pure $ Generating $ GenTransfering t.taskId
-  StepGenerating _ -> do
-    -- let g = grab @Generate inv
-    s <- send $ TaskGetStatus (GenTask ii)
-    pure $ Generating (GenConverting s)
+  StepGenerating inv -> do
+    let g = grab @Generate inv
+    case g.genError of
+      Just e -> pure $ Generating $ GenConvError e
+      Nothing -> do
+        s <- send $ TaskGetStatus (GenTask ii)
+        pure $ Generating (GenConverting s)
   StepPublished _ -> pure Complete
 
 

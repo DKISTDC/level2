@@ -63,22 +63,17 @@ runLogger (ThreadName tname) = interpret $ \_ -> \case
       else c
 
 
-logInfo :: (Log :> es) => String -> Eff es ()
-logInfo = send . Log Info
+dump :: (Show a) => String -> a -> String
+dump n a = n <> ": " <> show a
 
 
-logTrace :: (Log :> es, Show a) => String -> a -> Eff es ()
-logTrace n a = logDebug $ n <> ": " <> show a
-
-
-logDebug :: (Log :> es) => String -> Eff es ()
-logDebug = send . Log Debug
+log :: (Log :> es) => LogLevel -> String -> Eff es ()
+log ll = send . Log ll
 
 
 -- debug :: (Log :> es) => String ->
 -- debug = send . Log Debug
---
---
+
 -- delay :: (Debug :> es) => Milliseconds -> Eff es ()
 -- delay = send . Delay
 

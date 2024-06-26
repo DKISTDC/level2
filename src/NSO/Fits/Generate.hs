@@ -11,12 +11,13 @@ import Effectful.Error.Static
 import Effectful.FileSystem
 import Effectful.FileSystem.IO.ByteString
 import Effectful.GenRandom
+import Effectful.Writer.Static.Local
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (L1Frame)
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
 import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))
-import NSO.Fits.Generate.Headers.Types (Depth, SlitX)
+import NSO.Fits.Generate.Headers.Types (DateTime, Depth, Key (..), SlitX)
 import NSO.Fits.Generate.Profile
 import NSO.Fits.Generate.Quantities (Quantities (..), decodeQuantitiesFrames, quantitiesHDUs)
 import NSO.Prelude
@@ -94,6 +95,9 @@ data GenerateFrame = GenerateFrame
   }
 
 
+data L2Frame
+
+
 collateFrames :: (Error GenerateError :> es) => [Quantities [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [GenerateFrame]
 collateFrames qs pfs pos ts
   | allFramesEqual = pure $ L.zipWith4 GenerateFrame qs pfs pos ts
@@ -108,6 +112,10 @@ collateFrames qs pfs pos ts
 
   mismatchError :: GenerateError
   mismatchError = MismatchedFrames frameSizes
+
+
+filenameL2 :: DateTime -> Fits -> Path L2Frame
+filenameL2 dateBeg f = undefined
 
 
 -- testOld :: IO ()
@@ -192,32 +200,36 @@ generateL2Fits
   -> WavProfiles Original
   -> WavProfiles Fit
   -> GenerateFrame
-  -> Eff es Fits
+  -> Eff es (Fits, DateTime)
 generateL2Fits now i wpo wpf gf =
   runErrorNoCallStackWith @LiftL1Error (throwError . LiftL1) $ do
-    prim <- primaryHDU i gf.l1Frame
+    (prim, dateBeg) <- primaryHDU i gf.l1Frame
     imgs <- quantitiesHDUs now gf.l1Frame.header gf.quantities
     profs <- profileHDUs now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
-    pure $ Fits prim $ fmap Image $ imgs <> profs
+    let fits = Fits prim $ fmap Image $ imgs <> profs
+    pure (fits, dateBeg)
 
 
 -- What is supposed to go in here?
-primaryHDU :: (Error LiftL1Error :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHDU
+primaryHDU :: (Error LiftL1Error :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es (PrimaryHDU, DateTime)
 primaryHDU di l1 = do
-  hs <- writeHeader allKeys
-  pure $ PrimaryHDU (Header hs) emptyDataArray
+  (dateBeg, hs) <- runWriter allKeys
+  let hdu = PrimaryHDU (Header hs) emptyDataArray
+  pure (hdu, dateBeg)
  where
   allKeys = do
-    primKeys
+    dateBeg <- primKeys
     teleKeys
     datacenterKeys
     dkistKeys
     adaptiveKeys
+    pure dateBeg
 
   primKeys = do
     ob <- observationHeader l1.header
     sectionHeader "Observation" "Keys describing the observation and general metadata"
     addKeywords $ headerKeywords @ObservationHeader ob
+    pure ob.dateBeg.ktype
 
   teleKeys = do
     th <- telescopeHeader l1.header

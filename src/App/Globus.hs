@@ -205,6 +205,7 @@ initUpload tform up ii = do
       , destination_endpoint = endpoint.collection
       , data_ = map transferItem [genericFile up.invResults, genericFile up.invProfile, genericFile up.origProfile]
       , sync_level = SyncChecksum
+      , store_base_path_info = True
       }
    where
     transferItem :: Path' Filename () -> TransferItem
@@ -232,6 +233,7 @@ initDownload tform df ds = do
       , destination_endpoint = Tagged tform.endpoint_id.value
       , data_ = map (\d -> datasetTransferItem (destinationPath d) d) ds
       , sync_level = SyncChecksum
+      , store_base_path_info = True
       }
    where
     destinationFolder :: FilePath
@@ -265,6 +267,7 @@ initTransferDataset d = do
       , destination_endpoint = endpoint.collection
       , data_ = [datasetTransferItem (datasetScratchPath endpoint) d]
       , sync_level = SyncChecksum
+      , store_base_path_info = True
       }
 
   datasetScratchPath :: GlobusEndpoint App -> FilePath
