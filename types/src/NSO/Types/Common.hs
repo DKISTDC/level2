@@ -92,9 +92,9 @@ data Instrument
   deriving (DBType) via ReadShow Instrument
 
 
-newtype Path' t a = Path {filePath :: FilePath}
+newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
   deriving newtype (Show, Read, Eq)
-type Path = Path' ()
+type Path = Path' File
 
 
 instance FromHttpApiData (Path' t a) where
@@ -108,7 +108,11 @@ Path dir </> Path x = Path $ (FP.</>) dir x
 infixr 5 </>
 
 
-data Abs
-data Dir
-data File
-data Filename
+filePath :: Path' Dir a -> Path' Filename b -> Path b
+filePath = (</>)
+
+
+data PathType
+  = Dir -- directory
+  | File -- complete path
+  | Filename -- only the filename

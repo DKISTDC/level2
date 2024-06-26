@@ -2,13 +2,14 @@
 
 module NSO.Fits.Generate where
 
+import App.Effect.Scratch as Scratch
 import App.Globus (InvProfile, InvResults, OrigProfile)
-import App.Scratch as Scratch
 import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Massiv.Array ()
 import Data.Text qualified as T
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.FileSystem as FS
 import Effectful.GenRandom
@@ -75,19 +76,22 @@ level1Input = Path "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_5
 --   print md
 --
 
-readQuantitiesFrames :: (FileSystem :> es) => Path' Abs InvResults -> Eff es [Quantities [SlitX, Depth]]
+readQuantitiesFrames :: (Scratch :> es) => Path InvResults -> Eff es [Quantities [SlitX, Depth]]
 readQuantitiesFrames p = do
-  decodeQuantitiesFrames =<< Scratch.readFile p
+  inp <- send $ Scratch.ReadFile p
+  decodeQuantitiesFrames inp
 
 
-readOrigProfileFrames :: (FileSystem :> es) => Path' Abs OrigProfile -> Eff es (ProfileFrames Original)
-readOrigProfileFrames p =
-  decodeProfileFrames @Original =<< Scratch.readFile p
+readOrigProfileFrames :: (Scratch :> es) => Path OrigProfile -> Eff es (ProfileFrames Original)
+readOrigProfileFrames p = do
+  inp <- send $ Scratch.ReadFile p
+  decodeProfileFrames @Original inp
 
 
-readFitProfileFrames :: (FileSystem :> es) => Path' Abs InvProfile -> Eff es (ProfileFrames Fit)
-readFitProfileFrames p =
-  decodeProfileFrames @Fit =<< Scratch.readFile p
+readFitProfileFrames :: (Scratch :> es) => Path InvProfile -> Eff es (ProfileFrames Fit)
+readFitProfileFrames p = do
+  inp <- send $ Scratch.ReadFile p
+  decodeProfileFrames @Fit inp
 
 
 data GenerateFrame = GenerateFrame
@@ -114,11 +118,11 @@ collateFrames qs pfs pos ts
   mismatchError = MismatchedFrames frameSizes
 
 
-writeL2Frame :: (Log :> es, Reader Scratch :> es, FileSystem :> es) => Id Inversion -> Fits -> DateTime -> Eff es ()
+writeL2Frame :: (Log :> es, Scratch :> es, FileSystem :> es) => Id Inversion -> Fits -> DateTime -> Eff es ()
 writeL2Frame ii f (DateTime dt) = do
   let dir = outputL2 ii
-  path <- Scratch.mounted $ dir </> filenameL2
-  Scratch.writeFile path $ Fits.encode f
+  let path = filePath dir filenameL2
+  send $ Scratch.WriteFile path $ Fits.encode f
  where
   filenameL2 :: Path' Filename L2Frame
   filenameL2 = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"

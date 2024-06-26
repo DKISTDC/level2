@@ -1,10 +1,11 @@
-module App.Scratch where
+module App.Effect.Scratch where
 
 import Data.ByteString (ByteString)
+import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
-import Effectful.Reader.Dynamic
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -14,10 +15,47 @@ import Network.Globus qualified as Globus
 import System.FilePath (takeDirectory)
 
 
-data Scratch = Scratch
+data Config = Config
   { collection :: Globus.Id Collection
-  , mount :: Path' Abs Scratch
+  , mount :: Path' Dir Scratch
   }
+
+
+data Scratch :: Effect where
+  ListDirectory :: Path' Dir a -> Scratch m [Path' Filename a]
+  ReadFile :: Path a -> Scratch es ByteString
+  WriteFile :: Path a -> ByteString -> Scratch es ()
+  Globus :: Scratch es (Globus.Id Collection)
+type instance DispatchOf Scratch = 'Dynamic
+
+
+runScratch
+  :: (FileSystem :> es)
+  => Config
+  -> Eff (Scratch : es) a
+  -> Eff es a
+runScratch cfg = interpret $ \_ -> \case
+  ListDirectory dir -> listDirectory dir
+  ReadFile f -> readFile f
+  WriteFile f cnt -> writeFile f cnt
+  Globus -> pure cfg.collection
+ where
+  mounted :: Path' x a -> FilePath
+  mounted p = (cfg.mount </> p).filePath
+
+  listDirectory :: (FileSystem :> es) => Path' Dir a -> Eff es [Path' Filename a]
+  listDirectory dir = do
+    fs <- FS.listDirectory $ mounted dir
+    pure $ fmap Path fs
+
+  readFile :: (FileSystem :> es) => Path a -> Eff es ByteString
+  readFile f = do
+    FS.readFile $ mounted f
+
+  writeFile :: (FileSystem :> es) => Path a -> ByteString -> Eff es ()
+  writeFile f cnt = do
+    FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
+    FS.writeFile (mounted f) cnt
 
 
 -- needs to know where the
@@ -27,8 +65,6 @@ data Scratch = Scratch
 
 -- Path' Abs Scratch: the location of the scratch folder. Build locations on top of this
 -- Path' Globus Scratch: the relative location of the scratch folder, from within the globus dir
-
--- do we control the layout of the scratch space? We sure do!
 
 baseDir :: Path' Dir Scratch
 baseDir = Path "level2"
@@ -64,19 +100,13 @@ data UploadFiles t = UploadFiles
   deriving (Generic, Show)
 
 
-mounted :: (Reader Scratch :> es) => Path' x a -> Eff es (Path' Abs a)
-mounted p = do
-  s <- ask @Scratch
-  pure $ s.mount </> p
-
-
-inversionUploads :: (Reader Scratch :> es) => Path' Dir Inversion -> Eff es (UploadFiles Abs)
-inversionUploads inv = do
-  invResults <- mounted $ inv </> fileInvResults
-  invProfile <- mounted $ inv </> fileInvProfile
-  origProfile <- mounted $ inv </> fileOrigProfile
-  timestamps <- mounted $ inv </> fileTimestamps
-  pure $ UploadFiles{invResults, invProfile, origProfile, timestamps}
+inversionUploads :: Path' Dir Inversion -> UploadFiles File
+inversionUploads inv =
+  let invResults = inv </> fileInvResults
+      invProfile = inv </> fileInvProfile
+      origProfile = inv </> fileOrigProfile
+      timestamps = inv </> fileTimestamps
+   in UploadFiles{invResults, invProfile, origProfile, timestamps}
 
 
 fileInvResults :: Path' Filename InvResults
@@ -93,20 +123,3 @@ fileOrigProfile = Path "per_ori.fits"
 
 fileTimestamps :: Path' Filename Timestamps
 fileTimestamps = Path "timestamps.tsv"
-
-
-listDirectory :: (FileSystem :> es, Reader Scratch :> es) => Path' Dir a -> Eff es [Path' Filename a]
-listDirectory dir = do
-  d <- mounted dir
-  fmap Path <$> FS.listDirectory d.filePath
-
-
-readFile :: (FileSystem :> es) => Path' Abs a -> Eff es ByteString
-readFile (Path f) = do
-  FS.readFile f
-
-
-writeFile :: (FileSystem :> es) => Path' Abs a -> ByteString -> Eff es ()
-writeFile (Path f) cnt = do
-  FS.createDirectoryIfMissing True $ takeDirectory f
-  FS.writeFile f cnt

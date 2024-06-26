@@ -1,12 +1,12 @@
 module App.Page.Inversion where
 
 import App.Colors
+import App.Effect.Scratch (Scratch)
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..))
 import App.Page.Inversions.InvForm qualified as InvForm
 import App.Route as Route
-import App.Scratch (Scratch)
 import App.Style qualified as Style
 import App.View.Icons qualified as Icons
 import App.View.Layout
@@ -14,7 +14,6 @@ import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Reader.Dynamic
 import Effectful.Worker
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -24,7 +23,7 @@ import Web.Hyperbole
 import Web.Hyperbole.Forms (formFields)
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Reader Scratch :> es, Worker GenTask :> es) => Id Inversion -> InversionRoute -> Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Worker GenTask :> es) => Id Inversion -> InversionRoute -> Page es Response
 page i Inv = pageMain i
 page i SubmitDownload = pageSubmitDownload i
 page i SubmitUpload = pageSubmitUpload i
@@ -56,7 +55,7 @@ pageMain i = do
         hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
 
 
-pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Reader Scratch :> es) => Id Inversion -> Page es Response
+pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es) => Id Inversion -> Page es Response
 pageSubmitUpload ii = do
   load $ do
     tfrm <- formFields @TransferForm

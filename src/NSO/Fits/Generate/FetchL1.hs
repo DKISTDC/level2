@@ -1,8 +1,8 @@
 module NSO.Fits.Generate.FetchL1 where
 
+import App.Effect.Scratch (Scratch)
+import App.Effect.Scratch qualified as Scratch
 import App.Globus as Globus
-import App.Scratch (Scratch)
-import App.Scratch qualified as Scratch
 import Control.Monad (replicateM, void)
 import Data.ByteString (ByteString)
 import Data.List qualified as L
@@ -13,7 +13,6 @@ import Data.Void (Void)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.FileSystem (FileSystem)
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Data.Datasets
@@ -49,7 +48,7 @@ newtype DateBegTimestamp = DateBegTimestamp {text :: Text}
 
 
 fetchCanonicalDataset
-  :: (Datasets :> es, Error GenerateError :> es, Reader (Token Access) :> es, Reader Scratch :> es, Globus :> es)
+  :: (Datasets :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
   => Id InstrumentProgram
   -> Eff es (Id Task, Path' Dir Dataset)
 fetchCanonicalDataset ip = do
@@ -69,14 +68,14 @@ isCanonicalDataset d =
   identifyLine d == Just FeI
 
 
-transferCanonicalDataset :: (Globus :> es, Reader (Token Access) :> es, Reader Scratch :> es) => Dataset -> Eff es (Id Task, Path' Dir Dataset)
+transferCanonicalDataset :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (Id Task, Path' Dir Dataset)
 transferCanonicalDataset d = do
   -- wait, we have to wait until the transfer finishes before scanning!
   (t, dir) <- Globus.initScratchDataset d
   pure (t, dir)
 
 
-canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, FileSystem :> es, Reader Scratch :> es) => Path' Dir Dataset -> [DateBegTimestamp] -> Eff es [BinTableHDU]
+canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> [DateBegTimestamp] -> Eff es [BinTableHDU]
 canonicalL1Frames fdir ts = do
   fs <- allL1Frames fdir
   -- log Debug $ dump "L1s" $ take 5 fs
@@ -87,7 +86,7 @@ canonicalL1Frames fdir ts = do
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   allL1Frames :: Path' Dir Dataset -> Eff es [L1Frame]
   allL1Frames dir = do
-    fs <- Scratch.listDirectory dir
+    fs <- send $ Scratch.ListDirectory dir
     pure $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
 
   isL1IntensityFile :: Path' Filename Dataset -> Bool
@@ -110,9 +109,10 @@ isFrameUsed dbts hdu =
     _ -> False
 
 
-readTimestamps :: (FileSystem :> es) => Path' Abs Timestamps -> Eff es [DateBegTimestamp]
+readTimestamps :: (Scratch :> es) => Path Timestamps -> Eff es [DateBegTimestamp]
 readTimestamps f = do
-  parseTimestampsFile <$> Scratch.readFile f
+  inp <- send $ Scratch.ReadFile f
+  pure $ parseTimestampsFile inp
 
 
 parseTimestampsFile :: ByteString -> [DateBegTimestamp]
@@ -120,10 +120,9 @@ parseTimestampsFile inp =
   map DateBegTimestamp $ T.splitOn "\n" $ cs inp
 
 
-readLevel1File :: forall es. (Reader Scratch :> es, Log :> es, FileSystem :> es, Error GenerateError :> es) => Path' Dir Dataset -> L1Frame -> Eff es BinTableHDU
+readLevel1File :: forall es. (Scratch :> es, Log :> es, Error GenerateError :> es) => Path' Dir Dataset -> L1Frame -> Eff es BinTableHDU
 readLevel1File dir frame = do
-  path <- Scratch.mounted $ dir </> frame.file
-  inp <- Scratch.readFile path
+  inp <- send $ Scratch.ReadFile $ filePath dir frame.file
   fits <- Fits.decode inp
   case fits.extensions of
     [BinTable b] -> pure b

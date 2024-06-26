@@ -13,8 +13,8 @@ module App.Config
   , document
   ) where
 
+import App.Effect.Scratch qualified as Scratch
 import App.Globus (GlobusClient (..), Id' (..))
-import App.Scratch (Scratch (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -37,7 +37,7 @@ data Config = Config
   , servicesIsMock :: Bool
   , app :: App
   , globus :: GlobusClient
-  , scratch :: Scratch
+  , scratch :: Scratch.Config
   , db :: Rel8.Connection
   }
 
@@ -74,11 +74,11 @@ parseService u =
     Just s -> pure s
 
 
-initScratch :: (Environment :> es) => Eff es Scratch
+initScratch :: (Environment :> es) => Eff es Scratch.Config
 initScratch = do
   collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT"
   mount <- Path . cs <$> getEnv "SCRATCH_DIR"
-  pure $ Scratch{collection, mount}
+  pure $ Scratch.Config{collection, mount}
 
 
 initGlobus :: (Environment :> es) => Eff es GlobusClient

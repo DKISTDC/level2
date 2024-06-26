@@ -24,6 +24,7 @@ library
       App
       App.Colors
       App.Config
+      App.Effect.Scratch
       App.Error
       App.Globus
       App.Mock
@@ -37,7 +38,6 @@ library
       App.Page.Proposals
       App.Page.Scan
       App.Route
-      App.Scratch
       App.Style
       App.Types
       App.Version

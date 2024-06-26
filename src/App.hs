@@ -1,6 +1,7 @@
 module App where
 
 import App.Config
+import App.Effect.Scratch (Scratch, runScratch)
 import App.Globus as Globus
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
@@ -11,7 +12,6 @@ import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
-import App.Scratch (Scratch)
 import App.Version
 import App.Worker.FitsGenWorker qualified as Fits
 import App.Worker.PuppetMaster qualified as PuppetMaster
@@ -76,12 +76,13 @@ main = do
 
   runAppWorker config t =
     runLogger t
+      . runFileSystem
       . runReader config.scratch
       . runRel8 config.db
+      . runGlobus config.globus
+      . runScratch config.scratch
       . runGenRandom
       . runTime
-      . runFileSystem
-      . runGlobus config.globus
       . runDataInversions
       . runDataDatasets
 
@@ -145,7 +146,7 @@ webServer config adtok fits =
     _ <- atomically $ tryPutTMVar adtok tok
     redirect $ pathUrl $ routePath Proposals
 
-  runApp :: (IOE :> es) => Eff (Worker GenTask : FileSystem : Reader Scratch : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Worker GenTask : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
@@ -161,8 +162,8 @@ webServer config adtok fits =
       . runDataDatasets
       . runDataInversions
       . runAuth config.app.domain Redirect
-      . runReader config.scratch
       . runFileSystem
+      . runScratch config.scratch
       . runWorker fits
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest

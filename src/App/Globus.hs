@@ -37,8 +37,8 @@ module App.Globus
   , OrigProfile
   ) where
 
-import App.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
-import App.Scratch qualified as Scratch
+import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
+import App.Effect.Scratch qualified as Scratch
 import App.Types
 import Data.Tagged
 import Effectful
@@ -190,23 +190,23 @@ initTransfer toRequest = do
 
 
 initUpload
-  :: (Hyperbole :> es, Globus :> es, Auth :> es, Reader Scratch :> es)
+  :: (Hyperbole :> es, Globus :> es, Auth :> es, Scratch :> es)
   => TransferForm
   -> UploadFiles Filename
   -> App.Id Inversion
   -> Eff es (App.Id Task)
 initUpload tform up ii = do
-  scratch <- ask @Scratch
+  scratch <- send Scratch.Globus
   requireLogin $ initTransfer (transferRequest scratch)
  where
-  transferRequest :: Scratch -> Globus.Id Submission -> TransferRequest
+  transferRequest :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
   transferRequest scratch submission_id =
     TransferRequest
       { data_type = DataType
       , submission_id
       , label = Just tform.label.value
       , source_endpoint = Tagged tform.endpoint_id.value
-      , destination_endpoint = scratch.collection
+      , destination_endpoint = scratch
       , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile]
       , sync_level = SyncChecksum
       , store_base_path_info = True
@@ -257,20 +257,20 @@ initDownload tform df ds = do
       destinationFolder </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-initScratchDataset :: (Globus :> es, Reader (Token Access) :> es, Reader Scratch :> es) => Dataset -> Eff es (App.Id Task, Path' Dir Dataset)
+initScratchDataset :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task, Path' Dir Dataset)
 initScratchDataset d = do
-  scratch <- ask
+  scratch <- send Scratch.Globus
   t <- initTransfer (transfer scratch)
   pure (t, Scratch.dataset d)
  where
-  transfer :: Scratch -> Globus.Id Submission -> TransferRequest
+  transfer :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
   transfer scratch submission_id =
     TransferRequest
       { data_type = DataType
       , submission_id
       , label = Just $ "Dataset " <> d.datasetId.fromId
       , source_endpoint = dkistEndpoint
-      , destination_endpoint = scratch.collection
+      , destination_endpoint = scratch
       , data_ = [datasetTransferItem (Scratch.dataset d) d]
       , sync_level = SyncChecksum
       , store_base_path_info = True
@@ -290,7 +290,7 @@ datasetTransferItem dest d =
     , recursive = True
     }
  where
-  datasetSourcePath :: Path' DKIST Dataset
+  datasetSourcePath :: Path' Dir Dataset
   datasetSourcePath = Path "data" </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
@@ -382,6 +382,3 @@ instance Route RedirectPath where
   defRoute = RedirectPath []
   routePath (RedirectPath ss) = ss
   matchRoute ss = Just $ RedirectPath ss
-
-
-data DKIST
