@@ -10,7 +10,9 @@ import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
-import Web.Hyperbole (Route)
+import System.FilePath qualified as FP
+import Web.HttpApiData
+import Web.Hyperbole (FormField, Route)
 import Web.Hyperbole.Param
 
 
@@ -93,6 +95,17 @@ data Instrument
 newtype Path' t a = Path {filePath :: FilePath}
   deriving newtype (Show, Read, Eq)
 type Path = Path' ()
+
+
+instance FromHttpApiData (Path' t a) where
+  parseQueryParam t = do
+    f <- parseQueryParam t
+    pure $ Path f
+
+
+(</>) :: Path' x a -> Path' y b -> Path' z c
+Path dir </> Path x = Path $ (FP.</>) dir x
+infixr 5 </>
 
 
 data Abs

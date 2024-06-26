@@ -37,6 +37,7 @@ library
       App.Page.Proposals
       App.Page.Scan
       App.Route
+      App.Scratch
       App.Style
       App.Types
       App.Version

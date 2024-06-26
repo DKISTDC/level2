@@ -11,6 +11,7 @@ import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
+import App.Scratch (Scratch)
 import App.Version
 import App.Worker.FitsGenWorker qualified as Fits
 import App.Worker.PuppetMaster qualified as PuppetMaster
@@ -75,12 +76,12 @@ main = do
 
   runAppWorker config t =
     runLogger t
-      . runReader config.globus.level2
+      . runReader config.scratch
       . runRel8 config.db
       . runGenRandom
       . runTime
       . runFileSystem
-      . runGlobus config.globus.client
+      . runGlobus config.globus
       . runDataInversions
       . runDataDatasets
 
@@ -144,14 +145,14 @@ webServer config adtok fits =
     _ <- atomically $ tryPutTMVar adtok tok
     redirect $ pathUrl $ routePath Proposals
 
-  runApp :: (IOE :> es) => Eff (Worker GenTask : FileSystem : Reader (GlobusEndpoint App) : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Worker GenTask : FileSystem : Reader Scratch : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @DataError crashWithError
-      . runGlobus config.globus.client
+      . runGlobus config.globus
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
@@ -160,7 +161,7 @@ webServer config adtok fits =
       . runDataDatasets
       . runDataInversions
       . runAuth config.app.domain Redirect
-      . runReader config.globus.level2
+      . runReader config.scratch
       . runFileSystem
       . runWorker fits
 

@@ -38,6 +38,7 @@ dependencies:
   - tagged
   - string-interpolate
   - string-conversions
+  - filepath
   - rel8
   - req
   - hasql
@@ -47,6 +48,7 @@ dependencies:
   - hyperbole
   - exceptions
   - effectful
+  - http-api-data
   - data-diverse
   - data-diverse
   - containers

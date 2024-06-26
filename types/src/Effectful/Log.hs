@@ -2,14 +2,12 @@
 
 module Effectful.Log where
 
-import Control.Concurrent (threadDelay)
 import Data.Char (isAlpha)
 import Data.String (IsString)
 import Data.String.Conversions
 import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Data.Time.Clock
-import Data.Time.Format
 import Data.Time.Format.ISO8601
 import Effectful
 import Effectful.Dispatch.Dynamic

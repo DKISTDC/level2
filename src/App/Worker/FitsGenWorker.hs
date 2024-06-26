@@ -3,8 +3,9 @@ module App.Worker.FitsGenWorker
   , GenerateError
   ) where
 
-import App.Globus (Globus, GlobusEndpoint, Token, Token' (Access))
+import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
+import App.Scratch as Scratch
 import App.Types
 import Control.Monad (zipWithM)
 import Control.Monad.Loops
@@ -27,6 +28,7 @@ import NSO.Fits.Generate.FetchL1 as Fetch (L1FrameDir, canonicalL1Frames, fetchC
 import NSO.Fits.Generate.Profile (ProfileFrames (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import Telescope.Fits qualified as Fits
 
 
 workTask
@@ -37,7 +39,7 @@ workTask
      , Datasets :> es
      , Inversions :> es
      , Time :> es
-     , Reader (GlobusEndpoint App) :> es
+     , Reader Scratch :> es
      , Log :> es
      , Concurrent :> es
      , Worker GenTask :> es
@@ -64,7 +66,7 @@ workTask t = do
     send $ Inversions.SetGenTransferred t.inversionId
 
     log Debug " - done, getting frames..."
-    u <- Globus.inversionUploadedFiles t.inversionId
+    u <- Scratch.inversionUploads $ Scratch.inversion t.inversionId
     log Debug $ dump "InvResults" u.invResults
     log Debug $ dump "InvProfile" u.invProfile
     log Debug $ dump "OrigProfile" u.origProfile
@@ -89,8 +91,9 @@ workTask t = do
   workFrame tot wpo wpf n g = do
     send $ TaskSetStatus t $ GenCreating n tot
     now <- currentTime
-    (_, dateBeg) <- Gen.generateL2Fits now t.inversionId wpo wpf g
-    log Debug $ dump "FITS DATE" dateBeg
+    (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wpo wpf g
+    log Debug $ dump "write" dateBeg
+    Gen.writeL2Frame t.inversionId fits dateBeg
     pure ()
 
   failed :: GenerateError -> Eff es ()
@@ -98,7 +101,7 @@ workTask t = do
     send $ Inversions.SetError t.inversionId (cs $ show err)
 
 
-startTransferIfNeeded :: (Error GenerateError :> es, Reader (Token Access) :> es, Reader (GlobusEndpoint App) :> es, Datasets :> es, Globus :> es) => Id InstrumentProgram -> InversionStep -> Eff es (Id Globus.Task, Path L1FrameDir)
+startTransferIfNeeded :: (Error GenerateError :> es, Reader (Token Access) :> es, Reader Scratch :> es, Datasets :> es, Globus :> es) => Id InstrumentProgram -> InversionStep -> Eff es (Id Globus.Task, Path' Dir Dataset)
 startTransferIfNeeded ip = \case
   StepGenTransfer info -> do
     let t = grab @GenTransfer info

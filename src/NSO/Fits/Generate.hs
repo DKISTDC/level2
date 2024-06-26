@@ -3,27 +3,30 @@
 module NSO.Fits.Generate where
 
 import App.Globus (InvProfile, InvResults, OrigProfile)
+import App.Scratch as Scratch
 import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Massiv.Array ()
+import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
-import Effectful.FileSystem
-import Effectful.FileSystem.IO.ByteString
+import Effectful.FileSystem as FS
 import Effectful.GenRandom
+import Effectful.Log
+import Effectful.Reader.Dynamic
 import Effectful.Writer.Static.Local
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (L1Frame)
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
 import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))
-import NSO.Fits.Generate.Headers.Types (DateTime, Depth, Key (..), SlitX)
+import NSO.Fits.Generate.Headers.Types (DateTime (..), Depth, Key (..), SlitX)
 import NSO.Fits.Generate.Profile
 import NSO.Fits.Generate.Quantities (Quantities (..), decodeQuantitiesFrames, quantitiesHDUs)
 import NSO.Prelude
-import NSO.Types.Common (Abs, Id (..), Path, Path' (..))
+import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
-import Telescope.Fits
+import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
 
 
@@ -73,18 +76,18 @@ level1Input = Path "/Users/seanhess/Data/pid_2_114/ADDMM/VISP_2023_10_16T23_55_5
 --
 
 readQuantitiesFrames :: (FileSystem :> es) => Path' Abs InvResults -> Eff es [Quantities [SlitX, Depth]]
-readQuantitiesFrames (Path p) = do
-  decodeQuantitiesFrames =<< readFile p
+readQuantitiesFrames p = do
+  decodeQuantitiesFrames =<< Scratch.readFile p
 
 
 readOrigProfileFrames :: (FileSystem :> es) => Path' Abs OrigProfile -> Eff es (ProfileFrames Original)
-readOrigProfileFrames (Path p) =
-  decodeProfileFrames @Original =<< readFile p
+readOrigProfileFrames p =
+  decodeProfileFrames @Original =<< Scratch.readFile p
 
 
 readFitProfileFrames :: (FileSystem :> es) => Path' Abs InvProfile -> Eff es (ProfileFrames Fit)
-readFitProfileFrames (Path p) =
-  decodeProfileFrames @Fit =<< readFile p
+readFitProfileFrames p =
+  decodeProfileFrames @Fit =<< Scratch.readFile p
 
 
 data GenerateFrame = GenerateFrame
@@ -93,9 +96,6 @@ data GenerateFrame = GenerateFrame
   , profileOrig :: ProfileFrame Original
   , l1Frame :: BinTableHDU
   }
-
-
-data L2Frame
 
 
 collateFrames :: (Error GenerateError :> es) => [Quantities [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [GenerateFrame]
@@ -114,8 +114,20 @@ collateFrames qs pfs pos ts
   mismatchError = MismatchedFrames frameSizes
 
 
-filenameL2 :: DateTime -> Fits -> Path L2Frame
-filenameL2 dateBeg f = undefined
+writeL2Frame :: (Log :> es, Reader Scratch :> es, FileSystem :> es) => Id Inversion -> Fits -> DateTime -> Eff es ()
+writeL2Frame ii f (DateTime dt) = do
+  let dir = outputL2 ii
+  path <- Scratch.mounted $ dir </> filenameL2
+  Scratch.writeFile path $ Fits.encode f
+ where
+  filenameL2 :: Path' Filename L2Frame
+  filenameL2 = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
+
+  toUnderscore :: Char -> Char
+  toUnderscore '.' = '_'
+  toUnderscore ':' = '_'
+  toUnderscore '-' = '_'
+  toUnderscore c = c
 
 
 -- testOld :: IO ()

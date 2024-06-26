@@ -3,8 +3,8 @@ module App.Page.Dashboard where
 import App.Colors
 import App.Globus
 import App.Route
+import App.Scratch (Scratch)
 import App.Style qualified as Style
-import App.Types
 import App.Version
 import App.View.Layout
 import Effectful
@@ -24,7 +24,7 @@ import Web.Hyperbole
 -- import NSO.Types.InstrumentProgram
 
 page
-  :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Reader (GlobusEndpoint App) :> es, Worker GenTask :> es)
+  :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Reader Scratch :> es, Worker GenTask :> es)
   => TMVar (Token Access)
   -> Page es Response
 page adtok = do

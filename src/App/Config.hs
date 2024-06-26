@@ -11,11 +11,10 @@ module App.Config
   , Tagged (..)
   , AppDomain
   , document
-  , GlobusInfo (..)
-  , GlobusEndpoint (..)
   ) where
 
-import App.Globus (GlobusClient (..), GlobusEndpoint (..), Id' (..))
+import App.Globus (GlobusClient (..), Id' (..))
+import App.Scratch (Scratch (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -28,6 +27,7 @@ import Effectful.Fail
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
+import NSO.Types.Common
 import Text.Read (readMaybe)
 import Web.Hyperbole
 
@@ -36,7 +36,8 @@ data Config = Config
   { services :: Services
   , servicesIsMock :: Bool
   , app :: App
-  , globus :: GlobusInfo
+  , globus :: GlobusClient
+  , scratch :: Scratch
   , db :: Rel8.Connection
   }
 
@@ -45,19 +46,14 @@ data Services = Services
   {metadata :: Service}
 
 
-data GlobusInfo = GlobusInfo
-  { client :: GlobusClient
-  , level2 :: GlobusEndpoint App
-  }
-
-
 initConfig :: (Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es) => Eff es Config
 initConfig = do
   app <- initApp
   db <- initDb
   (services, servicesIsMock) <- initServices
   globus <- initGlobus
-  pure $ Config{services, servicesIsMock, globus, app, db}
+  scratch <- initScratch
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch}
 
 
 type IsMock = Bool
@@ -78,23 +74,18 @@ parseService u =
     Just s -> pure s
 
 
-initGlobus :: (Environment :> es) => Eff es GlobusInfo
+initScratch :: (Environment :> es) => Eff es Scratch
+initScratch = do
+  collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT"
+  mount <- Path . cs <$> getEnv "SCRATCH_DIR"
+  pure $ Scratch{collection, mount}
+
+
+initGlobus :: (Environment :> es) => Eff es GlobusClient
 initGlobus = do
   clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
   clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
-  level2Collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT"
-  level2Path <- getEnv "GLOBUS_LEVEL2_PATH"
-  level2Mount <- getEnv "GLOBUS_LEVEL2_MOUNT"
-  pure $
-    GlobusInfo
-      { client = GlobusClient{clientId, clientSecret}
-      , level2 =
-          GlobusEndpoint
-            { collection = level2Collection
-            , path = level2Path
-            , mount = level2Mount
-            }
-      }
+  pure $ GlobusClient{clientId, clientSecret}
 
 
 initDb :: (Environment :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection

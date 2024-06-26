@@ -61,8 +61,10 @@ library
     , data-diverse
     , effectful
     , exceptions
+    , filepath
     , globus
     , hasql
+    , http-api-data
     , hyperbole
     , lens
     , modern-uri
