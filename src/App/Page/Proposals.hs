@@ -133,7 +133,7 @@ viewProposals now fs exs = do
       row id $ do
         el bold $ do
           text "Proposal "
-          route (Route.Proposal p.proposalId) Style.link $ do
+          route (Route.Proposal p.proposalId PropRoot) Style.link $ do
             text p.proposalId.fromId
         space
         el_ $ do
@@ -151,7 +151,7 @@ viewProposals now fs exs = do
 
         let ignored = length p.programs - length ips
         when (ignored > 0) $ do
-          route (Route.Proposal p.proposalId) (fontSize 14 . color Black) $ do
+          route (Route.Proposal p.proposalId PropRoot) (fontSize 14 . color Black) $ do
             text $ cs (show ignored)
             text "Hidden Instrument Programs"
 
@@ -247,7 +247,7 @@ tableInstrumentPrograms now ips = do
 rowInstrumentProgram :: UTCTime -> InstrumentProgram -> View c ()
 rowInstrumentProgram now psm = do
   -- liveButton onClick id $ do
-  route (Program psm.programId) id $ do
+  route (Route.Proposal psm.proposalId $ Program psm.programId) id $ do
     viewProgramRow now psm
 
 -- viewInstrumentProgram :: ProgramSummary -> View IPRow ()

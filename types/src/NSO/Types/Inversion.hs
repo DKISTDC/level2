@@ -19,6 +19,7 @@ import Rel8
 data Inversion = Inversion
   { inversionId :: Id Inversion
   , programId :: Id InstrumentProgram
+  , proposalId :: Id Proposal
   , created :: UTCTime
   , updated :: UTCTime
   , step :: InversionStep
@@ -31,6 +32,7 @@ data Inversion = Inversion
 data InversionRow f = InversionRow
   { inversionId :: Column f (Id Inversion)
   , programId :: Column f (Id InstrumentProgram)
+  , proposalId :: Column f (Id Proposal)
   , created :: Column f UTCTime
   , updated :: Column f UTCTime
   , download :: Column f (Maybe UTCTime)

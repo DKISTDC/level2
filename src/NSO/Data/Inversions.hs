@@ -40,7 +40,7 @@ data Inversions :: Effect where
   All :: Inversions m AllInversions
   ById :: Id Inversion -> Inversions m [Inversion]
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
-  Create :: Id InstrumentProgram -> Inversions m Inversion
+  Create :: Id Proposal -> Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
   SetDownloaded :: Id Inversion -> [Id Dataset] -> Inversions m ()
   SetDownloading :: Id Inversion -> Id Task -> Inversions m ()
@@ -80,15 +80,16 @@ instance WorkerTask GenTask where
   idle = GenWaiting
 
 
-empty :: (Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
-empty ip = do
+empty :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion
+empty ip iip = do
   now <- currentTime
   i <- randomId "inv"
   let start = Created now :: Created
   pure $
     Inversion
       { inversionId = i
-      , programId = ip
+      , programId = iip
+      , proposalId = ip
       , created = now
       , updated = now
       , invError = Nothing
@@ -103,6 +104,7 @@ fromRow row =
    in Inversion
         { inversionId = row.inversionId
         , programId = row.programId
+        , proposalId = row.proposalId
         , created = row.created
         , updated = row.updated
         , invError = row.invError
@@ -199,7 +201,7 @@ runDataInversions = interpret $ \_ -> \case
   All -> queryAll
   ByProgram pid -> queryInstrumentProgram pid
   ById iid -> queryById iid
-  Create pid -> create pid
+  Create ip iip -> create ip iip
   Remove iid -> remove iid
   SetDownloaded iid ds -> setDownloaded iid ds
   SetDownloading iid tid -> setDownloading iid tid
@@ -306,9 +308,9 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{publish = lit (Just now)}
 
-  create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id InstrumentProgram -> Eff es Inversion
-  create ip = do
-    inv <- empty ip
+  create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion
+  create ip iip = do
+    inv <- empty ip iip
     void $
       runQuery () $
         Rel8.insert $
@@ -325,6 +327,7 @@ runDataInversions = interpret $ \_ -> \case
       InversionRow
         { inversionId = inv.inversionId
         , programId = inv.programId
+        , proposalId = inv.proposalId
         , created = inv.created
         , updated = inv.created
         , invError = Nothing
@@ -354,6 +357,7 @@ inversions =
         InversionRow
           { inversionId = "inversion_id"
           , programId = "program_id"
+          , proposalId = "proposal_id"
           , created = "created"
           , updated = "updated"
           , invError = "error"

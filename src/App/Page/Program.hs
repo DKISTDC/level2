@@ -4,7 +4,7 @@ import App.Colors
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversion
-import App.Route as Route
+import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
@@ -23,15 +23,17 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Prelude
+import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 
 
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Worker GenTask :> es)
-  => Id InstrumentProgram
+  => Id Proposal
+  -> Id InstrumentProgram
   -> Page es Response
-page ip = do
-  handle $ inversions (clearInversion ip)
+page ip iip = do
+  handle $ inversions (clearInversion ip iip)
   handle programInversions
   handle DatasetsTable.actionSort
   handle inversionCommit
@@ -41,33 +43,33 @@ page ip = do
   handle uploadTransfer
 
   load $ do
-    ds' <- send $ Datasets.Query (Datasets.ByProgram ip)
+    ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
     ds <- expectFound ds'
     let d = head ds
 
-    dse <- send $ Datasets.Query (ByProposal d.primaryProposalId)
-    invs <- latestInversions ip
+    dse <- send $ Datasets.Query (ByProposal ip)
+    invs <- latestInversions iip
     steps <- mapM inversionStep invs
     now <- currentTime
 
-    appLayout Proposals $ do
+    appLayout Route.Proposals $ do
       col (Style.page . gap 30) $ do
         col (gap 5) $ do
           el Style.header $ do
             text "Instrument Program: "
-            text ip.fromId
+            text iip.fromId
 
           experimentLink d (numOtherIps dse)
 
         -- viewExperimentDescription d.experimentDescription
 
-        hyper (ProgramInversions ip) $ viewProgramInversions invs steps
+        hyper (ProgramInversions ip iip) $ viewProgramInversions invs steps
 
         col Style.card $ do
           el (Style.cardHeader Secondary) "Instrument Program Details"
           col (gap 15 . pad 15) $ do
             viewDatasets now (NE.filter (.latest) ds) invs
-            hyper (ProgramDatasets ip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
+            hyper (ProgramDatasets iip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -79,7 +81,7 @@ page ip = do
   experimentLink d n = do
     el_ $ do
       text "Proposal: "
-      route (Proposal d.primaryProposalId) Style.link $ do
+      route (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
         text d.primaryProposalId.fromId
       text $
         if n > 0
@@ -112,7 +114,7 @@ viewDatasets now (d : ds) is = do
   viewCriteria ip gd
 
 
-data ProgramInversions = ProgramInversions (Id InstrumentProgram)
+data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 instance HyperView ProgramInversions where
   type Action ProgramInversions = InvsAction
@@ -125,12 +127,12 @@ data InvsAction
 
 
 programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Worker GenTask :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
-programInversions (ProgramInversions ip) = \case
+programInversions (ProgramInversions ip iip) = \case
   CreateInversion -> do
-    _ <- send $ Inversions.Create ip
-    refreshInversions ip
+    _ <- send $ Inversions.Create ip iip
+    refreshInversions iip
   ReloadAll -> do
-    refreshInversions ip
+    refreshInversions iip
 
 
 viewProgramInversions :: [Inversion] -> [CurrentStep] -> View ProgramInversions ()
@@ -147,21 +149,21 @@ viewProgramInversions _ _ = do
 viewOldInversion :: Inversion -> CurrentStep -> View c ()
 viewOldInversion inv _ = row (gap 4) $ do
   el_ "•"
-  link (routeUrl $ Route.Inversion inv.inversionId Inv) Style.link $ do
+  link (routeUrl $ Route.Inversion inv.inversionId Route.Inv) Style.link $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
   el_ $ text $ inversionStatusLabel inv.step
 
 
 refreshInversions :: (Inversions :> es, Globus :> es, Worker GenTask :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
-refreshInversions ip = do
-  invs <- latestInversions ip
+refreshInversions iip = do
+  invs <- latestInversions iip
   steps <- mapM inversionStep invs
   pure $ viewProgramInversions invs steps
 
 
-clearInversion :: Id InstrumentProgram -> Eff es (View InversionStatus ())
-clearInversion ip = pure $ do
-  target (ProgramInversions ip) $ onLoad ReloadAll 0 emptyButtonSpace
+clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())
+clearInversion ip iip = pure $ do
+  target (ProgramInversions ip iip) $ onLoad ReloadAll 0 emptyButtonSpace
  where
   emptyButtonSpace = el (height 44) none

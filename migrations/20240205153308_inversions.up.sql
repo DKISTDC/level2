@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS inversions (
   inversion_id TEXT PRIMARY KEY,
-
   program_id TEXT NOT NULL,
+  proposal_id TEXT NOT NULL,
+
   created TIMESTAMP NOT NULL,
   updated TIMESTAMP NOT NULL,
   error TEXT,

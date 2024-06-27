@@ -15,11 +15,16 @@ data AppRoute
   | Experiments
   | Inversions
   | Inversion (Id Inversion) InversionRoute
-  | Proposal (Id Proposal)
-  | Program (Id InstrumentProgram)
+  | Proposal (Id Proposal) ProposalRoute
   | Dataset (Id Dataset)
   | Redirect
   | Logout
+  deriving (Show, Generic, Eq, Route)
+
+
+data ProposalRoute
+  = PropRoot
+  | Program (Id InstrumentProgram)
   deriving (Show, Generic, Eq, Route)
 
 

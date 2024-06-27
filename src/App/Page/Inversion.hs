@@ -50,7 +50,7 @@ pageMain i = do
 
           el_ $ do
             text "Program: "
-            route (Program inv.programId) Style.link $ do
+            route (Route.Proposal inv.proposalId $ Program inv.programId) Style.link $ do
               text inv.programId.fromId
 
         hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step

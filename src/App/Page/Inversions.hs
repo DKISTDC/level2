@@ -39,13 +39,12 @@ page = do
   sortProgram i = i.programId
 
 
-
 viewInversion :: Inversion -> View c ()
 viewInversion inv = do
   row (gap 10) $ do
-    -- route (Route.Program inv.programId) Style.link $
-    --   text inv.programId.fromId
-    route (Route.Program inv.programId) Style.link $
+    route (Route.Proposal inv.proposalId PropRoot) Style.link $
+      pre id inv.programId.fromId
+    route (Route.Proposal inv.proposalId $ Route.Program inv.programId) Style.link $
       pre id inv.programId.fromId
     route (Route.Inversion inv.inversionId Inv) Style.link $
       pre id inv.inversionId.fromId

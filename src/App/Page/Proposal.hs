@@ -2,7 +2,7 @@ module App.Page.Proposal where
 
 import App.Colors
 import App.Globus
-import App.Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.Layout
@@ -62,7 +62,7 @@ viewProposal now gx = do
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
   col (gap 10) $ do
-    route (Program wdp.program.programId) (Style.link . bold) $ do
+    route (Route.Proposal wdp.program.proposalId $ Route.Program wdp.program.programId) (Style.link . bold) $ do
       text wdp.program.programId.fromId
 
     col (bg White . gap 10 . pad 10) $ do
