@@ -12,7 +12,7 @@ import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
 import System.FilePath qualified as FP
 import Web.HttpApiData
-import Web.Hyperbole (FormField, Route)
+import Web.Hyperbole (Route)
 import Web.Hyperbole.Param
 
 

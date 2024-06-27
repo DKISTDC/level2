@@ -30,6 +30,7 @@ import NSO.Types.InstrumentProgram
 
 -- BUG: UI Doesn't update under certain conditions. When GenWaiting?
 -- BUG: It's creating frames even with 487 timestamps vs 486 frames
+-- BUG: Transfer status not showing up ever.... not sure why
 -- TODO: parallelize!
 -- DONE: progress bar
 

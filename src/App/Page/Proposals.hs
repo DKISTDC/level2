@@ -11,30 +11,46 @@ import App.View.ProposalDetails (viewProgramRow)
 import Data.Grouped as G
 import Data.Ord (Down (..))
 import Effectful
+import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import Text.Read (readMaybe)
+import Web.HttpApiData
 import Web.Hyperbole as H
+import Web.Hyperbole.Param (parseParam)
 
 
 page
-  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
+  :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
   => Page es Response
 page = do
   handle proposals
   -- pageAction handleIPRow
   load $ do
+    fs <- filtersFromQuery
+
     exs <- Programs.loadAllProposals
     now <- currentTime
-
-    let fs = Filters{isVBI = False, isVISP = True, inversionStatus = Any}
 
     appLayout Proposals $ do
       hyper PView $ do
         viewProposals now fs exs
+ where
+  filtersFromQuery = do
+    q <- reqParams
+    log Debug $ dump "Q" q
+    let isVBI = hasParam "vbi" q
+    let isVISP = lookupParam "visp" q /= Just "false"
+    let status = fromMaybe Any $ parseInvStatus q
+    pure $ Filters{isVBI, isVISP, inversionStatus = status}
+
+  parseInvStatus q = do
+    t <- lookupParam "status" q
+    parseParam t
 
 
 loading :: View c ()
@@ -70,7 +86,14 @@ data InversionFilter
   | Qualified
   | Inverting
   | Complete
-  deriving (Show, Read, Eq)
+  deriving (Show, Read, Eq, Generic, Param)
+
+
+instance FromHttpApiData InversionFilter where
+  parseQueryParam t =
+    case readMaybe (cs t) of
+      Nothing -> Left $ "Invalid InversionFilter: " <> t
+      Just a -> pure a
 
 
 proposals
