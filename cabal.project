@@ -9,4 +9,5 @@ packages:
 
   ../telescope/
   ../fits-parse/
+  ../web-view/
   -- https://hackage.haskell.org/package/telescope-0.1.1/candidate/telescope-0.1.1.tar.gz

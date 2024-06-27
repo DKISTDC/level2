@@ -24,12 +24,12 @@ import Web.Hyperbole
 -- import NSO.Data.Types
 
 data ScanView = ScanView
-  deriving (Generic, ViewId)
+  deriving (Show, Read, ViewId)
 
 
 data PageEvent
   = RunScan
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 instance HyperView ScanView where

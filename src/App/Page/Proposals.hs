@@ -21,7 +21,6 @@ import NSO.Types.InstrumentProgram
 import Text.Read (readMaybe)
 import Web.HttpApiData
 import Web.Hyperbole as H
-import Web.Hyperbole.Param (parseParam)
 
 
 page
@@ -49,7 +48,7 @@ page = do
 
   parseInvStatus q = do
     t <- lookupParam "status" q
-    parseParam t
+    readMaybe (cs t)
 
 
 loading :: View c ()
@@ -61,11 +60,11 @@ loading = el_ "loading..."
 -----------------------------------------------------
 
 data PView = PView
-  deriving (Generic, ViewId)
+  deriving (Show, Read, ViewId)
 
 
 data PEvent = Filter Filters
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 instance HyperView PView where
@@ -85,7 +84,7 @@ data InversionFilter
   | Qualified
   | Inverting
   | Complete
-  deriving (Show, Read, Eq, Generic, Param)
+  deriving (Show, Read, Eq)
 
 
 instance FromHttpApiData InversionFilter where

@@ -63,8 +63,8 @@ type instance DispatchOf Inversions = 'Dynamic
 newtype AllInversions = AllInversions [Inversion]
 
 
-newtype GenTask = GenTask {inversionId :: Id Inversion}
-  deriving newtype (Ord, Eq, Show)
+data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
+  deriving (Ord, Eq, Show)
 
 
 data GenStatus

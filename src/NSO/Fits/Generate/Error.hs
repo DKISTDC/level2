@@ -23,4 +23,5 @@ data GenerateError
   | InvalidTimestamps Int
   | LiftL1 LiftL1Error
   | MismatchedFrames [Int]
+  | GenIOError IOError
   deriving (Show, Eq, Exception)

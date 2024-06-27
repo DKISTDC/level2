@@ -97,7 +97,7 @@ latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
 
 
 inversionStep :: (Globus :> es, Worker GenTask :> es) => Inversion -> Eff es CurrentStep
-inversionStep inv = currentStep inv.inversionId inv.step
+inversionStep inv = currentStep inv.proposalId inv.inversionId inv.step
 
 
 viewDatasets :: UTCTime -> [Dataset] -> [Inversion] -> View c ()
@@ -115,7 +115,7 @@ viewDatasets now (d : ds) is = do
 
 
 data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
-  deriving (Generic, ViewId)
+  deriving (Show, Read, ViewId)
 instance HyperView ProgramInversions where
   type Action ProgramInversions = InvsAction
 
@@ -123,7 +123,7 @@ instance HyperView ProgramInversions where
 data InvsAction
   = CreateInversion
   | ReloadAll
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Worker GenTask :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
@@ -137,7 +137,7 @@ programInversions (ProgramInversions ip iip) = \case
 
 viewProgramInversions :: [Inversion] -> [CurrentStep] -> View ProgramInversions ()
 viewProgramInversions (inv : is) (step : ss) = do
-  hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
+  hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv step
   col (gap 10 . pad 10) $ do
     zipWithM_ viewOldInversion is ss
     row id $ do

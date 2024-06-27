@@ -53,13 +53,13 @@ page adtok = do
 
 
 data Test = Test
-  deriving (Generic, ViewId)
+  deriving (Show, Read, ViewId)
 
 
 data TestAction
   = DownloadL1
   | ScanL1
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 instance HyperView Test where
@@ -95,11 +95,11 @@ instance HyperView Test where
 --   button ScanL1 (Style.btn Primary) "Scan"
 
 data Work = Work
-  deriving (Generic, ViewId)
+  deriving (Show, Read, ViewId)
 
 
 data WorkAction = Refresh
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 instance HyperView Work where

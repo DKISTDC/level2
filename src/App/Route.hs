@@ -14,7 +14,6 @@ data AppRoute
   | Proposals
   | Experiments
   | Inversions
-  | Inversion (Id Inversion) InversionRoute
   | Proposal (Id Proposal) ProposalRoute
   | Dataset (Id Dataset)
   | Redirect
@@ -25,6 +24,7 @@ data AppRoute
 data ProposalRoute
   = PropRoot
   | Program (Id InstrumentProgram)
+  | Inversion (Id Inversion) InversionRoute
   deriving (Show, Generic, Eq, Route)
 
 

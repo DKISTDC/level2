@@ -6,12 +6,14 @@ import App.Route
 import Effectful
 import NSO.Prelude
 import Web.Hyperbole hiding (layout)
+import Web.Hyperbole.Effect (Request (..))
 import Web.View qualified as WebView
 
 
 appLayout :: forall es c. (Auth :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
 appLayout r content = do
   login <- loginUrl
+  saveCurrentUrl
   mtok <- getAccessToken
   pure $ layout login r mtok content
 

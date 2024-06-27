@@ -26,6 +26,7 @@ import NSO.Fits.Generate.Profile
 import NSO.Fits.Generate.Quantities (Quantities (..), decodeQuantitiesFrames, quantitiesHDUs)
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
@@ -118,9 +119,9 @@ collateFrames qs pfs pos ts
   mismatchError = MismatchedFrames frameSizes
 
 
-writeL2Frame :: (Log :> es, Scratch :> es, FileSystem :> es) => Id Inversion -> Fits -> DateTime -> Eff es ()
-writeL2Frame ii f (DateTime dt) = do
-  let dir = outputL2 ii
+writeL2Frame :: (Log :> es, Scratch :> es, FileSystem :> es) => Id Proposal -> Id Inversion -> Fits -> DateTime -> Eff es ()
+writeL2Frame ip ii f (DateTime dt) = do
+  let dir = outputL2 ip ii
   let path = filePath dir filenameL2
   send $ Scratch.WriteFile path $ Fits.encode f
  where

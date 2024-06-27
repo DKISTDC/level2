@@ -6,6 +6,7 @@ module App.Worker.FitsGenWorker
 import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
+import Control.Monad.Catch (Exception, catch, throwM)
 import Control.Monad.Loops
 import Data.Diverse.Many
 import Effectful
@@ -51,9 +52,13 @@ workTask
   => GenTask
   -> Eff es ()
 workTask t = do
-  res <- runErrorNoCallStack workWithError
+  res <- runErrorNoCallStack $ catch workWithError onCaughtError
   either failed pure res
  where
+  onCaughtError :: IOError -> Eff (Error GenerateError : es) a
+  onCaughtError e = do
+    throwError $ GenIOError e
+
   workWithError = do
     log Debug "START"
 
@@ -61,6 +66,7 @@ workTask t = do
 
     inv <- loadInversion t.inversionId
     (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
+    log Debug $ dump "Task" taskId
     send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
     send $ TaskSetStatus t GenTransferring
 
@@ -69,7 +75,7 @@ workTask t = do
     send $ Inversions.SetGenTransferred t.inversionId
 
     log Debug " - done, getting frames..."
-    let u = Scratch.inversionUploads $ Scratch.inversion t.inversionId
+    let u = Scratch.inversionUploads $ Scratch.inversion t.proposalId t.inversionId
     log Debug $ dump "InvResults" u.invResults
     log Debug $ dump "InvProfile" u.invProfile
     log Debug $ dump "OrigProfile" u.origProfile
@@ -96,7 +102,7 @@ workTask t = do
     now <- currentTime
     (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wpo wpf g
     log Debug $ dump "write" dateBeg
-    Gen.writeL2Frame t.inversionId fits dateBeg
+    Gen.writeL2Frame t.proposalId t.inversionId fits dateBeg
     pure ()
 
   failed :: GenerateError -> Eff es ()

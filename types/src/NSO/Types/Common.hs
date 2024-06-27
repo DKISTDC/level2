@@ -13,7 +13,6 @@ import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation,
 import System.FilePath qualified as FP
 import Web.HttpApiData
 import Web.Hyperbole (Route)
-import Web.Hyperbole.Param
 
 
 newtype Id a = Id {fromId :: Text}
@@ -26,11 +25,6 @@ randomId pre = do
   let chars = ['A' .. 'Z'] ++ ['0' .. '9']
   sid <- replicateM 6 (randomFromList chars)
   pure $ Id (pre <> "." <> cs sid)
-
-
-instance Param (Id a) where
-  toParam (Id t) = t
-  parseParam t = pure $ Id t
 
 
 type Coordinate a = (a, a)
@@ -88,7 +82,7 @@ instance Semigroup StokesParameters where
 data Instrument
   = VBI
   | VISP
-  deriving (Show, Ord, Eq, Read, Generic, Param)
+  deriving (Show, Ord, Eq, Read, Generic)
   deriving (DBType) via ReadShow Instrument
 
 

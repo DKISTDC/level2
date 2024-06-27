@@ -41,7 +41,7 @@ viewInversions :: [Inversion] -> View c ()
 viewInversions invs = do
   table View.table invs $ do
     tcol (hd "Status") $ \inv -> View.cell $ text $ inversionStatusLabel inv.step
-    tcol (hd "Inversion") $ \inv -> cellLink (Route.Inversion inv.inversionId Inv) inv.inversionId
+    tcol (hd "Inversion") $ \inv -> cellLink (Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv) inv.inversionId
     tcol (hd "Program") $ \inv -> cellLink (Route.Proposal inv.proposalId (Route.Program inv.programId)) inv.programId
     tcol (hd "Proposal") $ \inv -> cellLink (Route.Proposal inv.proposalId PropRoot) inv.proposalId
     tcol (hd "Created") $ \inv -> View.cell $ text $ cs $ showDate inv.created
@@ -50,16 +50,3 @@ viewInversions invs = do
 
   cellLink r i =
     View.cell $ route r Style.link $ pre id i.fromId
-
-
-viewInversion :: Inversion -> View c ()
-viewInversion inv = do
-  row (gap 10) $ do
-    route (Route.Proposal inv.proposalId $ Route.Program inv.programId) (lnk md) $
-      pre id inv.programId.fromId
-    route (Route.Inversion inv.inversionId Inv) (lnk sm) $
-      pre id inv.inversionId.fromId
- where
-  md = width 150
-  sm = width 100
-  lnk w = Style.link . w

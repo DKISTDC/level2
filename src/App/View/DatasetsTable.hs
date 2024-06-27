@@ -17,7 +17,7 @@ import Web.Hyperbole
 
 
 data ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
-  deriving (Generic, ViewId)
+  deriving (Show, Read, ViewId)
 
 
 data SortField
@@ -30,7 +30,7 @@ data SortField
   | Stokes
   | WaveMin
   | WaveMax
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 instance HyperView ProgramDatasets where

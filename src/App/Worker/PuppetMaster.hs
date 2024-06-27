@@ -46,7 +46,7 @@ scanNeedsGenerate = do
   AllInversions ivs <- send Inversions.All
   pure $ map genTask $ filter (\i -> isGenerateStep i.step && isNothing i.invError) ivs
  where
-  genTask inv = GenTask inv.inversionId
+  genTask inv = GenTask inv.proposalId inv.inversionId
 
   isGenerateStep :: InversionStep -> Bool
   isGenerateStep = \case

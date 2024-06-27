@@ -22,7 +22,7 @@ data TransferAction
   = CheckTransfer
   | TaskFailed
   | TaskSucceeded
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 -- I want it to reload itself and call these when necessary
@@ -86,7 +86,7 @@ activityLink it =
 data CommitAction
   = CheckCommitValid GitCommit
   | LoadValid
-  deriving (Generic, ViewAction)
+  deriving (Show, Read, ViewAction)
 
 
 validate :: (Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> Text -> Eff es () -> Eff es (Validated GitCommit)

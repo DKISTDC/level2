@@ -35,6 +35,9 @@ module App.Globus
   , InvResults
   , InvProfile
   , OrigProfile
+  , currentUrl
+  , saveCurrentUrl
+  , getLastUrl
   ) where
 
 import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
@@ -51,6 +54,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
+import NSO.Types.InstrumentProgram (Proposal)
 import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
 import Web.FormUrlEncoded (parseMaybe)
@@ -194,9 +198,10 @@ initUpload
   :: (Hyperbole :> es, Globus :> es, Auth :> es, Scratch :> es)
   => TransferForm
   -> UploadFiles Filename
+  -> App.Id Proposal
   -> App.Id Inversion
   -> Eff es (App.Id Task)
-initUpload tform up ii = do
+initUpload tform up ip ii = do
   scratch <- send Scratch.Globus
   requireLogin $ initTransfer (transferRequest scratch)
  where
@@ -223,7 +228,7 @@ initUpload tform up ii = do
         }
 
     dest :: Path' Filename a -> Path' File a
-    dest fn = Scratch.inversion ii </> fn
+    dest fn = Scratch.inversion ip ii </> fn
 
     source :: Path' Dir TransferForm -> Path' Filename a -> Path' File a
     source t fn = t </> fn
@@ -297,8 +302,8 @@ datasetTransferItem dest d =
 
 -- Authentication!
 data Auth :: Effect where
-  LoginUrl :: RedirectPath -> Auth m Url
-  RedirectUri :: RedirectPath -> Auth m (Uri Globus.Redirect)
+  LoginUrl :: Auth m Url
+  RedirectUri :: Auth m (Uri Globus.Redirect)
 
 
 type instance DispatchOf Auth = 'Dynamic
@@ -311,26 +316,22 @@ runAuth
   -> Eff (Auth : es) a
   -> Eff es a
 runAuth dom r = interpret $ \_ -> \case
-  LoginUrl rp -> do
-    authUrl $ redirectUri dom r rp
-  -- \$ redirectRoute rp
-  RedirectUri rp -> do
-    pure $ redirectUri dom r rp
+  LoginUrl -> do
+    authUrl $ redirectUri dom r
+  RedirectUri -> do
+    pure $ redirectUri dom r
 
-
--- \$ redirectRoute rp
 
 -- WARNING:  until we update the globus app, it only allows /redirect, no query, no nothing
-redirectUri :: (Route r) => AppDomain -> r -> RedirectPath -> Uri Globus.Redirect
-redirectUri dom r (RedirectPath _) = do
+redirectUri :: (Route r) => AppDomain -> r -> Uri Globus.Redirect
+redirectUri dom r = do
   -- let path = T.intercalate "/" rp
   Uri Https (cs dom.unTagged) (routePath r) (Query []) -- (Query [("path", Just path)])
 
 
 getRedirectUri :: (Hyperbole :> es, Auth :> es) => Eff es (Uri Globus.Redirect)
 getRedirectUri = do
-  rp <- redirectPath
-  send $ RedirectUri rp
+  send RedirectUri
 
 
 expectAuth :: (Hyperbole :> es, Auth :> es) => Maybe a -> Eff es a
@@ -342,14 +343,7 @@ expectAuth (Just a) = pure a
 
 loginUrl :: (Hyperbole :> es, Auth :> es) => Eff es Url
 loginUrl = do
-  rp <- redirectPath
-  send $ LoginUrl rp
-
-
-redirectPath :: (Hyperbole :> es) => Eff es RedirectPath
-redirectPath = do
-  r <- request
-  pure $ RedirectPath r.path
+  send LoginUrl
 
 
 getAccessToken :: (Hyperbole :> es, Auth :> es) => Eff es (Maybe (Token Access))
@@ -383,3 +377,21 @@ instance Route RedirectPath where
   defRoute = RedirectPath []
   routePath (RedirectPath ss) = ss
   matchRoute ss = Just $ RedirectPath ss
+
+
+currentUrl :: (Hyperbole :> es) => Eff es Url
+currentUrl = do
+  r <- request
+  pure $ Url "" "" r.path r.query
+
+
+saveCurrentUrl :: (Hyperbole :> es) => Eff es ()
+saveCurrentUrl = do
+  u <- currentUrl
+  setSession "current-url" (renderUrl u)
+
+
+getLastUrl :: (Hyperbole :> es) => Eff es (Maybe Url)
+getLastUrl = do
+  u <- session "current-url"
+  pure $ url <$> u

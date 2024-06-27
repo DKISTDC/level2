@@ -9,6 +9,7 @@ import Effectful.FileSystem.IO.ByteString qualified as FS
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
+import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Network.Globus (Id' (Collection))
 import Network.Globus qualified as Globus
@@ -58,14 +59,6 @@ runScratch cfg = interpret $ \_ -> \case
     FS.writeFile (mounted f) cnt
 
 
--- needs to know where the
-
--- DONE: ABS dir of scratch dir (App.scratch)
--- TODO: relative path from scratch globus
-
--- Path' Abs Scratch: the location of the scratch folder. Build locations on top of this
--- Path' Globus Scratch: the relative location of the scratch folder, from within the globus dir
-
 baseDir :: Path' Dir Scratch
 baseDir = Path "level2"
 
@@ -75,13 +68,13 @@ dataset d =
   baseDir </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-inversion :: Id Inversion -> Path' Dir Inversion
-inversion ii =
-  baseDir </> Path (cs ii.fromId)
+inversion :: Id Proposal -> Id Inversion -> Path' Dir Inversion
+inversion ip ii =
+  baseDir </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
-outputL2 :: Id Inversion -> Path' Dir L2Frame
-outputL2 ii = inversion ii </> Path "output"
+outputL2 :: Id Proposal -> Id Inversion -> Path' Dir L2Frame
+outputL2 ip ii = inversion ip ii </> Path "output"
 
 
 data InvProfile

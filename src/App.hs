@@ -128,7 +128,7 @@ webServer config adtok fits =
   router Dashboard = page $ Dashboard.page adtok
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page
-  router (Inversion i r) = page $ Inversion.page i r
+  router (Proposal p (Inversion i r)) = page $ Inversion.page p i r
   router (Proposal p PropRoot) = page $ Proposal.page p
   router (Proposal ip (Program iip)) = page $ Program.page ip iip
   router (Dataset d) = page $ Dataset.page d
@@ -144,7 +144,9 @@ webServer config adtok fits =
     tok <- Globus.accessToken red (Tagged code)
     saveAccessToken tok
     _ <- atomically $ tryPutTMVar adtok tok
-    redirect $ pathUrl $ routePath Proposals
+
+    u <- getLastUrl
+    redirect $ fromMaybe (pathUrl $ routePath Proposals) u
 
   runApp :: (IOE :> es) => Eff (Worker GenTask : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
