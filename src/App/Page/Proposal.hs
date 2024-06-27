@@ -34,7 +34,7 @@ page pid = do
     appLayout Proposals $ do
       col Style.page $ do
         el Style.header $ do
-          text "Propsoal  "
+          text "Proposal  "
           text pid.fromId
 
         viewPrograms now pwds
@@ -62,17 +62,13 @@ viewProposal now gx = do
 programSummary :: UTCTime -> WithDatasets -> View c ()
 programSummary now wdp = do
   col (gap 10) $ do
-    route (Route.Proposal wdp.program.proposalId $ Route.Program wdp.program.programId) (Style.link . bold) $ do
-      text wdp.program.programId.fromId
-
     col (bg White . gap 10 . pad 10) $ do
-      row id $ do
+      route (Route.Proposal wdp.program.proposalId $ Route.Program wdp.program.programId) flexRow $ do
         viewProgramRow now wdp.program
-
--- -- space
--- -- link (Program wdp.program.programId) (color Primary . bold) $ do
--- --   text wdp.program.programId.fromId
--- -- :: Grouped InstrumentProgram Dataset
--- viewCriteria wdp.program wdp.datasets
--- viewId (ProgramDatasets wdp.program.programId) $ do
---   DatasetsTable.datasetsTable UpdateDate $ G.toList wdp.datasets
+      row (gap 10) $ do
+        route (Route.Proposal wdp.program.proposalId $ Route.Program wdp.program.programId) Style.link $ do
+          text wdp.program.programId.fromId
+        space
+        forM_ wdp.datasets.items $ \d -> do
+          route (Route.Dataset d.datasetId) Style.link $ do
+            text d.datasetId.fromId

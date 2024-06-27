@@ -163,7 +163,8 @@ instance Form (UploadFiles Filename) where
       sub0 <- parseMaybe (sub t 0) f
       sub1 <- parseMaybe (sub t 1) f
       sub2 <- parseMaybe (sub t 2) f
-      pure $ catMaybes [sub0, sub1, sub2]
+      sub3 <- parseMaybe (sub t 3) f
+      pure $ catMaybes [sub0, sub1, sub2, sub3]
 
     findFile :: Path' Filename a -> [FilePath] -> Either Text (Path' Filename a)
     findFile (Path file) fs = do
@@ -207,7 +208,7 @@ initUpload tform up ii = do
       , label = Just tform.label.value
       , source_endpoint = Tagged tform.endpoint_id.value
       , destination_endpoint = scratch
-      , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile]
+      , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile, transferItem up.timestamps]
       , sync_level = SyncChecksum
       , store_base_path_info = True
       }

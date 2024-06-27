@@ -5,7 +5,7 @@ import App.Globus
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate)
-import App.View.DataRow (dataRows)
+import App.View.DataRow qualified as View
 import App.View.Inversions (inversionStatusLabel)
 import App.View.Layout
 import Effectful
@@ -26,27 +26,40 @@ page = do
         col Style.card $ do
           el (Style.cardHeader Info) "Active"
           col section $ do
-            dataRows (filter isActive sorted) $ \iv ->
-              viewInversion iv
+            viewInversions (filter isActive sorted)
 
         el (fontSize 24 . bold) "Completed"
         col Style.card $ do
           col section $ do
-            dataRows (filter (not . isActive) sorted) $ \iv ->
-              viewInversion iv
+            viewInversions (filter (not . isActive) sorted)
  where
   section = gap 10 . pad 10
   sortProgram i = i.programId
 
 
+viewInversions :: [Inversion] -> View c ()
+viewInversions invs = do
+  table View.table invs $ do
+    tcol (hd "Status") $ \inv -> View.cell $ text $ inversionStatusLabel inv.step
+    tcol (hd "Inversion") $ \inv -> cellLink (Route.Inversion inv.inversionId Inv) inv.inversionId
+    tcol (hd "Program") $ \inv -> cellLink (Route.Proposal inv.proposalId (Route.Program inv.programId)) inv.programId
+    tcol (hd "Proposal") $ \inv -> cellLink (Route.Proposal inv.proposalId PropRoot) inv.proposalId
+    tcol (hd "Created") $ \inv -> View.cell $ text $ cs $ showDate inv.created
+ where
+  hd = View.hd
+
+  cellLink r i =
+    View.cell $ route r Style.link $ pre id i.fromId
+
+
 viewInversion :: Inversion -> View c ()
 viewInversion inv = do
   row (gap 10) $ do
-    route (Route.Proposal inv.proposalId PropRoot) Style.link $
+    route (Route.Proposal inv.proposalId $ Route.Program inv.programId) (lnk md) $
       pre id inv.programId.fromId
-    route (Route.Proposal inv.proposalId $ Route.Program inv.programId) Style.link $
-      pre id inv.programId.fromId
-    route (Route.Inversion inv.inversionId Inv) Style.link $
+    route (Route.Inversion inv.inversionId Inv) (lnk sm) $
       pre id inv.inversionId.fromId
-    el_ $ text $ cs $ showDate inv.created
-    el_ $ text $ inversionStatusLabel inv.step
+ where
+  md = width 150
+  sm = width 100
+  lnk w = Style.link . w

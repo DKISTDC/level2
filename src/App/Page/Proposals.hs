@@ -42,7 +42,6 @@ page = do
  where
   filtersFromQuery = do
     q <- reqParams
-    log Debug $ dump "Q" q
     let isVBI = hasParam "vbi" q
     let isVISP = lookupParam "visp" q /= Just "false"
     let status = fromMaybe Any $ parseInvStatus q

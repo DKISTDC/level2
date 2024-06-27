@@ -53,6 +53,11 @@ pageMain i = do
             route (Route.Proposal inv.proposalId $ Program inv.programId) Style.link $ do
               text inv.programId.fromId
 
+          el_ $ do
+            text "Proposal: "
+            route (Route.Proposal inv.proposalId PropRoot) Style.link $ do
+              text inv.proposalId.fromId
+
         hyper (InversionStatus inv.programId inv.inversionId) $ viewInversion inv step
 
 
@@ -138,7 +143,7 @@ inversions onCancel (InversionStatus ip ii) = \case
   Upload -> do
     r <- request
     requireLogin $ do
-      redirect $ Globus.fileManagerUrl (Files 3) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
+      redirect $ Globus.fileManagerUrl (Files 4) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
   PostProcess -> do
     send $ Inversions.SetGenerated ii
     refresh
@@ -340,6 +345,7 @@ uploadSelect val = do
     li id "inv_res_pre.fits"
     li id "per_ori.fits"
     li id "inv_res_mod.fits"
+    li id "timestamps.tsv"
     case val of
       Valid -> button Upload (Style.btnOutline Success . grow) "Select New Files"
       _ -> button Upload (Style.btn Primary . grow) "Select Files"
