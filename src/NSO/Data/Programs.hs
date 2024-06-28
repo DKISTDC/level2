@@ -2,7 +2,7 @@
 
 module NSO.Data.Programs
   ( InstrumentProgram (..)
-  , WithDatasets (..)
+  , ProgramFamily (..)
   , programStatus
   , programInversions
   , instrumentProgram
@@ -51,12 +51,12 @@ loadAllProposals :: (Datasets :> es, Inversions :> es) => Eff es [Proposal]
 loadAllProposals = toProposals <$> loadAll
 
 
-fromDatasets :: AllInversions -> [Dataset] -> [WithDatasets]
+fromDatasets :: AllInversions -> [Dataset] -> [ProgramFamily]
 fromDatasets ai ds =
   let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
       pvs = fmap (programInversions ai) gds :: [[Inversion]]
       ips = zipWith instrumentProgram gds pvs
-   in zipWith WithDatasets ips gds
+   in zipWith3 ProgramFamily ips gds pvs
 
 
 -- | All inversions for the given program
@@ -109,7 +109,8 @@ instrumentProgram gd ivs =
   identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d
 
 
-data WithDatasets = WithDatasets
+data ProgramFamily = ProgramFamily
   { program :: InstrumentProgram
   , datasets :: Grouped InstrumentProgram Dataset
+  , inversions :: [Inversion]
   }

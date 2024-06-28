@@ -45,16 +45,16 @@ pageMain ip i = do
       col Style.page $ do
         col (gap 5) $ do
           el Style.header $ do
-            text "Inversion: "
+            text "Inversion - "
             text i.fromId
 
           el_ $ do
-            text "Program: "
+            text "Program - "
             route (Route.Proposal inv.proposalId $ Program inv.programId) Style.link $ do
               text inv.programId.fromId
 
           el_ $ do
-            text "Proposal: "
+            text "Proposal - "
             route (Route.Proposal inv.proposalId PropRoot) Style.link $ do
               text inv.proposalId.fromId
 

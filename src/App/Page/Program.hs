@@ -13,7 +13,6 @@ import App.View.Layout
 import App.View.ProposalDetails
 import Data.Grouped as G
 import Data.List (nub)
-import Data.List.NonEmpty qualified as NE
 import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
@@ -51,25 +50,23 @@ page ip iip = do
     invs <- latestInversions iip
     steps <- mapM inversionStep invs
     now <- currentTime
+    let gds = Grouped ds :: Grouped InstrumentProgram Dataset
+    let p = instrumentProgram gds invs
 
     appLayout Route.Proposals $ do
       col (Style.page . gap 30) $ do
         col (gap 5) $ do
           el Style.header $ do
-            text "Instrument Program: "
+            text "Instrument Program - "
             text iip.fromId
 
           experimentLink d (numOtherIps dse)
 
-        -- viewExperimentDescription d.experimentDescription
+        viewExperimentDescription d.experimentDescription
 
         hyper (ProgramInversions ip iip) $ viewProgramInversions invs steps
 
-        col Style.card $ do
-          el (Style.cardHeader Secondary) "Instrument Program Details"
-          col (gap 15 . pad 15) $ do
-            viewDatasets now (NE.filter (.latest) ds) invs
-            hyper (ProgramDatasets iip) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
+        viewProgramSummary now $ ProgramFamily p gds invs
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -80,7 +77,7 @@ page ip iip = do
   experimentLink :: Dataset -> Int -> View c ()
   experimentLink d n = do
     el_ $ do
-      text "Proposal: "
+      text "Proposal - "
       route (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
         text d.primaryProposalId.fromId
       text $
@@ -98,20 +95,6 @@ latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
 
 inversionStep :: (Globus :> es, Worker GenTask :> es) => Inversion -> Eff es CurrentStep
 inversionStep inv = currentStep inv.proposalId inv.inversionId inv.step
-
-
-viewDatasets :: UTCTime -> [Dataset] -> [Inversion] -> View c ()
-viewDatasets _ [] _ = none
-viewDatasets now (d : ds) is = do
-  let gd = Grouped (d :| ds)
-  let ip = instrumentProgram gd is
-
-  row (textAlign Center) $ do
-    viewProgramRow now ip
-
-  View.hr (color Gray)
-
-  viewCriteria ip gd
 
 
 data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)

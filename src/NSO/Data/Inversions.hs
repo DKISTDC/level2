@@ -60,7 +60,7 @@ type instance DispatchOf Inversions = 'Dynamic
 
 
 -- | Provenance of EVERY Instrument Program
-newtype AllInversions = AllInversions [Inversion]
+newtype AllInversions = AllInversions { inversions :: [Inversion]}
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}

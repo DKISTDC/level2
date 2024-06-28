@@ -1,6 +1,5 @@
 module App.Page.Proposal where
 
-import App.Colors
 import App.Globus
 import App.Route as Route
 import App.Style qualified as Style
@@ -34,7 +33,7 @@ page pid = do
     appLayout Proposals $ do
       col Style.page $ do
         el Style.header $ do
-          text "Proposal  "
+          text "Proposal - "
           text pid.fromId
 
         viewPrograms now pwds
@@ -43,32 +42,17 @@ page pid = do
 -- DatasetsTable.datasetsTable ds
 
 -- each InstrumentProgram MUST have datasets
-viewPrograms :: UTCTime -> [WithDatasets] -> View c ()
+viewPrograms :: UTCTime -> [ProgramFamily] -> View c ()
 viewPrograms _ [] = el_ "Not Found"
 viewPrograms now (p : ps) = do
-  let wds = Grouped (p :| ps) :: Grouped Proposal WithDatasets
+  let wds = Grouped (p :| ps) :: Grouped Proposal ProgramFamily
   viewProposal now wds
 
 
-viewProposal :: UTCTime -> Grouped Proposal WithDatasets -> View c ()
+viewProposal :: UTCTime -> Grouped Proposal ProgramFamily -> View c ()
 viewProposal now gx = do
   let wd = sample gx
   viewExperimentDescription wd.program.experimentDescription
   el Style.subheader $ do
     text "Instrument Programs"
-  mapM_ (programSummary now) gx
-
-
-programSummary :: UTCTime -> WithDatasets -> View c ()
-programSummary now wdp = do
-  col (gap 10) $ do
-    col (bg White . gap 10 . pad 10) $ do
-      route (Route.Proposal wdp.program.proposalId $ Route.Program wdp.program.programId) flexRow $ do
-        viewProgramRow now wdp.program
-      row (gap 10) $ do
-        route (Route.Proposal wdp.program.proposalId $ Route.Program wdp.program.programId) Style.link $ do
-          text wdp.program.programId.fromId
-        space
-        forM_ wdp.datasets.items $ \d -> do
-          route (Route.Dataset d.datasetId) Style.link $ do
-            text d.datasetId.fromId
+  mapM_ (viewProgramSummary now) gx
