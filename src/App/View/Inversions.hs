@@ -5,13 +5,13 @@ import NSO.Types.Status
 
 
 inversionStatusLabel :: InversionStep -> Text
-inversionStatusLabel (StepCreated _) = "Download"
-inversionStatusLabel (StepDownloading _) = "Download"
-inversionStatusLabel (StepDownloaded _) = "Preprocess"
-inversionStatusLabel (StepPreprocessed _) = "Invert"
-inversionStatusLabel (StepInverting _) = "Invert"
-inversionStatusLabel (StepInverted _) = "Generate"
-inversionStatusLabel (StepGenTransfer _) = "Generate"
-inversionStatusLabel (StepGenerating _) = "Generate"
-inversionStatusLabel (StepGenerated _) = "Publish"
+inversionStatusLabel (StepCreated _) = "Downloading"
+inversionStatusLabel (StepDownloading _) = "Downloading"
+inversionStatusLabel (StepDownloaded _) = "Preprocessing"
+inversionStatusLabel (StepPreprocessed _) = "Inverting"
+inversionStatusLabel (StepInverting _) = "Inverting"
+inversionStatusLabel (StepInverted _) = "Generating"
+inversionStatusLabel (StepGenTransfer _) = "Generaeing"
+inversionStatusLabel (StepGenerating _) = "Generating"
+inversionStatusLabel (StepGenerated _) = "Publishing"
 inversionStatusLabel (StepPublished _) = "Complete"

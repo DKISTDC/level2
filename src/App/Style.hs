@@ -31,25 +31,43 @@ cardHeader c =
   bg c . color (contrast c) . textAlign Center . pad 10
 
 
+tag :: AppColor -> Mod
+tag c =
+  color (contrast c)
+    . bg (light c)
+
+
+tagOutline :: (ToColor c) => c -> Mod
+tagOutline c =
+  color c
+    . borderColor c
+    . border 2
+
+
 btn :: AppColor -> Mod
 btn c =
-  base
+  btnBase
     . color (contrast c)
     . bg c
     . hover (bg (light c))
- where
-  base = pad (XY 15 10)
+    . shadow
+    . rounded 3
 
 
 btnOutline :: AppColor -> Mod
 btnOutline c =
-  base
+  btnBase
     . border 2
     . borderColor c
     . color c
     . hover (borderColor (light c) . color (light c))
- where
-  base = pad (XY 15 8)
+
+
+btnBase :: Mod
+btnBase =
+  pad (XY 15 10)
+    . rounded 3
+    . shadow
 
 
 underline :: Mod

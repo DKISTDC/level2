@@ -15,6 +15,9 @@ dataRows as rw = forM_ (zip (cycle [True, False]) as) $ \(b, a) ->
 dataCell :: Mod
 dataCell = minWidth 100
 
+tagCell :: Mod
+tagCell = minWidth 120
+
 
 dataRow :: Mod
 dataRow = gap 10 . pad (All $ PxRem dataRowPadding)

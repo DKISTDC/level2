@@ -5,7 +5,8 @@ module App.View.ProposalDetails
   ) where
 
 import App.Colors
-import App.View.DataRow (dataCell)
+import App.Style qualified as Style
+import App.View.DataRow (dataCell, tagCell)
 import App.View.Icons as Icons
 import App.View.Inversions (inversionStatusLabel)
 import Data.Grouped
@@ -42,27 +43,27 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
     mapM_ midTag $ sortOn id ip.otherWavelengths
  where
   lineTag :: SpectralLine -> View c ()
-  lineTag s = tag "pre" (dataTag . bg Gray) $ text $ cs $ show s
+  lineTag s = tag "pre" (dataTag . Style.tagOutline (light Secondary)) $ text $ cs $ show s
 
-  diskTag = el (dataTag . bg (light Primary) . color (contrast Success)) "On Disk"
+  diskTag = el (dataTag . Style.tagOutline (light Primary)) "On Disk"
 
   embargoTag utc =
     if utc > now
-      then el (dataTag . bg Warning . color (contrast Warning)) "Embargoed"
+      then el (dataTag . Style.tagOutline (dark Warning)) "Embargoed"
       else none
 
   midTag mid =
     tag "pre" (pad 2 . color (light Secondary)) $ text $ cs (show (round mid :: Integer) <> "nm")
 
   dataTag :: Mod
-  dataTag = pad (XY 6 2) . rounded 3
+  dataTag = pad (XY 6 1)
 
-  statusTag StatusInvalid = el (dataCell . color (light Secondary)) $ text "-"
+  statusTag StatusInvalid = el (tagCell . color (light Secondary)) $ text "-"
   statusTag StatusQualified = el (stat Primary) $ text "Qualified"
   statusTag (StatusInversion (StepPublished _)) = el (stat Success) $ text "Complete"
   statusTag (StatusInversion step) = el (stat Info) $ text $ inversionStatusLabel step
 
-  stat c = dataCell . bg c . color White
+  stat c = tagCell . Style.tag c
 
 
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
