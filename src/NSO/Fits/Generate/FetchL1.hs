@@ -5,11 +5,14 @@ import App.Effect.Scratch qualified as Scratch
 import App.Globus as Globus
 import Control.Monad (replicateM, void)
 import Data.ByteString (ByteString)
+import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Text qualified as T
 import Data.Time.Calendar (Day, fromGregorian)
 import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
+import Data.Time.Format.ISO8601
 import Data.Void (Void)
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -40,7 +43,7 @@ data L1Frame = L1Frame
   deriving (Show)
 
 
-newtype DateBegTimestamp = DateBegTimestamp {text :: Text}
+newtype DateBegTimestamp = DateBegTimestamp {time :: UTCTime}
   deriving newtype (Eq, Show)
 
 
@@ -72,13 +75,12 @@ transferCanonicalDataset d = do
   pure (t, dir)
 
 
-canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> [DateBegTimestamp] -> Eff es [BinTableHDU]
+canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> NonEmpty DateBegTimestamp -> Eff es [BinTableHDU]
 canonicalL1Frames fdir ts = do
   fs <- allL1Frames fdir
   -- log Debug $ dump "L1s" $ take 5 fs
-  log Debug $ dump "TS" $ length ts
   frs <- mapM (readLevel1File fdir) fs
-  usedL1Frames frs
+  pure $ usedL1Frames frs
  where
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   allL1Frames :: Path' Dir Dataset -> Eff es [L1Frame]
@@ -92,29 +94,33 @@ canonicalL1Frames fdir ts = do
       && "_I_" `L.isInfixOf` f
 
   usedL1Frames frs = do
-    let ufs = filter (isFrameUsed ts) frs
-    case ufs of
-      [] -> do
-        throwError $ InvalidTimestamps (length ts)
-      _ -> pure ufs
+    filter (isFrameUsed ts) frs
 
 
-isFrameUsed :: [DateBegTimestamp] -> BinTableHDU -> Bool
-isFrameUsed dbts hdu =
-  case Fits.lookup "DATE-BEG" hdu.header of
-    Just (String d) -> DateBegTimestamp d `elem` dbts
-    _ -> False
+isFrameUsed :: NonEmpty DateBegTimestamp -> BinTableHDU -> Bool
+isFrameUsed dbts hdu = fromMaybe False $ do
+  String s <- Fits.lookup "DATE-BEG" hdu.header
+  d <- iso8601ParseM $ T.unpack s <> "Z"
+  pure $ DateBegTimestamp d `elem` dbts
 
 
-readTimestamps :: (Scratch :> es) => Path Timestamps -> Eff es [DateBegTimestamp]
+readTimestamps :: (Scratch :> es, Log :> es, Error GenerateError :> es) => Path Timestamps -> Eff es (NonEmpty DateBegTimestamp)
 readTimestamps f = do
   inp <- send $ Scratch.ReadFile f
-  pure $ parseTimestampsFile inp
+  dts <- parseTimestampsFile inp
+  case dts of
+    [] -> throwError $ ZeroValidTimestamps f.filePath
+    (t : ts) -> pure $ t :| ts
 
 
-parseTimestampsFile :: ByteString -> [DateBegTimestamp]
-parseTimestampsFile inp =
-  map DateBegTimestamp $ T.splitOn "\n" $ cs inp
+parseTimestampsFile :: (Error GenerateError :> es) => ByteString -> Eff es [DateBegTimestamp]
+parseTimestampsFile inp = do
+  mapM parseTimestamp $ filter (not . T.null) $ T.splitOn "\n" $ cs inp
+ where
+  parseTimestamp t = do
+    case iso8601ParseM $ T.unpack $ t <> "Z" of
+      Nothing -> throwError $ InvalidTimestamp t
+      Just u -> pure $ DateBegTimestamp u
 
 
 readLevel1File :: forall es. (Scratch :> es, Log :> es, Error GenerateError :> es) => Path' Dir Dataset -> L1Frame -> Eff es BinTableHDU

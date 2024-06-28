@@ -3,7 +3,6 @@
 module NSO.Fits.Generate where
 
 import App.Effect.Scratch as Scratch
-import App.Globus (InvProfile, InvResults, OrigProfile)
 import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Massiv.Array ()
@@ -14,7 +13,6 @@ import Effectful.Error.Static
 import Effectful.FileSystem as FS
 import Effectful.GenRandom
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import Effectful.Writer.Static.Local
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (L1Frame)

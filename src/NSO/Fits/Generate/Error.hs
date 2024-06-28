@@ -20,7 +20,8 @@ data GenerateError
   | NoCanonicalDataset (Id InstrumentProgram)
   | L1TransferFailed (Id Globus.Task)
   | MissingInversion (Id Inversion)
-  | InvalidTimestamps Int
+  | InvalidTimestamp Text
+  | ZeroValidTimestamps FilePath
   | LiftL1 LiftL1Error
   | MismatchedFrames [Int]
   | GenIOError IOError

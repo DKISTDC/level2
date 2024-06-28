@@ -6,7 +6,7 @@ module App.Worker.FitsGenWorker
 import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
-import Control.Monad.Catch (Exception, catch, throwM)
+import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
 import Effectful
@@ -85,8 +85,9 @@ workTask t = do
     pfs <- Gen.readFitProfileFrames u.invProfile
     pos <- Gen.readOrigProfileFrames u.origProfile
     ts <- Fetch.readTimestamps u.timestamps
-    log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length ts)
+    log Debug $ dump "TS" (length ts)
     l1 <- Fetch.canonicalL1Frames frameDir ts
+    log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length l1)
     gfs <- collateFrames qfs pfs.frames pos.frames l1
     let totalFrames = length gfs
 
