@@ -104,7 +104,7 @@ fileManagerUrl lmt r lbl req =
     , ("action", Just $ cs (renderUrl submitUrl))
     , ("folderlimit", Just $ cs $ folderLimit lmt)
     , ("filelimit", Just $ cs $ fileLimit lmt)
-    , ("cancelurl", Just $ cs (renderUrl currentUrl))
+    , ("cancelurl", Just $ cs (renderUrl currentUrl'))
     , ("label", Just $ cs lbl)
     ]
  where
@@ -120,8 +120,8 @@ fileManagerUrl lmt r lbl req =
   serverUrl :: [Text] -> Url
   serverUrl p = Url "https://" (cs req.host.text) p []
 
-  currentUrl :: Url
-  currentUrl = serverUrl req.path
+  currentUrl' :: Url
+  currentUrl' = serverUrl req.path
 
   submitUrl :: Url
   submitUrl =

@@ -167,6 +167,7 @@ viewProposals now fs exs = do
   checkInvertible Qualified StatusQualified = True
   checkInvertible Inverting (StatusInversion (StepPublished _)) = False
   checkInvertible Inverting (StatusInversion _) = True
+  checkInvertible Inverting (StatusError _) = True
   checkInvertible Complete (StatusInversion (StepPublished _)) = True
   checkInvertible _ _ = False
 

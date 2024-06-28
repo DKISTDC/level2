@@ -180,6 +180,7 @@ viewInversionContainer step cnt =
       cnt
  where
   headerColor Complete = Success
+  headerColor (Generating (GenConvError _)) = Danger
   headerColor _ = Info
 
 
@@ -401,7 +402,7 @@ stepGenerate inv = \case
     viewGenerateWait s
   GenConvError e -> do
     el bold "Generate Error!"
-    el_ $ text $ cs $ show e
+    el_ $ text $ cs e
     button RestartGen (Style.btn Primary) "Restart Generation"
     button GoStepInv (Style.btnOutline Secondary) "Go Back to Inversion"
 

@@ -6,7 +6,7 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate)
 import App.View.DataRow qualified as View
-import App.View.Inversions (inversionStatusLabel)
+import App.View.Inversions (inversionStatusTag)
 import App.View.Layout
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -40,13 +40,19 @@ page = do
 viewInversions :: [Inversion] -> View c ()
 viewInversions invs = do
   table View.table invs $ do
-    tcol (hd "Status") $ \inv -> View.cell $ text $ inversionStatusLabel inv.step
-    tcol (hd "Inversion") $ \inv -> cellLink (Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv) inv.inversionId
+    tcol (hd "Status") $ \inv -> View.cell $ route (routeInv inv) (color $ statusColor inv) $ inversionStatusTag inv
+    tcol (hd "Inversion") $ \inv -> cellLink (routeInv inv) inv.inversionId
     tcol (hd "Program") $ \inv -> cellLink (Route.Proposal inv.proposalId (Route.Program inv.programId)) inv.programId
     tcol (hd "Proposal") $ \inv -> cellLink (Route.Proposal inv.proposalId PropRoot) inv.proposalId
     tcol (hd "Created") $ \inv -> View.cell $ text $ cs $ showDate inv.created
  where
   hd = View.hd
+  routeInv inv = Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv
 
   cellLink r i =
     View.cell $ route r Style.link $ pre id i.fromId
+
+  statusColor i =
+    case i.invError of
+      Just _ -> Danger
+      _ -> Black

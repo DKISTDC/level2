@@ -67,6 +67,7 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
   statusTag StatusQualified = el (stat Primary) $ text "Qualified"
   statusTag (StatusInversion (StepPublished _)) = el (stat Success) $ text "Complete"
   statusTag (StatusInversion step) = el (stat Info) $ text $ inversionStatusLabel step
+  statusTag (StatusError _) = el (stat Danger) $ text "Error"
 
   stat c = tagCell . Style.tag c
 

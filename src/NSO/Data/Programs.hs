@@ -35,9 +35,14 @@ programStatus gd [] =
   if isQualified gd
     then StatusQualified
     else StatusInvalid
-programStatus _ (i : _) = do
-  -- TODO: find latest inversion
-  StatusInversion i.step
+programStatus _ (i : is) = do
+  inversionStatus $ NE.sortWith (.updated) $ i :| is
+ where
+  inversionStatus is' =
+    let i' = head is'
+     in case i'.invError of
+          Just e -> StatusError e
+          Nothing -> StatusInversion i.step
 
 
 loadAll :: (Datasets :> es, Inversions :> es) => Eff es [InstrumentProgram]

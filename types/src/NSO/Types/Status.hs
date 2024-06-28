@@ -15,6 +15,7 @@ import Web.Hyperbole.Forms (FormField)
 data ProgramStatus
   = StatusInvalid
   | StatusQualified
+  | StatusError Text
   | -- we have a "latest" inversion, use its status
     StatusInversion InversionStep
   deriving (Eq)
