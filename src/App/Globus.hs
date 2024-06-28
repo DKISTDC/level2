@@ -42,6 +42,7 @@ module App.Globus
 
 import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
 import App.Effect.Scratch qualified as Scratch
+import App.Route (AppRoute)
 import App.Types
 import Data.Tagged
 import Effectful
@@ -93,7 +94,7 @@ data FileLimit
   | Files Int
 
 
-fileManagerUrl :: (Route r) => FileLimit -> r -> Text -> Request -> Url
+fileManagerUrl :: FileLimit -> AppRoute -> Text -> Request -> Url
 fileManagerUrl lmt r lbl req =
   Url
     "https://"

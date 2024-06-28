@@ -74,9 +74,10 @@ viewTransferFailed it = do
 
 activityLink :: Id Task -> View c ()
 activityLink it =
-  WebView.link activityUrl Style.link "View Transfer on Globus"
+  WebView.link activityUrl (Style.link . target "_blank") "View Transfer on Globus"
  where
   activityUrl = Url "https://" "app.globus.org" ["activity", it.fromId] []
+  target = att "target"
 
 
 -----------------------------------------------------

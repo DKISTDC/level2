@@ -26,7 +26,7 @@ import Web.Hyperbole.Forms (formFields)
 
 page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Worker GenTask :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
 page ip i Inv = pageMain ip i
-page _ i SubmitDownload = pageSubmitDownload i
+page ip i SubmitDownload = pageSubmitDownload ip i
 page ip i SubmitUpload = pageSubmitUpload ip i
 
 
@@ -72,8 +72,8 @@ pageSubmitUpload ip ii = do
     redirect $ routeUrl (Route.Inversion ii Inv)
 
 
-pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Inversion -> Page es Response
-pageSubmitDownload ii = do
+pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id Inversion -> Page es Response
+pageSubmitDownload ip ii = do
   load $ do
     tfrm <- formFields @TransferForm
     tfls <- formFields @DownloadFolder
@@ -82,7 +82,7 @@ pageSubmitDownload ii = do
     it <- requireLogin $ Globus.initDownload tfrm tfls ds
     send $ Inversions.SetDownloading ii it
 
-    redirect $ routeUrl (Route.Inversion ii Inv)
+    redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
 
 
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
@@ -139,11 +139,11 @@ inversions onCancel (InversionStatus ip iip ii) = \case
   Download -> do
     r <- request
     requireLogin $ do
-      redirect $ Globus.fileManagerUrl (Folders 1) (Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> iip.fromId) r
+      redirect $ Globus.fileManagerUrl (Folders 1) (Route.Proposal ip $ Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> iip.fromId) r
   Upload -> do
     r <- request
     requireLogin $ do
-      redirect $ Globus.fileManagerUrl (Files 4) (Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
+      redirect $ Globus.fileManagerUrl (Files 4) (Route.Proposal ip $ Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
   PostProcess -> do
     send $ Inversions.SetGenerated ii
     refresh
