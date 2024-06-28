@@ -3,6 +3,7 @@ module App where
 import App.Config
 import App.Effect.Scratch (Scratch, runScratch)
 import App.Globus as Globus
+import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Inversion qualified as Inversion
@@ -135,18 +136,8 @@ webServer config adtok fits =
   router Scan = page Scan.page
   router Experiments = do
     redirect (pathUrl . routePath $ Proposals)
-  router Logout = do
-    clearAccessToken
-    redirect (pathUrl . routePath $ Proposals)
-  router Redirect = do
-    code <- reqParam "code"
-    red <- getRedirectUri
-    tok <- Globus.accessToken red (Tagged code)
-    saveAccessToken tok
-    _ <- atomically $ tryPutTMVar adtok tok
-
-    u <- getLastUrl
-    redirect $ fromMaybe (pathUrl $ routePath Proposals) u
+  router Logout = page Auth.logout
+  router Redirect = page $ Auth.login adtok
 
   runApp :: (IOE :> es) => Eff (Worker GenTask : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =

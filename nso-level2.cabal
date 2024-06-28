@@ -28,6 +28,7 @@ library
       App.Error
       App.Globus
       App.Mock
+      App.Page.Auth
       App.Page.Dashboard
       App.Page.Dataset
       App.Page.Inversion

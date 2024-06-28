@@ -6,7 +6,6 @@ import App.Route
 import Effectful
 import NSO.Prelude
 import Web.Hyperbole hiding (layout)
-import Web.Hyperbole.Effect (Request (..))
 import Web.View qualified as WebView
 
 
