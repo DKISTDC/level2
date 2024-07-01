@@ -24,6 +24,7 @@ library
       App
       App.Colors
       App.Config
+      App.Effect.Auth
       App.Effect.Scratch
       App.Error
       App.Globus

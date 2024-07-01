@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedLists #-}
+
 module App.Globus
   ( GlobusClient (..)
   , Globus
   , authUrl
-  , accessToken
+  , accessTokens
+  , UserLoginInfo (..)
+  , userInfo
   , fileManagerUrl
   , transferStatus
   , Uri
@@ -13,9 +17,6 @@ module App.Globus
   , Token' (..)
   , Id' (..)
   , runGlobus
-  , getAccessToken
-  , saveAccessToken
-  , clearAccessToken
   , taskPercentComplete
   , initDownload
   , initUpload
@@ -24,26 +25,17 @@ module App.Globus
   , TransferForm
   , UploadFiles (..)
   , DownloadFolder
-  , Auth (..)
-  , runAuth
-  , requireLogin
-  , runWithAccess
-  , loginUrl
-  , getRedirectUri
-  , RedirectPath (..)
   , Timestamps
   , InvResults
   , InvProfile
   , OrigProfile
-  , currentUrl
-  , saveCurrentUrl
-  , getLastUrl
+  , UserEmail (..)
   ) where
 
 import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
 import App.Effect.Scratch qualified as Scratch
 import App.Route (AppRoute)
-import App.Types
+import Control.Monad.Catch (Exception, throwM)
 import Data.Tagged
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -56,19 +48,19 @@ import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
+import Network.Globus.Auth (TokenItem, UserEmail (..), UserInfo, UserInfoResponse (..), UserProfile, scopeToken)
 import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
 import Web.FormUrlEncoded (parseMaybe)
 import Web.Hyperbole
 import Web.Hyperbole.Effect (Host (..), Request (..))
 import Web.Hyperbole.Forms
-import Web.Hyperbole.Route (Route (..))
 import Web.View as WebView
 
 
 authUrl :: (Globus :> es) => Uri Redirect -> Eff es WebView.Url
 authUrl red = do
-  uri <- send $ AuthUrl red [TransferAll] (State "_")
+  uri <- send $ AuthUrl red [TransferAll, Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
   pure $ convertUrl uri
  where
   convertUrl :: Uri a -> WebView.Url
@@ -81,9 +73,38 @@ authUrl red = do
   query (t, mt) = (cs t, cs <$> mt)
 
 
-accessToken :: (Globus :> es) => Uri Redirect -> Token Exchange -> Eff es (Token Access)
-accessToken red tok = do
-  send $ AccessToken tok red
+accessTokens :: (Globus :> es) => Uri Redirect -> Token Exchange -> Eff es (NonEmpty TokenItem)
+accessTokens red tok = do
+  send $ GetAccessTokens tok red
+
+
+data UserLoginInfo = UserLoginInfo
+  { info :: UserInfo
+  , email :: Maybe UserEmail
+  , profile :: Maybe UserProfile
+  , transfer :: Token Access
+  }
+  deriving (Show)
+
+
+userInfo :: (Globus :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
+userInfo tis = do
+  oid <- requireScopeToken (Identity OpenId)
+  Tagged trn <- requireScopeToken TransferAll
+
+  ur <- send $ GetUserInfo oid
+  pure $
+    UserLoginInfo
+      { info = ur.info
+      , email = ur.email
+      , profile = ur.profile
+      , transfer = Tagged trn
+      }
+ where
+  requireScopeToken :: Scope -> Eff es (Token a)
+  requireScopeToken s = do
+    Tagged t <- maybe (throwM $ MissingScope s tis) pure $ scopeToken s tis
+    pure $ Tagged t
 
 
 -- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
@@ -196,7 +217,7 @@ initTransfer toRequest = do
 
 
 initUpload
-  :: (Hyperbole :> es, Globus :> es, Auth :> es, Scratch :> es)
+  :: (Hyperbole :> es, Globus :> es, Scratch :> es, Reader (Token Access) :> es)
   => TransferForm
   -> UploadFiles Filename
   -> App.Id Proposal
@@ -204,7 +225,7 @@ initUpload
   -> Eff es (App.Id Task)
 initUpload tform up ip ii = do
   scratch <- send Scratch.Globus
-  requireLogin $ initTransfer (transferRequest scratch)
+  initTransfer (transferRequest scratch)
  where
   transferRequest :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
   transferRequest scratch submission_id =
@@ -301,98 +322,6 @@ datasetTransferItem dest d =
   datasetSourcePath = Path "data" </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
--- Authentication!
-data Auth :: Effect where
-  LoginUrl :: Auth m Url
-  RedirectUri :: Auth m (Uri Globus.Redirect)
-
-
-type instance DispatchOf Auth = 'Dynamic
-
-
-runAuth
-  :: (Globus :> es, Route r)
-  => AppDomain
-  -> r
-  -> Eff (Auth : es) a
-  -> Eff es a
-runAuth dom r = interpret $ \_ -> \case
-  LoginUrl -> do
-    authUrl $ redirectUri dom r
-  RedirectUri -> do
-    pure $ redirectUri dom r
-
-
--- WARNING:  until we update the globus app, it only allows /redirect, no query, no nothing
-redirectUri :: (Route r) => AppDomain -> r -> Uri Globus.Redirect
-redirectUri dom r = do
-  -- let path = T.intercalate "/" rp
-  Uri Https (cs dom.unTagged) (routePath r) (Query []) -- (Query [("path", Just path)])
-
-
-getRedirectUri :: (Hyperbole :> es, Auth :> es) => Eff es (Uri Globus.Redirect)
-getRedirectUri = do
-  send RedirectUri
-
-
-expectAuth :: (Hyperbole :> es, Auth :> es) => Maybe a -> Eff es a
-expectAuth Nothing = do
-  u <- loginUrl
-  redirect u
-expectAuth (Just a) = pure a
-
-
-loginUrl :: (Hyperbole :> es, Auth :> es) => Eff es Url
-loginUrl = do
-  send LoginUrl
-
-
-getAccessToken :: (Hyperbole :> es, Auth :> es) => Eff es (Maybe (Token Access))
-getAccessToken = do
-  fmap Tagged <$> session "globus"
-
-
-saveAccessToken :: (Hyperbole :> es) => Token Access -> Eff es ()
-saveAccessToken (Tagged acc) = setSession "globus" acc
-
-
-clearAccessToken :: (Hyperbole :> es) => Eff es ()
-clearAccessToken = clearSession "globus"
-
-
-runWithAccess :: Token Access -> Eff (Reader (Token Access) : es) a -> Eff es a
-runWithAccess = runReader
-
-
-requireLogin :: (Hyperbole :> es, Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
-requireLogin eff = do
-  acc <- getAccessToken >>= expectAuth
-  runWithAccess acc eff
-
-
-newtype RedirectPath = RedirectPath [Segment]
-  deriving (Show, Eq)
-
-
-instance Route RedirectPath where
-  defRoute = RedirectPath []
-  routePath (RedirectPath ss) = ss
-  matchRoute ss = Just $ RedirectPath ss
-
-
-currentUrl :: (Hyperbole :> es) => Eff es Url
-currentUrl = do
-  r <- request
-  pure $ Url "" "" r.path r.query
-
-
-saveCurrentUrl :: (Hyperbole :> es) => Eff es ()
-saveCurrentUrl = do
-  u <- currentUrl
-  setSession "current-url" (renderUrl u)
-
-
-getLastUrl :: (Hyperbole :> es) => Eff es (Maybe Url)
-getLastUrl = do
-  u <- session "current-url"
-  pure $ url <$> u
+data GlobusAuthError
+  = MissingScope Scope (NonEmpty TokenItem)
+  deriving (Exception, Show)

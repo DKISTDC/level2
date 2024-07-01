@@ -14,7 +14,7 @@ module App.Config
   ) where
 
 import App.Effect.Scratch qualified as Scratch
-import App.Globus (GlobusClient (..), Id' (..))
+import App.Globus (GlobusClient (..), Id' (..), UserEmail (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -38,6 +38,7 @@ data Config = Config
   , app :: App
   , globus :: GlobusClient
   , scratch :: Scratch.Config
+  , admins :: [UserEmail]
   , db :: Rel8.Connection
   }
 
@@ -53,7 +54,8 @@ initConfig = do
   (services, servicesIsMock) <- initServices
   globus <- initGlobus
   scratch <- initScratch
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch}
+  let admins = [UserEmail "shess@nso.edu"]
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, admins}
 
 
 type IsMock = Bool

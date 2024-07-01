@@ -19,7 +19,7 @@ trap cleanup EXIT
 
 # Run tests once (Or we forget to run them)
 # (TODO, it has to run thorugh the build twice I think)
-cabal test
+# cabal test
 
 # Recompile package.yaml on changes
 watchexec -e hs,yaml hpack &

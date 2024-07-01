@@ -1,6 +1,6 @@
 module App.Page.Proposal where
 
-import App.Globus
+import App.Effect.Auth
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable

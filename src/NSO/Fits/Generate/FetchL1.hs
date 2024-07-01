@@ -5,14 +5,12 @@ import App.Effect.Scratch qualified as Scratch
 import App.Globus as Globus
 import Control.Monad (replicateM, void)
 import Data.ByteString (ByteString)
-import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Text qualified as T
 import Data.Time.Calendar (Day, fromGregorian)
 import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
 import Data.Time.Format.ISO8601
 import Data.Void (Void)
-import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static

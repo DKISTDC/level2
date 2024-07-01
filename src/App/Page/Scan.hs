@@ -1,7 +1,7 @@
 module App.Page.Scan where
 
 import App.Colors
-import App.Globus
+import App.Effect.Auth
 import App.Route
 import App.Style qualified as Style
 import App.View.Common

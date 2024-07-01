@@ -1,6 +1,7 @@
 module App.Page.Inversion where
 
 import App.Colors
+import App.Effect.Auth
 import App.Effect.Scratch (Scratch)
 import App.Error (expectFound)
 import App.Globus as Globus
@@ -66,7 +67,7 @@ pageSubmitUpload ip ii = do
   load $ do
     tfrm <- formFields @TransferForm
     tup <- formFields @(UploadFiles Filename)
-    it <- Globus.initUpload tfrm tup ip ii
+    it <- requireLogin $ Globus.initUpload tfrm tup ip ii
     send $ Inversions.SetUploading ii it
 
     redirect $ routeUrl (Route.Inversion ii Inv)

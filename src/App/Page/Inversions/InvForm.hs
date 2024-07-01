@@ -1,6 +1,7 @@
 module App.Page.Inversions.InvForm where
 
 import App.Colors
+import App.Effect.Auth
 import App.Globus as Globus
 import App.Style qualified as Style
 import App.View.Common qualified as View

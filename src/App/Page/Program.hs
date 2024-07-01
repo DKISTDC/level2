@@ -1,6 +1,7 @@
 module App.Page.Program where
 
 import App.Colors
+import App.Effect.Auth
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversion

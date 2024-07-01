@@ -1,6 +1,7 @@
 module App where
 
 import App.Config
+import App.Effect.Auth as Auth
 import App.Effect.Scratch (Scratch, runScratch)
 import App.Globus as Globus
 import App.Page.Auth qualified as Auth
@@ -110,7 +111,7 @@ waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> 
 waitForGlobusAccess advar work = do
   log Debug "Waiting for Admin Globus Access Token"
   acc <- atomically $ readTMVar advar
-  Globus.runWithAccess acc work
+  Auth.runWithAccess acc work
 
 
 availableWorkerCPUs :: (Concurrent :> es) => Eff es Int
@@ -126,7 +127,7 @@ webServer config adtok fits =
     document
     (runApp . routeRequest $ router)
  where
-  router Dashboard = page $ Dashboard.page adtok
+  router Dashboard = page Dashboard.page
   router Proposals = page Proposals.page
   router Inversions = page Inversions.page
   router (Proposal p (Inversion i r)) = page $ Inversion.page p i r
@@ -137,7 +138,7 @@ webServer config adtok fits =
   router Experiments = do
     redirect (pathUrl . routePath $ Proposals)
   router Logout = page Auth.logout
-  router Redirect = page $ Auth.login adtok
+  router Redirect = page Auth.login
 
   runApp :: (IOE :> es) => Eff (Worker GenTask : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
@@ -154,7 +155,7 @@ webServer config adtok fits =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
-      . runAuth config.app.domain Redirect
+      . runAuth config.app.domain Redirect config.admins adtok
       . runFileSystem
       . runScratch config.scratch
       . runWorker fits

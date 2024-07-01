@@ -1,6 +1,7 @@
 module App.Page.Dashboard where
 
 import App.Colors
+import App.Effect.Auth
 import App.Effect.Scratch (Scratch)
 import App.Globus
 import App.Route
@@ -23,15 +24,14 @@ import Web.Hyperbole
 -- import NSO.Types.InstrumentProgram
 
 page
-  :: (Log :> es, FileSystem :> es, Globus :> es, Hyperbole :> es, Concurrent :> es, Auth :> es, Datasets :> es, Scratch :> es, Worker GenTask :> es)
-  => TMVar (Token Access)
-  -> Page es Response
-page adtok = do
+  :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Worker GenTask :> es)
+  => Page es Response
+page = do
   -- handle $ test adtok
   handle work
   load $ do
     login <- loginUrl
-    mtok <- atomically $ tryReadTMVar adtok
+    mtok <- send AdminToken
 
     appLayout Dashboard (mainView login mtok)
  where

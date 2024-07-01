@@ -1,27 +1,29 @@
 module App.Page.Auth where
 
+import App.Colors
+import App.Effect.Auth
 import App.Globus as Globus
 import App.Route
-import Effectful.Concurrent.STM
+import App.View.Icons as Icons
+import Effectful.Dispatch.Dynamic
+import Effectful.Log
 import NSO.Prelude
 import Web.Hyperbole
 
 
-login :: (Globus :> es, Concurrent :> es, Hyperbole :> es, Auth :> es) => TMVar (Token Access) -> Page es Response
-login adtok = do
+-- show the page, then handle the login second
+login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Page es Response
+login = do
   handle authRed
   load $ do
-    code <- reqParam "code"
-    red <- getRedirectUri
-    tok <- Globus.accessToken red (Tagged code)
-    saveAccessToken tok
-    _ <- atomically $ tryPutTMVar adtok tok
-    u <- redirectTo
-    -- pure $ Layout.layout mempty Redirect Nothing $ do
-    pure $ col (pad 20 . gap 20) $ do
-      hyper AuthRed $ onLoad (GoRed u) 1000 $ do
-        el bold "Logged In"
-        el_ "Redirecting..."
+    code <- Tagged <$> reqParam "code"
+
+    pure $ col (pad 20 . gap 10) $ do
+      el bold "Login"
+      hyper AuthRed $ do
+        onLoad (LazyAuth code) 0 $ do
+          el_ "Authenticating..."
+          el (width 200 . color Primary) Icons.spinner
 
 
 logout :: (Hyperbole :> es, Auth :> es) => Page es Response
@@ -42,7 +44,8 @@ data AuthRed = AuthRed
   deriving (Show, Read, ViewId)
 
 
-data GoRed = GoRed Url
+data GoRed
+  = LazyAuth (Token Exchange)
   deriving (Show, Read, ViewAction)
 
 
@@ -50,6 +53,10 @@ instance HyperView AuthRed where
   type Action AuthRed = GoRed
 
 
-authRed :: (Hyperbole :> es) => AuthRed -> GoRed -> Eff es (View AuthRed ())
-authRed _ (GoRed u) = do
-  redirect u
+authRed :: (Hyperbole :> es, Globus :> es, Auth :> es, Log :> es) => AuthRed -> GoRed -> Eff es (View AuthRed ())
+authRed _ (LazyAuth code) = do
+  u <- send $ AuthWithCode code
+  saveAccessToken u.transfer
+
+  uri <- redirectTo
+  redirect uri

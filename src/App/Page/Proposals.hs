@@ -1,6 +1,7 @@
 module App.Page.Proposals where
 
 import App.Colors
+import App.Effect.Auth
 import App.Globus
 import App.Route as Route
 import App.Style qualified as Style
