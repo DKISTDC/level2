@@ -2,6 +2,7 @@ module App.Worker.PuppetMaster where
 
 -- import Data.Set qualified as Set
 
+import App.Worker.FitsGenWorker
 import Data.Maybe (isNothing)
 import Effectful
 import Effectful.Concurrent

@@ -15,6 +15,7 @@ import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
+import App.Worker.FitsGenWorker (GenTask)
 import App.Worker.FitsGenWorker qualified as Fits
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import Control.Monad (forever, void)
@@ -35,7 +36,7 @@ import Effectful.Rel8 as Rel8
 import Effectful.Time
 import Effectful.Worker
 import NSO.Data.Datasets (Datasets, runDataDatasets)
-import NSO.Data.Inversions (GenTask, Inversions, runDataInversions)
+import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
@@ -58,27 +59,52 @@ main = do
       fits <- atomically taskChanNew
       auth <- initAuth config.auth.admins config.auth.adminToken
 
-      mapConcurrently_
-        id
-        [ runLogger "Server" $ startWebServer config auth fits
-        , runAppWorker config auth "Puppets" $ forever $ do
-            PuppetMaster.manageMinions fits
-        , runAppWorker config auth "FitsGen" $ do
-            waitForGlobusAccess $ do
-              startWorker fits Fits.workTask
-        ]
+      concurrently_
+        (startWebServer config auth fits)
+        (runWorkers config auth $ startWorkers fits)
 
       pure ()
  where
+  startPuppetMaster fits =
+    runLogger "Puppet" $
+      forever $
+        PuppetMaster.manageMinions fits
+
+  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenTask -> Eff es ()
+  startWebServer config auth fits =
+    runLogger "Server" $ do
+      log Debug $ "Starting on :" <> show config.app.port
+      log Debug "Develop using https://localhost/"
+      liftIO $
+        Warp.run config.app.port $
+          addHeaders [("app-version", cs appVersion)] $
+            webServer config auth fits
+
+  startFitsGen fits = do
+    runLogger "FitsGen" $
+      waitForGlobusAccess $ do
+        mapConcurrently_
+          id
+          $ flip fmap ([1 .. 8] :: [Int])
+          $ \n -> do
+            runLogger (ThreadName $ "FitsGen" <> cs (show n)) $
+              startWorker fits Fits.workTask
+
+  startWorkers fits =
+    mapConcurrently_
+      id
+      [ startPuppetMaster fits
+      , startFitsGen fits
+      ]
+
   runInit =
     runLogger "Init"
       . runErrorWith @Rel8Error crashWithError
       . runFailIO
       . runEnvironment
 
-  runAppWorker config auth t =
-    runLogger t
-      . runFileSystem
+  runWorkers config auth =
+    runFileSystem
       . runReader config.scratch
       . runRel8 config.db
       . runGlobus config.globus
@@ -88,16 +114,6 @@ main = do
       . runTime
       . runDataInversions
       . runDataDatasets
-
-
-startWebServer :: (IOE :> es, Concurrent :> es, Log :> es) => Config -> AuthState -> TaskChan GenTask -> Eff es ()
-startWebServer config auth fits = do
-  log Debug $ "Starting on :" <> show config.app.port
-  log Debug "Develop using https://localhost/"
-  liftIO $
-    Warp.run config.app.port $
-      addHeaders [("app-version", cs appVersion)] $
-        webServer config auth fits
 
 
 startCPUWorkers :: (Log :> es, Concurrent :> es) => Eff es () -> Eff es ()

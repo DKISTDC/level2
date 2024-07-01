@@ -1,6 +1,9 @@
 module App.Worker.FitsGenWorker
   ( workTask
   , GenerateError
+  , GenTask (..)
+  , GenStatus (..)
+  , Worker
   ) where
 
 import App.Effect.Scratch as Scratch
@@ -27,6 +30,23 @@ import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, fetchCanonicalData
 import NSO.Fits.Generate.Profile (ProfileFrames (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+
+
+data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
+  deriving (Ord, Eq, Show)
+
+
+data GenStatus
+  = GenWaiting
+  | GenStarted
+  | GenTransferring
+  | GenCreating Int Int
+  deriving (Show, Ord, Eq)
+
+
+instance WorkerTask GenTask where
+  type Status GenTask = GenStatus
+  idle = GenWaiting
 
 
 -- BUG: UI Doesn't update under certain conditions. When GenWaiting?
@@ -93,12 +113,12 @@ workTask t = do
 
     log Debug $ dump "Ready to Build!" (length gfs)
     send $ TaskSetStatus t $ GenCreating 0 100
-    zipWithM_ (workFrame totalFrames pos.wavProfiles pfs.wavProfiles) [0 ..] gfs
+    zipWithM_ (workFrame pos.wavProfiles pfs.wavProfiles totalFrames) [0 ..] gfs
 
     send $ Inversions.SetGenerated t.inversionId
     log Debug " - done"
 
-  workFrame tot wpo wpf n g = do
+  workFrame wpo wpf tot n g = do
     send $ TaskSetStatus t $ GenCreating n tot
     now <- currentTime
     (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wpo wpf g

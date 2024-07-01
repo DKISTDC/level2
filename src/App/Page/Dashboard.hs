@@ -8,6 +8,7 @@ import App.Route
 import App.Style qualified as Style
 import App.Version
 import App.View.Layout
+import App.Worker.FitsGenWorker
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
@@ -15,7 +16,6 @@ import Effectful.FileSystem
 import Effectful.Log
 import Effectful.Worker
 import NSO.Data.Datasets
-import NSO.Data.Inversions
 import NSO.Prelude
 import Web.Hyperbole
 

@@ -12,8 +12,6 @@ module NSO.Data.Inversions
   , preprocessRepo
   , GitRepo
   , isActive
-  , GenStatus (..)
-  , GenTask (..)
   ) where
 
 import Control.Monad (void)
@@ -25,7 +23,6 @@ import Effectful.Dispatch.Dynamic
 import Effectful.GenRandom
 import Effectful.Rel8
 import Effectful.Time
-import Effectful.Worker
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -60,24 +57,7 @@ type instance DispatchOf Inversions = 'Dynamic
 
 
 -- | Provenance of EVERY Instrument Program
-newtype AllInversions = AllInversions { inversions :: [Inversion]}
-
-
-data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Ord, Eq, Show)
-
-
-data GenStatus
-  = GenWaiting
-  | GenStarted
-  | GenTransferring
-  | GenCreating Int Int
-  deriving (Show, Ord, Eq)
-
-
-instance WorkerTask GenTask where
-  type Status GenTask = GenStatus
-  idle = GenWaiting
+newtype AllInversions = AllInversions {inversions :: [Inversion]}
 
 
 empty :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion

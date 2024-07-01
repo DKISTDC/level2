@@ -12,13 +12,13 @@ import App.View.DatasetsTable as DatasetsTable
 import App.View.Inversions (inversionStatusLabel)
 import App.View.Layout
 import App.View.ProposalDetails
+import App.Worker.FitsGenWorker
 import Data.Grouped as G
 import Data.List (nub)
 import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
 import Effectful.Time
-import Effectful.Worker
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)

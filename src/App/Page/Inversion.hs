@@ -12,6 +12,7 @@ import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Layout
+import App.Worker.FitsGenWorker
 import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
