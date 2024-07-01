@@ -2,9 +2,7 @@ module Test.FitsGenSpec where
 
 import Control.Monad.Catch (throwM)
 import Data.Fits
-import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists', toList)
-import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (UTCTime (..))
+import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists')
 import Effectful
 import Effectful.Error.Static
 import NSO.Fits.Generate.DataCube
@@ -13,9 +11,8 @@ import NSO.Fits.Generate.Headers.LiftL1
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Fits.Generate.Profile
-import NSO.Fits.Generate.Quantities
 import NSO.Prelude
-import NSO.Types.Common (Stokes (..))
+import NSO.Types.Common
 import NSO.Types.Wavelength
 import Test.Syd
 
@@ -231,7 +228,7 @@ specWavProfile = do
         pixel0 1000 simpleNums `shouldBe` 3.5
 
       it "< positive index in wav630" $ do
-        let p = (wavProfile FeI wav630)
+        let p = wavProfile FeI wav630
         p.pixel `shouldSatisfy` (< 4)
 
       it "> last negative index in wav630" $ do
@@ -283,4 +280,4 @@ specL1Frames = do
 
     it "should include original filename" $ do
       Just f <- pure $ runParseFileName path
-      Path f.file `shouldBe` path
+      Path f.file.filePath `shouldBe` path
