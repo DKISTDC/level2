@@ -164,7 +164,7 @@ inversions onCancel (InversionStatus ip iip ii) = \case
         step <- currentStep ip ii inv.step
         pure $ viewInversion inv step
       Just i ->
-        pure $ viewInversion inv (Inverting (InvertStep (Just i.inversionSoftware) (Just i.uploadedTaskId)))
+        pure $ viewInversion inv (Inverting (InvertStep (Just i.inversionSoftware) Nothing))
  where
   refresh = do
     inv <- loadInversion ii
