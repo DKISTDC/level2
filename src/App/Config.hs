@@ -8,13 +8,14 @@ module App.Config
   , initGlobus
   , initApp
   , App (..)
+  , AuthInfo (..)
   , Tagged (..)
   , AppDomain
   , document
   ) where
 
 import App.Effect.Scratch qualified as Scratch
-import App.Globus (GlobusClient (..), Id' (..), UserEmail (..))
+import App.Globus (GlobusClient (..), Id' (..), Token, Token' (..), UserEmail (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -38,8 +39,14 @@ data Config = Config
   , app :: App
   , globus :: GlobusClient
   , scratch :: Scratch.Config
-  , admins :: [UserEmail]
+  , auth :: AuthInfo
   , db :: Rel8.Connection
+  }
+
+
+data AuthInfo = AuthInfo
+  { admins :: [UserEmail]
+  , adminToken :: Maybe (Token Access)
   }
 
 
@@ -54,8 +61,15 @@ initConfig = do
   (services, servicesIsMock) <- initServices
   globus <- initGlobus
   scratch <- initScratch
+  auth <- initAuth
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth}
+
+
+initAuth :: (Environment :> es) => Eff es AuthInfo
+initAuth = do
   let admins = [UserEmail "shess@nso.edu"]
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, admins}
+  adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
+  pure $ AuthInfo{admins, adminToken}
 
 
 type IsMock = Bool

@@ -56,15 +56,15 @@ main = do
 
     runConcurrent $ do
       fits <- atomically taskChanNew
-      adtok <- newEmptyTMVarIO
+      auth <- initAuth config.auth.admins config.auth.adminToken
 
       mapConcurrently_
         id
-        [ runLogger "Server" $ startWebServer config adtok fits
-        , runAppWorker config "Puppets" $ forever $ do
+        [ runLogger "Server" $ startWebServer config auth fits
+        , runAppWorker config auth "Puppets" $ forever $ do
             PuppetMaster.manageMinions fits
-        , runAppWorker config "FitsGen" $ do
-            waitForGlobusAccess adtok $ do
+        , runAppWorker config auth "FitsGen" $ do
+            waitForGlobusAccess $ do
               startWorker fits Fits.workTask
         ]
 
@@ -76,12 +76,13 @@ main = do
       . runFailIO
       . runEnvironment
 
-  runAppWorker config t =
+  runAppWorker config auth t =
     runLogger t
       . runFileSystem
       . runReader config.scratch
       . runRel8 config.db
       . runGlobus config.globus
+      . runAuth config.app.domain Redirect auth
       . runScratch config.scratch
       . runGenRandom
       . runTime
@@ -89,14 +90,14 @@ main = do
       . runDataDatasets
 
 
-startWebServer :: (IOE :> es, Concurrent :> es, Log :> es) => Config -> TMVar (Token Access) -> TaskChan GenTask -> Eff es ()
-startWebServer config adtok fits = do
+startWebServer :: (IOE :> es, Concurrent :> es, Log :> es) => Config -> AuthState -> TaskChan GenTask -> Eff es ()
+startWebServer config auth fits = do
   log Debug $ "Starting on :" <> show config.app.port
   log Debug "Develop using https://localhost/"
   liftIO $
     Warp.run config.app.port $
       addHeaders [("app-version", cs appVersion)] $
-        webServer config adtok fits
+        webServer config auth fits
 
 
 startCPUWorkers :: (Log :> es, Concurrent :> es) => Eff es () -> Eff es ()
@@ -107,11 +108,10 @@ startCPUWorkers work = do
     work
 
 
-waitForGlobusAccess :: (Concurrent :> es, Log :> es) => TMVar (Token Access) -> Eff (Reader (Token Access) : es) () -> Eff es ()
-waitForGlobusAccess advar work = do
+waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es) => Eff (Reader (Token Access) : es) () -> Eff es ()
+waitForGlobusAccess work = do
   log Debug "Waiting for Admin Globus Access Token"
-  acc <- atomically $ readTMVar advar
-  Auth.runWithAccess acc work
+  Auth.waitForAccess work
 
 
 availableWorkerCPUs :: (Concurrent :> es) => Eff es Int
@@ -121,8 +121,8 @@ availableWorkerCPUs = do
   pure $ cores - saveCoresForWebserver
 
 
-webServer :: Config -> TMVar (Token Access) -> TaskChan GenTask -> Application
-webServer config adtok fits =
+webServer :: Config -> AuthState -> TaskChan GenTask -> Application
+webServer config auth fits =
   liveApp
     document
     (runApp . routeRequest $ router)
@@ -155,7 +155,7 @@ webServer config adtok fits =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
-      . runAuth config.app.domain Redirect config.admins adtok
+      . runAuth config.app.domain Redirect auth
       . runFileSystem
       . runScratch config.scratch
       . runWorker fits

@@ -24,6 +24,7 @@ data Auth :: Effect where
   LoginUrl :: Auth m Url
   AuthWithCode :: Token Exchange -> Auth m UserLoginInfo
   AdminToken :: Auth m (Maybe (Token Access))
+  AdminTokenWait :: Auth m (Token Access)
 
 
 type instance DispatchOf Auth = 'Dynamic
@@ -33,29 +34,47 @@ runAuth
   :: (Globus :> es, Route r, Concurrent :> es, Log :> es)
   => AppDomain
   -> r
-  -> [UserEmail]
-  -> TMVar (Token Access)
+  -> AuthState
   -> Eff (Auth : es) a
   -> Eff es a
-runAuth dom r admins adtok = interpret $ \_ -> \case
+runAuth dom r auth = interpret $ \_ -> \case
   LoginUrl -> do
     Globus.authUrl $ redirectUri dom r
   AuthWithCode code -> do
     let red = redirectUri dom r
     ts <- Globus.accessTokens red code
+    log Debug $ dump "TS" ts
+
     u <- Globus.userInfo ts
     when (isAdmin u) $ do
-      log Debug "FOUND ADMIN"
-      void $ atomically $ tryPutTMVar adtok u.transfer
+      log Debug $ dump "FOUND ADMIN" u.transfer
+      void $ atomically $ tryPutTMVar auth.adminToken u.transfer
     pure u
   AdminToken -> do
-    atomically $ tryReadTMVar adtok
+    atomically $ tryReadTMVar auth.adminToken
+  AdminTokenWait -> do
+    atomically $ readTMVar auth.adminToken
  where
   isAdmin :: UserLoginInfo -> Bool
   isAdmin u = do
     case u.email of
-      Just ue -> ue `elem` admins
+      Just ue -> ue `elem` auth.admins
       Nothing -> False
+
+
+data AuthState = AuthState
+  { adminToken :: TMVar (Token Access)
+  , admins :: [UserEmail]
+  }
+
+
+initAuth :: (Concurrent :> es) => [UserEmail] -> Maybe (Token Access) -> Eff es AuthState
+initAuth admins mtok = do
+  adminToken <- token mtok
+  pure $ AuthState{admins, adminToken}
+ where
+  token Nothing = newEmptyTMVarIO
+  token (Just t) = newTMVarIO t
 
 
 -- WARNING:  until we update the globus app, it only allows /redirect, no query, no nothing
@@ -92,6 +111,12 @@ saveAccessToken (Tagged acc) = setSession "globus" acc
 
 clearAccessToken :: (Hyperbole :> es) => Eff es ()
 clearAccessToken = clearSession "globus"
+
+
+waitForAccess :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
+waitForAccess eff = do
+  acc <- send AdminTokenWait
+  runWithAccess acc eff
 
 
 runWithAccess :: Token Access -> Eff (Reader (Token Access) : es) a -> Eff es a
