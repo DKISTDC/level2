@@ -15,10 +15,10 @@ import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
-import App.Worker.FitsGenWorker (GenFrame, GenInversion)
+import App.Worker.FitsGenWorker (GenInversion)
 import App.Worker.FitsGenWorker qualified as Fits
 import App.Worker.PuppetMaster qualified as PuppetMaster
-import Control.Monad (forever, void)
+import Control.Monad (forever)
 import Control.Monad.Catch
 import Effectful
 import Effectful.Concurrent
@@ -57,12 +57,11 @@ main = do
 
     runConcurrent $ do
       fits <- atomically taskChanNew
-      frames <- atomically taskChanNew
       auth <- initAuth config.auth.admins config.auth.adminToken
 
       concurrently_
         (startWebServer config auth fits)
-        (runWorkers config auth fits frames startWorkers)
+        (runWorkers config auth fits startWorkers)
 
       pure ()
  where
@@ -86,7 +85,7 @@ main = do
       waitForGlobusAccess $ do
         mapConcurrently_
           id
-          [runLogger ("FitsGen0") $ startWorker Fits.workTask]
+          [startWorker Fits.workTask]
 
   startWorkers =
     mapConcurrently_
@@ -101,7 +100,7 @@ main = do
       . runFailIO
       . runEnvironment
 
-  runWorkers config auth fits frames =
+  runWorkers config auth fits =
     runFileSystem
       . runReader config.scratch
       . runRel8 config.db
@@ -113,28 +112,12 @@ main = do
       . runDataInversions
       . runDataDatasets
       . runTasks @GenInversion fits
-      . runTasks @GenFrame frames
-
-
-startCPUWorkers :: (Log :> es, Concurrent :> es) => Eff es () -> Eff es ()
-startCPUWorkers work = do
-  n <- availableWorkerCPUs
-  -- start one per core
-  void $ pooledForConcurrentlyN (max 1 n) [1 .. n :: Int] $ const $ do
-    work
 
 
 waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es) => Eff (Reader (Token Access) : es) () -> Eff es ()
 waitForGlobusAccess work = do
   log Debug "Waiting for Admin Globus Access Token"
   Auth.waitForAccess work
-
-
-availableWorkerCPUs :: (Concurrent :> es) => Eff es Int
-availableWorkerCPUs = do
-  let saveCoresForWebserver = 1
-  cores <- getNumCapabilities
-  pure $ cores - saveCoresForWebserver
 
 
 webServer :: Config -> AuthState -> TaskChan GenInversion -> Application

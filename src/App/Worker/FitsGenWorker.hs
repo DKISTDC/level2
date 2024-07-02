@@ -7,13 +7,13 @@ module App.Worker.FitsGenWorker
   , GenStatus (..)
   , GenInvStep (..)
   , Tasks
-  , GenFrame (..)
   , workFrame
   ) where
 
 import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
+import App.Worker.CPU (parallelize_)
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
@@ -32,6 +32,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, fetchCanonicalDataset, readTimestamps)
+import NSO.Fits.Generate.Headers.Types (DateTime (..))
 import NSO.Fits.Generate.Profile (Fit, Original, ProfileFrames (..), WavProfiles)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -60,38 +61,15 @@ data GenInvStep
 
 data GenStatus = GenStatus
   { step :: GenInvStep
-  , totalFrames :: Int
   , complete :: Int
+  , total :: Int
   }
   deriving (Eq, Ord)
 
 
 instance Show GenStatus where
-  show g = "GenStatus " <> show g.step <> " " <> show g.totalFrames <> " " <> show g.complete
+  show g = "GenStatus " <> show g.step <> " " <> show g.complete <> " " <> show g.total
 
-
-data GenFrame = GenFrame
-  { parent :: GenInversion
-  , wavOrig :: WavProfiles Original
-  , wavFit :: WavProfiles Fit
-  , frame :: GenerateFrame
-  , index :: Int
-  }
-
-
-instance Eq GenFrame where
-  f1 == f2 =
-    f1.parent == f2.parent
-      && f1.index == f2.index
-
-
-instance WorkerTask GenFrame where
-  type Status GenFrame = ()
-  idle = ()
-
-
--- DOING: parallelize!
--- DONE: progress bar
 
 workTask
   :: forall es
@@ -105,7 +83,6 @@ workTask
      , Log :> es
      , Concurrent :> es
      , Tasks GenInversion :> es
-     , Tasks GenFrame :> es
      , GenRandom :> es
      )
   => GenInversion
@@ -151,15 +128,12 @@ workTask t = do
     let totalFrames = length gfs
 
     log Debug $ dump "Ready to Build!" (length gfs)
-    send $ TaskSetStatus t $ GenStatus GenCreating 0 totalFrames
-    let gfts = zipWith (GenFrame t pos.wavProfiles pfs.wavProfiles) gfs [0 ..]
-    send $ TasksAdd gfts
+    send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = totalFrames}
 
-    log Debug " - done, waiting for individual jobs"
+    parallelize_ $ fmap (workFrame t pos.wavProfiles pfs.wavProfiles) gfs
 
-    -- we wait to wait for the children
-    -- maybe.... we want to use a pooled X whatever instead of more jobs..
-  -- TODO: need to mark a status no... otherwise it gets picked up again by the puppetmaster...
+    send $ SetGenerated t.inversionId
+    log Debug " - done"
 
   failed :: GenerateError -> Eff es ()
   failed err = do
@@ -168,14 +142,17 @@ workTask t = do
 
 workFrame
   :: (Tasks GenInversion :> es, Time :> es, Error GenerateError :> es, GenRandom :> es, Log :> es, Scratch :> es)
-  => GenFrame
+  => GenInversion
+  -> WavProfiles Original
+  -> WavProfiles Fit
+  -> GenerateFrame
   -> Eff es ()
-workFrame t = do
-  send $ TaskModStatus @GenInversion t.parent updateNumFrame
+workFrame t wavOrig wavFit g = do
+  send $ TaskModStatus @GenInversion t updateNumFrame
   now <- currentTime
-  (fits, dateBeg) <- Gen.generateL2Fits now t.parent.inversionId t.wavOrig t.wavFit t.frame
-  log Debug $ dump "write" dateBeg
-  Gen.writeL2Frame t.parent.proposalId t.parent.inversionId fits dateBeg
+  (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wavOrig wavFit g
+  log Debug $ dump "FRAME" dateBeg.timestamp
+  Gen.writeL2Frame t.proposalId t.inversionId fits dateBeg
   pure ()
  where
   updateNumFrame :: GenStatus -> GenStatus

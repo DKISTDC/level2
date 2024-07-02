@@ -50,6 +50,7 @@ library
       App.View.Inversions
       App.View.Layout
       App.View.ProposalDetails
+      App.Worker.CPU
       App.Worker.FitsGenWorker
       App.Worker.PuppetMaster
       Effectful.Tasks

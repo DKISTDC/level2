@@ -167,7 +167,7 @@ instance (KnownValue c) => KeyType (Constant c) where
   typeComment = ""
 
 
-data DateTime = DateTime Text deriving (Generic, Show)
+data DateTime = DateTime {timestamp :: Text} deriving (Generic, Show)
 instance KeyType DateTime where
   typeValue (DateTime s) = String s
   typeComment = ""

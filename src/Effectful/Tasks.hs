@@ -7,6 +7,7 @@ import Data.Bifunctor (second)
 import Data.Kind (Type)
 import Data.List qualified as L
 import Effectful
+import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import NSO.Prelude

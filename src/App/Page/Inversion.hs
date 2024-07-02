@@ -429,8 +429,8 @@ viewGenerateWait s =
         space
         el_ $ text $ cs $ show s.complete
         el_ " / "
-        el_ $ text $ cs $ show s.totalFrames
-      View.progress (fromIntegral s.complete / fromIntegral s.totalFrames)
+        el_ $ text $ cs $ show s.total
+      View.progress (fromIntegral s.complete / fromIntegral s.total)
     GenWaiting ->
       el_ "Waiting for job to start"
     GenStarted ->
