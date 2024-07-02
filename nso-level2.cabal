@@ -52,7 +52,7 @@ library
       App.View.ProposalDetails
       App.Worker.FitsGenWorker
       App.Worker.PuppetMaster
-      Effectful.Worker
+      Effectful.Tasks
       Flow
       Flow.Example
       Flow.Node
@@ -129,6 +129,7 @@ library
     , telescope
     , text
     , time
+    , unordered-containers
     , uuid
     , wai-extra
     , warp ==3.3.31
@@ -189,6 +190,7 @@ executable level2
     , telescope
     , text
     , time
+    , unordered-containers
     , uuid
     , wai-extra
     , warp ==3.3.31
@@ -257,6 +259,7 @@ test-suite tests
     , telescope
     , text
     , time
+    , unordered-containers
     , uuid
     , wai-extra
     , warp ==3.3.31

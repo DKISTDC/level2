@@ -28,7 +28,7 @@ data SpectralLine
   | Ha
   | FeI
   | CaII CaIILine
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 
 instance Show SpectralLine where
@@ -42,7 +42,7 @@ data CaIILine
   = CaII_849
   | CaII_854
   | CaII_866
-  deriving (Bounded, Enum, Eq)
+  deriving (Bounded, Enum, Eq, Ord)
 
 
 instance Show CaIILine where

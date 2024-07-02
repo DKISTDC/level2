@@ -17,7 +17,7 @@ import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Worker
+import Effectful.Tasks
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
@@ -26,13 +26,13 @@ import Web.Hyperbole
 import Web.Hyperbole.Forms (formFields)
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Worker GenTask :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
 page ip i Inv = pageMain ip i
 page ip i SubmitDownload = pageSubmitDownload ip i
 page ip i SubmitUpload = pageSubmitUpload ip i
 
 
-pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Worker GenTask :> es) => Id Proposal -> Id Inversion -> Page es Response
+pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> Page es Response
 pageMain ip i = do
   handle $ inversions redirectHome
   handle generateTransfer
@@ -133,7 +133,7 @@ data InversionSoftware = InversionSoftware Text
   deriving (Generic, FormField)
 
 
-inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Worker GenTask :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
+inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenInversion :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
 inversions onCancel (InversionStatus ip iip ii) = \case
   Cancel -> do
     send $ Inversions.Remove ii
@@ -287,7 +287,7 @@ instance HyperView InversionCommit where
   type Action InversionCommit = CommitAction
 
 
-inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es, Worker GenTask :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
+inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenInversion :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
 inversionCommit (InversionCommit ip ii) = action
  where
   action LoadValid = InvForm.loadValid inversionCommitLabel
@@ -308,7 +308,7 @@ instance HyperView UploadTransfer where
   type Action UploadTransfer = TransferAction
 
 
-uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Worker GenTask :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
+uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenInversion :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
 uploadTransfer (UploadTransfer ip iip ii ti) = \case
   TaskFailed -> do
     pure $ do
@@ -321,7 +321,7 @@ uploadTransfer (UploadTransfer ip iip ii ti) = \case
   CheckTransfer -> InvForm.checkTransfer ti
 
 
-checkInvertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Worker GenTask :> es) => Id Proposal -> Id Inversion -> View a () -> Eff es (View a ())
+checkInvertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> View a () -> Eff es (View a ())
 checkInvertReload ip ii vw = do
   inv <- loadInversion ii
   curr <- currentStep ip ii inv.step
@@ -373,7 +373,7 @@ instance HyperView GenerateTransfer where
   type Action GenerateTransfer = TransferAction
 
 
-generateTransfer :: (Worker GenTask :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => GenerateTransfer -> TransferAction -> Eff es (View GenerateTransfer ())
+generateTransfer :: (Tasks GenInversion :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => GenerateTransfer -> TransferAction -> Eff es (View GenerateTransfer ())
 generateTransfer (GenerateTransfer ip iip ii ti) = \case
   TaskFailed -> do
     pure $ viewGenerateDownload $ do
@@ -382,7 +382,7 @@ generateTransfer (GenerateTransfer ip iip ii ti) = \case
         button RestartGen (Style.btn Primary) "Restart Transfer"
   TaskSucceeded -> do
     -- reload immediately... it should be marked as uploaded and go somewhere else
-    s <- send $ TaskGetStatus $ GenTask ip ii
+    s <- send $ TaskGetStatus $ GenInversion ip ii
     pure $ do
       target (InversionStatus ip iip ii) $
         viewGenerateWait s
@@ -420,17 +420,17 @@ viewGenerateWait s =
   onLoad Reload 1000 $ do
     col (gap 5) $ do
       el bold "Generate Frames"
-      viewStatus s
+      viewStatus s.step
  where
   viewStatus = \case
-    GenCreating n tot -> do
+    GenCreating -> do
       row (gap 5) $ do
         el_ "Creating"
         space
-        el_ $ text $ cs $ show n
+        el_ $ text $ cs $ show s.complete
         el_ " / "
-        el_ $ text $ cs $ show tot
-      View.progress (fromIntegral n / fromIntegral tot)
+        el_ $ text $ cs $ show s.totalFrames
+      View.progress (fromIntegral s.complete / fromIntegral s.totalFrames)
     GenWaiting ->
       el_ "Waiting for job to start"
     GenStarted ->
@@ -479,7 +479,7 @@ newtype CurrentTask = CurrentTask Task
   deriving (Eq)
 
 
-currentStep :: (Globus :> es, Worker GenTask :> es) => Id Proposal -> Id Inversion -> InversionStep -> Eff es CurrentStep
+currentStep :: (Globus :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> InversionStep -> Eff es CurrentStep
 currentStep ip ii = \case
   StepCreated _ -> pure (Downloading Select)
   StepDownloading dwn -> do
@@ -500,7 +500,7 @@ currentStep ip ii = \case
     case g.genError of
       Just e -> pure $ Generating $ GenConvError e
       Nothing -> do
-        s <- send $ TaskGetStatus (GenTask ip ii)
+        s <- send $ TaskGetStatus (GenInversion ip ii)
         pure $ Generating (GenConverting s)
   StepPublished _ -> pure Complete
 

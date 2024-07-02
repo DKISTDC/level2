@@ -64,6 +64,7 @@ dependencies:
   - data-diverse >= 4.7
   - data-diverse
   - containers
+  - unordered-containers
   - bytestring
   - aeson == 2.1.2.1
   - http-api-data

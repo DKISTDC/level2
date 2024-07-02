@@ -15,7 +15,7 @@ import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
-import App.Worker.FitsGenWorker (GenTask)
+import App.Worker.FitsGenWorker (GenFrame, GenInversion)
 import App.Worker.FitsGenWorker qualified as Fits
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import Control.Monad (forever, void)
@@ -33,8 +33,8 @@ import Effectful.GraphQL
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
+import Effectful.Tasks
 import Effectful.Time
-import Effectful.Worker
 import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Error
@@ -57,20 +57,21 @@ main = do
 
     runConcurrent $ do
       fits <- atomically taskChanNew
+      frames <- atomically taskChanNew
       auth <- initAuth config.auth.admins config.auth.adminToken
 
       concurrently_
         (startWebServer config auth fits)
-        (runWorkers config auth $ startWorkers fits)
+        (runWorkers config auth fits frames startWorkers)
 
       pure ()
  where
-  startPuppetMaster fits =
+  startPuppetMaster =
     runLogger "Puppet" $
-      forever $
-        PuppetMaster.manageMinions fits
+      forever
+        PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenTask -> Eff es ()
+  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenInversion -> Eff es ()
   startWebServer config auth fits =
     runLogger "Server" $ do
       log Debug $ "Starting on :" <> show config.app.port
@@ -80,21 +81,18 @@ main = do
           addHeaders [("app-version", cs appVersion)] $
             webServer config auth fits
 
-  startFitsGen fits = do
+  startFitsGen = do
     runLogger "FitsGen" $
       waitForGlobusAccess $ do
         mapConcurrently_
           id
-          $ flip fmap ([1 .. 8] :: [Int])
-          $ \n -> do
-            runLogger (ThreadName $ "FitsGen" <> cs (show n)) $
-              startWorker fits Fits.workTask
+          [runLogger ("FitsGen0") $ startWorker Fits.workTask]
 
-  startWorkers fits =
+  startWorkers =
     mapConcurrently_
       id
-      [ startPuppetMaster fits
-      , startFitsGen fits
+      [ startPuppetMaster
+      , startFitsGen
       ]
 
   runInit =
@@ -103,7 +101,7 @@ main = do
       . runFailIO
       . runEnvironment
 
-  runWorkers config auth =
+  runWorkers config auth fits frames =
     runFileSystem
       . runReader config.scratch
       . runRel8 config.db
@@ -114,6 +112,8 @@ main = do
       . runTime
       . runDataInversions
       . runDataDatasets
+      . runTasks @GenInversion fits
+      . runTasks @GenFrame frames
 
 
 startCPUWorkers :: (Log :> es, Concurrent :> es) => Eff es () -> Eff es ()
@@ -137,7 +137,7 @@ availableWorkerCPUs = do
   pure $ cores - saveCoresForWebserver
 
 
-webServer :: Config -> AuthState -> TaskChan GenTask -> Application
+webServer :: Config -> AuthState -> TaskChan GenInversion -> Application
 webServer config auth fits =
   liveApp
     document
@@ -156,7 +156,7 @@ webServer config auth fits =
   router Logout = page Auth.logout
   router Redirect = page Auth.login
 
-  runApp :: (IOE :> es) => Eff (Worker GenTask : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Tasks GenInversion : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
@@ -174,7 +174,7 @@ webServer config auth fits =
       . runAuth config.app.domain Redirect auth
       . runFileSystem
       . runScratch config.scratch
-      . runWorker fits
+      . runTasks fits
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

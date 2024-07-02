@@ -37,7 +37,7 @@ tag c =
     . bg (light c)
 
 
-tagOutline :: (ToColor c) => c -> Mod
+tagOutline :: ToColor c => c -> Mod
 tagOutline c =
   color c
     . borderColor c

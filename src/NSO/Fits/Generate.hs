@@ -10,7 +10,6 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.FileSystem as FS
 import Effectful.GenRandom
 import Effectful.Log
 import Effectful.Writer.Static.Local
@@ -117,7 +116,7 @@ collateFrames qs pfs pos ts
   mismatchError = MismatchedFrames frameSizes
 
 
-writeL2Frame :: (Log :> es, Scratch :> es, FileSystem :> es) => Id Proposal -> Id Inversion -> Fits -> DateTime -> Eff es ()
+writeL2Frame :: (Log :> es, Scratch :> es) => Id Proposal -> Id Inversion -> Fits -> DateTime -> Eff es ()
 writeL2Frame ip ii f (DateTime dt) = do
   let dir = outputL2 ip ii
   let path = filePath dir filenameL2

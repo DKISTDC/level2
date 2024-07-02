@@ -1,9 +1,14 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module App.Worker.FitsGenWorker
   ( workTask
   , GenerateError
-  , GenTask (..)
+  , GenInversion (..)
   , GenStatus (..)
-  , Worker
+  , GenInvStep (..)
+  , Tasks
+  , GenFrame (..)
+  , workFrame
   ) where
 
 import App.Effect.Scratch as Scratch
@@ -20,39 +25,72 @@ import Effectful.FileSystem
 import Effectful.GenRandom
 import Effectful.Log
 import Effectful.Reader.Dynamic
+import Effectful.Tasks
 import Effectful.Time
-import Effectful.Worker
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, fetchCanonicalDataset, readTimestamps)
-import NSO.Fits.Generate.Profile (ProfileFrames (..))
+import NSO.Fits.Generate.Profile (Fit, Original, ProfileFrames (..), WavProfiles)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 
 
-data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Ord, Eq, Show)
+data GenInversion = GenInversion {proposalId :: Id Proposal, inversionId :: Id Inversion}
+  deriving (Eq)
 
 
-data GenStatus
+instance Show GenInversion where
+  show g = "GenInversion " <> show g.proposalId <> " " <> show g.inversionId
+
+
+instance WorkerTask GenInversion where
+  type Status GenInversion = GenStatus
+  idle = GenStatus GenWaiting 0 0
+
+
+data GenInvStep
   = GenWaiting
   | GenStarted
   | GenTransferring
-  | GenCreating Int Int
-  deriving (Show, Ord, Eq)
+  | GenCreating
+  deriving (Show, Eq, Ord)
 
 
-instance WorkerTask GenTask where
-  type Status GenTask = GenStatus
-  idle = GenWaiting
+data GenStatus = GenStatus
+  { step :: GenInvStep
+  , totalFrames :: Int
+  , complete :: Int
+  }
+  deriving (Eq, Ord)
 
 
--- BUG: UI Doesn't update under certain conditions. When GenWaiting?
--- BUG: It's creating frames even with 487 timestamps vs 486 frames
--- BUG: Transfer status not showing up ever.... not sure why
--- TODO: parallelize!
+instance Show GenStatus where
+  show g = "GenStatus " <> show g.step <> " " <> show g.totalFrames <> " " <> show g.complete
+
+
+data GenFrame = GenFrame
+  { parent :: GenInversion
+  , wavOrig :: WavProfiles Original
+  , wavFit :: WavProfiles Fit
+  , frame :: GenerateFrame
+  , index :: Int
+  }
+
+
+instance Eq GenFrame where
+  f1 == f2 =
+    f1.parent == f2.parent
+      && f1.index == f2.index
+
+
+instance WorkerTask GenFrame where
+  type Status GenFrame = ()
+  idle = ()
+
+
+-- DOING: parallelize!
 -- DONE: progress bar
 
 workTask
@@ -66,10 +104,11 @@ workTask
      , Scratch :> es
      , Log :> es
      , Concurrent :> es
-     , Worker GenTask :> es
+     , Tasks GenInversion :> es
+     , Tasks GenFrame :> es
      , GenRandom :> es
      )
-  => GenTask
+  => GenInversion
   -> Eff es ()
 workTask t = do
   res <- runErrorNoCallStack $ catch workWithError onCaughtError
@@ -82,13 +121,13 @@ workTask t = do
   workWithError = do
     log Debug "START"
 
-    send $ TaskSetStatus t GenStarted
+    send $ TaskSetStatus t $ GenStatus GenStarted 0 0
 
     inv <- loadInversion t.inversionId
     (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
     log Debug $ dump "Task" taskId
     send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
-    send $ TaskSetStatus t GenTransferring
+    send $ TaskSetStatus t $ GenStatus GenTransferring 0 0
 
     log Debug " - waiting..."
     untilM_ delay (isTransferComplete taskId)
@@ -112,23 +151,35 @@ workTask t = do
     let totalFrames = length gfs
 
     log Debug $ dump "Ready to Build!" (length gfs)
-    send $ TaskSetStatus t $ GenCreating 0 100
-    zipWithM_ (workFrame pos.wavProfiles pfs.wavProfiles totalFrames) [0 ..] gfs
+    send $ TaskSetStatus t $ GenStatus GenCreating 0 totalFrames
+    let gfts = zipWith (GenFrame t pos.wavProfiles pfs.wavProfiles) gfs [0 ..]
+    send $ TasksAdd gfts
 
-    send $ Inversions.SetGenerated t.inversionId
-    log Debug " - done"
+    log Debug " - done, waiting for individual jobs"
 
-  workFrame wpo wpf tot n g = do
-    send $ TaskSetStatus t $ GenCreating n tot
-    now <- currentTime
-    (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wpo wpf g
-    log Debug $ dump "write" dateBeg
-    Gen.writeL2Frame t.proposalId t.inversionId fits dateBeg
-    pure ()
+    -- we wait to wait for the children
+    -- maybe.... we want to use a pooled X whatever instead of more jobs..
+  -- TODO: need to mark a status no... otherwise it gets picked up again by the puppetmaster...
 
   failed :: GenerateError -> Eff es ()
   failed err = do
     send $ Inversions.SetError t.inversionId (cs $ show err)
+
+
+workFrame
+  :: (Tasks GenInversion :> es, Time :> es, Error GenerateError :> es, GenRandom :> es, Log :> es, Scratch :> es)
+  => GenFrame
+  -> Eff es ()
+workFrame t = do
+  send $ TaskModStatus @GenInversion t.parent updateNumFrame
+  now <- currentTime
+  (fits, dateBeg) <- Gen.generateL2Fits now t.parent.inversionId t.wavOrig t.wavFit t.frame
+  log Debug $ dump "write" dateBeg
+  Gen.writeL2Frame t.parent.proposalId t.parent.inversionId fits dateBeg
+  pure ()
+ where
+  updateNumFrame :: GenStatus -> GenStatus
+  updateNumFrame GenStatus{..} = GenStatus{complete = complete + 1, ..}
 
 
 startTransferIfNeeded :: (Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Id InstrumentProgram -> InversionStep -> Eff es (Id Globus.Task, Path' Dir Dataset)
