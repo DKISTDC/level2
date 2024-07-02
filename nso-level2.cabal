@@ -100,7 +100,7 @@ library
       StrictData
   ghc-options: -Wall
   build-depends:
-      aeson ==2.1.2.1
+      aeson
     , base >=4.16.4.0
     , bytestring
     , casing
@@ -110,7 +110,7 @@ library
     , exceptions
     , filepath
     , fits-parse
-    , globus
+    , globus >=0.1.2
     , hasql
     , http-api-data
     , http-types
@@ -134,7 +134,7 @@ library
     , uuid
     , wai-extra
     , warp ==3.3.31
-    , web-view >=0.4.0
+    , web-view >=0.5.0
   default-language: GHC2021
 
 executable level2
@@ -160,7 +160,7 @@ executable level2
       StrictData
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson ==2.1.2.1
+      aeson
     , base >=4.16.4.0
     , bytestring
     , casing
@@ -170,7 +170,7 @@ executable level2
     , exceptions
     , filepath
     , fits-parse
-    , globus
+    , globus >=0.1.2
     , hasql
     , http-api-data
     , http-types
@@ -195,7 +195,7 @@ executable level2
     , uuid
     , wai-extra
     , warp ==3.3.31
-    , web-view >=0.4.0
+    , web-view >=0.5.0
   default-language: GHC2021
 
 test-suite tests
@@ -228,7 +228,7 @@ test-suite tests
   build-tool-depends:
       sydtest-discover:sydtest-discover
   build-depends:
-      aeson ==2.1.2.1
+      aeson
     , base >=4.16.4.0
     , bytestring
     , casing
@@ -238,7 +238,7 @@ test-suite tests
     , exceptions
     , filepath
     , fits-parse
-    , globus
+    , globus >=0.1.2
     , hasql
     , http-api-data
     , http-types

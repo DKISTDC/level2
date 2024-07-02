@@ -38,7 +38,7 @@ default-extensions:
 dependencies:
   - base >=4.16.4.0
   - nso-level2-types
-  - web-view >= 0.4.0
+  - web-view >= 0.5.0
   - warp == 3.3.31
   - wai-extra
   - http-types
@@ -66,9 +66,9 @@ dependencies:
   - containers
   - unordered-containers
   - bytestring
-  - aeson == 2.1.2.1
+  - aeson
   - http-api-data
-  - globus
+  - globus >= 0.1.2
   - fits-parse
   - massiv
   - telescope
