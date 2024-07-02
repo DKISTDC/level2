@@ -18,5 +18,6 @@ availableWorkerCPUs = do
 parallelize_ :: (Concurrent :> es, Log :> es) => [Eff es a] -> Eff es ()
 parallelize_ effs = do
   cpus <- availableWorkerCPUs
-  log Debug $ "Parallelize: " <> show cpus
-  void $ pooledMapConcurrentlyN_ cpus id effs
+  let numThreads = min 16 cpus
+  log Debug $ "Parallelize: " <> show numThreads
+  void $ pooledMapConcurrentlyN_ numThreads id effs
