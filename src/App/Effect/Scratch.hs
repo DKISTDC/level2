@@ -68,18 +68,27 @@ baseDir :: Path' Dir Scratch
 baseDir = Path "level2"
 
 
+input :: Path' Dir Input
+input = baseDir </> "input"
+
+
+generated :: Path' Dir Generated
+generated = baseDir </> "generated"
+
+
 dataset :: Dataset -> Path' Dir Dataset
 dataset d =
-  baseDir </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
+  input </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-inversion :: Id Proposal -> Id Inversion -> Path' Dir Inversion
-inversion ip ii =
-  baseDir </> Path (cs ip.fromId) </> Path (cs ii.fromId)
+blanca :: Id Proposal -> Id Inversion -> Path' Dir BLANCA
+blanca ip ii =
+  input </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
 outputL2Dir :: Id Proposal -> Id Inversion -> Path' Dir L2Frame
-outputL2Dir ip ii = inversion ip ii </> Path "output"
+outputL2Dir ip ii =
+  generated </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
 outputL2Frame :: Id Proposal -> Id Inversion -> DateTime -> Path L2Frame
@@ -87,10 +96,14 @@ outputL2Frame ip ii dt =
   filePath (outputL2Dir ip ii) $ filenameL2 ii dt
 
 
+data Input
+
+
 data InvProfile
 data InvResults
 data OrigProfile
 data Timestamps
+data BLANCA
 
 
 data UploadFiles t = UploadFiles
@@ -102,12 +115,12 @@ data UploadFiles t = UploadFiles
   deriving (Generic, Show)
 
 
-inversionUploads :: Path' Dir Inversion -> UploadFiles File
-inversionUploads dir =
-  let invResults = dir </> fileInvResults
-      invProfile = dir </> fileInvProfile
-      origProfile = dir </> fileOrigProfile
-      timestamps = dir </> fileTimestamps
+inversionUploads :: Path' Dir BLANCA -> UploadFiles File
+inversionUploads bdir =
+  let invResults = bdir </> fileInvResults
+      invProfile = bdir </> fileInvProfile
+      origProfile = bdir </> fileOrigProfile
+      timestamps = bdir </> fileTimestamps
    in UploadFiles{invResults, invProfile, origProfile, timestamps}
 
 

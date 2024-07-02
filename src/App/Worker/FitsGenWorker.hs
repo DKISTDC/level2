@@ -31,7 +31,6 @@ import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, readTimestamps, requireCanonicalDataset)
-import NSO.Fits.Generate.Headers.Types (DateTime (..))
 import NSO.Fits.Generate.Profile (Fit, Original, ProfileFrames (..), WavProfiles)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -112,7 +111,7 @@ workTask t = do
     send $ Inversions.SetGenTransferred t.inversionId
 
     log Debug " - done, getting frames..."
-    let u = Scratch.inversionUploads $ Scratch.inversion t.proposalId t.inversionId
+    let u = Scratch.inversionUploads $ Scratch.blanca t.proposalId t.inversionId
     log Debug $ dump "InvResults" u.invResults
     log Debug $ dump "InvProfile" u.invProfile
     log Debug $ dump "OrigProfile" u.origProfile
@@ -149,12 +148,12 @@ workFrame
   -> L2Frame
   -> Eff es ()
 workFrame t wavOrig wavFit g = do
-  send $ TaskModStatus @GenInversion t updateNumFrame
   now <- currentTime
   (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wavOrig wavFit g
-  log Debug $ dump "FRAME" dateBeg.timestamp
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
   Scratch.writeFile path $ Gen.encodeL2 fits
+  send $ TaskModStatus @GenInversion t updateNumFrame
+  log Debug path.filePath
  where
   updateNumFrame :: GenStatus -> GenStatus
   updateNumFrame GenStatus{..} = GenStatus{complete = complete + 1, ..}

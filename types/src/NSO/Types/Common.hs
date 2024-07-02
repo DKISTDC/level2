@@ -87,7 +87,7 @@ data Instrument
 
 
 newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
-  deriving newtype (Show, Read, Eq)
+  deriving newtype (Show, Read, Eq, IsString)
 type Path = Path' File
 
 

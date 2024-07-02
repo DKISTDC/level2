@@ -18,7 +18,8 @@ module App.Globus
   , Id' (..)
   , runGlobus
   , taskPercentComplete
-  , initDownload
+  , initDownloadL1Inputs
+  , initDownloadL2Gen
   , initUpload
   , initScratchDataset
   , FileLimit (..)
@@ -251,14 +252,14 @@ initUpload tform up ip ii = do
         }
 
     dest :: Path' Filename a -> Path' File a
-    dest fn = Scratch.inversion ip ii </> fn
+    dest fn = Scratch.blanca ip ii </> fn
 
     source :: Path' Dir TransferForm -> Path' Filename a -> Path' File a
     source t fn = t </> fn
 
 
-initDownload :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
-initDownload tform df ds = do
+initDownloadL1Inputs :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
+initDownloadL1Inputs tform df ds = do
   initTransfer downloadTransferRequest
  where
   downloadTransferRequest :: Globus.Id Submission -> TransferRequest
@@ -303,6 +304,50 @@ initScratchDataset d = do
       , sync_level = SyncTimestamp
       , store_base_path_info = True
       }
+
+
+initDownloadL2Gen :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> Inversion -> Eff es (App.Id Task)
+initDownloadL2Gen tform df inv = undefined -- do
+--  initTransfer downloadTransferRequest
+-- where
+--  downloadTransferRequest :: Globus.Id Submission -> TransferRequest
+--  downloadTransferRequest submission_id =
+--    TransferRequest
+--      { data_type = DataType
+--      , submission_id
+--      , label = Just tform.label.value
+--      , source_endpoint = dkistEndpoint
+--      , destination_endpoint = Tagged tform.endpoint_id.value
+--      , data_ = map (\d -> datasetTransferItem (destinationPath d) d) ds
+--      , sync_level = SyncTimestamp
+--      , store_base_path_info = True
+--      }
+--   where
+--    destinationFolder :: Path' Dir TransferForm
+--    destinationFolder =
+--      -- If they didn't select a folder, use the current folder
+--      case df.folder of
+--        Just f -> tform.path.value </> f
+--        Nothing -> tform.path.value
+--
+--    destinationPath :: Dataset -> Path' Dir Dataset
+--    destinationPath d =
+--      destinationFolder </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
+--
+--    transferItem :: Path' Filename a -> TransferItem
+--    transferItem f =
+--      TransferItem
+--        { data_type = DataType
+--        , source_path = (source tform.path.value f).filePath
+--        , destination_path = (dest f).filePath
+--        , recursive = False
+--        }
+--
+--    dest :: Path' Filename a -> Path' File a
+--    dest fn = Scratch.inversion ip ii </> fn
+--
+--    source :: Path' Dir TransferForm -> Path' Filename a -> Path' File a
+--    source t fn = t </> fn
 
 
 dkistEndpoint :: Globus.Id Collection

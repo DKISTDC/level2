@@ -62,7 +62,6 @@ isCanonicalDataset d =
 
 canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> NonEmpty DateBegTimestamp -> Eff es [BinTableHDU]
 canonicalL1Frames fdir ts = do
-  log Debug $ dump "CANON" fdir
   fs <- allL1Frames fdir
   -- log Debug $ dump "L1s" $ take 5 fs
   frs <- mapM (readLevel1File fdir) fs
@@ -71,7 +70,6 @@ canonicalL1Frames fdir ts = do
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   allL1Frames :: Path' Dir Dataset -> Eff es [L1Frame]
   allL1Frames dir = do
-    log Debug $ dump "ALLl1FRAMES" dir
     fs <- send $ Scratch.ListDirectory dir
     pure $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
 

@@ -29,6 +29,7 @@ import Web.Hyperbole.Forms (formFields)
 page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
 page ip i Inv = pageMain ip i
 page ip i SubmitDownload = pageSubmitDownload ip i
+page ip i SubmitDownloadGen = pageSubmitDownloadGen ip i
 page ip i SubmitUpload = pageSubmitUpload ip i
 
 
@@ -81,10 +82,23 @@ pageSubmitDownload ip ii = do
     tfls <- formFields @DownloadFolder
     inv <- loadInversion ii
     ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
-    it <- requireLogin $ Globus.initDownload tfrm tfls ds
+    it <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
     send $ Inversions.SetDownloading ii it
 
     redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
+
+
+pageSubmitDownloadGen :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id Inversion -> Page es Response
+pageSubmitDownloadGen ip ii = undefined -- do
+-- load $ do
+--   tfrm <- formFields @TransferForm
+--   tfls <- formFields @DownloadFolder
+--   inv <- loadInversion ii
+--   ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
+--   it <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
+--   send $ Inversions.SetDownloading ii it
+--
+--   redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
 
 
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
@@ -119,6 +133,7 @@ data InversionAction
   | Upload
   | PostProcess
   | Publish
+  | DownloadGen
   | Reload
   | RestartGen
   | GoStepInv
@@ -142,6 +157,10 @@ inversions onCancel (InversionStatus ip iip ii) = \case
     r <- request
     requireLogin $ do
       redirect $ Globus.fileManagerUrl (Folders 1) (Route.Proposal ip $ Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> iip.fromId) r
+  DownloadGen -> do
+    r <- request
+    requireLogin $ do
+      redirect $ Globus.fileManagerUrl (Folders 1) (Route.Proposal ip $ Route.Inversion ii SubmitDownloadGen) ("Transfer L2" <> ii.fromId) r
   Upload -> do
     r <- request
     requireLogin $ do
@@ -203,7 +222,8 @@ viewInversion inv step = do
   viewStep Complete = stepDone
 
   stepPublish = do
-    button Publish (Style.btn Primary . grow) "Publish to Portal"
+    button DownloadGen (Style.btnOutline Secondary . grow) "Download Generated Frames"
+    button Publish (Style.btn Primary . grow) "Mark as Published"
 
   stepDone = do
     el_ "Done"
