@@ -13,7 +13,7 @@ module App.Worker.FitsGenWorker
 import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
-import App.Worker.CPU (parallelize_)
+import App.Worker.CPU as CPU (parallelize_)
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
@@ -120,17 +120,14 @@ workTask t = do
     qfs <- Gen.readQuantitiesFrames u.invResults
     pfs <- Gen.readFitProfileFrames u.invProfile
     pos <- Gen.readOrigProfileFrames u.origProfile
-    ts <- Fetch.readTimestamps u.timestamps
-    log Debug $ dump "TS" (length ts)
-    l1 <- Fetch.canonicalL1Frames frameDir ts
+    l1 <- Fetch.canonicalL1Frames frameDir =<< Fetch.readTimestamps u.timestamps
     log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length l1)
+
     gfs <- collateFrames qfs pfs.frames pos.frames l1
-    let totalFrames = length gfs
+    send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = length gfs}
 
-    log Debug $ dump "Ready to Build!" (length gfs)
-    send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = totalFrames}
-
-    parallelize_ $ fmap (workFrame t pos.wavProfiles pfs.wavProfiles) gfs
+    -- Generate them in parallel with N = available CPUs
+    CPU.parallelize_ $ fmap (workFrame t pos.wavProfiles pfs.wavProfiles) gfs
 
     send $ SetGenerated t.inversionId
     log Debug " - done"
@@ -140,6 +137,7 @@ workTask t = do
     send $ Inversions.SetError t.inversionId (cs $ show err)
 
 
+-- | Generate a single frame
 workFrame
   :: (Tasks GenInversion :> es, Time :> es, Error GenerateError :> es, GenRandom :> es, Log :> es, Scratch :> es)
   => GenInversion
