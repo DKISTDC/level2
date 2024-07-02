@@ -47,7 +47,7 @@ data Inversions :: Effect where
   SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
   SetGenerated :: Id Inversion -> Inversions m ()
   ResetGenerating :: Id Inversion -> Inversions m ()
-  SetGenerating :: Id Inversion -> Id Task -> FilePath -> Inversions m ()
+  SetGenerating :: Id Inversion -> Id Task -> Inversions m ()
   SetGenTransferred :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
   SetError :: Id Inversion -> Text -> Inversions m ()
@@ -146,11 +146,11 @@ fromRow row =
     tsk <- row.uploadTaskId
     pure $ Inverted inv sft upl tsk ./ prev
 
-  generated :: Maybe (Many StepGenerated)
-  generated = do
+  genTransfer :: Maybe (Many StepGenTransfer)
+  genTransfer = do
     prev <- inverted
-    proc <- row.generate
-    pure $ Generated proc ./ prev
+    tsk <- row.generateTaskId
+    pure $ Transfer tsk ./ prev
 
   generating :: Maybe (Many StepGenerating)
   generating = do
@@ -159,12 +159,11 @@ fromRow row =
     let e = row.invError
     pure $ Generate tc e ./ prev
 
-  genTransfer :: Maybe (Many StepGenTransfer)
-  genTransfer = do
+  generated :: Maybe (Many StepGenerated)
+  generated = do
     prev <- inverted
-    tsk <- row.generateTaskId
-    fdir <- cs <$> row.generateL1FrameDir
-    pure $ GenTransfer tsk fdir ./ prev
+    proc <- row.generate
+    pure $ Generated proc ./ prev
 
   published :: Maybe (Many StepPublished)
   published = do
@@ -190,7 +189,7 @@ runDataInversions = interpret $ \_ -> \case
   SetUploading iid tid -> setUploading iid tid
   SetInversion iid soft -> setInversion iid soft
   SetGenerated iid -> setGenerated iid
-  SetGenerating iid tid fdir -> setGenerating iid tid fdir
+  SetGenerating iid tid -> setGenerating iid tid
   SetGenTransferred iid -> setGenTransferred iid
   SetPublished iid -> setPublished iid
   ValidateGitCommit repo gc -> validateGitCommit repo gc
@@ -278,8 +277,8 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{generate = lit (Just now)}
 
-  setGenerating iid tid fdir = do
-    updateInversion iid $ \r -> r{generateTaskId = lit (Just tid), generateL1FrameDir = lit (Just (cs fdir))}
+  setGenerating iid tid = do
+    updateInversion iid $ \r -> r{generateTaskId = lit (Just tid)}
 
   setGenTransferred iid = do
     now <- currentTime
@@ -323,7 +322,6 @@ runDataInversions = interpret $ \_ -> \case
         , inversionSoftware = Nothing
         , generate = Nothing
         , generateTaskId = Nothing
-        , generateL1FrameDir = Nothing
         , generateTaskCompleted = Nothing
         , publish = Nothing
         }
@@ -353,7 +351,6 @@ inversions =
           , inversionSoftware = "inversion_software"
           , generate = "generate"
           , generateTaskId = "generate_task_id"
-          , generateL1FrameDir = "generate_l1_frame_dir"
           , generateTaskCompleted = "generate_task_completed"
           , publish = "publish"
           }

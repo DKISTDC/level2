@@ -15,7 +15,6 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
 import NSO.Fits.Generate.Error
@@ -45,20 +44,15 @@ newtype DateBegTimestamp = DateBegTimestamp {time :: UTCTime}
   deriving newtype (Eq, Show)
 
 
-fetchCanonicalDataset
-  :: (Datasets :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
-  => Id InstrumentProgram
-  -> Eff es (Id Task, Path' Dir Dataset)
-fetchCanonicalDataset ip = do
+requireCanonicalDataset :: (Error GenerateError :> es, Datasets :> es) => Id InstrumentProgram -> Eff es Dataset
+requireCanonicalDataset ip = do
   md <- findCanonicalDataset ip
-  d <- maybe (throwError (NoCanonicalDataset ip)) pure md
-  transferCanonicalDataset d
-
-
-findCanonicalDataset :: (Datasets :> es) => Id InstrumentProgram -> Eff es (Maybe Dataset)
-findCanonicalDataset ip' = do
-  ds <- send $ Query (ByProgram ip')
-  pure $ L.find isCanonicalDataset ds
+  maybe (throwError (NoCanonicalDataset ip)) pure md
+ where
+  findCanonicalDataset :: (Datasets :> es) => Id InstrumentProgram -> Eff es (Maybe Dataset)
+  findCanonicalDataset ip' = do
+    ds <- send $ Query (ByProgram ip')
+    pure $ L.find isCanonicalDataset ds
 
 
 isCanonicalDataset :: Dataset -> Bool
@@ -66,15 +60,9 @@ isCanonicalDataset d =
   identifyLine d == Just FeI
 
 
-transferCanonicalDataset :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (Id Task, Path' Dir Dataset)
-transferCanonicalDataset d = do
-  -- wait, we have to wait until the transfer finishes before scanning!
-  (t, dir) <- Globus.initScratchDataset d
-  pure (t, dir)
-
-
 canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> NonEmpty DateBegTimestamp -> Eff es [BinTableHDU]
 canonicalL1Frames fdir ts = do
+  log Debug $ dump "CANON" fdir
   fs <- allL1Frames fdir
   -- log Debug $ dump "L1s" $ take 5 fs
   frs <- mapM (readLevel1File fdir) fs
@@ -83,6 +71,7 @@ canonicalL1Frames fdir ts = do
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   allL1Frames :: Path' Dir Dataset -> Eff es [L1Frame]
   allL1Frames dir = do
+    log Debug $ dump "ALLl1FRAMES" dir
     fs <- send $ Scratch.ListDirectory dir
     pure $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
 

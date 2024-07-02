@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS inversions (
   generate TIMESTAMP,
   generate_task_id TEXT,
   generate_task_completed TIMESTAMP,
-  generate_l1_frame_dir TEXT,
 
   publish TIMESTAMP
 );

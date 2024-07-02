@@ -1,6 +1,5 @@
 module NSO.Fits.Generate.Error where
 
-import App.Globus qualified as Globus
 import Control.Exception
 import Data.Massiv.Array
 import NSO.Fits.Generate.Headers.LiftL1
@@ -8,6 +7,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import Network.Globus qualified as Globus
 
 
 -- Error -------------------------------------------------------------

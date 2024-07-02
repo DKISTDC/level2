@@ -71,7 +71,7 @@ pageSubmitUpload ip ii = do
     it <- requireLogin $ Globus.initUpload tfrm tup ip ii
     send $ Inversions.SetUploading ii it
 
-    redirect $ routeUrl (Route.Inversion ii Inv)
+    redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
 
 
 pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id Inversion -> Page es Response
@@ -493,7 +493,7 @@ currentStep ip ii = \case
   StepInverted _ -> pure $ Generating GenWaitStart
   StepGenerated _ -> pure Publishing
   StepGenTransfer inv -> do
-    let t = grab @GenTransfer inv
+    let t = grab @Transfer inv
     pure $ Generating $ GenTransfering t.taskId
   StepGenerating inv -> do
     let g = grab @Generate inv

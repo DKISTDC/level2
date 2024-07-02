@@ -21,7 +21,6 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.FileSystem
 import Effectful.GenRandom
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -31,7 +30,7 @@ import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, fetchCanonicalDataset, readTimestamps)
+import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, readTimestamps, requireCanonicalDataset)
 import NSO.Fits.Generate.Headers.Types (DateTime (..))
 import NSO.Fits.Generate.Profile (Fit, Original, ProfileFrames (..), WavProfiles)
 import NSO.Prelude
@@ -75,7 +74,6 @@ workTask
   :: forall es
    . ( Reader (Token Access) :> es
      , Globus :> es
-     , FileSystem :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es
@@ -101,9 +99,12 @@ workTask t = do
     send $ TaskSetStatus t $ GenStatus GenStarted 0 0
 
     inv <- loadInversion t.inversionId
-    (taskId, frameDir) <- startTransferIfNeeded inv.programId inv.step
+    d <- requireCanonicalDataset inv.programId
+
+    taskId <- startTransferIfNeeded d inv.step
+    let frameDir = Scratch.dataset d
     log Debug $ dump "Task" taskId
-    send $ Inversions.SetGenerating t.inversionId taskId frameDir.filePath
+    send $ Inversions.SetGenerating t.inversionId taskId
     send $ TaskSetStatus t $ GenStatus GenTransferring 0 0
 
     log Debug " - waiting..."
@@ -117,9 +118,11 @@ workTask t = do
     log Debug $ dump "OrigProfile" u.origProfile
     log Debug $ dump "Timestamps" u.timestamps
 
-    qfs <- Gen.readQuantitiesFrames u.invResults
-    pfs <- Gen.readFitProfileFrames u.invProfile
-    pos <- Gen.readOrigProfileFrames u.origProfile
+    qfs <- Gen.decodeQuantitiesFrames =<< readFile u.invResults
+    pfs <- Gen.decodeProfileFrames =<< readFile u.invProfile
+    pos <- Gen.decodeProfileFrames =<< readFile u.origProfile
+
+    -- we don't have a dataset.... let's get one... where does it come from?
     l1 <- Fetch.canonicalL1Frames frameDir =<< Fetch.readTimestamps u.timestamps
     log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length l1)
 
@@ -143,30 +146,30 @@ workFrame
   => GenInversion
   -> WavProfiles Original
   -> WavProfiles Fit
-  -> GenerateFrame
+  -> L2Frame
   -> Eff es ()
 workFrame t wavOrig wavFit g = do
   send $ TaskModStatus @GenInversion t updateNumFrame
   now <- currentTime
   (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wavOrig wavFit g
   log Debug $ dump "FRAME" dateBeg.timestamp
-  Gen.writeL2Frame t.proposalId t.inversionId fits dateBeg
-  pure ()
+  let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
+  Scratch.writeFile path $ Gen.encodeL2 fits
  where
   updateNumFrame :: GenStatus -> GenStatus
   updateNumFrame GenStatus{..} = GenStatus{complete = complete + 1, ..}
 
 
-startTransferIfNeeded :: (Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Id InstrumentProgram -> InversionStep -> Eff es (Id Globus.Task, Path' Dir Dataset)
-startTransferIfNeeded ip = \case
+startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> InversionStep -> Eff es (Id Globus.Task)
+startTransferIfNeeded d = \case
   StepGenTransfer info -> do
-    let t = grab @GenTransfer info
-    pure (t.taskId, Path t.frameDir)
+    let t = grab @Transfer info
+    pure t.taskId
   StepGenerating info -> do
-    let g = grab @GenTransfer info
-    pure (g.taskId, Path g.frameDir)
+    let g = grab @Transfer info
+    pure g.taskId
   _ ->
-    Fetch.fetchCanonicalDataset ip
+    Globus.initScratchDataset d
 
 
 isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error GenerateError :> es) => Id Globus.Task -> Eff es Bool

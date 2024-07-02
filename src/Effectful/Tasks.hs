@@ -5,7 +5,6 @@ module Effectful.Tasks where
 import Control.Monad (forever)
 import Data.Bifunctor (second)
 import Data.Kind (Type)
-import Data.List qualified as L
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM

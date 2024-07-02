@@ -41,6 +41,7 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus
 import Effectful.Globus qualified as Globus
+import Effectful.Log
 import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
@@ -269,7 +270,7 @@ initDownload tform df ds = do
       , source_endpoint = dkistEndpoint
       , destination_endpoint = Tagged tform.endpoint_id.value
       , data_ = map (\d -> datasetTransferItem (destinationPath d) d) ds
-      , sync_level = SyncChecksum
+      , sync_level = SyncTimestamp
       , store_base_path_info = True
       }
    where
@@ -285,11 +286,10 @@ initDownload tform df ds = do
       destinationFolder </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-initScratchDataset :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task, Path' Dir Dataset)
+initScratchDataset :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
 initScratchDataset d = do
   scratch <- send Scratch.Globus
-  t <- initTransfer (transfer scratch)
-  pure (t, Scratch.dataset d)
+  initTransfer (transfer scratch)
  where
   transfer :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
   transfer scratch submission_id =
@@ -300,7 +300,7 @@ initScratchDataset d = do
       , source_endpoint = dkistEndpoint
       , destination_endpoint = scratch
       , data_ = [datasetTransferItem (Scratch.dataset d) d]
-      , sync_level = SyncChecksum
+      , sync_level = SyncTimestamp
       , store_base_path_info = True
       }
 

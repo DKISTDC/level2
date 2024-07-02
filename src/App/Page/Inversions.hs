@@ -20,7 +20,7 @@ page :: (Hyperbole :> es, Inversions :> es, Auth :> es) => Page es Response
 page = do
   load $ do
     AllInversions ivs <- send Inversions.All
-    let sorted = sortOn sortProgram ivs
+    let sorted = sortOn sortInv ivs
     appLayout Inversions $ do
       col Style.page $ do
         col Style.card $ do
@@ -34,7 +34,7 @@ page = do
             viewInversions (filter (not . isActive) sorted)
  where
   section = gap 10 . pad 10
-  sortProgram i = i.programId
+  sortInv i = (i.proposalId, i.updated)
 
 
 viewInversions :: [Inversion] -> View c ()
@@ -45,6 +45,7 @@ viewInversions invs = do
     tcol (hd "Program") $ \inv -> cellLink (Route.Proposal inv.proposalId (Route.Program inv.programId)) inv.programId
     tcol (hd "Proposal") $ \inv -> cellLink (Route.Proposal inv.proposalId PropRoot) inv.proposalId
     tcol (hd "Created") $ \inv -> View.cell $ text $ cs $ showDate inv.created
+    tcol (hd "Updated") $ \inv -> View.cell $ text $ cs $ showDate inv.updated
  where
   hd = View.hd
   routeInv inv = Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv

@@ -1,17 +1,22 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module NSO.Fits.Generate where
+module NSO.Fits.Generate
+  ( generateL2Fits
+  , L2Frame (..)
+  , collateFrames
+  , decodeQuantitiesFrames
+  , decodeProfileFrames
+  , filenameL2
+  , encodeL2
+  ) where
 
-import App.Effect.Scratch as Scratch
 import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.Massiv.Array ()
 import Data.Text qualified as T
 import Effectful
-import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
-import Effectful.Log
 import Effectful.Writer.Static.Local
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
@@ -22,31 +27,12 @@ import NSO.Fits.Generate.Profile
 import NSO.Fits.Generate.Quantities (Quantities (..), decodeQuantitiesFrames, quantitiesHDUs)
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
 
 
-readQuantitiesFrames :: (Scratch :> es) => Path InvResults -> Eff es [Quantities [SlitX, Depth]]
-readQuantitiesFrames p = do
-  inp <- send $ Scratch.ReadFile p
-  decodeQuantitiesFrames inp
-
-
-readOrigProfileFrames :: (Scratch :> es) => Path OrigProfile -> Eff es (ProfileFrames Original)
-readOrigProfileFrames p = do
-  inp <- send $ Scratch.ReadFile p
-  decodeProfileFrames @Original inp
-
-
-readFitProfileFrames :: (Scratch :> es) => Path InvProfile -> Eff es (ProfileFrames Fit)
-readFitProfileFrames p = do
-  inp <- send $ Scratch.ReadFile p
-  decodeProfileFrames @Fit inp
-
-
-data GenerateFrame = GenerateFrame
+data L2Frame = L2Frame
   { quantities :: Quantities [SlitX, Depth]
   , profileFit :: ProfileFrame Fit
   , profileOrig :: ProfileFrame Original
@@ -54,9 +40,9 @@ data GenerateFrame = GenerateFrame
   }
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [GenerateFrame]
+collateFrames :: (Error GenerateError :> es) => [Quantities [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2Frame]
 collateFrames qs pfs pos ts
-  | allFramesEqual = pure $ L.zipWith4 GenerateFrame qs pfs pos ts
+  | allFramesEqual = pure $ L.zipWith4 L2Frame qs pfs pos ts
   | otherwise = throwError mismatchError
  where
   allFramesEqual :: Bool
@@ -70,27 +56,22 @@ collateFrames qs pfs pos ts
   mismatchError = MismatchedFrames frameSizes
 
 
-writeL2Frame :: (Log :> es, Scratch :> es) => Id Proposal -> Id Inversion -> Fits -> DateTime -> Eff es ()
-writeL2Frame ip ii f (DateTime dt) = do
-  let dir = outputL2 ip ii
-  let path = filePath dir filenameL2
-  send $ Scratch.WriteFile path $ encodeL2 f
+filenameL2 :: Id Inversion -> DateTime -> Path' Filename L2Frame
+filenameL2 ii (DateTime dt) = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
  where
-  filenameL2 :: Path' Filename L2Frame
-  filenameL2 = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
-
   toUnderscore :: Char -> Char
   toUnderscore '.' = '_'
   toUnderscore ':' = '_'
   toUnderscore '-' = '_'
   toUnderscore c = c
 
-  -- \| Encode and insert framevol
-  encodeL2 :: Fits -> BS.ByteString
-  encodeL2 f' =
-    let out = Fits.encode f'
-        mb = fromIntegral (BS.length out) / 1000000
-     in replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
+
+-- \| Encode and insert framevol
+encodeL2 :: Fits -> BS.ByteString
+encodeL2 f' =
+  let out = Fits.encode f'
+      mb = fromIntegral (BS.length out) / 1000000
+   in replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
 
 
 generateL2Fits
@@ -99,7 +80,7 @@ generateL2Fits
   -> Id Inversion
   -> WavProfiles Original
   -> WavProfiles Fit
-  -> GenerateFrame
+  -> L2Frame
   -> Eff es (Fits, DateTime)
 generateL2Fits now i wpo wpf gf =
   runErrorNoCallStackWith @LiftL1Error (throwError . LiftL1) $ do

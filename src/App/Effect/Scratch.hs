@@ -6,6 +6,8 @@ import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
+import NSO.Fits.Generate (L2Frame, filenameL2)
+import NSO.Fits.Generate.Headers.Types (DateTime (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -36,27 +38,30 @@ runScratch
   -> Eff (Scratch : es) a
   -> Eff es a
 runScratch cfg = interpret $ \_ -> \case
-  ListDirectory dir -> listDirectory dir
-  ReadFile f -> readFile f
-  WriteFile f cnt -> writeFile f cnt
+  ListDirectory dir -> do
+    fs <- FS.listDirectory $ mounted dir
+    pure $ fmap Path fs
+  ReadFile f ->
+    FS.readFile $ mounted f
+  WriteFile f cnt -> do
+    FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
+    FS.writeFile (mounted f) cnt
   Globus -> pure cfg.collection
  where
   mounted :: Path' x a -> FilePath
   mounted p = (cfg.mount </> p).filePath
 
-  listDirectory :: (FileSystem :> es) => Path' Dir a -> Eff es [Path' Filename a]
-  listDirectory dir = do
-    fs <- FS.listDirectory $ mounted dir
-    pure $ fmap Path fs
 
-  readFile :: (FileSystem :> es) => Path a -> Eff es ByteString
-  readFile f = do
-    FS.readFile $ mounted f
+readFile :: (Scratch :> es) => Path a -> Eff es ByteString
+readFile = send . ReadFile
 
-  writeFile :: (FileSystem :> es) => Path a -> ByteString -> Eff es ()
-  writeFile f cnt = do
-    FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
-    FS.writeFile (mounted f) cnt
+
+writeFile :: (Scratch :> es) => Path a -> ByteString -> Eff es ()
+writeFile f cnt = send $ WriteFile f cnt
+
+
+listDirectory :: (Scratch :> es) => Path' Dir a -> Eff es [Path' Filename a]
+listDirectory = send . ListDirectory
 
 
 baseDir :: Path' Dir Scratch
@@ -65,7 +70,7 @@ baseDir = Path "level2"
 
 dataset :: Dataset -> Path' Dir Dataset
 dataset d =
-  baseDir </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+  baseDir </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
 inversion :: Id Proposal -> Id Inversion -> Path' Dir Inversion
@@ -73,15 +78,19 @@ inversion ip ii =
   baseDir </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
-outputL2 :: Id Proposal -> Id Inversion -> Path' Dir L2Frame
-outputL2 ip ii = inversion ip ii </> Path "output"
+outputL2Dir :: Id Proposal -> Id Inversion -> Path' Dir L2Frame
+outputL2Dir ip ii = inversion ip ii </> Path "output"
+
+
+outputL2Frame :: Id Proposal -> Id Inversion -> DateTime -> Path L2Frame
+outputL2Frame ip ii dt =
+  filePath (outputL2Dir ip ii) $ filenameL2 ii dt
 
 
 data InvProfile
 data InvResults
 data OrigProfile
 data Timestamps
-data L2Frame
 
 
 data UploadFiles t = UploadFiles
@@ -94,11 +103,11 @@ data UploadFiles t = UploadFiles
 
 
 inversionUploads :: Path' Dir Inversion -> UploadFiles File
-inversionUploads inv =
-  let invResults = inv </> fileInvResults
-      invProfile = inv </> fileInvProfile
-      origProfile = inv </> fileOrigProfile
-      timestamps = inv </> fileTimestamps
+inversionUploads dir =
+  let invResults = dir </> fileInvResults
+      invProfile = dir </> fileInvProfile
+      origProfile = dir </> fileOrigProfile
+      timestamps = dir </> fileTimestamps
    in UploadFiles{invResults, invProfile, origProfile, timestamps}
 
 
