@@ -3,6 +3,7 @@ module App.Page.Inversion where
 import App.Colors
 import App.Effect.Auth
 import App.Effect.Scratch (Scratch)
+import App.Effect.Scratch qualified as Scratch
 import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..))
@@ -29,7 +30,6 @@ import Web.Hyperbole.Forms (formFields)
 page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
 page ip i Inv = pageMain ip i
 page ip i SubmitDownload = pageSubmitDownload ip i
-page ip i SubmitDownloadGen = pageSubmitDownloadGen ip i
 page ip i SubmitUpload = pageSubmitUpload ip i
 
 
@@ -88,19 +88,6 @@ pageSubmitDownload ip ii = do
     redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
 
 
-pageSubmitDownloadGen :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id Inversion -> Page es Response
-pageSubmitDownloadGen ip ii = undefined -- do
--- load $ do
---   tfrm <- formFields @TransferForm
---   tfls <- formFields @DownloadFolder
---   inv <- loadInversion ii
---   ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
---   it <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
---   send $ Inversions.SetDownloading ii it
---
---   redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
-
-
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
 loadInversion ii = do
   (inv :| _) <- send (Inversions.ById ii) >>= expectFound
@@ -133,7 +120,6 @@ data InversionAction
   | Upload
   | PostProcess
   | Publish
-  | DownloadGen
   | Reload
   | RestartGen
   | GoStepInv
@@ -156,15 +142,11 @@ inversions onCancel (InversionStatus ip iip ii) = \case
   Download -> do
     r <- request
     requireLogin $ do
-      redirect $ Globus.fileManagerUrl (Folders 1) (Route.Proposal ip $ Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> iip.fromId) r
-  DownloadGen -> do
-    r <- request
-    requireLogin $ do
-      redirect $ Globus.fileManagerUrl (Folders 1) (Route.Proposal ip $ Route.Inversion ii SubmitDownloadGen) ("Transfer L2" <> ii.fromId) r
+      redirect $ Globus.fileManagerSelectUrl (Folders 1) (Route.Proposal ip $ Route.Inversion ii SubmitDownload) ("Transfer Instrument Program " <> iip.fromId) r
   Upload -> do
     r <- request
     requireLogin $ do
-      redirect $ Globus.fileManagerUrl (Files 4) (Route.Proposal ip $ Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
+      redirect $ Globus.fileManagerSelectUrl (Files 4) (Route.Proposal ip $ Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
   PostProcess -> do
     send $ Inversions.SetGenerated ii
     refresh
@@ -222,11 +204,15 @@ viewInversion inv step = do
   viewStep Complete = stepDone
 
   stepPublish = do
-    button DownloadGen (Style.btnOutline Secondary . grow) "Download Generated Frames"
     button Publish (Style.btn Primary . grow) "Mark as Published"
+    viewFiles
 
   stepDone = do
-    el_ "Done"
+    el_ "Inversion Complete"
+    viewFiles
+
+  viewFiles =
+    link (Globus.fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Secondary . grow . att "target" "_blank") "View Generated Files"
 
 
 -- ----------------------------------------------------------------

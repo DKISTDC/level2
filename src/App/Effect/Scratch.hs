@@ -28,7 +28,7 @@ data Scratch :: Effect where
   ListDirectory :: Path' Dir a -> Scratch m [Path' Filename a]
   ReadFile :: Path a -> Scratch es ByteString
   WriteFile :: Path a -> ByteString -> Scratch es ()
-  Globus :: Scratch es (Globus.Id Collection)
+  Globus :: Scratch es (Id Collection)
 type instance DispatchOf Scratch = 'Dynamic
 
 
@@ -46,7 +46,7 @@ runScratch cfg = interpret $ \_ -> \case
   WriteFile f cnt -> do
     FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
     FS.writeFile (mounted f) cnt
-  Globus -> pure cfg.collection
+  Globus -> pure $ Id cfg.collection.unTagged
  where
   mounted :: Path' x a -> FilePath
   mounted p = (cfg.mount </> p).filePath

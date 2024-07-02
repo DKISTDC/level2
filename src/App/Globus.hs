@@ -7,7 +7,9 @@ module App.Globus
   , accessTokens
   , UserLoginInfo (..)
   , userInfo
-  , fileManagerUrl
+  , fileManagerSelectUrl
+  , fileManagerOpenDir
+  , fileManagerOpenInv
   , transferStatus
   , Uri
   , Token
@@ -19,7 +21,7 @@ module App.Globus
   , runGlobus
   , taskPercentComplete
   , initDownloadL1Inputs
-  , initDownloadL2Gen
+  -- , initDownloadL2Gen
   , initUpload
   , initScratchDataset
   , FileLimit (..)
@@ -46,6 +48,7 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
+import NSO.Fits.Generate (L2Frame)
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
@@ -117,8 +120,8 @@ data FileLimit
   | Files Int
 
 
-fileManagerUrl :: FileLimit -> AppRoute -> Text -> Request -> Url
-fileManagerUrl lmt r lbl req =
+fileManagerSelectUrl :: FileLimit -> AppRoute -> Text -> Request -> Url
+fileManagerSelectUrl lmt r lbl req =
   Url
     "https://"
     "app.globus.org"
@@ -149,6 +152,22 @@ fileManagerUrl lmt r lbl req =
   submitUrl :: Url
   submitUrl =
     serverUrl $ routePath r
+
+
+-- DEBUG ONLY: hard coded aasgard
+fileManagerOpenInv :: Path' Dir L2Frame -> Url
+fileManagerOpenInv = fileManagerOpenDir (App.Id "20fa4840-366a-494c-b009-063280ecf70d")
+
+
+fileManagerOpenDir :: App.Id Collection -> Path' Dir a -> Url
+fileManagerOpenDir origin dir =
+  Url
+    "https://"
+    "app.globus.org"
+    ["file-manager"]
+    [ ("origin_id", Just $ cs origin.fromId)
+    , ("origin_path", Just $ "/" <> cs dir.filePath)
+    ]
 
 
 data TransferForm = TransferForm
@@ -226,7 +245,7 @@ initUpload
   -> App.Id Inversion
   -> Eff es (App.Id Task)
 initUpload tform up ip ii = do
-  scratch <- send Scratch.Globus
+  scratch <- scratchCollection
   initTransfer (transferRequest scratch)
  where
   transferRequest :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
@@ -275,21 +294,14 @@ initDownloadL1Inputs tform df ds = do
       , store_base_path_info = True
       }
    where
-    destinationFolder :: Path' Dir TransferForm
-    destinationFolder =
-      -- If they didn't select a folder, use the current folder
-      case df.folder of
-        Just f -> tform.path.value </> f
-        Nothing -> tform.path.value
-
     destinationPath :: Dataset -> Path' Dir Dataset
     destinationPath d =
-      destinationFolder </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
+      downloadDestinationFolder tform df </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
 initScratchDataset :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
 initScratchDataset d = do
-  scratch <- send Scratch.Globus
+  scratch <- scratchCollection
   initTransfer (transfer scratch)
  where
   transfer :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
@@ -306,48 +318,39 @@ initScratchDataset d = do
       }
 
 
-initDownloadL2Gen :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> Inversion -> Eff es (App.Id Task)
-initDownloadL2Gen tform df inv = undefined -- do
---  initTransfer downloadTransferRequest
--- where
---  downloadTransferRequest :: Globus.Id Submission -> TransferRequest
---  downloadTransferRequest submission_id =
---    TransferRequest
---      { data_type = DataType
---      , submission_id
---      , label = Just tform.label.value
---      , source_endpoint = dkistEndpoint
---      , destination_endpoint = Tagged tform.endpoint_id.value
---      , data_ = map (\d -> datasetTransferItem (destinationPath d) d) ds
---      , sync_level = SyncTimestamp
---      , store_base_path_info = True
---      }
---   where
---    destinationFolder :: Path' Dir TransferForm
---    destinationFolder =
---      -- If they didn't select a folder, use the current folder
---      case df.folder of
---        Just f -> tform.path.value </> f
---        Nothing -> tform.path.value
---
---    destinationPath :: Dataset -> Path' Dir Dataset
---    destinationPath d =
---      destinationFolder </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
---
---    transferItem :: Path' Filename a -> TransferItem
---    transferItem f =
---      TransferItem
---        { data_type = DataType
---        , source_path = (source tform.path.value f).filePath
---        , destination_path = (dest f).filePath
---        , recursive = False
---        }
---
---    dest :: Path' Filename a -> Path' File a
---    dest fn = Scratch.inversion ip ii </> fn
---
---    source :: Path' Dir TransferForm -> Path' Filename a -> Path' File a
---    source t fn = t </> fn
+-- really, I want to just open the file manager at that location, let thme handle it.
+-- initDownloadL2Gen :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> Inversion -> Eff es (App.Id Task)
+-- initDownloadL2Gen tform df inv = do
+--   initTransfer downloadTransferRequest
+--  where
+--   downloadTransferRequest :: Globus.Id Submission -> TransferRequest
+--   downloadTransferRequest submission_id =
+--     TransferRequest
+--       { data_type = DataType
+--       , submission_id
+--       , label = Just tform.label.value
+--       , source_endpoint = dkistEndpoint
+--       , destination_endpoint = Tagged tform.endpoint_id.value
+--       , data_ = [transferItem $ Scratch.outputL2Dir inv.proposalId inv.inversionId]
+--       , sync_level = SyncTimestamp
+--       , store_base_path_info = True
+--       }
+--    where
+--     transferItem :: Path' Dir L2Frame -> TransferItem
+--     transferItem dir =
+--       TransferItem
+--         { data_type = DataType
+--         , source_path = dir.filePath
+--         , destination_path = (downloadDestinationFolder tform df).filePath
+--         , recursive = False
+--         }
+
+downloadDestinationFolder :: TransferForm -> DownloadFolder -> Path' Dir TransferForm
+downloadDestinationFolder tform df =
+  -- If they didn't select a folder, use the current folder
+  case df.folder of
+    Just f -> tform.path.value </> f
+    Nothing -> tform.path.value
 
 
 dkistEndpoint :: Globus.Id Collection
@@ -365,6 +368,12 @@ datasetTransferItem dest d =
  where
   datasetSourcePath :: Path' Dir Dataset
   datasetSourcePath = Path "data" </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+
+
+scratchCollection :: (Scratch :> es) => Eff es (Globus.Id Collection)
+scratchCollection = do
+  Id c <- send Scratch.Globus
+  pure $ Tagged c
 
 
 data GlobusAuthError

@@ -31,6 +31,5 @@ data ProposalRoute
 data InversionRoute
   = Inv
   | SubmitDownload
-  | SubmitDownloadGen
   | SubmitUpload
   deriving (Show, Generic, Eq, Route)
