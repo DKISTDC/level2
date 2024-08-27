@@ -5,7 +5,7 @@ import Data.ByteString.Lazy qualified as BL
 import Effectful.GraphQL
 import NSO.Metadata
 import NSO.Prelude
-import Test.Syd
+import Skeletest
 
 
 spec :: Spec

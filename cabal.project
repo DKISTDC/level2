@@ -1,20 +1,21 @@
+tests: True
 packages:
   .
   ./types/
 
-  -- ../telescope/
+  ../telescope.hs/
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz
   -- https://hackage.haskell.org/package/globus-0.1.2/candidate/globus-0.1.2.tar.gz
 
 -- source-repository-package
 --   type: git
 --   location: https://github.com/dkistdc/globus.hs.git
---   tag: fd6d13c9e0050661d11a3d4673b131928e523639
+--   tag: fd7d13c9e0050661d11a3d4673b131928e523639
 
-source-repository-package
-  type: git
-  location: https://github.com/seanhess/fits-parse.git
-  tag: a95aae394ec6699af6e34076bb06060150d3192d
+-- source-repository-package
+--   type: git
+--   location: https://github.com/seanhess/fits-parse.git
+--   tag: a95aae394ec6699af6e34076bb06060150d3192d
 
 source-repository-package
   type: git
@@ -26,8 +27,7 @@ source-repository-package
   location: https://github.com/seanhess/web-view.git
   tag: ea203cdc1f9647ca9f3cf0399c577787d78e564b
 
-
-source-repository-package
-  type: git
-  location: https://github.com/dkistdc/telescope.hs
-  tag: 071c0bc80214179a10a4805d3ca46d1540e642a5
+-- source-repository-package
+--   type: git
+--   location: https://github.com/dkistdc/telescope.hs
+--   tag: 071c0bc80214179a10a4805d3ca46d1540e642a5

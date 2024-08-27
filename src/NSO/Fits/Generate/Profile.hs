@@ -2,7 +2,7 @@
 
 module NSO.Fits.Generate.Profile where
 
-import Control.Monad.Catch (MonadThrow, throwM)
+import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
@@ -67,7 +67,7 @@ profileHDU
   -> DataCube [SlitX, Wavelength w, Stokes]
   -> Eff es ImageHDU
 profileHDU now l1 info wp da = do
-  let darr = encodeArray da.array
+  let darr = encodeDataArray da.array
   hd <- writeHeader header
   pure ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
  where
@@ -243,7 +243,7 @@ data WavProfiles a = WavProfiles
   deriving (Show, Eq)
 
 
-decodeProfileFrames :: forall a m. (MonadThrow m) => BS.ByteString -> m (ProfileFrames a)
+decodeProfileFrames :: forall a m. (MonadThrow m, MonadCatch m) => BS.ByteString -> m (ProfileFrames a)
 decodeProfileFrames inp = do
   f <- decode inp
   pro <- mainProfile f
@@ -261,22 +261,22 @@ decodeProfileFrames inp = do
 
   pure $ ProfileFrames fs (WavProfiles wp630 wp854)
  where
-  mainProfile :: (MonadThrow m) => Fits -> m (DataCube [Stokes, Wavs, FrameY, SlitX])
+  mainProfile :: (MonadThrow m, MonadCatch m) => Fits -> m (DataCube [Stokes, Wavs, FrameY, SlitX])
   mainProfile f = do
-    a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
+    a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
     pure $ DataCube a
 
-  wavs :: (MonadThrow m) => Fits -> m (DataCube '[Wavs])
+  wavs :: (MonadThrow m, MonadCatch m) => Fits -> m (DataCube '[Wavs])
   wavs f = do
     case f.extensions of
-      (Image h : _) -> DataCube <$> decodeArray @Ix1 h.dataArray
+      (Image h : _) -> DataCube <$> decodeDataArray @Ix1 h.dataArray
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
-  wavIds :: (MonadThrow m) => Fits -> m (DataCube '[WavIds])
+  wavIds :: (MonadThrow m, MonadCatch m) => Fits -> m (DataCube '[WavIds])
   wavIds f = do
     case f.extensions of
       [_, Image h] -> do
-        DataCube <$> decodeArray @Ix1 h.dataArray
+        DataCube <$> decodeDataArray @Ix1 h.dataArray
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
 

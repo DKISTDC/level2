@@ -3,7 +3,7 @@
 
 module NSO.Fits.Generate.Quantities where
 
-import Control.Monad.Catch (MonadThrow, throwM)
+import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
 import Data.ByteString (ByteString)
 import Data.Kind (Type)
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
@@ -237,7 +237,7 @@ dataHDU
   -> DataCube [SlitX, Depth]
   -> Eff es ()
 dataHDU now l1 info res = do
-  let darr = encodeArray res.array
+  let darr = encodeDataArray res.array
   hd <- writeHeader header
   tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
  where
@@ -394,16 +394,16 @@ data Quantities (as :: [Type]) = Quantities
   }
 
 
-decodeQuantitiesFrames :: (MonadThrow m) => ByteString -> m [Quantities [SlitX, Depth]]
+decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [Quantities [SlitX, Depth]]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res
 
 
-decodeInversion :: (MonadThrow m) => ByteString -> m (DataCube [Quantity, Depth, FrameY, SlitX])
+decodeInversion :: (MonadThrow m, MonadCatch m) => ByteString -> m (DataCube [Quantity, Depth, FrameY, SlitX])
 decodeInversion inp = do
   f <- decode inp
-  a <- decodeArray @Ix4 @Float f.primaryHDU.dataArray
+  a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
   pure $ DataCube a
 
 

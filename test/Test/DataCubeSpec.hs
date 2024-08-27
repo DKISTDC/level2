@@ -3,7 +3,7 @@ module Test.DataCubeSpec where
 import Data.Massiv.Array as M
 import NSO.Fits.Generate.DataCube
 import NSO.Prelude
-import Test.Syd
+import Skeletest
 
 
 data Row

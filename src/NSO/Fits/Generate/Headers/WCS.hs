@@ -194,7 +194,6 @@ newtype BinnedX = BinnedX Int
 wcsSlitX :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> BinnedX -> Header -> Eff es (WCSAxisKeywords s alt X)
 wcsSlitX ax (BinnedX newx) l1 = do
   scaleUp <- upFactor
-
   keys <- requireWCS @s @alt ax l1
 
   pure $ scale scaleUp keys

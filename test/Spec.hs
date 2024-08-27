@@ -1,3 +1,3 @@
-{-# OPTIONS_GHC -F -pgmF sydtest-discover #-}
-
+import Skeletest.Main
+import Prelude
 

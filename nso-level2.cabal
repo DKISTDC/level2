@@ -198,7 +198,7 @@ executable level2
     , web-view >=0.5.0
   default-language: GHC2021
 
-test-suite tests
+test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
@@ -224,9 +224,9 @@ test-suite tests
       NoImplicitPrelude
       NoFieldSelectors
       StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -F -pgmF=skeletest-preprocessor
   build-tool-depends:
-      sydtest-discover:sydtest-discover
+      skeletest:skeletest-preprocessor
   build-depends:
       aeson
     , base >=4.16.4.0
@@ -253,9 +253,9 @@ test-suite tests
     , random
     , rel8 >=1.5.0
     , req
+    , skeletest
     , string-conversions
     , string-interpolate
-    , sydtest >=0.15
     , tagged
     , telescope
     , text

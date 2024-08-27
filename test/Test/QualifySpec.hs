@@ -5,7 +5,7 @@ import NSO.Data.Spectra (lineForWaves)
 import NSO.Prelude
 import NSO.Types.Dataset
 import NSO.Types.Wavelength
-import Test.Syd
+import Skeletest
 
 
 spec :: Spec
