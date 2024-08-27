@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -122,7 +122,7 @@ library
     , monad-loops
     , nso-level2-types
     , random
-    , rel8 ==1.4.1.0
+    , rel8 >=1.5.0
     , req
     , string-conversions
     , string-interpolate
@@ -183,7 +183,7 @@ executable level2
     , nso-level2
     , nso-level2-types
     , random
-    , rel8 ==1.4.1.0
+    , rel8 >=1.5.0
     , req
     , string-conversions
     , string-interpolate
@@ -251,7 +251,7 @@ test-suite tests
     , nso-level2
     , nso-level2-types
     , random
-    , rel8 ==1.4.1.0
+    , rel8 >=1.5.0
     , req
     , string-conversions
     , string-interpolate

@@ -14,7 +14,6 @@ module NSO.Data.Inversions
   , isActive
   ) where
 
-import Control.Monad (void)
 import Data.Diverse.Many hiding (select)
 import Data.Text qualified as Text
 import Effectful
@@ -30,7 +29,6 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Network.Globus.Transfer (Task)
 import Network.HTTP.Req
-import Rel8
 
 
 data Inversions :: Effect where
@@ -202,13 +200,12 @@ runDataInversions = interpret $ \_ -> \case
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es) => Eff es AllInversions
   queryAll = do
-    irs <- runQuery () $ select $ do
-      each inversions
+    irs <- run $ select $ each inversions
     pure $ AllInversions $ map fromRow irs
 
   queryById :: (Rel8 :> es) => Id Inversion -> Eff es [Inversion]
   queryById iid = do
-    irs <- runQuery () $ select $ do
+    irs <- run $ select $ do
       row <- each inversions
       where_ (row.inversionId ==. lit iid)
       pure row
@@ -216,7 +213,7 @@ runDataInversions = interpret $ \_ -> \case
 
   queryInstrumentProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Inversion]
   queryInstrumentProgram ip = do
-    irs <- runQuery () $ select $ do
+    irs <- run $ select $ do
       row <- each inversions
       where_ (row.programId ==. lit ip)
       return row
@@ -224,29 +221,27 @@ runDataInversions = interpret $ \_ -> \case
 
   remove :: (Rel8 :> es) => Id Inversion -> Eff es ()
   remove iid = do
-    void $
-      runQuery () $
-        Rel8.delete $
-          Delete
-            { from = inversions
-            , using = each inversions
-            , deleteWhere = \_ r -> r.inversionId ==. lit iid
-            , returning = NumberOfRowsAffected
-            }
+    run_ $
+      delete $
+        Delete
+          { from = inversions
+          , using = each inversions
+          , deleteWhere = \_ r -> r.inversionId ==. lit iid
+          , returning = Returning (.inversionId)
+          }
 
   updateInversion :: (Rel8 :> es, Time :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
   updateInversion iid f = do
     now <- currentTime
-    void $
-      runQuery () $
-        Rel8.update $
-          Update
-            { target = inversions
-            , from = each inversions
-            , updateWhere = \_ r -> r.inversionId ==. lit iid
-            , set = \_ r -> f . setUpdated now $ r
-            , returning = NumberOfRowsAffected
-            }
+    run_ $
+      update $
+        Update
+          { target = inversions
+          , from = each inversions
+          , updateWhere = \_ r -> r.inversionId ==. lit iid
+          , set = \_ r -> f . setUpdated now $ r
+          , returning = NoReturning
+          }
 
   setUpdated :: UTCTime -> InversionRow Expr -> InversionRow Expr
   setUpdated now InversionRow{..} = InversionRow{updated = lit now, ..}
@@ -291,15 +286,14 @@ runDataInversions = interpret $ \_ -> \case
   create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion
   create ip iip = do
     inv <- empty ip iip
-    void $
-      runQuery () $
-        Rel8.insert $
-          Insert
-            { into = inversions
-            , rows = values [lit (emptyRow inv)]
-            , onConflict = DoNothing
-            , returning = NumberOfRowsAffected
-            }
+    run_ $
+      insert $
+        Insert
+          { into = inversions
+          , rows = values [lit (emptyRow inv)]
+          , onConflict = DoNothing
+          , returning = NoReturning
+          }
     pure inv
    where
     emptyRow :: Inversion -> InversionRow Identity
@@ -331,7 +325,6 @@ inversions :: TableSchema (InversionRow Name)
 inversions =
   TableSchema
     { name = "inversions"
-    , schema = Nothing
     , columns =
         InversionRow
           { inversionId = "inversion_id"

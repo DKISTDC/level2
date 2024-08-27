@@ -11,7 +11,6 @@ module NSO.Data.Datasets
   )
 where
 
-import Control.Monad (void)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Rel8
@@ -20,7 +19,6 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
-import Rel8
 
 
 -- Put all the operations here?
@@ -58,21 +56,21 @@ runDataDatasets = interpret $ \_ -> \case
  where
   queryLatest :: (Rel8 :> es) => Eff es [Dataset]
   queryLatest = do
-    runQuery () $ select $ do
+    run $ select $ do
       row <- each datasets
       where_ (row.latest ==. lit True)
       return row
 
   queryProposal :: (Rel8 :> es) => Id Proposal -> Eff es [Dataset]
   queryProposal eid = do
-    runQuery () $ select $ do
+    run $ select $ do
       row <- each datasets
       where_ (row.primaryProposalId ==. lit eid)
       return row
 
   queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
   queryProgram ip = do
-    runQuery () $ select $ do
+    run $ select $ do
       -- note that this DOESN'T limit by latest
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit ip)
@@ -80,36 +78,34 @@ runDataDatasets = interpret $ \_ -> \case
 
   queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
   queryById i = do
-    runQuery () $ select $ do
+    run $ select $ do
       row <- each datasets
       where_ (row.datasetId ==. lit i)
       return row
 
   insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
   insertAll ds =
-    void $
-      runQuery () $
-        Rel8.insert $
-          Insert
-            { into = datasets
-            , rows = values $ fmap lit ds
-            , onConflict = DoNothing
-            , returning = NumberOfRowsAffected
-            }
+    run_ $
+      insert $
+        Insert
+          { into = datasets
+          , rows = values $ fmap lit ds
+          , onConflict = DoNothing
+          , returning = NoReturning
+          }
 
   updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
   updateOld ids = do
     let ids' = fmap lit ids
-    void $
-      runQuery () $
-        Rel8.update $
-          Update
-            { target = datasets
-            , set = \_ row -> setOld row
-            , updateWhere = \_ row -> row.datasetId `in_` ids'
-            , from = pure ()
-            , returning = NumberOfRowsAffected
-            }
+    run_ $
+      update $
+        Update
+          { target = datasets
+          , set = \_ row -> setOld row
+          , updateWhere = \_ row -> row.datasetId `in_` ids'
+          , from = pure ()
+          , returning = NoReturning
+          }
    where
     setOld :: Dataset' Expr -> Dataset' Expr
     setOld row = row{latest = lit False}
@@ -138,7 +134,6 @@ runDataDatasets = interpret $ \_ -> \case
   datasets =
     TableSchema
       { name = "datasets"
-      , schema = Nothing
       , columns =
           Dataset'
             { datasetId = "dataset_id"

@@ -312,10 +312,11 @@ wavProfile l da =
 
 
 avgDelta :: [Float] -> Float
+avgDelta [] = 0
 avgDelta ws = round5 $ sum (differences ws) / fromIntegral (length ws - 1)
  where
   differences :: (Num a) => [a] -> [a]
-  differences lst = zipWith (-) (tail lst) lst
+  differences lst = zipWith (-) (drop 1 lst) lst
 
 
 round5 :: Float -> Float

@@ -50,7 +50,7 @@ dependencies:
   - string-interpolate
   - string-conversions
   - req
-  - rel8 == 1.4.1.0
+  - rel8 >= 1.5.0
   - random
   # - morpheus-graphql-core == 0.27.3
   # - morpheus-graphql-client == 0.27.3

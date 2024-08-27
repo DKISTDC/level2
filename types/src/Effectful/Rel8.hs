@@ -2,9 +2,31 @@ module Effectful.Rel8
   ( Rel8 (..)
   , runRel8
   , connect
-  , runQuery
+  , run
+  , run_
+
+    -- ** Re-exports
   , Rel8Error (..)
   , Connection
+  , TableSchema (..)
+  , Rel8able
+  , delete
+  , Delete (..)
+  , update
+  , Update (..)
+  , insert
+  , Insert (..)
+  , select
+  , each
+  , where_
+  , Name
+  , Expr
+  , lit
+  , (==.)
+  , Returning (..)
+  , values
+  , OnConflict (..)
+  , in_
   ) where
 
 import Control.Exception (Exception)
@@ -15,13 +37,18 @@ import Hasql.Connection (Connection, ConnectionError, Settings)
 import Hasql.Connection qualified as Connection
 import Hasql.Session (QueryError)
 import Hasql.Session qualified as Session
-import Hasql.Statement (Statement)
+import Hasql.Statement as Hasql
 import NSO.Prelude
+import Rel8 hiding (run, run_)
+import Rel8 qualified
 
 
 data Rel8 :: Effect where
-  RunQuery :: params -> Statement params result -> Rel8 m result
+  RunQuery :: Hasql.Statement () a -> Rel8 m a
 
+
+-- RunQueryN :: Statement () -> Rel8 m Int64
+-- Delete :: Rel8.Delete () -> Rel8 m ()
 
 type instance DispatchOf Rel8 = 'Dynamic
 
@@ -32,11 +59,16 @@ runRel8
   -> Eff (Rel8 : es) a
   -> Eff es a
 runRel8 conn = interpret $ \_ -> \case
-  RunQuery par stmt -> do
-    let session = Session.statement par stmt
+  RunQuery stmt -> do
+    let session = Session.statement () stmt
     er <- liftIO $ Session.run session conn
     either (throwError . Rel8ErrQuery) pure er
 
+
+-- Delete del -> do
+--   let session = Session.statement () $ Rel8.runN $ Rel8.delete stmt
+--   er <- liftIO $ Session.run session conn
+--   either (throwError . Rel8ErrQuery) pure er
 
 connect
   :: (IOE :> es, Error Rel8Error :> es)
@@ -47,9 +79,18 @@ connect settings = do
   either (throwError . Rel8ErrConn) pure er
 
 
-runQuery :: (Rel8 :> es) => params -> Statement params result -> Eff es result
-runQuery par stmt = send $ RunQuery par stmt
+-- make different runs here....
 
+run :: (Rel8 :> es, Serializable exprs a) => Rel8.Statement (Query exprs) -> Eff es [a]
+run stmt = send $ RunQuery $ Rel8.run stmt
+
+
+run_ :: (Rel8 :> es) => Rel8.Statement a -> Eff es ()
+run_ stmt = send $ RunQuery $ Rel8.run_ stmt
+
+
+-- runQueryN :: (Rel8 :> es) => Statement () -> Eff es Int64
+-- runQueryN stmt = send $ RunQueryN stmt
 
 data Rel8Error
   = Rel8ErrQuery QueryError
