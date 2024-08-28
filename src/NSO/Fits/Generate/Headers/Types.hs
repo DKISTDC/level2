@@ -241,3 +241,11 @@ instance KnownValue WCSMain where
   knownValueText = ""
 instance KnownValue A where
   knownValueText = "A"
+
+
+-- | Headers in inv_res_pre (Profile Fit) that describe the subsection of the canonical data we use
+data SliceXY = SliceXY
+  { pixelsPerBin :: Int
+  , begPixel :: Int
+  , begFrame :: Int
+  }

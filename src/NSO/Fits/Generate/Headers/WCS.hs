@@ -10,7 +10,7 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Fits.Generate.Headers.Doc as Doc
 import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Prelude
 import Telescope.Fits as Fits hiding (Axis)
@@ -107,9 +107,9 @@ instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC 
   headerKeywords p = [keywordRecord p]
 
 
-wcsCommon :: forall es. (Error LiftL1Error :> es) => Bool -> Header -> Eff es WCSCommon
+wcsCommon :: forall es. (Error ParseKeyError :> es) => Bool -> Header -> Eff es WCSCommon
 wcsCommon valid l1 = do
-  lonpole <- Degrees <$> requireL1 "LONPOLE" toFloat l1
+  lonpole <- Degrees <$> requireKey "LONPOLE" toFloat l1
   pure $
     WCSCommon
       { wcsvalid = Key valid
@@ -119,9 +119,9 @@ wcsCommon valid l1 = do
       }
 
 
-wcsCommonA :: forall es. (Error LiftL1Error :> es) => Header -> Eff es WCSCommonA
+wcsCommonA :: forall es. (Error ParseKeyError :> es) => Header -> Eff es WCSCommonA
 wcsCommonA l1 = do
-  lonpolea <- Degrees <$> requireL1 "LONPOLEA" toFloat l1
+  lonpolea <- Degrees <$> requireKey "LONPOLEA" toFloat l1
   pure $
     WCSCommonA
       { wcsnamea = Key Constant
@@ -130,20 +130,20 @@ wcsCommonA l1 = do
       }
 
 
-requireWCS :: forall s alt ax es. (Error LiftL1Error :> es, KnownValue alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
+requireWCS :: forall s alt ax es. (Error ParseKeyError :> es, KnownValue alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
 requireWCS (Axis n) l1 = do
-  crpix <- Key <$> requireL1 (keyN "CRPIX") toFloat l1
-  crval <- Key <$> requireL1 (keyN "CRVAL") toFloat l1
-  cdelt <- Key <$> requireL1 (keyN "CDELT") toFloat l1
-  cunit <- Key <$> requireL1 (keyN "CUNIT") toText l1
-  ctype <- Key <$> requireL1 (keyN "CTYPE") toText l1
+  crpix <- Key <$> requireKey (keyN "CRPIX") toFloat l1
+  crval <- Key <$> requireKey (keyN "CRVAL") toFloat l1
+  cdelt <- Key <$> requireKey (keyN "CDELT") toFloat l1
+  cunit <- Key <$> requireKey (keyN "CUNIT") toText l1
+  ctype <- Key <$> requireKey (keyN "CTYPE") toText l1
   pure $ WCSAxisKeywords{cunit, ctype, crpix, crval, cdelt}
  where
   keyN k = k <> pack (show n) <> knownValueText @alt
 
 
 -- | Look up the order of the spatial axes and report which is which
-requireWCSAxes :: (Error LiftL1Error :> es) => Header -> Eff es (Axis X, Axis Y)
+requireWCSAxes :: (Error ParseKeyError :> es) => Header -> Eff es (Axis X, Axis Y)
 requireWCSAxes h = do
   y <- axisY h
   x <- axisX h
@@ -153,10 +153,10 @@ requireWCSAxes h = do
   axisX = fmap Axis <$> requireCtypeAxis "HPLT-TAN"
 
 
-requireCtypeAxis :: (Error LiftL1Error :> es) => Text -> Header -> Eff es Int
+requireCtypeAxis :: (Error ParseKeyError :> es) => Text -> Header -> Eff es Int
 requireCtypeAxis ctype l1 = do
-  case findL1 toCtypeN l1 of
-    Nothing -> throwError $ MissingCType (unpack ctype)
+  case findKey toCtypeN l1 of
+    Nothing -> throwError $ MissingKey ("CTYPE: " ++ show ctype)
     Just k -> pure k
  where
   toCtypeN :: KeywordRecord -> Maybe Int
@@ -166,12 +166,12 @@ requireCtypeAxis ctype l1 = do
 
 
 -- can we detect that they are incorrect here?
-requirePCs :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
+requirePCs :: forall alt s es. (Error ParseKeyError :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
 requirePCs (Axis xn) (Axis yn) l1 = do
-  yy <- PC <$> requireL1 (pcN yn yn) toFloat l1
-  yx <- PC <$> requireL1 (pcN yn xn) toFloat l1
-  xx <- PC <$> requireL1 (pcN xn xn) toFloat l1
-  xy <- PC <$> requireL1 (pcN xn yn) toFloat l1
+  yy <- PC <$> requireKey (pcN yn yn) toFloat l1
+  yx <- PC <$> requireKey (pcN yn xn) toFloat l1
+  xx <- PC <$> requireKey (pcN xn xn) toFloat l1
+  xy <- PC <$> requireKey (pcN xn yn) toFloat l1
   pure PCL1{yy, yx, xx, xy}
  where
   pcN :: Int -> Int -> Text
@@ -183,23 +183,13 @@ isPCsValid pcs =
   0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 
 
-wcsDummyY :: (KnownValue alt, Error LiftL1Error :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
+wcsDummyY :: (KnownValue alt, Error ParseKeyError :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
 wcsDummyY y s l1 = do
   keys <- requireWCS y l1
   pure $ adjustDummyY s keys
 
 
-data SliceXY = SliceXY
-  { pixelsPerBin :: Int
-  , begPixel :: Int
-  , begFrame :: Int
-  }
-
-
--- TODO: before generating, make sure that the numbers are sane
--- TEST: above
-
-wcsSlitX :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
+wcsSlitX :: forall alt s es. (Error ParseKeyError :> es, KnownValue alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
 wcsSlitX ax bx l1 = do
   keys <- requireWCS @s @alt ax l1
   pure $ adjustSlitX bx keys

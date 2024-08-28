@@ -1,4 +1,4 @@
-module NSO.Fits.Generate.Headers.LiftL1 where
+module NSO.Fits.Generate.Headers.Parse where
 
 import Control.Monad.Catch (Exception)
 import Data.Fits (KeywordRecord, getKeywords, toText)
@@ -10,24 +10,24 @@ import NSO.Prelude
 import Telescope.Fits as Fits
 
 
-lookupL1 :: (Monad m) => Text -> (Value -> Maybe a) -> Header -> m (Maybe a)
-lookupL1 k fromValue h =
+lookupKey :: (Monad m) => Text -> (Value -> Maybe a) -> Header -> m (Maybe a)
+lookupKey k fromValue h =
   let mk = Fits.lookup k h
    in case fromValue =<< mk of
         Nothing -> pure Nothing
         Just t -> pure (Just t)
 
 
-requireL1 :: (Error LiftL1Error :> es) => Text -> (Value -> Maybe a) -> Header -> Eff es a
-requireL1 k fromValue h =
+requireKey :: (Error ParseKeyError :> es) => Text -> (Value -> Maybe a) -> Header -> Eff es a
+requireKey k fromValue h =
   let mk = Fits.lookup k h
    in case fromValue =<< mk of
-        Nothing -> throwError (MissingL1Key (unpack k))
+        Nothing -> throwError (MissingKey (unpack k))
         Just t -> pure t
 
 
-findL1 :: (KeywordRecord -> Maybe a) -> Header -> Maybe a
-findL1 p h = do
+findKey :: (KeywordRecord -> Maybe a) -> Header -> Maybe a
+findKey p h = do
   listToMaybe $ mapMaybe p $ getKeywords h
 
 
@@ -35,8 +35,6 @@ toDate :: Value -> Maybe DateTime
 toDate v = DateTime <$> toText v
 
 
-data LiftL1Error
-  = MissingL1Key String
-  | MissingL1HDU FilePath
-  | MissingCType String
+data ParseKeyError
+  = MissingKey String
   deriving (Show, Exception, Eq)

@@ -92,6 +92,7 @@ workTask t = do
   onCaughtError e = do
     throwError $ GenIOError e
 
+  workWithError :: Eff (Error GenerateError : es) ()
   workWithError = do
     log Debug "START"
 
@@ -118,8 +119,8 @@ workTask t = do
     log Debug $ dump "Timestamps" u.timestamps
 
     qfs <- Gen.decodeQuantitiesFrames =<< readFile u.invResults
-    pfs <- Gen.decodeProfileFrames =<< readFile u.invProfile
-    pos <- Gen.decodeProfileFrames =<< readFile u.origProfile
+    ProfileFit pfs slice <- Gen.decodeProfileFit =<< readFile u.invProfile
+    pos <- Gen.decodeProfileOrig =<< readFile u.origProfile
 
     -- we don't have a dataset.... let's get one... where does it come from?
     l1 <- Fetch.canonicalL1Frames frameDir =<< Fetch.readTimestamps u.timestamps
@@ -129,7 +130,7 @@ workTask t = do
     send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = length gfs}
 
     -- Generate them in parallel with N = available CPUs
-    CPU.parallelize_ $ fmap (workFrame t pos.wavProfiles pfs.wavProfiles) gfs
+    CPU.parallelize_ $ fmap (workFrame t slice pos.wavProfiles pfs.wavProfiles) gfs
 
     send $ SetGenerated t.inversionId
     log Debug " - done"
@@ -143,13 +144,14 @@ workTask t = do
 workFrame
   :: (Tasks GenInversion :> es, Time :> es, Error GenerateError :> es, GenRandom :> es, Log :> es, Scratch :> es)
   => GenInversion
+  -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2Frame
   -> Eff es ()
-workFrame t wavOrig wavFit g = do
+workFrame t slice wavOrig wavFit g = do
   now <- currentTime
-  (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId wavOrig wavFit g
+  (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId slice wavOrig wavFit g
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
   Scratch.writeFile path $ Gen.encodeL2 fits
   send $ TaskModStatus @GenInversion t updateNumFrame

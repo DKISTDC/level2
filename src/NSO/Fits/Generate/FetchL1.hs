@@ -18,7 +18,7 @@ import Effectful.Log
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
 import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions)
@@ -114,7 +114,7 @@ readLevel1File dir frame = do
   fits <- Fits.decode inp
   case fits.extensions of
     [BinTable b] -> pure b
-    _ -> throwError $ LiftL1 $ MissingL1HDU frame.file.filePath
+    _ -> throwError $ MissingL1HDU frame.file.filePath
 
 
 -- Filename Parser ----------------------------------------

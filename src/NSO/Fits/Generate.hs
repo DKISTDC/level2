@@ -5,9 +5,12 @@ module NSO.Fits.Generate
   , L2Frame (..)
   , collateFrames
   , decodeQuantitiesFrames
-  , decodeProfileFrames
+  , decodeProfileFit
+  , decodeProfileOrig
+  , ProfileFit (..)
   , filenameL2
   , encodeL2
+  , SliceXY
   ) where
 
 import Data.ByteString qualified as BS
@@ -21,8 +24,8 @@ import Effectful.Writer.Static.Local
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
-import NSO.Fits.Generate.Headers.LiftL1 (LiftL1Error (..))
-import NSO.Fits.Generate.Headers.Types (DateTime (..), Depth, Key (..), SlitX)
+import NSO.Fits.Generate.Headers.Parse (ParseKeyError (..))
+import NSO.Fits.Generate.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
 import NSO.Fits.Generate.Profile
 import NSO.Fits.Generate.Quantities (Quantities (..), decodeQuantitiesFrames, quantitiesHDUs)
 import NSO.Prelude
@@ -78,21 +81,22 @@ generateL2Fits
   :: (Error GenerateError :> es, GenRandom :> es)
   => UTCTime
   -> Id Inversion
+  -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2Frame
   -> Eff es (Fits, DateTime)
-generateL2Fits now i wpo wpf gf =
-  runErrorNoCallStackWith @LiftL1Error (throwError . LiftL1) $ do
+generateL2Fits now i slice wpo wpf gf =
+  runErrorNoCallStackWith @ParseKeyError (throwError . ParseKeyError) $ do
     (prim, dateBeg) <- primaryHDU i gf.l1Frame
-    imgs <- quantitiesHDUs _ now gf.l1Frame.header gf.quantities
-    profs <- profileHDUs _ now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
+    imgs <- quantitiesHDUs slice now gf.l1Frame.header gf.quantities
+    profs <- profileHDUs slice now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
     let fits = Fits prim $ fmap Image $ imgs <> profs
     pure (fits, dateBeg)
 
 
 -- What is supposed to go in here?
-primaryHDU :: (Error LiftL1Error :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es (PrimaryHDU, DateTime)
+primaryHDU :: (Error ParseKeyError :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es (PrimaryHDU, DateTime)
 primaryHDU di l1 = do
   (dateBeg, hs) <- runWriter allKeys
   let hdu = PrimaryHDU (Header hs) emptyDataArray

@@ -20,7 +20,7 @@ import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Doc as Doc
 import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Prelude
@@ -167,7 +167,7 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: (Error LiftL1Error :> es) => SliceXY -> UTCTime -> Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
+quantitiesHDUs :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
 quantitiesHDUs slice now l1 q = execWriter $ do
   opticalDepth
   temperature
@@ -229,7 +229,7 @@ quantitiesHDUs slice now l1 q = execWriter $ do
 
   dataHDU
     :: forall hduInfo es
-     . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es, Error LiftL1Error :> es)
+     . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es, Error ParseKeyError :> es)
     => hduInfo
     -> DataCube [SlitX, Depth]
     -> Eff es ()
@@ -293,7 +293,7 @@ data QuantityPCs alt ax = QuantityPCs
 instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
 
 
-wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
+wcsAxes :: forall alt es. (Error ParseKeyError :> es, KnownValue alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
 wcsAxes s h = do
   (ax, ay) <- requireWCSAxes h
   pcsl1 <- requirePCs ax ay h

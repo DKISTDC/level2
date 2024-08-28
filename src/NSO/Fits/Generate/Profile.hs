@@ -4,6 +4,7 @@ module NSO.Fits.Generate.Profile where
 
 import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
 import Data.ByteString qualified as BS
+import Data.Fits (toInt)
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Data.Maybe (isJust)
@@ -13,7 +14,7 @@ import NSO.Fits.Generate.DataCube
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Fits.Generate.Quantities (DataHDUInfo (..), addDummyAxis, dataSection, splitFrames)
@@ -41,7 +42,7 @@ type FitProfile854 = ProfileInfo "Fit Profile 854.2nm"
 
 
 profileHDUs
-  :: (Error LiftL1Error :> es)
+  :: (Error ParseKeyError :> es)
   => SliceXY
   -> UTCTime
   -> Header
@@ -59,7 +60,7 @@ profileHDUs slice now l1 wpo wpf po pf = do
   fit854 = profileHDU @FitProfile854 DataHDUInfo wpf.wav854 pf.wav854
 
   profileHDU
-    :: (HeaderKeywords info, Error LiftL1Error :> es)
+    :: (HeaderKeywords info, Error ParseKeyError :> es)
     => info
     -> WavProfile w
     -> DataCube [SlitX, Wavelength w, Stokes]
@@ -131,7 +132,7 @@ instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePC
 
 wcsAxes
   :: forall alt w es
-   . (Error LiftL1Error :> es, KnownValue alt)
+   . (Error ParseKeyError :> es, KnownValue alt)
   => SliceXY
   -> WavProfile w
   -> Header
@@ -237,15 +238,40 @@ data WavProfiles a = WavProfiles
   deriving (Show, Eq)
 
 
-decodeProfileFrames :: forall a m. (MonadThrow m, MonadCatch m) => BS.ByteString -> m (ProfileFrames a)
-decodeProfileFrames inp = do
-  f <- decode inp
-  pro <- mainProfile f
+data ProfileFit = ProfileFit
+  { profile :: ProfileFrames Fit
+  , slice :: SliceXY
+  }
 
-  wds <- wavIds f
+
+decodeProfileFit :: (Error GenerateError :> es) => BS.ByteString -> Eff es ProfileFit
+decodeProfileFit inp = do
+  f <- decode inp
+  profile <- profileFrames f
+  slice <- runErrorNoCallStackWith @ParseKeyError (throwError . ParseKeyError) $ requireSlice f.primaryHDU.header
+  pure $ ProfileFit{profile, slice}
+ where
+  requireSlice h = do
+    pixelsPerBin <- requireKey "DESR-BIN" toInt h
+    begPixel <- requireKey "DESR-BEG" toInt h
+    begFrame <- requireKey "DESR-SC0" toInt h
+    pure $ SliceXY{pixelsPerBin, begPixel, begFrame}
+
+
+decodeProfileOrig :: BS.ByteString -> Eff es (ProfileFrames Original)
+decodeProfileOrig inp = do
+  f <- decode inp
+  profileFrames f
+
+
+profileFrames :: Fits -> Eff es (ProfileFrames a)
+profileFrames f = do
+  pro <- mainProfile
+
+  wds <- wavIds
   bx <- indexOfWavBreak wds
 
-  wvs <- wavs f
+  wvs <- wavs
   (w630, w854) <- splitWavs bx wvs
   let wp630 = wavProfile FeI w630
       wp854 = wavProfile (CaII CaII_854) w854
@@ -255,19 +281,19 @@ decodeProfileFrames inp = do
 
   pure $ ProfileFrames fs (WavProfiles wp630 wp854)
  where
-  mainProfile :: (MonadThrow m, MonadCatch m) => Fits -> m (DataCube [Stokes, Wavs, FrameY, SlitX])
-  mainProfile f = do
+  mainProfile :: (MonadThrow m, MonadCatch m) => m (DataCube [Stokes, Wavs, FrameY, SlitX])
+  mainProfile = do
     a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
     pure $ DataCube a
 
-  wavs :: (MonadThrow m, MonadCatch m) => Fits -> m (DataCube '[Wavs])
-  wavs f = do
+  wavs :: (MonadThrow m, MonadCatch m) => m (DataCube '[Wavs])
+  wavs = do
     case f.extensions of
       (Image h : _) -> DataCube <$> decodeDataArray @Ix1 h.dataArray
       _ -> throwM $ MissingProfileExtensions "Wavelength Values"
 
-  wavIds :: (MonadThrow m, MonadCatch m) => Fits -> m (DataCube '[WavIds])
-  wavIds f = do
+  wavIds :: (MonadThrow m, MonadCatch m) => m (DataCube '[WavIds])
+  wavIds = do
     case f.extensions of
       [_, Image h] -> do
         DataCube <$> decodeDataArray @Ix1 h.dataArray

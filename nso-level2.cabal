@@ -71,7 +71,7 @@ library
       NSO.Fits.Generate.Headers
       NSO.Fits.Generate.Headers.Doc
       NSO.Fits.Generate.Headers.Keywords
-      NSO.Fits.Generate.Headers.LiftL1
+      NSO.Fits.Generate.Headers.Parse
       NSO.Fits.Generate.Headers.Types
       NSO.Fits.Generate.Headers.WCS
       NSO.Fits.Generate.Profile

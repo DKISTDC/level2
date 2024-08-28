@@ -7,7 +7,7 @@ import Effectful
 import Effectful.Error.Static
 import NSO.Fits.Generate.DataCube
 import NSO.Fits.Generate.FetchL1
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Fits.Generate.Profile
@@ -16,8 +16,6 @@ import NSO.Types.Common
 import NSO.Types.Wavelength
 import Skeletest
 import Skeletest.Predicate qualified as P
-import Telescope.Fits (Value (..))
-import Telescope.Fits qualified as Fits
 
 
 spec :: Spec
@@ -162,7 +160,7 @@ wav630 =
         [-288.79998779, -160.80000305, -32.79999924, 95.19999695, 223.19999695, 351.20001221, 479.20001221, 607.20001221, 735.20001221, 863.20001221, 991.20001221, 1119.19995117, 1247.19995117, 1375.19995117, 1503.19995117]
 
 
-runErrorIO :: Eff [Error LiftL1Error, IOE] a -> IO a
+runErrorIO :: Eff [Error ParseKeyError, IOE] a -> IO a
 runErrorIO eff = do
   res <- runEff $ runErrorNoCallStack eff
   case res of

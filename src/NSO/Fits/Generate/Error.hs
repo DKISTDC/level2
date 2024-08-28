@@ -2,7 +2,7 @@ module NSO.Fits.Generate.Error where
 
 import Control.Exception
 import Data.Massiv.Array
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -22,7 +22,10 @@ data GenerateError
   | MissingInversion (Id Inversion)
   | InvalidTimestamp Text
   | ZeroValidTimestamps FilePath
-  | LiftL1 LiftL1Error
+  | ParseKeyError ParseKeyError
   | MismatchedFrames [Int]
   | GenIOError IOError
+  | MissingSliceHeader Text
+  | InvalidSliceHeader Text String
+  | MissingL1HDU FilePath
   deriving (Show, Eq, Exception)

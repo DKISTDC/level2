@@ -16,7 +16,7 @@ import Effectful.Writer.Static.Local
 import GHC.Generics
 import NSO.Fits.Generate.Headers.Doc as Doc
 import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.LiftL1
+import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
@@ -192,14 +192,14 @@ instance HeaderKeywords Ttbltrck where
 
 -- GENERATE ------------------------------------------------------------
 
-observationHeader :: (Error LiftL1Error :> es) => Header -> Eff es ObservationHeader
+observationHeader :: (Error ParseKeyError :> es) => Header -> Eff es ObservationHeader
 observationHeader l1 = do
-  dateBeg <- requireL1 "DATE-BEG" toDate l1
-  dateEnd <- requireL1 "DATE-END" toDate l1
-  dateAvg <- requireL1 "DATE-AVG" toDate l1
-  telapse <- requireL1 "TELAPSE" toFloat l1
-  object <- requireL1 "OBJECT" toText l1
-  instrument <- requireL1 "INSTRUME" toText l1
+  dateBeg <- requireKey "DATE-BEG" toDate l1
+  dateEnd <- requireKey "DATE-END" toDate l1
+  dateAvg <- requireKey "DATE-AVG" toDate l1
+  telapse <- requireKey "TELAPSE" toFloat l1
+  object <- requireKey "OBJECT" toText l1
+  instrument <- requireKey "INSTRUME" toText l1
 
   pure $
     ObservationHeader
@@ -218,18 +218,18 @@ observationHeader l1 = do
       }
 
 
-datacenterHeader :: (Error LiftL1Error :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
+datacenterHeader :: (Error ParseKeyError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
-  dateBeg <- requireL1 "DATE-BEG" toDate l1
-  dkistver <- requireL1 "DKISTVER" toText l1
-  obsprId <- Key <$> requireL1 "OBSPR_ID" toText l1
-  experId <- Key <$> requireL1 "EXPER_ID" toText l1
-  propId <- Key <$> requireL1 "PROP_ID" toText l1
-  dspId <- Key <$> requireL1 "DSP_ID" toText l1
-  ipId <- Key <$> requireL1 "IP_ID" toText l1
-  hlsvers <- Key <$> requireL1 "HLSVERS" toText l1
-  npropos <- Key <$> requireL1 "NPROPOS" toInt l1
-  nexpers <- Key <$> requireL1 "NEXPERS" toInt l1
+  dateBeg <- requireKey "DATE-BEG" toDate l1
+  dkistver <- requireKey "DKISTVER" toText l1
+  obsprId <- Key <$> requireKey "OBSPR_ID" toText l1
+  experId <- Key <$> requireKey "EXPER_ID" toText l1
+  propId <- Key <$> requireKey "PROP_ID" toText l1
+  dspId <- Key <$> requireKey "DSP_ID" toText l1
+  ipId <- Key <$> requireKey "IP_ID" toText l1
+  hlsvers <- Key <$> requireKey "HLSVERS" toText l1
+  npropos <- Key <$> requireKey "NPROPOS" toInt l1
+  nexpers <- Key <$> requireKey "NEXPERS" toInt l1
   fileId <- Key . UUID.toText <$> randomValue
   pure $
     Datacenter
@@ -254,17 +254,17 @@ datacenterHeader l1 i = do
       }
 
 
-contribExpProp :: (Error LiftL1Error :> es) => Header -> Eff es ContribExpProp
+contribExpProp :: (Error ParseKeyError :> es) => Header -> Eff es ContribExpProp
 contribExpProp l1 = do
   pure $ ContribExpProp (getKeywords l1)
 
 
-dkistHeader :: (Error LiftL1Error :> es) => Header -> Eff es DKISTHeader
+dkistHeader :: (Error ParseKeyError :> es) => Header -> Eff es DKISTHeader
 dkistHeader l1 = do
-  ocsCtrl <- EnumKey <$> requireL1 "OCS_CTRL" toText l1
-  fidoCfg <- Key <$> requireL1 "FIDO_CFG" toText l1
-  dshealth <- EnumKey <$> requireL1 "DSHEALTH" toText l1
-  lightlvl <- Key <$> requireL1 "LIGHTLVL" toFloat l1
+  ocsCtrl <- EnumKey <$> requireKey "OCS_CTRL" toText l1
+  fidoCfg <- Key <$> requireKey "FIDO_CFG" toText l1
+  dshealth <- EnumKey <$> requireKey "DSHEALTH" toText l1
+  lightlvl <- Key <$> requireKey "LIGHTLVL" toFloat l1
   pure $
     DKISTHeader
       { ocsCtrl
@@ -274,10 +274,10 @@ dkistHeader l1 = do
       }
 
 
-adaptiveOpticsHeader :: (Error LiftL1Error :> es) => Header -> Eff es AdaptiveOptics
+adaptiveOpticsHeader :: (Error ParseKeyError :> es) => Header -> Eff es AdaptiveOptics
 adaptiveOpticsHeader l1 = do
-  atmosR0 <- Key <$> requireL1 "ATMOS_R0" toFloat l1
-  aoLock <- Key <$> requireL1 "AO_LOCK" toBool l1
+  atmosR0 <- Key <$> requireKey "ATMOS_R0" toFloat l1
+  aoLock <- Key <$> requireKey "AO_LOCK" toBool l1
   pure $
     AdaptiveOptics
       { atmosR0
@@ -289,20 +289,20 @@ adaptiveOpticsHeader l1 = do
   toBool _ = Nothing
 
 
-telescopeHeader :: (Error LiftL1Error :> es) => Header -> Eff es TelescopeHeader
+telescopeHeader :: (Error ParseKeyError :> es) => Header -> Eff es TelescopeHeader
 telescopeHeader l1 = do
-  tazimuth <- Key . Degrees <$> requireL1 "TAZIMUTH" toFloat l1
-  elevAng <- Key . Degrees <$> requireL1 "ELEV_ANG" toFloat l1
-  teltrack <- Teltrack <$> requireL1 "TELTRACK" toText l1
-  telscan <- fmap Telscan <$> lookupL1 "TELSCAN" toText l1
-  ttblangl <- Key . Degrees <$> requireL1 "TTBLANGL" toFloat l1
-  ttbltrck <- Ttbltrck <$> requireL1 "TTBLTRCK" toText l1
-  dateref <- Key . DateTime <$> requireL1 "DATEREF" toText l1
-  obsgeoX <- Key . Meters <$> requireL1 "OBSGEO-X" toFloat l1
-  obsgeoY <- Key . Meters <$> requireL1 "OBSGEO-Y" toFloat l1
-  obsgeoZ <- Key . Meters <$> requireL1 "OBSGEO-Z" toFloat l1
-  rotcomp <- fmap Key <$> lookupL1 "ROTCOMP" toInt l1
-  obsVr <- Key . Mps <$> requireL1 "OBS_VR" toFloat l1
+  tazimuth <- Key . Degrees <$> requireKey "TAZIMUTH" toFloat l1
+  elevAng <- Key . Degrees <$> requireKey "ELEV_ANG" toFloat l1
+  teltrack <- Teltrack <$> requireKey "TELTRACK" toText l1
+  telscan <- fmap Telscan <$> lookupKey "TELSCAN" toText l1
+  ttblangl <- Key . Degrees <$> requireKey "TTBLANGL" toFloat l1
+  ttbltrck <- Ttbltrck <$> requireKey "TTBLTRCK" toText l1
+  dateref <- Key . DateTime <$> requireKey "DATEREF" toText l1
+  obsgeoX <- Key . Meters <$> requireKey "OBSGEO-X" toFloat l1
+  obsgeoY <- Key . Meters <$> requireKey "OBSGEO-Y" toFloat l1
+  obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" toFloat l1
+  rotcomp <- fmap Key <$> lookupKey "ROTCOMP" toInt l1
+  obsVr <- Key . Mps <$> requireKey "OBS_VR" toFloat l1
   pure $ TelescopeHeader{..}
 
 
