@@ -42,61 +42,55 @@ type FitProfile854 = ProfileInfo "Fit Profile 854.2nm"
 
 profileHDUs
   :: (Error LiftL1Error :> es)
-  => UTCTime
+  => SliceXY
+  -> UTCTime
   -> Header
   -> WavProfiles Original
   -> WavProfiles Fit
   -> ProfileFrame Original
   -> ProfileFrame Fit
   -> Eff es [ImageHDU]
-profileHDUs now l1 wpo wpf po pf = do
+profileHDUs slice now l1 wpo wpf po pf = do
   sequence [orig630, orig854, fit630, fit854]
  where
-  orig630 = profileHDU @OrigProfile630 now l1 DataHDUInfo wpo.wav630 po.wav630
-  orig854 = profileHDU @OrigProfile854 now l1 DataHDUInfo wpo.wav854 po.wav854
-  fit630 = profileHDU @FitProfile630 now l1 DataHDUInfo wpf.wav630 pf.wav630
-  fit854 = profileHDU @FitProfile854 now l1 DataHDUInfo wpf.wav854 pf.wav854
+  orig630 = profileHDU @OrigProfile630 DataHDUInfo wpo.wav630 po.wav630
+  orig854 = profileHDU @OrigProfile854 DataHDUInfo wpo.wav854 po.wav854
+  fit630 = profileHDU @FitProfile630 DataHDUInfo wpf.wav630 pf.wav630
+  fit854 = profileHDU @FitProfile854 DataHDUInfo wpf.wav854 pf.wav854
 
+  profileHDU
+    :: (HeaderKeywords info, Error LiftL1Error :> es)
+    => info
+    -> WavProfile w
+    -> DataCube [SlitX, Wavelength w, Stokes]
+    -> Eff es ImageHDU
+  profileHDU info wp da = do
+    let darr = encodeDataArray da.array
+    hd <- writeHeader header
+    pure ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
+   where
+    header = do
+      sectionHeader "Spectral Profile" "Headers describing the spectral profile"
+      dataSection now info da
 
-profileHDU
-  :: (HeaderKeywords info, Error LiftL1Error :> es)
-  => UTCTime
-  -> Header
-  -> info
-  -> WavProfile w
-  -> DataCube [SlitX, Wavelength w, Stokes]
-  -> Eff es ImageHDU
-profileHDU now l1 info wp da = do
-  let darr = encodeDataArray da.array
-  hd <- writeHeader header
-  pure ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
- where
-  header = do
-    sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-    dataSection now info da
+      sectionHeader "WCS" "WCS Related Keywords"
+      wcsSection
 
-    sectionHeader "WCS" "WCS Related Keywords"
-    wcsSection
+    wcsSection = do
+      wm <- wcsAxes @WCSMain slice wp l1
+      wc <- wcsCommon (isWcsValid wm) l1
 
-  wcsSection = do
-    wm <- wcsAxes @WCSMain binnedX wp l1
-    wc <- wcsCommon (isWcsValid wm) l1
+      addKeywords $ headerKeywords wc
+      addKeywords $ headerKeywords wm
 
-    addKeywords $ headerKeywords wc
-    addKeywords $ headerKeywords wm
+      wca <- wcsCommonA l1
+      wa <- wcsAxes @A slice wp l1
+      addKeywords $ headerKeywords wca
+      addKeywords $ headerKeywords wa
 
-    wca <- wcsCommonA l1
-    wa <- wcsAxes @A binnedX wp l1
-    addKeywords $ headerKeywords wca
-    addKeywords $ headerKeywords wa
-
-  binnedX =
-    let (Sz (newx :> _)) = size da.array
-     in BinnedX newx
-
-  isWcsValid :: ProfileAxes alt -> Bool
-  isWcsValid axs =
-    and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
+    isWcsValid :: ProfileAxes alt -> Bool
+    isWcsValid axs =
+      and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
 
 
 data ProfileAxes alt = ProfileAxes
@@ -138,16 +132,16 @@ instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePC
 wcsAxes
   :: forall alt w es
    . (Error LiftL1Error :> es, KnownValue alt)
-  => BinnedX
+  => SliceXY
   -> WavProfile w
   -> Header
   -> Eff es (ProfileAxes alt)
-wcsAxes bx wp h = do
+wcsAxes s wp h = do
   (ax, ay) <- requireWCSAxes h
   pcsl1 <- requirePCs ax ay h
 
-  yk <- wcsDummyY ay h
-  xk <- wcsSlitX ax bx h
+  yk <- wcsDummyY ay s h
+  xk <- wcsSlitX ax s h
   stokes <- wcsStokes
   wavelength <- wcsWavelength wp
 

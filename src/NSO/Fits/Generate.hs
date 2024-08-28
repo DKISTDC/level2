@@ -85,8 +85,8 @@ generateL2Fits
 generateL2Fits now i wpo wpf gf =
   runErrorNoCallStackWith @LiftL1Error (throwError . LiftL1) $ do
     (prim, dateBeg) <- primaryHDU i gf.l1Frame
-    imgs <- quantitiesHDUs now gf.l1Frame.header gf.quantities
-    profs <- profileHDUs now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
+    imgs <- quantitiesHDUs _ now gf.l1Frame.header gf.quantities
+    profs <- profileHDUs _ now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
     let fits = Fits prim $ fmap Image $ imgs <> profs
     pure (fits, dateBeg)
 

@@ -20,6 +20,7 @@ language: GHC2021
 
 ghc-options:
   - -Wall
+  - -fdefer-typed-holes
 
 default-extensions:
   - TypeFamilies

@@ -183,37 +183,57 @@ isPCsValid pcs =
   0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 
 
-wcsDummyY :: (KnownValue alt, Error LiftL1Error :> es) => Axis Y -> Header -> Eff es (WCSAxisKeywords s alt Y)
-wcsDummyY y l1 = do
-  requireWCS y l1
+wcsDummyY :: (KnownValue alt, Error LiftL1Error :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
+wcsDummyY y s l1 = do
+  keys <- requireWCS y l1
+  pure $ adjustDummyY s keys
 
 
-newtype BinnedX = BinnedX Int
+data SliceXY = SliceXY
+  { pixelsPerBin :: Int
+  , begPixel :: Int
+  , begFrame :: Int
+  }
 
 
-wcsSlitX :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> BinnedX -> Header -> Eff es (WCSAxisKeywords s alt X)
-wcsSlitX ax (BinnedX newx) l1 = do
-  scaleUp <- upFactor
+-- TODO: before generating, make sure that the numbers are sane
+-- TEST: above
+
+wcsSlitX :: forall alt s es. (Error LiftL1Error :> es, KnownValue alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
+wcsSlitX ax bx l1 = do
   keys <- requireWCS @s @alt ax l1
+  pure $ adjustSlitX bx keys
 
-  pure $ scale scaleUp keys
+
+adjustSlitX :: SliceXY -> WCSAxisKeywords s alt X -> WCSAxisKeywords s alt X
+adjustSlitX s l1 =
+  -- The L1 files have a large number of Slit X pixels.
+  -- Our data is binned along the X axis, so we need to scale/translate the CRPIXn and CDELTn headers to compensate
+  WCSAxisKeywords
+    { cunit = l1.cunit
+    , ctype = l1.ctype
+    , crval = l1.crval
+    , crpix = scaleTranslateCrPix l1.crpix
+    , cdelt = scaleCDelt l1.cdelt
+    }
  where
-  upFactor :: Eff es Float
-  upFactor = do
-    oldx <- requireL1 "ZNAXIS1" toInt l1
-    pure $ fromIntegral oldx / fromIntegral newx
+  scaleTranslateCrPix (Key cp) =
+    -- first, translate to remove the beginning pixels, so CRPIX of 800 becomes CRPIX of 700
+    let transX = cp - fromIntegral s.begPixel
+     in -- then, scale by the opposite factor
+        Key $ transX / fromIntegral s.pixelsPerBin
+  -- delta should be higher by the binning factor. Fewer bins = larger delta
+  scaleCDelt (Key cd) = Key $ cd * fromIntegral s.pixelsPerBin
 
-  scale up a =
-    -- The L1 files have a large number of Slit X pixels.
-    -- Our data is binned along the X axis, so we need to scale the CRPIXn and CDELTn headers
-    -- to compensate for this
-    WCSAxisKeywords
-      { cunit = a.cunit
-      , ctype = a.ctype
-      , crval = a.crval
-      , crpix = scaleCrPix a.crpix
-      , cdelt = scaleCDelt a.cdelt
-      }
-   where
-    scaleCrPix (Key cp) = Key $ (cp - 1) / up + 1
-    scaleCDelt (Key cd) = Key $ cd * up
+
+adjustDummyY :: SliceXY -> WCSAxisKeywords s alt Y -> WCSAxisKeywords s alt Y
+adjustDummyY s l1 =
+  WCSAxisKeywords
+    { cunit = l1.cunit
+    , ctype = l1.ctype
+    , crval = l1.crval
+    , crpix = translateCrPix l1.crpix
+    , cdelt = l1.cdelt
+    }
+ where
+  translateCrPix (Key cp) = Key $ cp - fromIntegral s.begFrame

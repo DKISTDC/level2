@@ -167,8 +167,8 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: (Error LiftL1Error :> es) => UTCTime -> Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
-quantitiesHDUs now l1 q = execWriter $ do
+quantitiesHDUs :: (Error LiftL1Error :> es) => SliceXY -> UTCTime -> Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
+quantitiesHDUs slice now l1 q = execWriter $ do
   opticalDepth
   temperature
   electronPressure
@@ -182,40 +182,40 @@ quantitiesHDUs now l1 q = execWriter $ do
   density
  where
   opticalDepth =
-    dataHDU @OpticalDepth now l1 DataHDUInfo q.opticalDepth
+    dataHDU @OpticalDepth DataHDUInfo q.opticalDepth
 
   temperature =
-    dataHDU @Temperature now l1 DataHDUInfo q.temperature
+    dataHDU @Temperature DataHDUInfo q.temperature
 
   electronPressure =
-    dataHDU @ElectronPressure now l1 DataHDUInfo $
+    dataHDU @ElectronPressure DataHDUInfo $
       convert dyneCmToNm q.electronPressure
 
   microTurbulence =
-    dataHDU @Microturbulence now l1 DataHDUInfo $
+    dataHDU @Microturbulence DataHDUInfo $
       convert cmsToKms q.microTurbulence
 
-  magStrength = dataHDU @MagStrength now l1 DataHDUInfo q.magStrength
+  magStrength = dataHDU @MagStrength DataHDUInfo q.magStrength
 
   velocity =
-    dataHDU @Velocity now l1 DataHDUInfo $
+    dataHDU @Velocity DataHDUInfo $
       convert cmsToKms q.velocity
 
   magInclination =
-    dataHDU @MagInclination now l1 DataHDUInfo q.magInclination
+    dataHDU @MagInclination DataHDUInfo q.magInclination
 
   magAzimuth =
-    dataHDU @MagAzimuth now l1 DataHDUInfo q.magAzimuth
+    dataHDU @MagAzimuth DataHDUInfo q.magAzimuth
 
   geoHeight =
-    dataHDU @GeoHeight now l1 DataHDUInfo q.geoHeight
+    dataHDU @GeoHeight DataHDUInfo q.geoHeight
 
   gasPressure =
-    dataHDU @GasPressure now l1 DataHDUInfo $
+    dataHDU @GasPressure DataHDUInfo $
       convert dyneCmToNm q.gasPressure
 
   density =
-    dataHDU @Density now l1 DataHDUInfo $
+    dataHDU @Density DataHDUInfo $
       convert gcmToKgm q.density
 
   convert f da =
@@ -227,47 +227,38 @@ quantitiesHDUs now l1 q = execWriter $ do
 
   dyneCmToNm = (/ 10)
 
+  dataHDU
+    :: forall hduInfo es
+     . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es, Error LiftL1Error :> es)
+    => hduInfo
+    -> DataCube [SlitX, Depth]
+    -> Eff es ()
+  dataHDU info res = do
+    let darr = encodeDataArray res.array
+    hd <- writeHeader header
+    tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
+   where
+    header = do
+      sectionHeader "L2 Quantity" "Headers describing the physical quantity"
+      dataSection now info res
 
-dataHDU
-  :: forall info es
-   . (HeaderKeywords info, Writer [ImageHDU] :> es, Error LiftL1Error :> es)
-  => UTCTime
-  -> Header
-  -> info
-  -> DataCube [SlitX, Depth]
-  -> Eff es ()
-dataHDU now l1 info res = do
-  let darr = encodeDataArray res.array
-  hd <- writeHeader header
-  tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
- where
-  header = do
-    sectionHeader "L2 Quantity" "Headers describing the physical quantity"
-    dataSection now info res
+      sectionHeader "WCS" "WCS Related Keywords"
+      wcsSection
 
-    sectionHeader "WCS" "WCS Related Keywords"
-    wcsSection
+    wcsSection = do
+      wm <- wcsAxes @WCSMain slice l1
+      wc <- wcsCommon (isWcsValid wm) l1
+      addKeywords $ headerKeywords wc
+      addKeywords $ headerKeywords wm
 
-  wcsSection = do
-    let bx = binnedX
+      wca <- wcsCommonA l1
+      wa <- wcsAxes @A slice l1
+      addKeywords $ headerKeywords wca
+      addKeywords $ headerKeywords wa
 
-    wm <- wcsAxes @WCSMain bx l1
-    wc <- wcsCommon (isWcsValid wm) l1
-    addKeywords $ headerKeywords wc
-    addKeywords $ headerKeywords wm
-
-    wca <- wcsCommonA l1
-    wa <- wcsAxes @A bx l1
-    addKeywords $ headerKeywords wca
-    addKeywords $ headerKeywords wa
-
-  binnedX =
-    let (Sz (newx :. _)) = size res.array
-     in BinnedX newx
-
-  isWcsValid :: QuantityAxes alt -> Bool
-  isWcsValid axs =
-    isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
+    isWcsValid :: QuantityAxes alt -> Bool
+    isWcsValid axs =
+      isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
 
 
 data QuantityAxes alt = QuantityAxes
@@ -302,13 +293,13 @@ data QuantityPCs alt ax = QuantityPCs
 instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
 
 
-wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => BinnedX -> Header -> Eff es (QuantityAxes alt)
-wcsAxes bx h = do
+wcsAxes :: forall alt es. (Error LiftL1Error :> es, KnownValue alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
+wcsAxes s h = do
   (ax, ay) <- requireWCSAxes h
   pcsl1 <- requirePCs ax ay h
 
-  yk <- wcsDummyY ay h
-  xk <- wcsSlitX ax bx h
+  yk <- wcsDummyY ay s h
+  xk <- wcsSlitX ax s h
   depth <- wcsDepth
 
   pure $

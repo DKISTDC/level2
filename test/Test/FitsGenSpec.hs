@@ -16,6 +16,8 @@ import NSO.Types.Common
 import NSO.Types.Wavelength
 import Skeletest
 import Skeletest.Predicate qualified as P
+import Telescope.Fits (Value (..))
+import Telescope.Fits qualified as Fits
 
 
 spec :: Spec
@@ -53,10 +55,10 @@ specWCS = describe "WCS" $ do
 
     it "wcs keys" $ do
       (x, y) <- runErrorIO $ requireWCSAxes h
-      ky <- runErrorIO $ wcsDummyY @WCSMain y h
+      ky <- runErrorIO $ wcsDummyY @WCSMain y slice h
       ky.ctype `shouldBe` Key ctypeY
 
-      kx <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 200) h
+      kx <- runErrorIO $ wcsSlitX @WCSMain x slice h
       kx.ctype `shouldBe` Key ctypeX
 
   describe "incorrect 1_118 headers" $ do
@@ -68,31 +70,52 @@ specWCS = describe "WCS" $ do
 
     it "wcs keys y" $ do
       (_, y) <- runErrorIO $ requireWCSAxes h
-      ky <- runErrorIO $ wcsDummyY @WCSMain y h
+      ky <- runErrorIO $ wcsDummyY @WCSMain y slice h
       ky.ctype `shouldBe` Key ctypeY
 
     it "wcs keys x" $ do
       (x, _) <- runErrorIO $ requireWCSAxes h
-      kx <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 200) h
+      kx <- runErrorIO $ wcsSlitX @WCSMain x slice h
       kx.ctype `shouldBe` Key ctypeX
 
   describe "binning adjustment" $ do
     it "should preserve CRVAL" $ do
-      WCSAxesFix x _ <- getFixture
-      w <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 200) keys_2_114
-      w.crval `shouldBe` Key 100
+      let w2 = adjustSlitX slice wcsX
+      w2.crval `shouldBe` wcsX.crval
 
-    it "should scale CDELT up. fewer pixels = higher delta " $ do
-      WCSAxesFix x _ <- getFixture
-      w <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 200) keys_2_114
-      w.cdelt `shouldBe` Key 1
+    it "should scale CDELT up by pixelsPerBin. fewer pixels = higher delta " $ do
+      let w2 = adjustSlitX slice wcsX
+      -- should just be the pixels per bin
+      w2.cdelt.ktype `shouldSatisfy` P.gt wcsX.cdelt.ktype
+      w2.cdelt.ktype `shouldSatisfy` P.approx P.tol (wcsX.cdelt.ktype * fromIntegral slice.pixelsPerBin)
+      w2.cdelt.ktype `shouldBe` 7
 
-    it "should scale CRPIX down, since we have fewer pixels" $ do
-      WCSAxesFix x _ <- getFixture
-      w <- runErrorIO $ wcsSlitX @WCSMain x (BinnedX 200) keys_2_114
-      w.crpix.ktype `shouldSatisfy` P.approx within1 100
+    it "should scale CRPIX down by pixelsPerBin, and translate it down by begPixel" $ do
+      let w2 = adjustSlitX slice wcsX
+      -- 800 is exactly 700 higher than starting pixel, which should be 100 bins
+      w2.crpix.ktype `shouldSatisfy` P.lt wcsX.crpix.ktype
+      w2.crpix.ktype `shouldSatisfy` P.lt (wcsX.crpix.ktype / fromIntegral slice.pixelsPerBin)
+      w2.crpix.ktype `shouldSatisfy` P.approx within1 100
+
+  describe "dummy y frame adjustment" $ do
+    it "should preserve CRVAL and CDELT" $ do
+      let w2 = adjustDummyY slice wcsY
+      w2.crval `shouldBe` wcsY.crval
+      w2.cdelt `shouldBe` wcsY.cdelt
+
+    it "should translate CRPIX" $ do
+      let w2 = adjustDummyY slice wcsY
+      w2.crpix.ktype `shouldBe` wcsY.crpix.ktype - fromIntegral slice.begFrame
  where
   within1 = P.tol{P.abs = 1.0}
+
+  -- sample spans 1400 pixels = 200 bins * 7 pixels, starting at 100
+  -- sample assumes approx 500 frames, starting at 10 (and ending at 490, but that's not relevant to the calculation)
+  slice = SliceXY{pixelsPerBin = 7, begPixel = 100, begFrame = 10}
+
+  -- sample is just 1 to 1600, with a CDELT of 1
+  wcsX = WCSAxisKeywords{cunit = Key "unit", ctype = Key "type", cdelt = Key 1, crpix = Key 800, crval = Key 800}
+  wcsY = WCSAxisKeywords{cunit = Key "unit", ctype = Key "type", cdelt = Key 1, crpix = Key 200, crval = Key 200}
 
 
 specWavProfile :: Spec
