@@ -4,7 +4,6 @@
 module NSO.Fits.Generate.Headers where
 
 import App.Version (appVersion)
-import Data.Fits (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
 import Data.List qualified as L
 import Data.Text (pack)
 import Data.Text qualified as T
@@ -22,6 +21,7 @@ import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
+import Telescope.Fits.Header (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
 import Telescope.Fits.Types (HeaderRecord (..))
 
 

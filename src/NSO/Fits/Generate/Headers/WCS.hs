@@ -2,7 +2,6 @@
 
 module NSO.Fits.Generate.Headers.WCS where
 
-import Data.Fits (KeywordRecord (..), toFloat, toInt, toText)
 import Data.Text (pack, unpack)
 import Effectful
 import Effectful.Error.Static
@@ -14,6 +13,7 @@ import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Prelude
 import Telescope.Fits as Fits hiding (Axis)
+import Telescope.Fits.Header as Fits
 import Text.Read (readMaybe)
 
 

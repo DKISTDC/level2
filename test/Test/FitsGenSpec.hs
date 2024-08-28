@@ -1,7 +1,6 @@
 module Test.FitsGenSpec where
 
 import Control.Monad.Catch (throwM)
-import Data.Fits
 import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists')
 import Effectful
 import Effectful.Error.Static
@@ -16,6 +15,7 @@ import NSO.Types.Common
 import NSO.Types.Wavelength
 import Skeletest
 import Skeletest.Predicate qualified as P
+import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..), Value (..))
 
 
 spec :: Spec

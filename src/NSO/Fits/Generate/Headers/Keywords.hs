@@ -3,11 +3,11 @@
 
 module NSO.Fits.Generate.Headers.Keywords where
 
-import Data.Fits (KeywordRecord (..), LogicalConstant (..), Value (..))
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.Generics
 import GHC.TypeLits
+import Telescope.Fits.Header (KeywordRecord (..), LogicalConstant (..), Value (..))
 import Text.Casing (fromHumps, toSnake)
 
 -- import NSO.Fits.Generate.Types

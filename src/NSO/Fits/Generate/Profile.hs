@@ -4,7 +4,6 @@ module NSO.Fits.Generate.Profile where
 
 import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
 import Data.ByteString qualified as BS
-import Data.Fits (toInt)
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Data.Maybe (isJust)
@@ -21,6 +20,7 @@ import NSO.Fits.Generate.Quantities (DataHDUInfo (..), addDummyAxis, dataSection
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Fits as Fits
+import Telescope.Fits.Header (toInt)
 
 
 -- DONE: add wavelength WCS axis correctly

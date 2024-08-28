@@ -18,7 +18,6 @@ import Effectful.Log
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
 import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.Headers.Parse
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions)

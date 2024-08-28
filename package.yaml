@@ -67,7 +67,6 @@ dependencies:
   - aeson
   - http-api-data
   - globus >= 0.1.2
-  - fits-parse
   - massiv
   - telescope
   - uuid
