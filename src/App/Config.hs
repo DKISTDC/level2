@@ -12,8 +12,11 @@ module App.Config
   , Tagged (..)
   , AppDomain
   , document
+  , GlobusConfig (..)
+  , GlobusDevConfig (..)
   ) where
 
+import App.Dev.Globus (DKIST)
 import App.Effect.Scratch qualified as Scratch
 import App.Globus (GlobusClient (..), Id' (..), Token, Token' (..), UserEmail (..))
 import App.Types
@@ -37,7 +40,7 @@ data Config = Config
   { services :: Services
   , servicesIsMock :: Bool
   , app :: App
-  , globus :: GlobusClient
+  , globus :: GlobusConfig
   , scratch :: Scratch.Config
   , auth :: AuthInfo
   , db :: Rel8.Connection
@@ -52,6 +55,16 @@ data AuthInfo = AuthInfo
 
 data Services = Services
   {metadata :: Service}
+
+
+data GlobusConfig
+  = GlobusLive GlobusClient
+  | GlobusDev GlobusDevConfig
+
+
+data GlobusDevConfig = GlobusDevConfig
+  { dkist :: Path' Dir DKIST
+  }
 
 
 initConfig :: (Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es) => Eff es Config
@@ -97,11 +110,22 @@ initScratch = do
   pure $ Scratch.Config{collection, mount}
 
 
-initGlobus :: (Environment :> es) => Eff es GlobusClient
+initGlobus :: (Environment :> es) => Eff es GlobusConfig
 initGlobus = do
-  clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
-  clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
-  pure $ GlobusClient{clientId, clientSecret}
+  res <- runErrorNoCallStack @GlobusDevConfig $ do
+    checkGlobusDev
+    clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
+    clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
+    pure $ GlobusClient{clientId, clientSecret}
+  case res of
+    Left dev -> pure $ GlobusDev dev
+    Right cfg -> pure $ GlobusLive cfg
+ where
+  checkGlobusDev = do
+    dkist <- fmap Path <$> lookupEnv "DEV_GLOBUS_DKIST_DIR"
+    case dkist of
+      Nothing -> pure ()
+      Just d -> throwError $ GlobusDevConfig d
 
 
 initDb :: (Environment :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection

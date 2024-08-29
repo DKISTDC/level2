@@ -18,6 +18,7 @@ data AppRoute
   | Dataset (Id Dataset)
   | Redirect
   | Logout
+  | Dev DevRoute
   deriving (Show, Generic, Eq, Route)
 
 
@@ -32,4 +33,9 @@ data InversionRoute
   = Inv
   | SubmitDownload
   | SubmitUpload
+  deriving (Show, Generic, Eq, Route)
+
+
+data DevRoute
+  = DevAuth
   deriving (Show, Generic, Eq, Route)

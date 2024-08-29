@@ -28,6 +28,8 @@ data Scratch :: Effect where
   ListDirectory :: Path' Dir a -> Scratch m [Path' Filename a]
   ReadFile :: Path a -> Scratch es ByteString
   WriteFile :: Path a -> ByteString -> Scratch es ()
+  CopyFile :: Path a -> Path a -> Scratch es ()
+  CreateDirectoryLink :: Path' Dir a -> Path' Dir b -> Scratch es ()
   Globus :: Scratch es (Id Collection)
 type instance DispatchOf Scratch = 'Dynamic
 
@@ -46,6 +48,12 @@ runScratch cfg = interpret $ \_ -> \case
   WriteFile f cnt -> do
     FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
     FS.writeFile (mounted f) cnt
+  CopyFile (Path src) dest -> do
+    FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
+    FS.copyFile src (mounted dest)
+  CreateDirectoryLink (Path src) dest -> do
+    FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
+    FS.createDirectoryLink src (mounted dest)
   Globus -> pure $ Id cfg.collection.unTagged
  where
   mounted :: Path' x a -> FilePath
@@ -60,8 +68,16 @@ writeFile :: (Scratch :> es) => Path a -> ByteString -> Eff es ()
 writeFile f cnt = send $ WriteFile f cnt
 
 
+copyFile :: (Scratch :> es) => Path a -> Path a -> Eff es ()
+copyFile s d = send $ CopyFile s d
+
+
 listDirectory :: (Scratch :> es) => Path' Dir a -> Eff es [Path' Filename a]
 listDirectory = send . ListDirectory
+
+
+symLink :: (Scratch :> es) => Path' Dir a -> Path' Dir a -> Eff es ()
+symLink s d = send $ CreateDirectoryLink s d
 
 
 baseDir :: Path' Dir Scratch

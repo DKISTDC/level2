@@ -33,6 +33,7 @@ module App.Globus
   , InvProfile
   , OrigProfile
   , UserEmail (..)
+  , dkistEndpoint
   ) where
 
 import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
@@ -237,6 +238,8 @@ initTransfer toRequest = do
   pure $ Id res.task_id.unTagged
 
 
+-- it would be nice to skip this.... it's a looooong upload
+-- but it should move it into scratch correctly...
 initUpload
   :: (Hyperbole :> es, Globus :> es, Scratch :> es, Reader (Token Access) :> es)
   => TransferForm
@@ -379,3 +382,5 @@ scratchCollection = do
 data GlobusAuthError
   = MissingScope Scope (NonEmpty TokenItem)
   deriving (Exception, Show)
+
+

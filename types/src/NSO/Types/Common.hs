@@ -102,6 +102,10 @@ Path dir </> Path x = Path $ (FP.</>) dir x
 infixr 5 </>
 
 
+isPathAbsolute :: Path' x a -> Bool
+isPathAbsolute (Path fp) = take 1 fp == ['/']
+
+
 filePath :: Path' Dir a -> Path' Filename b -> Path b
 filePath = (</>)
 

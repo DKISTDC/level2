@@ -63,6 +63,7 @@ data Invert = Invert
 
 
 data Generate = Generate
+  -- the l1 transfer task
   { taskCompleted :: UTCTime
   , genError :: Maybe Text
   }

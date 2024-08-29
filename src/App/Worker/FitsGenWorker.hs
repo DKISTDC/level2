@@ -137,6 +137,7 @@ workTask t = do
 
   failed :: GenerateError -> Eff es ()
   failed err = do
+    log Err $ dump "GenerateError" err
     send $ Inversions.SetError t.inversionId (cs $ show err)
 
 

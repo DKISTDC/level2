@@ -1,6 +1,7 @@
 module App where
 
 import App.Config
+import App.Dev.Globus (globusDevAuth, runGlobusDev)
 import App.Effect.Auth as Auth
 import App.Effect.Scratch (Scratch, runScratch)
 import App.Globus as Globus
@@ -104,9 +105,9 @@ main = do
     runFileSystem
       . runReader config.scratch
       . runRel8 config.db
-      . runGlobus config.globus
-      . runAuth config.app.domain Redirect auth
       . runScratch config.scratch
+      . runGlobus' config.globus
+      . runAuth config.app.domain Redirect auth
       . runGenRandom
       . runTime
       . runDataInversions
@@ -138,15 +139,18 @@ webServer config auth fits =
     redirect (pathUrl . routePath $ Proposals)
   router Logout = page Auth.logout
   router Redirect = page Auth.login
+  router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Tasks GenInversion : Scratch : FileSystem : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Tasks GenInversion : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @DataError crashWithError
-      . runGlobus config.globus
+      . runFileSystem
+      . runScratch config.scratch
+      . runGlobus' config.globus
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
@@ -155,12 +159,15 @@ webServer config auth fits =
       . runDataDatasets
       . runDataInversions
       . runAuth config.app.domain Redirect auth
-      . runFileSystem
-      . runScratch config.scratch
       . runTasks fits
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL
+
+
+runGlobus' :: (IOE :> es, Scratch :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
+runGlobus' (GlobusDev (GlobusDevConfig dkist)) = runGlobusDev dkist
+runGlobus' (GlobusLive g) = runGlobus g
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

@@ -19,10 +19,7 @@ inversionStatusLabel (StepDownloaded _) = "Preprocessing"
 inversionStatusLabel (StepPreprocessed _) = "Inverting"
 inversionStatusLabel (StepInverting _) = "Inverting"
 inversionStatusLabel (StepInverted _) = "Generating"
-inversionStatusLabel (StepGenTransfer _) = "Generaeing"
+inversionStatusLabel (StepGenTransfer _) = "Generating"
 inversionStatusLabel (StepGenerating _) = "Generating"
 inversionStatusLabel (StepGenerated _) = "Publishing"
 inversionStatusLabel (StepPublished _) = "Complete"
-
-
-

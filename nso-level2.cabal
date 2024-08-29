@@ -24,6 +24,7 @@ library
       App
       App.Colors
       App.Config
+      App.Dev.Globus
       App.Effect.Auth
       App.Effect.Scratch
       App.Error
@@ -109,7 +110,6 @@ library
     , effectful ==2.3.0.0
     , exceptions
     , filepath
-    , fits-parse
     , globus >=0.1.2
     , hasql
     , http-api-data
@@ -169,7 +169,6 @@ executable level2
     , effectful ==2.3.0.0
     , exceptions
     , filepath
-    , fits-parse
     , globus >=0.1.2
     , hasql
     , http-api-data
@@ -237,7 +236,6 @@ test-suite spec
     , effectful ==2.3.0.0
     , exceptions
     , filepath
-    , fits-parse
     , globus >=0.1.2
     , hasql
     , http-api-data
