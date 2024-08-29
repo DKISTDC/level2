@@ -9,7 +9,7 @@ import Data.Text (Text)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus
-import NSO.Types.Common (Path' (..), PathType (..), isPathAbsolute, (</>))
+import NSO.Types.Common (Path' (..), PathType (..), (</>))
 import Network.Globus.Auth
 import Web.Hyperbole
 import Prelude

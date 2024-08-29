@@ -8,8 +8,10 @@ import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
+import Data.ByteString (ByteString)
 import Data.Grouped as G
 import Data.Ord (Down (..))
+import Data.Text qualified as T
 import Effectful
 import Effectful.Log
 import Effectful.Time
@@ -48,11 +50,32 @@ page = do
 
   parseInvStatus q = do
     t <- lookupParam "status" q
-    readMaybe (cs t)
+    readMaybe (cs $ T.toTitle t)
 
 
 loading :: View c ()
 loading = el_ "loading..."
+
+
+-----------------------------------------------------
+-- Query URL
+-----------------------------------------------------
+
+filtersToQuery :: Filters -> [(ByteString, Maybe ByteString)]
+filtersToQuery fs = catMaybes [anyStatus fs.inversionStatus, visp fs.isVISP, vbi fs.isVBI]
+ where
+  anyStatus Any = Nothing
+  anyStatus f = Just ("status", Just $ cs $ show f)
+
+  visp b =
+    if b
+      then Nothing
+      else Just ("visp", Just "false")
+
+  vbi b =
+    if b
+      then Just ("vbi", Just "true")
+      else Nothing
 
 
 -----------------------------------------------------
@@ -82,7 +105,7 @@ data Filters = Filters
 data InversionFilter
   = Any
   | Qualified
-  | Inverting
+  | Active
   | Complete
   deriving (Show, Read, Eq)
 
@@ -100,9 +123,9 @@ proposals
   -> PEvent
   -> Eff es (View PView ())
 proposals _ (Filter fs) = do
-  exs <- Programs.loadAllProposals
-  now <- currentTime
-  pure $ viewProposals now fs exs
+  -- TODO: need a way to set the url WITHOUT reloading
+  let u = pathUrl $ routePath Proposals
+  redirect u{query = filtersToQuery fs}
 
 
 viewProposals :: UTCTime -> Filters -> [Proposal] -> View PView ()
@@ -165,9 +188,9 @@ viewProposals now fs exs = do
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
   checkInvertible Any _ = True
   checkInvertible Qualified StatusQualified = True
-  checkInvertible Inverting (StatusInversion (StepPublished _)) = False
-  checkInvertible Inverting (StatusInversion _) = True
-  checkInvertible Inverting (StatusError _) = True
+  checkInvertible Active (StatusInversion (StepPublished _)) = False
+  checkInvertible Active (StatusInversion _) = True
+  checkInvertible Active (StatusError _) = True
   checkInvertible Complete (StatusInversion (StepPublished _)) = True
   checkInvertible _ _ = False
 
@@ -193,7 +216,7 @@ viewFilters fs = do
   dropdown (\i -> Filter $ fs{inversionStatus = i}) (== fs.inversionStatus) (item . pad 5) $ do
     option Any "Any"
     option Qualified "Qualified"
-    option Inverting "Active"
+    option Active "Active"
     option Complete "Complete"
  where
   toggle action sel f =
