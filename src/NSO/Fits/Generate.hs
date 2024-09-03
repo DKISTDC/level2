@@ -8,7 +8,7 @@ module NSO.Fits.Generate
   , decodeProfileFit
   , decodeProfileOrig
   , ProfileFit (..)
-  , filenameL2
+  , filenameL2Frame
   , encodeL2
   , SliceXY
   ) where
@@ -46,21 +46,27 @@ data L2Frame = L2Frame
 collateFrames :: (Error GenerateError :> es) => [Quantities [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2Frame]
 collateFrames qs pfs pos ts
   | allFramesEqual = pure $ L.zipWith4 L2Frame qs pfs pos ts
-  | otherwise = throwError mismatchError
+  | otherwise = throwError $ MismatchedFrames frameSizes
  where
   allFramesEqual :: Bool
   allFramesEqual =
-    all (== length qs) frameSizes
+    all (== length qs) $ allSizes frameSizes
 
-  frameSizes :: [Int]
-  frameSizes = [length qs, length pfs, length pos, length ts]
+  frameSizes :: FrameSizes
+  frameSizes =
+    FrameSizes
+      { quantities = length qs
+      , fit = length pfs
+      , original = length pos
+      , l1 = length ts
+      }
 
-  mismatchError :: GenerateError
-  mismatchError = MismatchedFrames frameSizes
+  allSizes :: FrameSizes -> [Int]
+  allSizes fs = [fs.quantities, fs.fit, fs.original, fs.l1]
 
 
-filenameL2 :: Id Inversion -> DateTime -> Path' Filename L2Frame
-filenameL2 ii (DateTime dt) = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
+filenameL2Frame :: Id Inversion -> DateTime -> Path' Filename L2Frame
+filenameL2Frame ii (DateTime dt) = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
  where
   toUnderscore :: Char -> Char
   toUnderscore '.' = '_'

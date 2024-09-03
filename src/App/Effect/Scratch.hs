@@ -6,7 +6,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
-import NSO.Fits.Generate (L2Frame, filenameL2)
+import NSO.Fits.Generate (L2Frame, filenameL2Frame)
 import NSO.Fits.Generate.Headers.Types (DateTime (..))
 import NSO.Prelude
 import NSO.Types.Common
@@ -109,7 +109,7 @@ outputL2Dir ip ii =
 
 outputL2Frame :: Id Proposal -> Id Inversion -> DateTime -> Path L2Frame
 outputL2Frame ip ii dt =
-  filePath (outputL2Dir ip ii) $ filenameL2 ii dt
+  filePath (outputL2Dir ip ii) $ filenameL2Frame ii dt
 
 
 data Input
@@ -118,7 +118,9 @@ data Input
 data InvProfile
 data InvResults
 data OrigProfile
-data Timestamps
+
+
+-- data Timestamps
 data BLANCA
 
 
@@ -126,7 +128,7 @@ data UploadFiles t = UploadFiles
   { invProfile :: Path' t InvProfile
   , invResults :: Path' t InvResults
   , origProfile :: Path' t OrigProfile
-  , timestamps :: Path' t Timestamps
+  -- , timestamps :: Path' t Timestamps
   }
   deriving (Generic, Show)
 
@@ -136,9 +138,10 @@ inversionUploads bdir =
   let invResults = bdir </> fileInvResults
       invProfile = bdir </> fileInvProfile
       origProfile = bdir </> fileOrigProfile
-      timestamps = bdir </> fileTimestamps
-   in UploadFiles{invResults, invProfile, origProfile, timestamps}
+   in UploadFiles{invResults, invProfile, origProfile}
 
+
+-- timestamps = bdir </> fileTimestamps
 
 fileInvResults :: Path' Filename InvResults
 fileInvResults = Path "inv_res_mod.fits"
@@ -151,6 +154,5 @@ fileInvProfile = Path "inv_res_pre.fits"
 fileOrigProfile :: Path' Filename OrigProfile
 fileOrigProfile = Path "per_ori.fits"
 
-
-fileTimestamps :: Path' Filename Timestamps
-fileTimestamps = Path "timestamps.tsv"
+-- fileTimestamps :: Path' Filename Timestamps
+-- fileTimestamps = Path "timestamps.tsv"

@@ -9,6 +9,7 @@ import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Inversion qualified as Inversion
+import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
@@ -128,11 +129,10 @@ webServer config auth fits =
  where
   router Dashboard = page Dashboard.page
   router Proposals = page Proposals.page
-  router Inversions = do
-    -- page Inversions.page
-    let u = routeUrl Proposals :: Url
-    let fs = Proposals.Filters{inversionStatus = Proposals.Active, isVISP = True, isVBI = False}
-    redirect $ u{query = Proposals.filtersToQuery fs}
+  router Inversions = page Inversions.page
+  -- let u = routeUrl Proposals :: Url
+  -- let fs = Proposals.Filters{inversionStatus = Proposals.Active, isVISP = True, isVBI = False}
+  -- redirect $ u{query = Proposals.filtersToQuery fs}
   router (Proposal p (Inversion i r)) = page $ Inversion.page p i r
   router (Proposal p PropRoot) = page $ Proposal.page p
   router (Proposal ip (Program iip)) = page $ Program.page ip iip

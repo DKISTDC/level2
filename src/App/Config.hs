@@ -29,6 +29,7 @@ import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
 import Effectful.GraphQL (Service (..), service)
+import Effectful.Log
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
 import NSO.Types.Common
@@ -67,7 +68,7 @@ data GlobusDevConfig = GlobusDevConfig
   }
 
 
-initConfig :: (Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es) => Eff es Config
+initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es) => Eff es Config
 initConfig = do
   app <- initApp
   db <- initDb
@@ -110,7 +111,7 @@ initScratch = do
   pure $ Scratch.Config{collection, mount}
 
 
-initGlobus :: (Environment :> es) => Eff es GlobusConfig
+initGlobus :: (Environment :> es, Log :> es) => Eff es GlobusConfig
 initGlobus = do
   res <- runErrorNoCallStack @GlobusDevConfig $ do
     checkGlobusDev
@@ -118,7 +119,9 @@ initGlobus = do
     clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
     pure $ GlobusClient{clientId, clientSecret}
   case res of
-    Left dev -> pure $ GlobusDev dev
+    Left dev -> do
+      log Debug "Using DEV GLOBUS"
+      pure $ GlobusDev dev
     Right cfg -> pure $ GlobusLive cfg
  where
   checkGlobusDev = do

@@ -355,7 +355,7 @@ uploadSelect val = do
     li id "inv_res_pre.fits"
     li id "per_ori.fits"
     li id "inv_res_mod.fits"
-    li id "timestamps.tsv"
+    -- li id "timestamps.tsv"
     case val of
       Valid -> button Upload (Style.btnOutline Success . grow) "Select New Files"
       _ -> button Upload (Style.btn Primary . grow) "Select Files"
@@ -403,6 +403,7 @@ stepGenerate inv = \case
     onLoad Reload 1000 $ do
       el bold "Generate"
       el_ "Waiting for job to start"
+      el (height 45) Icons.spinner
   GenTransfering taskId -> do
     hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
       viewGenerateDownload InvForm.viewLoadTransfer

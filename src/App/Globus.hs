@@ -28,7 +28,7 @@ module App.Globus
   , TransferForm
   , UploadFiles (..)
   , DownloadFolder
-  , Timestamps
+  -- , Timestamps
   , InvResults
   , InvProfile
   , OrigProfile
@@ -36,7 +36,7 @@ module App.Globus
   , dkistEndpoint
   ) where
 
-import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch, Timestamps)
+import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Route (AppRoute)
 import Control.Monad.Catch (Exception, throwM)
@@ -193,7 +193,7 @@ data UploadFiles t = UploadFiles
   { invProfile :: Path' t InvProfile
   , invResults :: Path' t InvResults
   , origProfile :: Path' t OrigProfile
-  , timestamps :: Path' t Timestamps
+  -- , timestamps :: Path' t Timestamps
   }
   deriving (Generic, Show)
 instance Form (UploadFiles Filename) where
@@ -202,8 +202,8 @@ instance Form (UploadFiles Filename) where
     invProfile <- findFile Scratch.fileInvProfile fs
     invResults <- findFile Scratch.fileInvResults fs
     origProfile <- findFile Scratch.fileOrigProfile fs
-    timestamps <- findFile Scratch.fileTimestamps fs
-    pure UploadFiles{invResults, invProfile, origProfile, timestamps}
+    -- timestamps <- findFile Scratch.fileTimestamps fs
+    pure UploadFiles{invResults, invProfile, origProfile}
    where
     sub :: Text -> Int -> Text
     sub t n = t <> "[" <> cs (show n) <> "]"
@@ -259,7 +259,7 @@ initUpload tform up ip ii = do
       , label = Just tform.label.value
       , source_endpoint = Tagged tform.endpoint_id.value
       , destination_endpoint = scratch
-      , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile, transferItem up.timestamps]
+      , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile]
       , sync_level = SyncChecksum
       , store_base_path_info = True
       }
@@ -382,5 +382,3 @@ scratchCollection = do
 data GlobusAuthError
   = MissingScope Scope (NonEmpty TokenItem)
   deriving (Exception, Show)
-
-

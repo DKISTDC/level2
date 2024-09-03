@@ -209,7 +209,7 @@ adjustSlitX s l1 =
  where
   scaleTranslateCrPix (Key cp) =
     -- first, translate to remove the beginning pixels, so CRPIX of 800 becomes CRPIX of 700
-    let transX = cp - fromIntegral s.begPixel
+    let transX = cp - fromIntegral s.pixelBeg
      in -- then, scale by the opposite factor
         Key $ transX / fromIntegral s.pixelsPerBin
   -- delta should be higher by the binning factor. Fewer bins = larger delta
@@ -226,4 +226,4 @@ adjustDummyY s l1 =
     , cdelt = l1.cdelt
     }
  where
-  translateCrPix (Key cp) = Key $ cp - fromIntegral s.begFrame
+  translateCrPix (Key cp) = Key $ cp - fromIntegral s.frameBeg

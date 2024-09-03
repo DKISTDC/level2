@@ -253,9 +253,11 @@ decodeProfileFit inp = do
  where
   requireSlice h = do
     pixelsPerBin <- requireKey "DESR-BIN" toInt h
-    begPixel <- requireKey "DESR-BEG" toInt h
-    begFrame <- requireKey "DESR-SC0" toInt h
-    pure $ SliceXY{pixelsPerBin, begPixel, begFrame}
+    pixelBeg <- requireKey "DESR-BEG" toInt h
+    pixelEnd <- requireKey "DESR-END" toInt h
+    frameBeg <- requireKey "DESR-SC0" toInt h
+    frameEnd <- requireKey "DESR-SCN" toInt h
+    pure $ SliceXY{pixelsPerBin, pixelBeg, pixelEnd, frameBeg, frameEnd}
 
 
 decodeProfileOrig :: BS.ByteString -> Eff es (ProfileFrames Original)

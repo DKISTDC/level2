@@ -30,7 +30,7 @@ import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Fits.Generate as Gen
 import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, readTimestamps, requireCanonicalDataset)
+import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, requireCanonicalDataset)
 import NSO.Fits.Generate.Profile (Fit, Original, ProfileFrames (..), WavProfiles)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -116,14 +116,13 @@ workTask t = do
     log Debug $ dump "InvResults" u.invResults
     log Debug $ dump "InvProfile" u.invProfile
     log Debug $ dump "OrigProfile" u.origProfile
-    log Debug $ dump "Timestamps" u.timestamps
+    -- log Debug $ dump "Timestamps" u.timestamps
 
     qfs <- Gen.decodeQuantitiesFrames =<< readFile u.invResults
     ProfileFit pfs slice <- Gen.decodeProfileFit =<< readFile u.invProfile
     pos <- Gen.decodeProfileOrig =<< readFile u.origProfile
 
-    -- we don't have a dataset.... let's get one... where does it come from?
-    l1 <- Fetch.canonicalL1Frames frameDir =<< Fetch.readTimestamps u.timestamps
+    l1 <- Fetch.canonicalL1Frames frameDir slice
     log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length l1)
 
     gfs <- collateFrames qfs pfs.frames pos.frames l1

@@ -5,6 +5,7 @@ import App.Effect.Auth
 import App.Globus as Globus
 import App.Style qualified as Style
 import App.View.Common qualified as View
+import App.View.Icons as Icons
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions as Inversions
@@ -35,7 +36,7 @@ checkTransfer it = do
 
 viewLoadTransfer :: (HyperView id, Action id ~ TransferAction) => View id ()
 viewLoadTransfer = do
-  onLoad CheckTransfer 0 none
+  onLoad CheckTransfer 0 $ el (height 45) Icons.spinner
 
 
 viewTransfer :: (HyperView id, Action id ~ TransferAction) => Id Task -> Task -> View id ()

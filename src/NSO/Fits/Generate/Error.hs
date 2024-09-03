@@ -21,11 +21,16 @@ data GenerateError
   | L1TransferFailed (Id Globus.Task)
   | MissingInversion (Id Inversion)
   | InvalidTimestamp Text
-  | ZeroValidTimestamps FilePath
   | ParseKeyError ParseKeyError
-  | MismatchedFrames [Int]
+  | MismatchedFrames FrameSizes
   | GenIOError IOError
   | MissingSliceHeader Text
   | InvalidSliceHeader Text String
   | MissingL1HDU FilePath
   deriving (Show, Eq, Exception)
+
+
+-- \| ZeroValidTimestamps FilePath
+
+data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1 :: Int}
+  deriving (Show, Eq)

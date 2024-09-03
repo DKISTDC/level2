@@ -2,9 +2,7 @@ module NSO.Fits.Generate.FetchL1 where
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
-import App.Globus as Globus
 import Control.Monad (replicateM, void)
-import Data.ByteString (ByteString)
 import Data.List qualified as L
 import Data.Text qualified as T
 import Data.Time.Calendar (Day, fromGregorian)
@@ -18,6 +16,7 @@ import Effectful.Log
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
 import NSO.Fits.Generate.Error
+import NSO.Fits.Generate.Headers.Types (SliceXY (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions)
@@ -59,26 +58,21 @@ isCanonicalDataset d =
   identifyLine d == Just FeI
 
 
-canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> NonEmpty DateBegTimestamp -> Eff es [BinTableHDU]
-canonicalL1Frames fdir ts = do
+canonicalL1Frames :: forall es. (Log :> es, Error GenerateError :> es, Scratch :> es) => Path' Dir Dataset -> SliceXY -> Eff es [BinTableHDU]
+canonicalL1Frames fdir slice = do
   fs <- allL1Frames fdir
-  -- log Debug $ dump "L1s" $ take 5 fs
   frs <- mapM (readLevel1File fdir) fs
-  pure $ usedL1Frames frs
+  pure $ drop slice.frameBeg $ take slice.frameEnd frs
  where
-  -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   allL1Frames :: Path' Dir Dataset -> Eff es [L1Frame]
   allL1Frames dir = do
     fs <- send $ Scratch.ListDirectory dir
     pure $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
 
+  -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   isL1IntensityFile :: Path' Filename Dataset -> Bool
   isL1IntensityFile (Path f) =
-    takeExtensions f == ".fits"
-      && "_I_" `L.isInfixOf` f
-
-  usedL1Frames frs = do
-    filter (isFrameUsed ts) frs
+    takeExtensions f == ".fits" && "_I_" `L.isInfixOf` f
 
 
 isFrameUsed :: NonEmpty DateBegTimestamp -> BinTableHDU -> Bool
@@ -88,24 +82,22 @@ isFrameUsed dbts hdu = fromMaybe False $ do
   pure $ DateBegTimestamp d `elem` dbts
 
 
-readTimestamps :: (Scratch :> es, Log :> es, Error GenerateError :> es) => Path Timestamps -> Eff es (NonEmpty DateBegTimestamp)
-readTimestamps f = do
-  inp <- send $ Scratch.ReadFile f
-  dts <- parseTimestampsFile inp
-  case dts of
-    [] -> throwError $ ZeroValidTimestamps f.filePath
-    (t : ts) -> pure $ t :| ts
+-- readTimestamps :: (Scratch :> es, Log :> es, Error GenerateError :> es) => Path Timestamps -> Eff es (NonEmpty DateBegTimestamp)
+-- readTimestamps f = do
+--   inp <- send $ Scratch.ReadFile f
+--   dts <- parseTimestampsFile inp
+--   case dts of
+--     [] -> throwError $ ZeroValidTimestamps f.filePath
+--     (t : ts) -> pure $ t :| ts
 
-
-parseTimestampsFile :: (Error GenerateError :> es) => ByteString -> Eff es [DateBegTimestamp]
-parseTimestampsFile inp = do
-  mapM parseTimestamp $ filter (not . T.null) $ T.splitOn "\n" $ cs inp
- where
-  parseTimestamp t = do
-    case iso8601ParseM $ T.unpack $ t <> "Z" of
-      Nothing -> throwError $ InvalidTimestamp t
-      Just u -> pure $ DateBegTimestamp u
-
+-- parseTimestampsFile :: (Error GenerateError :> es) => ByteString -> Eff es [DateBegTimestamp]
+-- parseTimestampsFile inp = do
+--   mapM parseTimestamp $ filter (not . T.null) $ T.splitOn "\n" $ cs inp
+--  where
+--   parseTimestamp t = do
+--     case iso8601ParseM $ T.unpack $ t <> "Z" of
+--       Nothing -> throwError $ InvalidTimestamp t
+--       Just u -> pure $ DateBegTimestamp u
 
 readLevel1File :: forall es. (Scratch :> es, Log :> es, Error GenerateError :> es) => Path' Dir Dataset -> L1Frame -> Eff es BinTableHDU
 readLevel1File dir frame = do

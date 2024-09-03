@@ -41,9 +41,9 @@ viewInversions :: [Inversion] -> View c ()
 viewInversions invs = do
   table View.table invs $ do
     tcol (hd "Status") $ \inv -> View.cell $ route (routeInv inv) (color $ statusColor inv) $ inversionStatusTag inv
-    tcol (hd "Inversion") $ \inv -> cellLink (routeInv inv) inv.inversionId
-    tcol (hd "Program") $ \inv -> cellLink (Route.Proposal inv.proposalId (Route.Program inv.programId)) inv.programId
     tcol (hd "Proposal") $ \inv -> cellLink (Route.Proposal inv.proposalId PropRoot) inv.proposalId
+    tcol (hd "Program") $ \inv -> cellLink (Route.Proposal inv.proposalId (Route.Program inv.programId)) inv.programId
+    tcol (hd "Inversion") $ \inv -> cellLink (routeInv inv) inv.inversionId
     tcol (hd "Created") $ \inv -> View.cell $ text $ cs $ showDate inv.created
     tcol (hd "Updated") $ \inv -> View.cell $ text $ cs $ showDate inv.updated
  where
