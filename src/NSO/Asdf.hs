@@ -1,0 +1,73 @@
+module NSO.Asdf where
+
+
+-- General format
+--
+-- history??
+--
+-- inversion:
+--   data: xxx -- probably can't use: !<asdf://dkist.nso.edu/tags/file_manager-1.0.0>
+--    datatype: float64
+--    fileuris: [...]
+--    shape:? -- no, this doesn't make sense
+--    target:? -- ? What is this?
+--   meta:
+--    headers: table
+--     colnames: [FRAMEVOL, INSTRUME, ...]
+--     columns: [...]
+--    inventory: {... arbitrary}
+--
+-- opticalDepth: !inversion/data
+--   shape: [1, x, depth] TODO: What is this the shape OF? Just one? Or all of them? Tellingly in the dataset, it's just one
+--   hdu: 1
+--   meta:
+--    headers: table
+--     colnames: [NAXIS1, BTYPE, BUNIT, CRDELT2]
+--     columns: [...]
+--
+-- temperature: !inversion/data
+--   shape: [1, x, depth]
+--   hdu: 1
+--   meta:
+--    headers: table
+--     colnames: [NAXIS1, BTYPE, BUNIT, CRDELT2]
+--     columns: [...]
+--
+--  ...
+--
+-- originalProfile630:
+--   hdu: 11
+--   shape: ??
+--   meta:
+--    headers: table
+--     colnames: [NAXIS1, BTYPE, BUNIT, CRDELT2]
+--     columns: [...]
+--
+--
+--
+--
+-- temperature: !inversion/data
+--
+--
+-- inversion:
+--   data: !<asdf://dkist.nso.edu/tags/file_manager-1.0.0>
+--    datatype: float64
+--    fileuris: [1d file uris]
+--   shape: [shape of each one?] .... eh...
+--   meta:
+--   wcs
+--   unit: count
+--
+--
+--   do we have a top-level .... no.....
+--   hmmm..... does the wcs change for each one? No....... The axes
+--
+--
+--
+--   arghh...the profile IS different
+--
+--
+--   I think I need top-level ones
+--   "Dataset"
+--   "Optical Depth"
+--   ""

@@ -1,0 +1,61 @@
+#ASDF 1.0.0
+#ASDF_STANDARD 1.5.0
+%YAML 1.1
+%TAG ! tag:stsci.edu:asdf/
+--- !core/asdf-1.1.0
+asdf_library: !core/software-1.0.0 {author: The ASDF Developers, homepage: 'http://github.com/asdf-format/asdf',
+  name: asdf, version: 2.11.0}
+history:
+  extensions:
+  - !core/extension_metadata-1.0.0
+    extension_class: asdf.extension.BuiltinExtension
+    software: !core/software-1.0.0 {name: asdf, version: 2.11.0}
+  - ...
+dataset: !<asdf://dkist.nso.edu/tags/dataset-1.2.0>
+  data: !<asdf://dkist.nso.edu/tags/file_manager-1.0.0>
+    datatype: float64
+    fileuris:
+    - [VISP_2022_06_02T21_47_26_508_00630205_I_BVJVO_L1.fits, ...]
+    - [VISP_2022_06_02T21_47_26_508_00630205_Q_BVJVO_L1.fits, ...]
+    - [VISP_2022_06_02T21_47_26_508_00630205_U_BVJVO_L1.fits, ...]
+    - [VISP_2022_06_02T21_47_26_508_00630205_V_BVJVO_L1.fits, ...]
+    shape: [1, 976, 2555]
+    target: 1
+  meta:
+    headers: !<tag:astropy.org:astropy/table/table-1.0.0>
+      colnames: [BITPIX, NAXIS, NAXIS1, NAXIS2, NAXIS3, BUNIT, DATE, ...]
+      columns:
+      - !core/column-1.0.0
+        data: !core/ndarray-1.0.0
+          source: 0
+          datatype: int64
+          byteorder: little
+          shape: [1960]
+        name: BITPIX
+      - !core/column-1.0.0
+        data: !core/ndarray-1.0.0
+          source: 1
+          datatype: int64
+          byteorder: little
+          shape: [1960]
+        name: NAXIS
+      - !core/column-1.0.0
+        data: !core/ndarray-1.0.0
+          source: 2
+          datatype: int64
+          byteorder: little
+          shape: [1960]
+        name: NAXIS1
+      - ...
+      qtable: false
+    inventory:
+      asdfObjectKey: pid_1_118/BVJVO/VISP_L1_20220602T214726_BVJVO.asdf
+      averageDatasetSpatialSampling: 0.2134568481952311
+      boundingBox: (45.39,-374.42),(-85.95,-407.5)
+      ...
+  unit: !unit/unit-1.0.0 count
+  wcs: !<tag:stsci.edu:gwcs/wcs-1.1.0>
+    name: ''
+    steps:
+    - !<tag:stsci.edu:gwcs/step-1.1.0>
+    - ...

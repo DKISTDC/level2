@@ -13,7 +13,6 @@ import Telescope.Fits (Value (..))
 data Depth
 data SlitX
 data FrameY
-data Quantity
 data Stokes
 data WavIds
 

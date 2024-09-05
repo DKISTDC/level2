@@ -103,13 +103,13 @@ specWCS = describe "WCS" $ do
 
     it "should translate CRPIX" $ do
       let w2 = adjustDummyY slice wcsY
-      w2.crpix.ktype `shouldBe` wcsY.crpix.ktype - fromIntegral slice.begFrame
+      w2.crpix.ktype `shouldBe` wcsY.crpix.ktype - fromIntegral slice.frameBeg
  where
   within1 = P.tol{P.abs = 1.0}
 
   -- sample spans 1400 pixels = 200 bins * 7 pixels, starting at 100
   -- sample assumes approx 500 frames, starting at 10 (and ending at 490, but that's not relevant to the calculation)
-  slice = SliceXY{pixelsPerBin = 7, begPixel = 100, begFrame = 10}
+  slice = SliceXY{pixelsPerBin = 7, pixelBeg = 100, pixelEnd = 1500, frameBeg = 10, frameEnd = 490}
 
   -- sample is just 1 to 1600, with a CDELT of 1
   wcsX = WCSAxisKeywords{cunit = Key "unit", ctype = Key "type", cdelt = Key 1, crpix = Key 800, crval = Key 800}

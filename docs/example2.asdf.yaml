@@ -1,0 +1,122 @@
+#ASDF 1.0.0
+#ASDF_STANDARD 1.5.0
+%YAML 1.1
+%TAG ! tag:stsci.edu:asdf/
+--- !core/asdf-1.1.0
+asdf_library: !core/software-1.0.0 {author: The ASDF Developers, homepage: 'http://github.com/asdf-format/asdf',
+  name: asdf, version: 2.11.0}
+history:
+  extensions:
+  - !core/extension_metadata-1.0.0
+    extension_class: asdf.extension.BuiltinExtension
+    software: !core/software-1.0.0 {name: asdf, version: 2.11.0}
+  - ...
+inversion: !<asdf://dkist.nso.edu/tags/inversion-1.0.0>
+  created: 2022-06-02T21:47:26.641000
+
+  fileuris:
+    - INV_GPFE5U_2022_06_03T18_03_43_890_L2.fits
+    - INV_GPFE5U_2022_06_03T18_03_47_179_L2.fits
+    - INV_GPFE5U_2022_06_03T18_03_50_467_L2.fits
+    - INV_GPFE5U_2022_06_03T18_03_53_756_L2.fits
+    - ...
+
+  meta:
+    headers: !<tag:astropy.org:astropy/table/table-1.0.0>
+      # common headers in the primary HDU
+      colnames: [ORIGIN, TELESCOP, ELEV_ANG, DATE_BEG, ...]
+      columns:
+      - !core/column-1.0.0
+        data: !core/ndarray-1.0.0
+          source: 0
+          datatype: int64
+          byteorder: little
+          shape: [490]
+        name: ORIGIN
+      - ...
+      qtable: false
+    inventory:
+      inversionId: inv.GPFE5U
+      datasetIds: [AVORO, BVRJW, AWSOO]
+      frameCount: 490
+      ...
+
+  data:
+    # wcs is common for all data hdus
+    wcs: {name: ..., steps: ...}
+
+    # each HDU is a named key here?
+    opticalDepth: !inversion/data
+      unit: !unit/unit-1.0.0 ""
+      shape: [1, x, depth]
+      hdu: 1
+      meta: 
+        headers: !<tag:astropy.org:astropy/table/table-1.0.0>
+          # common headers in the primary HDU
+          colnames: [BITPIX, NAXIS, NAXIS2, BTYPE, BUNIT, ...]
+          columns: [{source, datatype, byteorder, shape}, ...]
+          qtable: false
+
+    temperature: !inversion/data
+      unit: !unit/unit-1.0.0 K
+      shape: [1, x, depth]
+      hdu: 2
+      meta: 
+        headers: !<tag:astropy.org:astropy/table/table-1.0.0>
+          # common headers in the primary HDU
+          colnames: [BITPIX, NAXIS, NAXIS2, BTYPE, BUNIT, ...]
+          columns: ...
+          qtable: false
+
+    electronPressure: ...
+    microturbulence: ...
+    magneticFieldStrength: ...
+    lineOfSightVelocity: ...
+    magneticFieldInclination: ...
+    magneticFieldAzimuth: ...
+    geometricHeight: ...
+    gasPressure: ...
+    density: ...
+
+  profiles:
+    # wcs is common for all profiles
+    wcs: {name: ..., steps: ...}
+
+    original630: !/inversion/profile
+      profile: original
+      wavelength: 630.15
+      unit: !unit/unit-1.0.0 count
+      shape: [1, x, wavelength, stokes]
+      hdu: 12
+      meta:
+        headers: !<tag:astropy.org:astropy/table/table-1.0.0>
+          # common headers in the primary HDU
+          colnames: [BITPIX, NAXIS, NAXIS2, BTYPE, BUNIT, ...]
+          columns: [...]
+          qtable: false
+
+    original854:
+      profile: original
+      wavelength: 854.2
+      unit: !unit/unit-1.0.0 count
+      shape: [1, x, wavelength, stokes]
+      hdu: 13
+      meta: {...}
+
+    fit630:
+      profile: fit
+      wavelength: 630.15
+      unit: !unit/unit-1.0.0 count
+      shape: [1, x, wavelength, stokes]
+      hdu: 14
+      meta: {...}
+
+    fit854:
+      profile: fit
+      wavelength: 854.2
+      unit: !unit/unit-1.0.0 count
+      shape: [1, x, wavelength, stokes]
+      hdu: 15
+      meta: {...}
+
+

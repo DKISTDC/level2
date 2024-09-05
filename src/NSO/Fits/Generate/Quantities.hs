@@ -28,6 +28,27 @@ import Telescope.Fits
 import Telescope.Fits.Types (Axes (..), HeaderRecord (..))
 
 
+data QuantityHeader info = QuantityHeader
+  { info :: info
+  , common :: DataCommon
+  , wcs :: WCSHeader
+  }
+
+
+data WCSHeader = WCSHeader
+  { common :: WCSCommon
+  , axes :: QuantityAxes 'WCSMain
+  , commonA :: WCSCommonA
+  , axesA :: QuantityAxes 'A
+  }
+
+
+data DataHeader info = DataHeader
+  { info :: info
+  , common :: DataCommon
+  }
+
+
 type OpticalDepth =
   DataHDUInfo
     "Log of Optical Depth at 500nm"
@@ -134,30 +155,22 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (Da
     ]
 
 
--- | A header contains info and common items
-data DataHDUHeader info
-  = DataHDUHeader
-  { info :: info
-  , common :: DataHDUCommon
-  }
-
-
 -- The Header Docs need to contain info, axes, and common
-instance (HeaderKeywords info) => HeaderKeywords (DataHDUHeader info) where
-  headerKeywords (DataHDUHeader info common) =
+instance (HeaderKeywords info) => HeaderKeywords (DataHeader info) where
+  headerKeywords (DataHeader info common) =
     headerKeywords @info info
       <> headerKeywords common
 
 
 -- The Header Docs need to contain info, axes, and common
-instance (HeaderDoc info) => HeaderDoc (DataHDUHeader info) where
+instance (HeaderDoc info) => HeaderDoc (DataHeader info) where
   headerDoc =
     headerDoc @info
       <> (headerDoc @DataHDUAxes)
-      <> (headerDoc @DataHDUCommon)
+      <> (headerDoc @DataCommon)
 
 
-data DataHDUCommon = DataHDUCommon
+data DataCommon = DataCommon
   { bzero :: BZero
   , bscale :: BScale
   , datamin :: Key Float "The minimum data value"
@@ -167,8 +180,57 @@ data DataHDUCommon = DataHDUCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantitiesHDUs :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> Quantities [SlitX, Depth] -> Eff es [ImageHDU]
-quantitiesHDUs slice now l1 q = execWriter $ do
+quantities :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> QuantitiesData [SlitX, Depth] -> Eff es Quantities
+quantities slice now l1 q = do
+  opticalDepth <- quantity @OpticalDepth DataHDUInfo q.opticalDepth
+  temperature <- quantity @Temperature DataHDUInfo q.temperature
+  electronPressure <- quantity @ElectronPressure DataHDUInfo q.electronPressure
+  microTurbulence <- quantity @Microturbulence DataHDUInfo q.microTurbulence
+  magStrength <- quantity @MagStrength DataHDUInfo q.magStrength
+  velocity <- quantity @Velocity DataHDUInfo q.velocity
+  magInclination <- quantity @MagInclination DataHDUInfo q.magInclination
+  magAzimuth <- quantity @MagAzimuth DataHDUInfo q.magAzimuth
+  geoHeight <- quantity @GeoHeight DataHDUInfo q.geoHeight
+  gasPressure <- quantity @GasPressure DataHDUInfo q.gasPressure
+  density <- quantity @Density DataHDUInfo q.density
+  pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
+ where
+  quantity :: forall info es. (Error ParseKeyError :> es, HeaderKeywords info) => info -> QuantityData [SlitX, Depth] info -> Eff es (Quantity info)
+  quantity info d = do
+    h <- quantityHeader info d
+    pure $ Quantity{header = h, image = d.data_}
+
+  quantityHeader
+    :: forall hduInfo es
+     . (HeaderKeywords hduInfo, Error ParseKeyError :> es)
+    => hduInfo
+    -> QuantityData [SlitX, Depth] hduInfo
+    -> Eff es (QuantityHeader hduInfo)
+  quantityHeader info res = do
+    common <- dataCommon now res.data_
+    wcs <- wcsHeader
+    pure $ QuantityHeader{info, common, wcs}
+
+  wcsHeader :: (Error ParseKeyError :> es) => Eff es WCSHeader
+  wcsHeader = do
+    -- addKeywords $ headerKeywords wc
+    -- addKeywords $ headerKeywords wm
+    wm <- wcsAxes @WCSMain slice l1
+    wc <- wcsCommon (isWcsValid wm) l1
+
+    -- addKeywords $ headerKeywords wca
+    -- addKeywords $ headerKeywords wa
+    wca <- wcsCommonA l1
+    wa <- wcsAxes @A slice l1
+    pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
+   where
+    isWcsValid :: QuantityAxes alt -> Bool
+    isWcsValid axs =
+      isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
+
+
+quantitiesHDUs :: (Error ParseKeyError :> es) => Quantities -> Eff es [ImageHDU]
+quantitiesHDUs qs = execWriter $ do
   opticalDepth
   temperature
   electronPressure
@@ -181,44 +243,20 @@ quantitiesHDUs slice now l1 q = execWriter $ do
   gasPressure
   density
  where
-  opticalDepth =
-    dataHDU @OpticalDepth DataHDUInfo q.opticalDepth
+  opticalDepth = dataHDU @OpticalDepth id qs.opticalDepth
+  temperature = dataHDU @Temperature id qs.temperature
+  electronPressure = dataHDU @ElectronPressure dyneCmToNm qs.electronPressure
+  microTurbulence = dataHDU @Microturbulence cmsToKms qs.microTurbulence
+  magStrength = dataHDU @MagStrength id qs.magStrength
+  velocity = dataHDU @MagStrength cmsToKms qs.magStrength
+  magInclination = dataHDU @MagInclination id qs.magInclination
+  magAzimuth = dataHDU @MagAzimuth id qs.magAzimuth
+  geoHeight = dataHDU @GeoHeight id qs.geoHeight
+  gasPressure = dataHDU @GasPressure dyneCmToNm qs.gasPressure
+  density = dataHDU @Density gcmToKgm qs.density
 
-  temperature =
-    dataHDU @Temperature DataHDUInfo q.temperature
-
-  electronPressure =
-    dataHDU @ElectronPressure DataHDUInfo $
-      convert dyneCmToNm q.electronPressure
-
-  microTurbulence =
-    dataHDU @Microturbulence DataHDUInfo $
-      convert cmsToKms q.microTurbulence
-
-  magStrength = dataHDU @MagStrength DataHDUInfo q.magStrength
-
-  velocity =
-    dataHDU @Velocity DataHDUInfo $
-      convert cmsToKms q.velocity
-
-  magInclination =
-    dataHDU @MagInclination DataHDUInfo q.magInclination
-
-  magAzimuth =
-    dataHDU @MagAzimuth DataHDUInfo q.magAzimuth
-
-  geoHeight =
-    dataHDU @GeoHeight DataHDUInfo q.geoHeight
-
-  gasPressure =
-    dataHDU @GasPressure DataHDUInfo $
-      convert dyneCmToNm q.gasPressure
-
-  density =
-    dataHDU @Density DataHDUInfo $
-      convert gcmToKgm q.density
-
-  convert f da =
+  convertData :: (Float -> Float) -> Quantity info -> DataCube [SlitX, Depth]
+  convertData f (Quantity _ da) =
     DataCube $ M.map f da.array
 
   cmsToKms = (/ 100000)
@@ -230,35 +268,26 @@ quantitiesHDUs slice now l1 q = execWriter $ do
   dataHDU
     :: forall hduInfo es
      . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es, Error ParseKeyError :> es)
-    => hduInfo
-    -> DataCube [SlitX, Depth]
+    => (Float -> Float)
+    -> Quantity hduInfo
     -> Eff es ()
-  dataHDU info res = do
-    let darr = encodeDataArray res.array
+  dataHDU f q = do
+    let dat = convertData f q
+    let darr = encodeDataArray dat.array
     hd <- writeHeader header
     tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
    where
     header = do
       sectionHeader "L2 Quantity" "Headers describing the physical quantity"
-      dataSection now info res
+      let dh = DataHeader{common = q.header.common, info = q.header.info}
+      addKeywords $ headerKeywords dh
 
       sectionHeader "WCS" "WCS Related Keywords"
-      wcsSection
+      addKeywords $ headerKeywords q.header.wcs.common
+      addKeywords $ headerKeywords q.header.wcs.axes
 
-    wcsSection = do
-      wm <- wcsAxes @WCSMain slice l1
-      wc <- wcsCommon (isWcsValid wm) l1
-      addKeywords $ headerKeywords wc
-      addKeywords $ headerKeywords wm
-
-      wca <- wcsCommonA l1
-      wa <- wcsAxes @A slice l1
-      addKeywords $ headerKeywords wca
-      addKeywords $ headerKeywords wa
-
-    isWcsValid :: QuantityAxes alt -> Bool
-    isWcsValid axs =
-      isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
+      addKeywords $ headerKeywords q.header.wcs.commonA
+      addKeywords $ headerKeywords q.header.wcs.axesA
 
 
 data QuantityAxes alt = QuantityAxes
@@ -342,24 +371,25 @@ addDummyAxis DataArray{bitpix, axes, rawData} =
 
 
 dataSection
-  :: (Writer [HeaderRecord] :> es, Index (IndexOf as), HeaderKeywords info)
+  :: (Index (IndexOf as), HeaderKeywords info)
   => UTCTime
   -> info
   -> DataCube as
-  -> Eff es ()
+  -> Eff es (DataHeader info)
 dataSection now info res = do
   cm <- dataCommon now res
-  let dat = DataHDUHeader info cm
-  addKeywords $ headerKeywords dat
+  pure $ DataHeader info cm
 
 
-dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as -> m DataHDUCommon
+-- addKeywords $ headerKeywords dat
+
+dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as -> m DataCommon
 dataCommon now res = do
   let date = Key . DateTime . pack . iso8601Show $ now
       datamax = Key $ maximum res.array
       datamin = Key $ minimum res.array
   pure $
-    DataHDUCommon
+    DataCommon
       { bzero = BZero
       , bscale = BScale
       , date
@@ -370,56 +400,79 @@ dataCommon now res = do
 
 -- Decode Quantities ----------------------------------------------------------------------------------
 
-data Quantities (as :: [Type]) = Quantities
-  { opticalDepth :: DataCube as
-  , temperature :: DataCube as
-  , electronPressure :: DataCube as
-  , microTurbulence :: DataCube as
-  , magStrength :: DataCube as
-  , velocity :: DataCube as
-  , magInclination :: DataCube as
-  , magAzimuth :: DataCube as
-  , geoHeight :: DataCube as
-  , gasPressure :: DataCube as
-  , density :: DataCube as
+data Quantities' (f :: Type -> Type) = Quantities
+  { opticalDepth :: f OpticalDepth
+  , temperature :: f Temperature
+  , electronPressure :: f ElectronPressure
+  , microTurbulence :: f Microturbulence
+  , magStrength :: f MagStrength
+  , velocity :: f Velocity
+  , magInclination :: f MagInclination
+  , magAzimuth :: f MagAzimuth
+  , geoHeight :: f GeoHeight
+  , gasPressure :: f GasPressure
+  , density :: f Density
   }
 
 
-decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [Quantities [SlitX, Depth]]
+type QuantitiesHeader = Quantities' QuantityHeader
+type QuantitiesData (as :: [Type]) = Quantities' (QuantityData as)
+newtype QuantityData as info = QuantityData {data_ :: DataCube as}
+data Quantity info = Quantity
+  { header :: QuantityHeader info
+  , image :: DataCube [SlitX, Depth]
+  }
+type Quantities = Quantities' Quantity
+
+
+decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [QuantitiesData [SlitX, Depth]]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res
 
 
-decodeInversion :: (MonadThrow m, MonadCatch m) => ByteString -> m (DataCube [Quantity, Depth, FrameY, SlitX])
+decodeInversion :: (MonadThrow m, MonadCatch m) => ByteString -> m (DataCube [Quantity a, Depth, FrameY, SlitX])
 decodeInversion inp = do
   f <- decode inp
   a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
   pure $ DataCube a
 
 
-resultsQuantities :: (MonadThrow m) => DataCube [Quantity, Depth, FrameY, SlitX] -> m [Quantities [SlitX, Depth]]
+resultsQuantities :: (MonadThrow m) => DataCube [Quantity (), Depth, FrameY, SlitX] -> m [QuantitiesData [SlitX, Depth]]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrames res
 
 
-splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity, Depth, SlitX] -> m (Quantities [SlitX, Depth])
+splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity a, Depth, SlitX] -> m (QuantitiesData [SlitX, Depth])
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwM $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: DataCube [Quantity, Depth, SlitX] -> Maybe (Quantities [SlitX, Depth])
+splitQuantities :: DataCube [Quantity a, Depth, SlitX] -> Maybe (QuantitiesData [SlitX, Depth])
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
-  [opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density] <- pure qs
-  pure Quantities{..}
+  [od, t, ep, mt, ms, v, mi, ma, gh, gp, d] <- pure qs
+  pure
+    Quantities
+      { opticalDepth = QuantityData od
+      , temperature = QuantityData t
+      , electronPressure = QuantityData ep
+      , microTurbulence = QuantityData mt
+      , magStrength = QuantityData ms
+      , velocity = QuantityData v
+      , magInclination = QuantityData mi
+      , magAzimuth = QuantityData ma
+      , geoHeight = QuantityData gh
+      , gasPressure = QuantityData gp
+      , density = QuantityData d
+      }
 
 
 -- Frames -----------------------------------------------------------------------
 
--- | Splits any Data Cube into frames when it is the 3/4 dimension
+-- | Splits any Data Cube into frames when it is the 3rd of 4 dimension
 splitFrames :: forall a b d. DataCube [a, b, FrameY, d] -> [DataCube [a, b, d]]
 splitFrames res =
   fmap sliceFrame [0 .. numFrames res - 1]
