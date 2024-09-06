@@ -7,6 +7,7 @@ import Data.ByteString qualified as BS
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Data.Maybe (isJust)
+import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
 import NSO.Fits.Generate.DataCube
@@ -16,22 +17,22 @@ import NSO.Fits.Generate.Headers.Keywords
 import NSO.Fits.Generate.Headers.Parse
 import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
-import NSO.Fits.Generate.Quantities (DataHDUInfo (..), addDummyAxis, dataSection, splitFrames)
+import NSO.Fits.Generate.Quantities (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Fits as Fits
 import Telescope.Fits.Header (toInt)
 
 
--- DONE: add wavelength WCS axis correctly
 -- BUG: PC self_self is wrong
+--  ?? Is this still an issue?
 
 data Original
 data Fit
 
 
 -- -- Generating Profiles -------------------------------------------------------------------------------
---
+
 type ProfileInfo ext = DataHDUInfo ext "spect.line.profile" Dimensionless
 
 
@@ -41,7 +42,28 @@ type FitProfile630 = ProfileInfo "Fit Profile 630.2nm"
 type FitProfile854 = ProfileInfo "Fit Profile 854.2nm"
 
 
-profileHDUs
+data Profiles = Profiles
+  { orig630 :: Profile OrigProfile630 (Center 630 Nm)
+  , orig854 :: Profile OrigProfile854 (Center 854 Nm)
+  , fit630 :: Profile FitProfile630 (Center 630 Nm)
+  , fit854 :: Profile FitProfile854 (Center 854 Nm)
+  }
+
+
+data ProfileHeader info = ProfileHeader
+  { info :: info
+  , common :: DataCommon
+  , wcs :: WCSHeader ProfileAxes
+  }
+
+
+data Profile info w = Profile
+  { image :: DataCube [SlitX, Wavelength w, Stokes]
+  , header :: ProfileHeader info
+  }
+
+
+profiles
   :: (Error ParseKeyError :> es)
   => SliceXY
   -> UTCTime
@@ -50,48 +72,79 @@ profileHDUs
   -> WavProfiles Fit
   -> ProfileFrame Original
   -> ProfileFrame Fit
-  -> Eff es [ImageHDU]
-profileHDUs slice now l1 wpo wpf po pf = do
-  sequence [orig630, orig854, fit630, fit854]
+  -> Eff es Profiles
+profiles slice now l1 wpo wpf po pf = do
+  orig630 <- profile @OrigProfile630 DataHDUInfo wpo.wav630 po.wav630
+  orig854 <- profile @OrigProfile854 DataHDUInfo wpo.wav854 po.wav854
+  fit630 <- profile @FitProfile630 DataHDUInfo wpf.wav630 pf.wav630
+  fit854 <- profile @FitProfile854 DataHDUInfo wpf.wav854 pf.wav854
+  pure $ Profiles{orig630, orig854, fit630, fit854}
  where
-  orig630 = profileHDU @OrigProfile630 DataHDUInfo wpo.wav630 po.wav630
-  orig854 = profileHDU @OrigProfile854 DataHDUInfo wpo.wav854 po.wav854
-  fit630 = profileHDU @FitProfile630 DataHDUInfo wpf.wav630 pf.wav630
-  fit854 = profileHDU @FitProfile854 DataHDUInfo wpf.wav854 pf.wav854
+  profile
+    :: forall info w es
+     . (HeaderKeywords info, Error ParseKeyError :> es)
+    => info
+    -> WavProfile w
+    -> DataCube [SlitX, Wavelength w, Stokes]
+    -> Eff es (Profile info w)
+  profile info wprofile image = do
+    h <- profileHeader info wprofile image
+    pure $ Profile image h
 
-  profileHDU
+  profileHeader
     :: (HeaderKeywords info, Error ParseKeyError :> es)
     => info
     -> WavProfile w
     -> DataCube [SlitX, Wavelength w, Stokes]
-    -> Eff es ImageHDU
-  profileHDU info wp da = do
-    let darr = encodeDataArray da.array
-    hd <- writeHeader header
-    pure ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
+    -> Eff es (ProfileHeader info)
+  profileHeader info wp image = do
+    wcs <- wcsHeader
+    common <- dataCommon now image
+    pure $ ProfileHeader{common, wcs, info}
    where
-    header = do
-      sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-      dataSection now info da
-
-      sectionHeader "WCS" "WCS Related Keywords"
-      wcsSection
-
-    wcsSection = do
+    wcsHeader :: (Error ParseKeyError :> es) => Eff es (WCSHeader ProfileAxes)
+    wcsHeader = do
       wm <- wcsAxes @WCSMain slice wp l1
       wc <- wcsCommon (isWcsValid wm) l1
 
-      addKeywords $ headerKeywords wc
-      addKeywords $ headerKeywords wm
-
       wca <- wcsCommonA l1
       wa <- wcsAxes @A slice wp l1
-      addKeywords $ headerKeywords wca
-      addKeywords $ headerKeywords wa
+      pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
 
     isWcsValid :: ProfileAxes alt -> Bool
     isWcsValid axs =
       and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
+
+
+profileHDUs
+  :: Profiles
+  -> [ImageHDU]
+profileHDUs ps =
+  [ profileHDU ps.orig630
+  , profileHDU ps.orig854
+  , profileHDU ps.fit630
+  , profileHDU ps.fit854
+  ]
+ where
+  profileHDU
+    :: (HeaderKeywords info)
+    => Profile info w
+    -> ImageHDU
+  profileHDU p =
+    let darr = encodeDataArray p.image.array
+        hd = runPureEff $ writeHeader header
+     in ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
+   where
+    header = do
+      sectionHeader "Spectral Profile" "Headers describing the spectral profile"
+      addKeywords $ headerKeywords $ DataHeader{common = p.header.common, info = p.header.info}
+
+      sectionHeader "WCS" "WCS Related Keywords"
+      addKeywords $ headerKeywords p.header.wcs.common
+      addKeywords $ headerKeywords p.header.wcs.axes
+
+      addKeywords $ headerKeywords p.header.wcs.commonA
+      addKeywords $ headerKeywords p.header.wcs.axesA
 
 
 data ProfileAxes alt = ProfileAxes

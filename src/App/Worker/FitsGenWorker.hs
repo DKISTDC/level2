@@ -147,11 +147,12 @@ workFrame
   -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
-  -> L2Frame
+  -> L2FrameInputs
   -> Eff es ()
 workFrame t slice wavOrig wavFit g = do
   now <- currentTime
-  (fits, dateBeg) <- Gen.generateL2Fits now t.inversionId slice wavOrig wavFit g
+  (frame, dateBeg) <- Gen.generateL2Frame now t.inversionId slice wavOrig wavFit g
+  let fits = Gen.frameToFits frame
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
   Scratch.writeFile path $ Gen.encodeL2 fits
   send $ TaskModStatus @GenInversion t updateNumFrame

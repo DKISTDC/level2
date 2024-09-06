@@ -25,27 +25,13 @@ import NSO.Fits.Generate.Headers.Types
 import NSO.Fits.Generate.Headers.WCS
 import NSO.Prelude
 import Telescope.Fits
-import Telescope.Fits.Types (Axes (..), HeaderRecord (..))
+import Telescope.Fits.Types (Axes (..))
 
 
 data QuantityHeader info = QuantityHeader
   { info :: info
   , common :: DataCommon
-  , wcs :: WCSHeader
-  }
-
-
-data WCSHeader = WCSHeader
-  { common :: WCSCommon
-  , axes :: QuantityAxes 'WCSMain
-  , commonA :: WCSCommonA
-  , axesA :: QuantityAxes 'A
-  }
-
-
-data DataHeader info = DataHeader
-  { info :: info
-  , common :: DataCommon
+  , wcs :: WCSHeader QuantityAxes
   }
 
 
@@ -155,10 +141,16 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (Da
     ]
 
 
+data DataHeader info = DataHeader
+  { info :: info
+  , common :: DataCommon
+  }
+
+
 -- The Header Docs need to contain info, axes, and common
 instance (HeaderKeywords info) => HeaderKeywords (DataHeader info) where
   headerKeywords (DataHeader info common) =
-    headerKeywords @info info
+    headerKeywords info
       <> headerKeywords common
 
 
@@ -211,15 +203,10 @@ quantities slice now l1 q = do
     wcs <- wcsHeader
     pure $ QuantityHeader{info, common, wcs}
 
-  wcsHeader :: (Error ParseKeyError :> es) => Eff es WCSHeader
+  wcsHeader :: (Error ParseKeyError :> es) => Eff es (WCSHeader QuantityAxes)
   wcsHeader = do
-    -- addKeywords $ headerKeywords wc
-    -- addKeywords $ headerKeywords wm
     wm <- wcsAxes @WCSMain slice l1
     wc <- wcsCommon (isWcsValid wm) l1
-
-    -- addKeywords $ headerKeywords wca
-    -- addKeywords $ headerKeywords wa
     wca <- wcsCommonA l1
     wa <- wcsAxes @A slice l1
     pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
@@ -229,8 +216,8 @@ quantities slice now l1 q = do
       isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
 
 
-quantitiesHDUs :: (Error ParseKeyError :> es) => Quantities -> Eff es [ImageHDU]
-quantitiesHDUs qs = execWriter $ do
+quantityHDUs :: Quantities -> [ImageHDU]
+quantityHDUs qs = runPureEff $ execWriter $ do
   opticalDepth
   temperature
   electronPressure
@@ -267,7 +254,7 @@ quantitiesHDUs qs = execWriter $ do
 
   dataHDU
     :: forall hduInfo es
-     . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es, Error ParseKeyError :> es)
+     . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es)
     => (Float -> Float)
     -> Quantity hduInfo
     -> Eff es ()
@@ -370,16 +357,15 @@ addDummyAxis DataArray{bitpix, axes, rawData} =
    in DataArray{bitpix, rawData, axes = Axes $ as <> [1]}
 
 
-dataSection
-  :: (Index (IndexOf as), HeaderKeywords info)
-  => UTCTime
-  -> info
-  -> DataCube as
-  -> Eff es (DataHeader info)
-dataSection now info res = do
-  cm <- dataCommon now res
-  pure $ DataHeader info cm
-
+-- dataSection
+--   :: (Index (IndexOf as), HeaderKeywords info)
+--   => UTCTime
+--   -> info
+--   -> DataCube as
+--   -> Eff es (DataHeader info)
+-- dataSection now info res = do
+--   cm <- dataCommon now res
+--   pure $ DataHeader info cm
 
 -- addKeywords $ headerKeywords dat
 

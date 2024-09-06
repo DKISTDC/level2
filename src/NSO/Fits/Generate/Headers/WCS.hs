@@ -17,7 +17,14 @@ import Telescope.Fits.Header as Fits
 import Text.Read (readMaybe)
 
 
--- ints?
+data WCSHeader axes = WCSHeader
+  { common :: WCSCommon
+  , axes :: axes 'WCSMain
+  , commonA :: WCSCommonA
+  , axesA :: axes 'A
+  }
+  deriving (Generic)
+
 
 newtype Axis a = Axis Int
   deriving (Show, Eq)

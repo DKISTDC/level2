@@ -58,6 +58,7 @@ library
       Flow
       Flow.Example
       Flow.Node
+      NSO.Asdf
       NSO.Data.Datasets
       NSO.Data.Inversions
       NSO.Data.Programs

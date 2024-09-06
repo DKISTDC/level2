@@ -1,8 +1,10 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Fits.Generate
-  ( generateL2Fits
+  ( generateL2Frame
+  , frameToFits
   , L2Frame (..)
+  , L2FrameInputs (..)
   , collateFrames
   , decodeQuantitiesFrames
   , decodeProfileFit
@@ -11,6 +13,9 @@ module NSO.Fits.Generate
   , filenameL2Frame
   , encodeL2
   , SliceXY
+  , PrimaryHeader (..)
+  , ObservationHeader (..)
+  , Key (..)
   ) where
 
 import Data.ByteString qualified as BS
@@ -20,14 +25,13 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import Effectful.Writer.Static.Local
 import NSO.Fits.Generate.Error
 import NSO.Fits.Generate.Headers
 import NSO.Fits.Generate.Headers.Keywords (HeaderKeywords (..))
 import NSO.Fits.Generate.Headers.Parse (ParseKeyError (..))
 import NSO.Fits.Generate.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
 import NSO.Fits.Generate.Profile
-import NSO.Fits.Generate.Quantities (Quantities (..), QuantitiesData, decodeQuantitiesFrames, quantities, quantitiesHDUs)
+import NSO.Fits.Generate.Quantities (Quantities, QuantitiesData, decodeQuantitiesFrames, quantities, quantityHDUs)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
@@ -36,6 +40,13 @@ import Telescope.Fits.Encoding (replaceKeywordLine)
 
 
 data L2Frame = L2Frame
+  { primary :: PrimaryHeader
+  , quantities :: Quantities
+  , profiles :: Profiles
+  }
+
+
+data L2FrameInputs = L2FrameInputs
   { quantities :: QuantitiesData [SlitX, Depth]
   , profileFit :: ProfileFrame Fit
   , profileOrig :: ProfileFrame Original
@@ -53,9 +64,9 @@ data PrimaryHeader = PrimaryHeader
   }
 
 
-collateFrames :: (Error GenerateError :> es) => [QuantitiesData [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2Frame]
+collateFrames :: (Error GenerateError :> es) => [QuantitiesData [SlitX, Depth]] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2FrameInputs]
 collateFrames qs pfs pos ts
-  | allFramesEqual = pure $ L.zipWith4 L2Frame qs pfs pos ts
+  | allFramesEqual = pure $ L.zipWith4 L2FrameInputs qs pfs pos ts
   | otherwise = throwError $ MismatchedFrames frameSizes
  where
   allFramesEqual :: Bool
@@ -93,26 +104,31 @@ encodeL2 f' =
    in replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
 
 
-generateL2Fits
+generateL2Frame
   :: (Error GenerateError :> es, GenRandom :> es)
   => UTCTime
   -> Id Inversion
   -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
-  -> L2Frame
-  -> Eff es (Fits, DateTime)
-generateL2Fits now i slice wpo wpf gf =
+  -> L2FrameInputs
+  -> Eff es (L2Frame, DateTime)
+generateL2Frame now i slice wpo wpf gf =
   runErrorNoCallStackWith @ParseKeyError (throwError . ParseKeyError) $ do
     ph <- primaryHeader i gf.l1Frame
-    prim <- primaryHDU ph
-
     qs <- quantities slice now gf.l1Frame.header gf.quantities
-    imgs <- quantitiesHDUs qs
+    ps <- profiles slice now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
+    let dateBeg = ph.observation.dateBeg.ktype
+    let frame = L2Frame{primary = ph, quantities = qs, profiles = ps}
+    pure (frame, dateBeg)
 
-    profs <- profileHDUs slice now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
-    let fits = Fits prim $ fmap Image $ imgs <> profs
-    pure (fits, ph.observation.dateBeg.ktype)
+
+frameToFits :: L2Frame -> Fits
+frameToFits frame =
+  let prim = primaryHDU frame.primary
+      images = quantityHDUs frame.quantities
+      profs = profileHDUs frame.profiles
+   in Fits prim $ fmap Image $ images <> profs
 
 
 primaryHeader :: (Error ParseKeyError :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHeader
@@ -126,10 +142,10 @@ primaryHeader ii l1 = do
   pure $ PrimaryHeader{observation, telescope, datacenter, dkist, adaptive, contributing}
 
 
-primaryHDU :: (Error ParseKeyError :> es, GenRandom :> es) => PrimaryHeader -> Eff es PrimaryHDU
-primaryHDU h = do
-  hs <- execWriter allKeys
-  pure $ PrimaryHDU (Header hs) emptyDataArray
+primaryHDU :: PrimaryHeader -> PrimaryHDU
+primaryHDU h =
+  let hs = runPureEff $ writeHeader allKeys
+   in PrimaryHDU (Header hs) emptyDataArray
  where
   allKeys = do
     primKeys
