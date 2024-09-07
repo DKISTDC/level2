@@ -31,46 +31,41 @@ data Original
 data Fit
 
 
+type Wav630 = Center 630 Nm
+type Wav854 = Center 854 Nm
+
+
 -- Generating Profiles -------------------------------------------------------------------------------
 
-type ProfileInfo ext = DataHDUInfo ext "spect.line.profile" Dimensionless
+type ProfileInfo' ext = DataHDUInfo ext "spect.line.profile" Dimensionless
 
 
-type OrigProfile630 = ProfileInfo "Original Profile 630.2nm"
-type OrigProfile854 = ProfileInfo "Original Profile 854.2nm"
-type FitProfile630 = ProfileInfo "Fit Profile 630.2nm"
-type FitProfile854 = ProfileInfo "Fit Profile 854.2nm"
+type family ProfileInfo profile wav where
+  ProfileInfo Original Wav630 = ProfileInfo' "Original Profile 630.2nm"
+  ProfileInfo Original Wav854 = ProfileInfo' "Original Profile 854.2nm"
+  ProfileInfo Fit Wav630 = ProfileInfo' "Fit Profile 630.2nm"
+  ProfileInfo Fit Wav854 = ProfileInfo' "Fit Profile 854.2nm"
 
 
-type family ProfileWav info where
-  ProfileWav OrigProfile630 = Center 630 Nm
-  ProfileWav OrigProfile854 = Center 854 Nm
-  ProfileWav FitProfile630 = Center 630 Nm
-  ProfileWav FitProfile854 = Center 854 Nm
-
-
-data Profiles' (f :: Type -> Type) = Profiles
-  { orig630 :: f OrigProfile630
-  , orig854 :: f OrigProfile854
-  , fit630 :: f FitProfile630
-  , fit854 :: f FitProfile854
+data Profiles (f :: Type -> Type -> Type) = Profiles
+  { orig630 :: f Original Wav630
+  , orig854 :: f Original Wav854
+  , fit630 :: f Fit Wav630
+  , fit854 :: f Fit Wav854
   }
 
 
-data ProfileHeader info = ProfileHeader
-  { info :: info
+data ProfileHeader profile wav = ProfileHeader
+  { info :: ProfileInfo profile wav
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
 
 
-data Profile info = Profile
-  { image :: DataCube [SlitX, Wavelength (ProfileWav info), Stokes]
-  , header :: ProfileHeader info
+data Profile profile wav = Profile
+  { image :: DataCube [SlitX, Wavelength wav, Stokes]
+  , header :: ProfileHeader profile wav
   }
-
-
-type Profiles = Profiles' Profile
 
 
 profiles
@@ -82,31 +77,31 @@ profiles
   -> WavProfiles Fit
   -> ProfileFrame Original
   -> ProfileFrame Fit
-  -> Eff es Profiles
+  -> Eff es (Profiles Profile)
 profiles slice now l1 wpo wpf po pf = do
-  orig630 <- profile @OrigProfile630 DataHDUInfo wpo.wav630 po.wav630
-  orig854 <- profile @OrigProfile854 DataHDUInfo wpo.wav854 po.wav854
-  fit630 <- profile @FitProfile630 DataHDUInfo wpf.wav630 pf.wav630
-  fit854 <- profile @FitProfile854 DataHDUInfo wpf.wav854 pf.wav854
+  orig630 <- profile @Original @Wav630 DataHDUInfo wpo.wav630 po.wav630
+  orig854 <- profile @Original @Wav854 DataHDUInfo wpo.wav854 po.wav854
+  fit630 <- profile @Fit @Wav630 DataHDUInfo wpf.wav630 pf.wav630
+  fit854 <- profile @Fit @Wav854 DataHDUInfo wpf.wav854 pf.wav854
   pure $ Profiles{orig630, orig854, fit630, fit854}
  where
   profile
-    :: forall info w es
-     . (HeaderKeywords info, Error ParseKeyError :> es, w ~ ProfileWav info)
-    => info
-    -> WavProfile w
-    -> DataCube [SlitX, Wavelength w, Stokes]
-    -> Eff es (Profile info)
+    :: forall profile wav es
+     . (HeaderKeywords (ProfileInfo profile wav), Error ParseKeyError :> es)
+    => ProfileInfo profile wav
+    -> WavProfile wav
+    -> DataCube [SlitX, Wavelength wav, Stokes]
+    -> Eff es (Profile profile wav)
   profile info wprofile image = do
     h <- profileHeader info wprofile image
     pure $ Profile image h
 
   profileHeader
-    :: (HeaderKeywords info, Error ParseKeyError :> es)
-    => info
-    -> WavProfile w
-    -> DataCube [SlitX, Wavelength w, Stokes]
-    -> Eff es (ProfileHeader info)
+    :: (HeaderKeywords (ProfileInfo profile wav), Error ParseKeyError :> es)
+    => ProfileInfo profile wav
+    -> WavProfile wav
+    -> DataCube [SlitX, Wavelength wav, Stokes]
+    -> Eff es (ProfileHeader profile wav)
   profileHeader info wp image = do
     wcs <- wcsHeader
     common <- dataCommon now image
@@ -126,7 +121,7 @@ profiles slice now l1 wpo wpf po pf = do
       and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
 
 
-profileHeaders :: Profiles -> Profiles' ProfileHeader
+profileHeaders :: Profiles Profile -> Profiles ProfileHeader
 profileHeaders ps =
   Profiles
     { orig630 = ps.orig630.header
@@ -137,7 +132,7 @@ profileHeaders ps =
 
 
 profileHDUs
-  :: Profiles
+  :: Profiles Profile
   -> [ImageHDU]
 profileHDUs ps =
   [ profileHDU ps.orig630
@@ -147,8 +142,8 @@ profileHDUs ps =
   ]
  where
   profileHDU
-    :: (HeaderKeywords info)
-    => Profile info
+    :: (HeaderKeywords (ProfileInfo profile wav))
+    => Profile profile wav
     -> ImageHDU
   profileHDU p =
     let darr = encodeDataArray p.image.array
@@ -281,9 +276,9 @@ data MA
 data Center wl unit
 
 
-data ProfileFrame a = ProfileFrame
-  { wav630 :: DataCube [SlitX, Wavelength (Center 630 Nm), Stokes]
-  , wav854 :: DataCube [SlitX, Wavelength (Center 854 Nm), Stokes]
+data ProfileFrame profile = ProfileFrame
+  { wav630 :: DataCube [SlitX, Wavelength Wav630, Stokes]
+  , wav854 :: DataCube [SlitX, Wavelength Wav854, Stokes]
   }
 
 
@@ -298,15 +293,15 @@ data WavProfile n = WaveProfile
 newtype WavBreakIndex = WavBreakIndex Int
 
 
-data ProfileFrames a = ProfileFrames
-  { frames :: [ProfileFrame a]
-  , wavProfiles :: WavProfiles a
+data ProfileFrames profile = ProfileFrames
+  { frames :: [ProfileFrame profile]
+  , wavProfiles :: WavProfiles profile
   }
 
 
-data WavProfiles a = WavProfiles
-  { wav630 :: WavProfile (Center 630 Nm)
-  , wav854 :: WavProfile (Center 854 Nm)
+data WavProfiles profile = WavProfiles
+  { wav630 :: WavProfile Wav630
+  , wav854 :: WavProfile Wav854
   }
   deriving (Show, Eq)
 

@@ -58,7 +58,6 @@ library
       Flow
       Flow.Example
       Flow.Node
-      NSO.Asdf
       NSO.Data.Datasets
       NSO.Data.Inversions
       NSO.Data.Programs
@@ -66,6 +65,7 @@ library
       NSO.Data.Scan
       NSO.Data.Spectra
       NSO.Error
+      NSO.Image.Asdf
       NSO.Image.DataCube
       NSO.Image.Error
       NSO.Image.Frame
@@ -76,6 +76,7 @@ library
       NSO.Image.Headers.Parse
       NSO.Image.Headers.Types
       NSO.Image.Headers.WCS
+      NSO.Image.Primary
       NSO.Image.Profile
       NSO.Image.Quantities
       NSO.Level2

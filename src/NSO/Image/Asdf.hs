@@ -1,4 +1,4 @@
-module NSO.Asdf where
+module NSO.Image.Asdf where
 
 
 -- import NSO.Image.Generate

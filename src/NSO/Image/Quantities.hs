@@ -171,7 +171,7 @@ data DataCommon = DataCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantities :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> QuantitiesData [SlitX, Depth] -> Eff es Quantities
+quantities :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityData [SlitX, Depth]) -> Eff es (Quantities Quantity)
 quantities slice now l1 q = do
   opticalDepth <- quantity @OpticalDepth DataHDUInfo q.opticalDepth
   temperature <- quantity @Temperature DataHDUInfo q.temperature
@@ -215,7 +215,7 @@ quantities slice now l1 q = do
       isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
 
 
-quantityHeaders :: Quantities -> Quantities' QuantityHeader
+quantityHeaders :: Quantities Quantity -> Quantities QuantityHeader
 quantityHeaders qs =
   Quantities
     { opticalDepth = qs.opticalDepth.header
@@ -232,7 +232,7 @@ quantityHeaders qs =
     }
 
 
-quantityHDUs :: Quantities -> [ImageHDU]
+quantityHDUs :: Quantities Quantity -> [ImageHDU]
 quantityHDUs qs = runPureEff $ execWriter $ do
   opticalDepth
   temperature
@@ -402,7 +402,7 @@ dataCommon now res = do
 
 -- Decode Quantities ----------------------------------------------------------------------------------
 
-data Quantities' (f :: Type -> Type) = Quantities
+data Quantities (f :: Type -> Type) = Quantities
   { opticalDepth :: f OpticalDepth
   , temperature :: f Temperature
   , electronPressure :: f ElectronPressure
@@ -417,17 +417,14 @@ data Quantities' (f :: Type -> Type) = Quantities
   }
 
 
-type QuantitiesHeader = Quantities' QuantityHeader
-type QuantitiesData (as :: [Type]) = Quantities' (QuantityData as)
 newtype QuantityData as info = QuantityData {data_ :: DataCube as}
 data Quantity info = Quantity
   { header :: QuantityHeader info
   , image :: DataCube [SlitX, Depth]
   }
-type Quantities = Quantities' Quantity
 
 
-decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [QuantitiesData [SlitX, Depth]]
+decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [Quantities (QuantityData [SlitX, Depth])]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res
@@ -440,19 +437,19 @@ decodeInversion inp = do
   pure $ DataCube a
 
 
-resultsQuantities :: (MonadThrow m) => DataCube [Quantity (), Depth, FrameY, SlitX] -> m [QuantitiesData [SlitX, Depth]]
+resultsQuantities :: (MonadThrow m) => DataCube [Quantity (), Depth, FrameY, SlitX] -> m [Quantities (QuantityData [SlitX, Depth])]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrames res
 
 
-splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity a, Depth, SlitX] -> m (QuantitiesData [SlitX, Depth])
+splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity a, Depth, SlitX] -> m (Quantities (QuantityData [SlitX, Depth]))
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwM $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: DataCube [Quantity a, Depth, SlitX] -> Maybe (QuantitiesData [SlitX, Depth])
+splitQuantities :: DataCube [Quantity a, Depth, SlitX] -> Maybe (Quantities (QuantityData [SlitX, Depth]))
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
   [od, t, ep, mt, ms, v, mi, ma, gh, gp, d] <- pure qs
