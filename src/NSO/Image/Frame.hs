@@ -30,7 +30,7 @@ import NSO.Image.Headers.Keywords (HeaderKeywords (..))
 import NSO.Image.Headers.Parse (ParseKeyError (..))
 import NSO.Image.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
 import NSO.Image.Profile
-import NSO.Image.Quantities (Quantities (..), Quantity, QuantityData, QuantityHeader, quantities, quantityHDUs, quantityHeaders)
+import NSO.Image.Quantities (Quantities (..), Quantity, QuantityHeader, QuantityImage, quantities, quantityHDUs, quantityHeaders)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
@@ -54,7 +54,7 @@ data L2FrameMeta = L2FrameMeta
 
 
 data L2FrameInputs = L2FrameInputs
-  { quantities :: Quantities (QuantityData [SlitX, Depth])
+  { quantities :: Quantities (QuantityImage [SlitX, Depth])
   , profileFit :: ProfileFrame Fit
   , profileOrig :: ProfileFrame Original
   , l1Frame :: BinTableHDU
@@ -71,7 +71,7 @@ data PrimaryHeader = PrimaryHeader
   }
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityData [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2FrameInputs]
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2FrameInputs]
 collateFrames qs pfs pos ts
   | allFramesEqual = pure $ L.zipWith4 L2FrameInputs qs pfs pos ts
   | otherwise = throwError $ MismatchedFrames frameSizes

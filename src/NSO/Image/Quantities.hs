@@ -11,7 +11,6 @@ import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
 import Effectful.Error.Static
-import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Image.DataCube
@@ -25,13 +24,6 @@ import NSO.Image.Headers.WCS
 import NSO.Prelude
 import Telescope.Fits
 import Telescope.Fits.Types (Axes (..))
-
-
-data QuantityHeader info = QuantityHeader
-  { info :: info
-  , common :: DataCommon
-  , wcs :: WCSHeader QuantityAxes
-  }
 
 
 type OpticalDepth =
@@ -171,7 +163,7 @@ data DataCommon = DataCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantities :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityData [SlitX, Depth]) -> Eff es (Quantities Quantity)
+quantities :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities Quantity)
 quantities slice now l1 q = do
   opticalDepth <- quantity @OpticalDepth DataHDUInfo q.opticalDepth
   temperature <- quantity @Temperature DataHDUInfo q.temperature
@@ -186,19 +178,19 @@ quantities slice now l1 q = do
   density <- quantity @Density DataHDUInfo q.density
   pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
  where
-  quantity :: forall info es. (Error ParseKeyError :> es, HeaderKeywords info) => info -> QuantityData [SlitX, Depth] info -> Eff es (Quantity info)
+  quantity :: forall info es. (Error ParseKeyError :> es, HeaderKeywords info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (Quantity info)
   quantity info d = do
     h <- quantityHeader info d
-    pure $ Quantity{header = h, image = d.data_}
+    pure $ Quantity{header = h, image = d.image}
 
   quantityHeader
     :: forall hduInfo es
      . (HeaderKeywords hduInfo, Error ParseKeyError :> es)
     => hduInfo
-    -> QuantityData [SlitX, Depth] hduInfo
+    -> QuantityImage [SlitX, Depth] hduInfo
     -> Eff es (QuantityHeader hduInfo)
   quantityHeader info res = do
-    common <- dataCommon now res.data_
+    common <- dataCommon now res.image
     wcs <- wcsHeader
     pure $ QuantityHeader{info, common, wcs}
 
@@ -216,51 +208,30 @@ quantities slice now l1 q = do
 
 
 quantityHeaders :: Quantities Quantity -> Quantities QuantityHeader
-quantityHeaders qs =
-  Quantities
-    { opticalDepth = qs.opticalDepth.header
-    , temperature = qs.temperature.header
-    , electronPressure = qs.electronPressure.header
-    , microTurbulence = qs.microTurbulence.header
-    , magStrength = qs.magStrength.header
-    , velocity = qs.velocity.header
-    , magInclination = qs.magInclination.header
-    , magAzimuth = qs.magAzimuth.header
-    , geoHeight = qs.geoHeight.header
-    , gasPressure = qs.gasPressure.header
-    , density = qs.density.header
-    }
+quantityHeaders = mapQuantities (.header)
 
 
 quantityHDUs :: Quantities Quantity -> [ImageHDU]
-quantityHDUs qs = runPureEff $ execWriter $ do
-  opticalDepth
-  temperature
-  electronPressure
-  microTurbulence
-  magStrength
-  velocity
-  magInclination
-  magAzimuth
-  geoHeight
-  gasPressure
-  density
+quantityHDUs qs = runPureEff $ do
+  opticalDepth <- dataHDU @OpticalDepth qs.opticalDepth
+  temperature <- dataHDU @Temperature qs.temperature
+  electronPressure <- dataHDU @ElectronPressure $ convertData dyneCmToNm qs.electronPressure
+  microTurbulence <- dataHDU @Microturbulence $ convertData cmsToKms qs.microTurbulence
+  magStrength <- dataHDU @MagStrength qs.magStrength
+  magInclination <- dataHDU @MagInclination qs.magInclination
+  magAzimuth <- dataHDU @MagAzimuth qs.magAzimuth
+  geoHeight <- dataHDU @GeoHeight qs.geoHeight
+  gasPressure <- dataHDU @GasPressure $ convertData dyneCmToNm qs.gasPressure
+  density <- dataHDU @Density $ convertData gcmToKgm qs.density
+  velocity <- dataHDU @Velocity $ convertData cmsToKms qs.velocity
+  pure $ toList (.hdu) $ Quantities{..}
  where
-  opticalDepth = dataHDU @OpticalDepth id qs.opticalDepth
-  temperature = dataHDU @Temperature id qs.temperature
-  electronPressure = dataHDU @ElectronPressure dyneCmToNm qs.electronPressure
-  microTurbulence = dataHDU @Microturbulence cmsToKms qs.microTurbulence
-  magStrength = dataHDU @MagStrength id qs.magStrength
-  velocity = dataHDU @MagStrength cmsToKms qs.magStrength
-  magInclination = dataHDU @MagInclination id qs.magInclination
-  magAzimuth = dataHDU @MagAzimuth id qs.magAzimuth
-  geoHeight = dataHDU @GeoHeight id qs.geoHeight
-  gasPressure = dataHDU @GasPressure dyneCmToNm qs.gasPressure
-  density = dataHDU @Density gcmToKgm qs.density
-
-  convertData :: (Float -> Float) -> Quantity info -> DataCube [SlitX, Depth]
-  convertData f (Quantity _ da) =
-    DataCube $ M.map f da.array
+  convertData :: (Float -> Float) -> Quantity info -> Quantity info
+  convertData f (Quantity header da) =
+    Quantity
+      { header
+      , image = DataCube $ M.map f da.array
+      }
 
   cmsToKms = (/ 100000)
 
@@ -269,16 +240,14 @@ quantityHDUs qs = runPureEff $ execWriter $ do
   dyneCmToNm = (/ 10)
 
   dataHDU
-    :: forall hduInfo es
-     . (HeaderKeywords hduInfo, Writer [ImageHDU] :> es)
-    => (Float -> Float)
-    -> Quantity hduInfo
-    -> Eff es ()
-  dataHDU f q = do
-    let dat = convertData f q
-    let darr = encodeDataArray dat.array
+    :: forall info es
+     . (HeaderKeywords info)
+    => Quantity info
+    -> Eff es (QuantityHDU info)
+  dataHDU q = do
+    let darr = encodeDataArray q.image.array
     hd <- writeHeader header
-    tell [ImageHDU{header = Header hd, dataArray = addDummyAxis darr}]
+    pure $ QuantityHDU $ ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
    where
     header = do
       sectionHeader "L2 Quantity" "Headers describing the physical quantity"
@@ -417,14 +386,79 @@ data Quantities (f :: Type -> Type) = Quantities
   }
 
 
-newtype QuantityData as info = QuantityData {data_ :: DataCube as}
+newtype QuantityImage as info = QuantityImage {image :: DataCube as}
+
+
+newtype QuantityHDU info = QuantityHDU {hdu :: ImageHDU}
+
+
 data Quantity info = Quantity
   { header :: QuantityHeader info
   , image :: DataCube [SlitX, Depth]
   }
 
 
-decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [Quantities (QuantityData [SlitX, Depth])]
+data QuantityHeader info = QuantityHeader
+  { info :: info
+  , common :: DataCommon
+  , wcs :: WCSHeader QuantityAxes
+  }
+
+
+fromList :: (forall x. a -> f x) -> [a] -> Maybe (Quantities f)
+fromList f qs = do
+  [od, t, ep, mt, ms, v, mi, ma, gh, gp, d] <- pure qs
+  pure $
+    Quantities
+      { opticalDepth = f od
+      , temperature = f t
+      , electronPressure = f ep
+      , microTurbulence = f mt
+      , magStrength = f ms
+      , velocity = f v
+      , magInclination = f mi
+      , magAzimuth = f ma
+      , geoHeight = f gh
+      , gasPressure = f gp
+      , density = f d
+      }
+
+
+-- TEST: easy to test this for the presence of all of the fields
+toList :: (forall x. f x -> a) -> Quantities f -> [a]
+toList f qs =
+  [ f qs.opticalDepth
+  , f qs.temperature
+  , f qs.electronPressure
+  , f qs.microTurbulence
+  , f qs.magStrength
+  , f qs.velocity
+  , f qs.magInclination
+  , f qs.magAzimuth
+  , f qs.geoHeight
+  , f qs.gasPressure
+  , f qs.density
+  ]
+
+
+mapQuantities :: (forall x. f x -> g x) -> Quantities f -> Quantities g
+mapQuantities f qs =
+  Quantities
+    { opticalDepth = f qs.opticalDepth
+    , temperature = f qs.temperature
+    , electronPressure = f qs.electronPressure
+    , microTurbulence = f qs.microTurbulence
+    , magStrength = f qs.magStrength
+    , velocity = f qs.velocity
+    , magInclination = f qs.magInclination
+    , magAzimuth = f qs.magAzimuth
+    , geoHeight = f qs.geoHeight
+    , gasPressure = f qs.gasPressure
+    , density = f qs.density
+    }
+
+
+decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [Quantities (QuantityImage [SlitX, Depth])]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res
@@ -437,36 +471,22 @@ decodeInversion inp = do
   pure $ DataCube a
 
 
-resultsQuantities :: (MonadThrow m) => DataCube [Quantity (), Depth, FrameY, SlitX] -> m [Quantities (QuantityData [SlitX, Depth])]
+resultsQuantities :: (MonadThrow m) => DataCube [Quantity (), Depth, FrameY, SlitX] -> m [Quantities (QuantityImage [SlitX, Depth])]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrames res
 
 
-splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity a, Depth, SlitX] -> m (Quantities (QuantityData [SlitX, Depth]))
+splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity a, Depth, SlitX] -> m (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwM $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: DataCube [Quantity a, Depth, SlitX] -> Maybe (Quantities (QuantityData [SlitX, Depth]))
+splitQuantities :: DataCube [Quantity a, Depth, SlitX] -> Maybe (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
-  [od, t, ep, mt, ms, v, mi, ma, gh, gp, d] <- pure qs
-  pure
-    Quantities
-      { opticalDepth = QuantityData od
-      , temperature = QuantityData t
-      , electronPressure = QuantityData ep
-      , microTurbulence = QuantityData mt
-      , magStrength = QuantityData ms
-      , velocity = QuantityData v
-      , magInclination = QuantityData mi
-      , magAzimuth = QuantityData ma
-      , geoHeight = QuantityData gh
-      , gasPressure = QuantityData gp
-      , density = QuantityData d
-      }
+  fromList QuantityImage qs
 
 
 -- Frames -----------------------------------------------------------------------
