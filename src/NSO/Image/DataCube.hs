@@ -29,22 +29,16 @@ class HasIndex (as :: [Type]) where
 
 instance HasIndex '[] where
   type IndexOf '[] = Ix0
-
-
 instance HasIndex '[a] where
   type IndexOf '[a] = Ix1
-
-
 instance HasIndex '[a, b] where
   type IndexOf '[a, b] = Ix2
-
-
 instance HasIndex '[a, b, c] where
   type IndexOf '[a, b, c] = Ix3
-
-
 instance HasIndex '[a, b, c, d] where
   type IndexOf '[a, b, c, d] = Ix4
+instance HasIndex '[a, b, c, d, e] where
+  type IndexOf '[a, b, c, d, e] = Ix5
 
 
 outerList
@@ -76,11 +70,6 @@ transposeMinor3
   -> DataCube [a, c, b]
 transposeMinor3 (DataCube arr) = DataCube $ transposeOuter arr
 
-
---  DataCube $ -- foldOuterSlice each arr
--- where
---  each :: Array P Ix2 Float -> Array P Ix3 Float
---  each = _
 
 -- Slice along the 1st major dimension
 sliceM0
@@ -142,8 +131,6 @@ splitM1
   :: forall a b xs m
    . ( Index (IndexOf (a : xs))
      , Index (IndexOf (a : b : xs))
-     , IndexOf (a : b : xs) ~ IndexOf (a : b : xs)
-     , IndexOf (a : b : xs) ~ IndexOf (a : b : xs)
      , MonadThrow m
      )
   => Int
@@ -153,23 +140,3 @@ splitM1 b (DataCube arr) = do
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : xs))) Proxy
   (arr1, arr2) <- M.splitAtM (Dim dims) b arr
   pure (DataCube arr1, DataCube arr2)
-
--- sampleGen2 :: Ix2 -> Float
--- sampleGen2 (r :. c) = fromIntegral r * 10 + fromIntegral c
---
---
--- sampleGen3 :: Ix3 -> Float
--- sampleGen3 (d :> d2) = fromIntegral d * 100 + sampleGen2 d2
---
---
--- data DX'
--- data Y'
--- data Z'
---
---
--- sample2 :: Ix2 -> DataCube [Y, X]
--- sample2 ix = DataCube $ makeArray Seq (Sz ix) sampleGen2
---
---
--- sample3 :: Ix3 -> DataCube [Z, Y, X]
--- sample3 ix = DataCube $ makeArray Seq (Sz ix) sampleGen3

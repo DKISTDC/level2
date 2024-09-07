@@ -18,7 +18,7 @@ lookupKey k fromValue h =
         Just t -> pure (Just t)
 
 
-requireKey :: (Error ParseKeyError :> es) => Text -> (Value -> Maybe a) -> Header -> Eff es a
+requireKey :: (Error ParseError :> es) => Text -> (Value -> Maybe a) -> Header -> Eff es a
 requireKey k fromValue h =
   let mk = Fits.lookup k h
    in case fromValue =<< mk of
@@ -35,6 +35,10 @@ toDate :: Value -> Maybe DateTime
 toDate v = DateTime <$> toText v
 
 
-data ParseKeyError
+data ParseError
   = MissingKey String
   deriving (Show, Exception, Eq)
+
+
+runParseError :: (Error err :> es) => (ParseError -> err) -> Eff (Error ParseError : es) a -> Eff es a
+runParseError f = runErrorNoCallStackWith @ParseError (throwError . f)

@@ -192,7 +192,7 @@ instance HeaderKeywords Ttbltrck where
 
 -- GENERATE ------------------------------------------------------------
 
-observationHeader :: (Error ParseKeyError :> es) => Header -> Eff es Observation
+observationHeader :: (Error ParseError :> es) => Header -> Eff es Observation
 observationHeader l1 = do
   dateBeg <- requireKey "DATE-BEG" toDate l1
   dateEnd <- requireKey "DATE-END" toDate l1
@@ -218,7 +218,7 @@ observationHeader l1 = do
       }
 
 
-datacenterHeader :: (Error ParseKeyError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
+datacenterHeader :: (Error ParseError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
   dateBeg <- requireKey "DATE-BEG" toDate l1
   dkistver <- requireKey "DKISTVER" toText l1
@@ -254,12 +254,12 @@ datacenterHeader l1 i = do
       }
 
 
-contribExpProp :: (Error ParseKeyError :> es) => Header -> Eff es ContribExpProp
+contribExpProp :: (Error ParseError :> es) => Header -> Eff es ContribExpProp
 contribExpProp l1 = do
   pure $ ContribExpProp (getKeywords l1)
 
 
-dkistHeader :: (Error ParseKeyError :> es) => Header -> Eff es DKISTHeader
+dkistHeader :: (Error ParseError :> es) => Header -> Eff es DKISTHeader
 dkistHeader l1 = do
   ocsCtrl <- EnumKey <$> requireKey "OCS_CTRL" toText l1
   fidoCfg <- Key <$> requireKey "FIDO_CFG" toText l1
@@ -274,7 +274,7 @@ dkistHeader l1 = do
       }
 
 
-adaptiveOpticsHeader :: (Error ParseKeyError :> es) => Header -> Eff es AdaptiveOptics
+adaptiveOpticsHeader :: (Error ParseError :> es) => Header -> Eff es AdaptiveOptics
 adaptiveOpticsHeader l1 = do
   atmosR0 <- Key <$> requireKey "ATMOS_R0" toFloat l1
   aoLock <- Key <$> requireKey "AO_LOCK" toBool l1
@@ -289,7 +289,7 @@ adaptiveOpticsHeader l1 = do
   toBool _ = Nothing
 
 
-telescopeHeader :: (Error ParseKeyError :> es) => Header -> Eff es Telescope
+telescopeHeader :: (Error ParseError :> es) => Header -> Eff es Telescope
 telescopeHeader l1 = do
   tazimuth <- Key . Degrees <$> requireKey "TAZIMUTH" toFloat l1
   elevAng <- Key . Degrees <$> requireKey "ELEV_ANG" toFloat l1

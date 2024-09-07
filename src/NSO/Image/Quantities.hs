@@ -3,7 +3,7 @@
 
 module NSO.Image.Quantities where
 
-import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
+import Control.Exception (Exception)
 import Data.ByteString (ByteString)
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
 import Data.Maybe (isJust)
@@ -14,7 +14,6 @@ import Effectful.Error.Static
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Image.DataCube
-import NSO.Image.Error
 import NSO.Image.Headers
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
@@ -22,7 +21,7 @@ import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Prelude
-import Telescope.Fits
+import Telescope.Fits as Fits
 import Telescope.Fits.Types (Axes (..))
 
 
@@ -163,7 +162,7 @@ data DataCommon = DataCommon
   deriving (Generic, HeaderDoc, HeaderKeywords)
 
 
-quantities :: (Error ParseKeyError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities Quantity)
+quantities :: (Error QuantityError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities Quantity)
 quantities slice now l1 q = do
   opticalDepth <- quantity @OpticalDepth DataHDUInfo q.opticalDepth
   temperature <- quantity @Temperature DataHDUInfo q.temperature
@@ -178,14 +177,14 @@ quantities slice now l1 q = do
   density <- quantity @Density DataHDUInfo q.density
   pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
  where
-  quantity :: forall info es. (Error ParseKeyError :> es, HeaderKeywords info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (Quantity info)
+  quantity :: forall info es. (Error QuantityError :> es, HeaderKeywords info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (Quantity info)
   quantity info d = do
     h <- quantityHeader info d
     pure $ Quantity{header = h, image = d.image}
 
   quantityHeader
     :: forall hduInfo es
-     . (HeaderKeywords hduInfo, Error ParseKeyError :> es)
+     . (HeaderKeywords hduInfo, Error QuantityError :> es)
     => hduInfo
     -> QuantityImage [SlitX, Depth] hduInfo
     -> Eff es (QuantityHeader hduInfo)
@@ -194,8 +193,8 @@ quantities slice now l1 q = do
     wcs <- wcsHeader
     pure $ QuantityHeader{info, common, wcs}
 
-  wcsHeader :: (Error ParseKeyError :> es) => Eff es (WCSHeader QuantityAxes)
-  wcsHeader = do
+  wcsHeader :: (Error QuantityError :> es) => Eff es (WCSHeader QuantityAxes)
+  wcsHeader = runParseError InvalidWCS $ do
     wm <- wcsAxes @WCSMain slice l1
     wc <- wcsCommon (isWcsValid wm) l1
     wca <- wcsCommonA l1
@@ -294,7 +293,7 @@ data QuantityPCs alt ax = QuantityPCs
 instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
 
 
-wcsAxes :: forall alt es. (Error ParseKeyError :> es, KnownValue alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
+wcsAxes :: forall alt es. (Error ParseError :> es, KnownValue alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
 wcsAxes s h = do
   (ax, ay) <- requireWCSAxes h
   pcsl1 <- requirePCs ax ay h
@@ -458,28 +457,29 @@ mapQuantities f qs =
     }
 
 
-decodeQuantitiesFrames :: (MonadThrow m, MonadCatch m) => ByteString -> m [Quantities (QuantityImage [SlitX, Depth])]
+-- | Decodes the L2 input file containing the quantities: inv_res_mod
+decodeQuantitiesFrames :: (Error QuantityError :> es) => ByteString -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res
 
 
-decodeInversion :: (MonadThrow m, MonadCatch m) => ByteString -> m (DataCube [Quantity a, Depth, FrameY, SlitX])
+decodeInversion :: (Error QuantityError :> es) => ByteString -> Eff es (DataCube [Quantity a, Depth, FrameY, SlitX])
 decodeInversion inp = do
-  f <- decode inp
+  f <- Fits.decode inp
   a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
   pure $ DataCube a
 
 
-resultsQuantities :: (MonadThrow m) => DataCube [Quantity (), Depth, FrameY, SlitX] -> m [Quantities (QuantityImage [SlitX, Depth])]
+resultsQuantities :: (Error QuantityError :> es) => DataCube [Quantity (), Depth, FrameY, SlitX] -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrames res
 
 
-splitQuantitiesM :: (MonadThrow m) => DataCube [Quantity a, Depth, SlitX] -> m (Quantities (QuantityImage [SlitX, Depth]))
+splitQuantitiesM :: (Error QuantityError :> es) => DataCube [Quantity a, Depth, SlitX] -> Eff es (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantitiesM rbf =
   case splitQuantities rbf of
-    Nothing -> throwM $ InvalidFrameShape (size rbf.array)
+    Nothing -> throwError $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
@@ -503,3 +503,9 @@ splitFrames res =
 
   sliceFrame :: Int -> DataCube [a, b, d]
   sliceFrame n = sliceM2 n res
+
+
+data QuantityError
+  = InvalidFrameShape (Sz Ix3)
+  | InvalidWCS ParseError
+  deriving (Show, Exception, Eq)

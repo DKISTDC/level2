@@ -2,7 +2,7 @@
 
 module NSO.Image.Profile where
 
-import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
+import Control.Exception (Exception)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
@@ -11,7 +11,6 @@ import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
 import NSO.Image.DataCube
-import NSO.Image.Error
 import NSO.Image.Headers
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
@@ -69,7 +68,7 @@ data Profile profile wav = Profile
 
 
 profiles
-  :: (Error ParseKeyError :> es)
+  :: (Error ProfileError :> es)
   => SliceXY
   -> UTCTime
   -> Header
@@ -87,7 +86,7 @@ profiles slice now l1 wpo wpf po pf = do
  where
   profile
     :: forall profile wav es
-     . (HeaderKeywords (ProfileInfo profile wav), Error ParseKeyError :> es)
+     . (HeaderKeywords (ProfileInfo profile wav), Error ProfileError :> es)
     => ProfileInfo profile wav
     -> WavProfile wav
     -> DataCube [SlitX, Wavelength wav, Stokes]
@@ -97,7 +96,7 @@ profiles slice now l1 wpo wpf po pf = do
     pure $ Profile image h
 
   profileHeader
-    :: (HeaderKeywords (ProfileInfo profile wav), Error ParseKeyError :> es)
+    :: (HeaderKeywords (ProfileInfo profile wav), Error ProfileError :> es)
     => ProfileInfo profile wav
     -> WavProfile wav
     -> DataCube [SlitX, Wavelength wav, Stokes]
@@ -107,8 +106,8 @@ profiles slice now l1 wpo wpf po pf = do
     common <- dataCommon now image
     pure $ ProfileHeader{common, wcs, info}
    where
-    wcsHeader :: (Error ParseKeyError :> es) => Eff es (WCSHeader ProfileAxes)
-    wcsHeader = do
+    wcsHeader :: (Error ProfileError :> es) => Eff es (WCSHeader ProfileAxes)
+    wcsHeader = runParseError InvalidWCS $ do
       wm <- wcsAxes @WCSMain slice wp l1
       wc <- wcsCommon (isWcsValid wm) l1
 
@@ -200,7 +199,7 @@ instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePC
 
 wcsAxes
   :: forall alt w es
-   . (Error ParseKeyError :> es, KnownValue alt)
+   . (Error ParseError :> es, KnownValue alt)
   => SliceXY
   -> WavProfile w
   -> Header
@@ -312,11 +311,11 @@ data ProfileFit = ProfileFit
   }
 
 
-decodeProfileFit :: (Error GenerateError :> es) => BS.ByteString -> Eff es ProfileFit
+decodeProfileFit :: (Error ProfileError :> es) => BS.ByteString -> Eff es ProfileFit
 decodeProfileFit inp = do
   f <- decode inp
   profile <- profileFrames f
-  slice <- runErrorNoCallStackWith @ParseKeyError (throwError . ParseKeyError) $ requireSlice f.primaryHDU.header
+  slice <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
   pure $ ProfileFit{profile, slice}
  where
   requireSlice h = do
@@ -328,13 +327,13 @@ decodeProfileFit inp = do
     pure $ SliceXY{pixelsPerBin, pixelBeg, pixelEnd, frameBeg, frameEnd}
 
 
-decodeProfileOrig :: BS.ByteString -> Eff es (ProfileFrames Original)
+decodeProfileOrig :: (Error ProfileError :> es) => BS.ByteString -> Eff es (ProfileFrames Original)
 decodeProfileOrig inp = do
   f <- decode inp
   profileFrames f
 
 
-profileFrames :: Fits -> Eff es (ProfileFrames a)
+profileFrames :: (Error ProfileError :> es) => Fits -> Eff es (ProfileFrames a)
 profileFrames f = do
   pro <- mainProfile
 
@@ -351,26 +350,26 @@ profileFrames f = do
 
   pure $ ProfileFrames fs (WavProfiles wp630 wp854)
  where
-  mainProfile :: (MonadThrow m, MonadCatch m) => m (DataCube [Stokes, Wavs, FrameY, SlitX])
+  mainProfile :: Eff es (DataCube [Stokes, Wavs, FrameY, SlitX])
   mainProfile = do
     a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
     pure $ DataCube a
 
-  wavs :: (MonadThrow m, MonadCatch m) => m (DataCube '[Wavs])
+  wavs :: (Error ProfileError :> es) => Eff es (DataCube '[Wavs])
   wavs = do
     case f.extensions of
       (Image h : _) -> DataCube <$> decodeDataArray @Ix1 h.dataArray
-      _ -> throwM $ MissingProfileExtensions "Wavelength Values"
+      _ -> throwError $ MissingProfileExtensions "Wavelength Values"
 
-  wavIds :: (MonadThrow m, MonadCatch m) => m (DataCube '[WavIds])
+  wavIds :: (Error ProfileError :> es) => Eff es (DataCube '[WavIds])
   wavIds = do
     case f.extensions of
       [_, Image h] -> do
         DataCube <$> decodeDataArray @Ix1 h.dataArray
-      _ -> throwM $ MissingProfileExtensions "Wavelength Values"
+      _ -> throwError $ MissingProfileExtensions "Wavelength Values"
 
 
-splitWavs :: (MonadThrow m) => WavBreakIndex -> DataCube '[Wavs] -> m (DataCube '[Wavelength (Center 630 MA)], DataCube '[Wavelength (Center 854 MA)])
+splitWavs :: WavBreakIndex -> DataCube '[Wavs] -> Eff es (DataCube '[Wavelength (Center 630 MA)], DataCube '[Wavelength (Center 854 MA)])
 splitWavs (WavBreakIndex bx) wvs = do
   (w630, w854) <- splitM0 bx wvs
   pure (centered w630, centered w854)
@@ -378,11 +377,11 @@ splitWavs (WavBreakIndex bx) wvs = do
   centered (DataCube a) = DataCube a
 
 
-indexOfWavBreak :: (MonadThrow m) => DataCube '[WavIds] -> m WavBreakIndex
+indexOfWavBreak :: (Error ProfileError :> es) => DataCube '[WavIds] -> Eff es WavBreakIndex
 indexOfWavBreak wds =
   case group (M.toList wds.array) of
     (w1 : _) -> pure $ WavBreakIndex (length w1)
-    _ -> throwM InvalidWavelengthGroups
+    _ -> throwError InvalidWavelengthGroups
 
 
 wavProfile :: SpectralLine -> DataCube '[Wavelength (Center n MA)] -> WavProfile (Center n Nm)
@@ -424,7 +423,7 @@ profileFrameArrays :: DataCube [Stokes, Wavs, FrameY, SlitX] -> [DataCube [SlitX
 profileFrameArrays = fmap swapProfileDimensions . splitFrames
 
 
-toProfileFrame :: (MonadThrow m) => WavBreakIndex -> DataCube [SlitX, Wavs, Stokes] -> m (ProfileFrame w)
+toProfileFrame :: WavBreakIndex -> DataCube [SlitX, Wavs, Stokes] -> Eff es (ProfileFrame w)
 toProfileFrame (WavBreakIndex bx) da = do
   (w630, w854) <- splitM1 bx da
   pure $ ProfileFrame (fromWavs w630) (fromWavs w854)
@@ -437,3 +436,11 @@ toProfileFrame (WavBreakIndex bx) da = do
 swapProfileDimensions :: DataCube [Stokes, Wavs, SlitX] -> DataCube [SlitX, Wavs, Stokes]
 swapProfileDimensions =
   transposeMajor . transposeMinor3 . transposeMajor
+
+
+data ProfileError
+  = InvalidWavelengthGroups
+  | MissingProfileExtensions String
+  | InvalidSliceKeys ParseError
+  | InvalidWCS ParseError
+  deriving (Show, Exception, Eq)

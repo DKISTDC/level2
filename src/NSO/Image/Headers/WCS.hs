@@ -114,7 +114,7 @@ instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC 
   headerKeywords p = [keywordRecord p]
 
 
-wcsCommon :: forall es. (Error ParseKeyError :> es) => Bool -> Header -> Eff es WCSCommon
+wcsCommon :: forall es. (Error ParseError :> es) => Bool -> Header -> Eff es WCSCommon
 wcsCommon valid l1 = do
   lonpole <- Degrees <$> requireKey "LONPOLE" toFloat l1
   pure $
@@ -126,7 +126,7 @@ wcsCommon valid l1 = do
       }
 
 
-wcsCommonA :: forall es. (Error ParseKeyError :> es) => Header -> Eff es WCSCommonA
+wcsCommonA :: forall es. (Error ParseError :> es) => Header -> Eff es WCSCommonA
 wcsCommonA l1 = do
   lonpolea <- Degrees <$> requireKey "LONPOLEA" toFloat l1
   pure $
@@ -137,7 +137,7 @@ wcsCommonA l1 = do
       }
 
 
-requireWCS :: forall s alt ax es. (Error ParseKeyError :> es, KnownValue alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
+requireWCS :: forall s alt ax es. (Error ParseError :> es, KnownValue alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
 requireWCS (Axis n) l1 = do
   crpix <- Key <$> requireKey (keyN "CRPIX") toFloat l1
   crval <- Key <$> requireKey (keyN "CRVAL") toFloat l1
@@ -150,7 +150,7 @@ requireWCS (Axis n) l1 = do
 
 
 -- | Look up the order of the spatial axes and report which is which
-requireWCSAxes :: (Error ParseKeyError :> es) => Header -> Eff es (Axis X, Axis Y)
+requireWCSAxes :: (Error ParseError :> es) => Header -> Eff es (Axis X, Axis Y)
 requireWCSAxes h = do
   y <- axisY h
   x <- axisX h
@@ -160,7 +160,7 @@ requireWCSAxes h = do
   axisX = fmap Axis <$> requireCtypeAxis "HPLT-TAN"
 
 
-requireCtypeAxis :: (Error ParseKeyError :> es) => Text -> Header -> Eff es Int
+requireCtypeAxis :: (Error ParseError :> es) => Text -> Header -> Eff es Int
 requireCtypeAxis ctype l1 = do
   case findKey toCtypeN l1 of
     Nothing -> throwError $ MissingKey ("CTYPE: " ++ show ctype)
@@ -173,7 +173,7 @@ requireCtypeAxis ctype l1 = do
 
 
 -- can we detect that they are incorrect here?
-requirePCs :: forall alt s es. (Error ParseKeyError :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
+requirePCs :: forall alt s es. (Error ParseError :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
 requirePCs (Axis xn) (Axis yn) l1 = do
   yy <- PC <$> requireKey (pcN yn yn) toFloat l1
   yx <- PC <$> requireKey (pcN yn xn) toFloat l1
@@ -190,13 +190,13 @@ isPCsValid pcs =
   0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 
 
-wcsDummyY :: (KnownValue alt, Error ParseKeyError :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
+wcsDummyY :: (KnownValue alt, Error ParseError :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
 wcsDummyY y s l1 = do
   keys <- requireWCS y l1
   pure $ adjustDummyY s keys
 
 
-wcsSlitX :: forall alt s es. (Error ParseKeyError :> es, KnownValue alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
+wcsSlitX :: forall alt s es. (Error ParseError :> es, KnownValue alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
 wcsSlitX ax bx l1 = do
   keys <- requireWCS @s @alt ax l1
   pure $ adjustSlitX bx keys

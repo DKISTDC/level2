@@ -53,6 +53,7 @@ library
       App.View.ProposalDetails
       App.Worker.CPU
       App.Worker.FitsGenWorker
+      App.Worker.Generate
       App.Worker.PuppetMaster
       Effectful.Tasks
       Flow
@@ -67,9 +68,7 @@ library
       NSO.Error
       NSO.Image.Asdf
       NSO.Image.DataCube
-      NSO.Image.Error
       NSO.Image.Frame
-      NSO.Image.Generate.FetchL1
       NSO.Image.Headers
       NSO.Image.Headers.Doc
       NSO.Image.Headers.Keywords

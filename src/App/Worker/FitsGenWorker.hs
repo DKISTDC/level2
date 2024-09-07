@@ -14,6 +14,7 @@ import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
 import App.Worker.CPU qualified as CPU
+import App.Worker.Generate as Gen
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
@@ -28,9 +29,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Image.Error
 import NSO.Image.Frame as Frame
-import NSO.Image.Generate.FetchL1 as Fetch (canonicalL1Frames, requireCanonicalDataset)
 import NSO.Image.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
 import NSO.Image.Quantities (decodeQuantitiesFrames)
 import NSO.Prelude
@@ -94,7 +93,7 @@ workTask t = do
     throwError $ GenIOError e
 
   workWithError :: Eff (Error GenerateError : es) ()
-  workWithError = do
+  workWithError = runGenerateError $ do
     log Debug "START"
 
     send $ TaskSetStatus t $ GenStatus GenStarted 0 0
@@ -123,10 +122,10 @@ workTask t = do
     ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.invProfile
     profileOrig <- decodeProfileOrig =<< readFile u.origProfile
 
-    l1 <- Fetch.canonicalL1Frames frameDir slice
+    l1 <- Gen.canonicalL1Frames frameDir slice
     log Debug $ dump "Frames" (length quantities, length profileFit.frames, length profileOrig.frames, length l1)
 
-    gfs <- collateFrames quantities profileFit.frames profileOrig.frames l1
+    gfs <- Gen.collateFrames quantities profileFit.frames profileOrig.frames l1
     send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = length gfs}
 
     -- Generate them in parallel with N = available CPUs
@@ -145,14 +144,20 @@ workTask t = do
 
 -- | Generate a single frame
 workFrame
-  :: (Tasks GenInversion :> es, Time :> es, Error GenerateError :> es, GenRandom :> es, Log :> es, Scratch :> es)
+  :: ( Tasks GenInversion :> es
+     , Time :> es
+     , GenRandom :> es
+     , Log :> es
+     , Scratch :> es
+     , Error GenerateError :> es
+     )
   => GenInversion
   -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2FrameInputs
   -> Eff es L2FrameMeta
-workFrame t slice wavOrig wavFit g = do
+workFrame t slice wavOrig wavFit g = runGenerateError $ do
   now <- currentTime
   (frame, dateBeg) <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit g
   let fits = Frame.frameToFits frame
