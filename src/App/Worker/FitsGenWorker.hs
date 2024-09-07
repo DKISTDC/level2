@@ -13,7 +13,7 @@ module App.Worker.FitsGenWorker
 import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
-import App.Worker.CPU as CPU (parallelize_)
+import App.Worker.CPU qualified as CPU
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
@@ -28,10 +28,11 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Fits.Generate as Gen
-import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.FetchL1 as Fetch (canonicalL1Frames, requireCanonicalDataset)
-import NSO.Fits.Generate.Profile (Fit, Original, ProfileFrames (..), WavProfiles)
+import NSO.Image.Error
+import NSO.Image.Frame as Frame
+import NSO.Image.Generate.FetchL1 as Fetch (canonicalL1Frames, requireCanonicalDataset)
+import NSO.Image.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
+import NSO.Image.Quantities (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 
@@ -118,18 +119,20 @@ workTask t = do
     log Debug $ dump "OrigProfile" u.origProfile
     -- log Debug $ dump "Timestamps" u.timestamps
 
-    qfs <- Gen.decodeQuantitiesFrames =<< readFile u.invResults
-    ProfileFit pfs slice <- Gen.decodeProfileFit =<< readFile u.invProfile
-    pos <- Gen.decodeProfileOrig =<< readFile u.origProfile
+    quantities <- decodeQuantitiesFrames =<< readFile u.invResults
+    ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.invProfile
+    profileOrig <- decodeProfileOrig =<< readFile u.origProfile
 
     l1 <- Fetch.canonicalL1Frames frameDir slice
-    log Debug $ dump "Frames" (length qfs, length pfs.frames, length pos.frames, length l1)
+    log Debug $ dump "Frames" (length quantities, length profileFit.frames, length profileOrig.frames, length l1)
 
-    gfs <- collateFrames qfs pfs.frames pos.frames l1
+    gfs <- collateFrames quantities profileFit.frames profileOrig.frames l1
     send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = length gfs}
 
     -- Generate them in parallel with N = available CPUs
-    CPU.parallelize_ $ fmap (workFrame t slice pos.wavProfiles pfs.wavProfiles) gfs
+    metas <- CPU.parallelize $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
+
+    log Debug $ dump "METAS" (length metas)
 
     send $ SetGenerated t.inversionId
     log Debug " - done"
@@ -148,15 +151,16 @@ workFrame
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2FrameInputs
-  -> Eff es ()
+  -> Eff es L2FrameMeta
 workFrame t slice wavOrig wavFit g = do
   now <- currentTime
-  (frame, dateBeg) <- Gen.generateL2Frame now t.inversionId slice wavOrig wavFit g
-  let fits = Gen.frameToFits frame
+  (frame, dateBeg) <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit g
+  let fits = Frame.frameToFits frame
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
-  Scratch.writeFile path $ Gen.encodeL2 fits
+  Scratch.writeFile path $ Frame.encodeL2 fits
   send $ TaskModStatus @GenInversion t updateNumFrame
   log Debug path.filePath
+  pure $ Frame.frameMeta frame path
  where
   updateNumFrame :: GenStatus -> GenStatus
   updateNumFrame GenStatus{..} = GenStatus{complete = complete + 1, ..}

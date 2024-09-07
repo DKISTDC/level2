@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module NSO.Fits.Generate.Profile where
+module NSO.Image.Profile where
 
 import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
 import Data.ByteString qualified as BS
@@ -10,14 +10,14 @@ import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
-import NSO.Fits.Generate.DataCube
-import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.Headers
-import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.Parse
-import NSO.Fits.Generate.Headers.Types
-import NSO.Fits.Generate.Headers.WCS
-import NSO.Fits.Generate.Quantities (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
+import NSO.Image.DataCube
+import NSO.Image.Error
+import NSO.Image.Headers
+import NSO.Image.Headers.Keywords
+import NSO.Image.Headers.Parse
+import NSO.Image.Headers.Types
+import NSO.Image.Headers.WCS
+import NSO.Image.Quantities (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Fits as Fits
@@ -31,7 +31,7 @@ data Original
 data Fit
 
 
--- -- Generating Profiles -------------------------------------------------------------------------------
+-- Generating Profiles -------------------------------------------------------------------------------
 
 type ProfileInfo ext = DataHDUInfo ext "spect.line.profile" Dimensionless
 
@@ -42,11 +42,18 @@ type FitProfile630 = ProfileInfo "Fit Profile 630.2nm"
 type FitProfile854 = ProfileInfo "Fit Profile 854.2nm"
 
 
-data Profiles = Profiles
-  { orig630 :: Profile OrigProfile630 (Center 630 Nm)
-  , orig854 :: Profile OrigProfile854 (Center 854 Nm)
-  , fit630 :: Profile FitProfile630 (Center 630 Nm)
-  , fit854 :: Profile FitProfile854 (Center 854 Nm)
+type family ProfileWav info where
+  ProfileWav OrigProfile630 = Center 630 Nm
+  ProfileWav OrigProfile854 = Center 854 Nm
+  ProfileWav FitProfile630 = Center 630 Nm
+  ProfileWav FitProfile854 = Center 854 Nm
+
+
+data Profiles' (f :: Type -> Type) = Profiles
+  { orig630 :: f OrigProfile630
+  , orig854 :: f OrigProfile854
+  , fit630 :: f FitProfile630
+  , fit854 :: f FitProfile854
   }
 
 
@@ -57,10 +64,13 @@ data ProfileHeader info = ProfileHeader
   }
 
 
-data Profile info w = Profile
-  { image :: DataCube [SlitX, Wavelength w, Stokes]
+data Profile info = Profile
+  { image :: DataCube [SlitX, Wavelength (ProfileWav info), Stokes]
   , header :: ProfileHeader info
   }
+
+
+type Profiles = Profiles' Profile
 
 
 profiles
@@ -82,11 +92,11 @@ profiles slice now l1 wpo wpf po pf = do
  where
   profile
     :: forall info w es
-     . (HeaderKeywords info, Error ParseKeyError :> es)
+     . (HeaderKeywords info, Error ParseKeyError :> es, w ~ ProfileWav info)
     => info
     -> WavProfile w
     -> DataCube [SlitX, Wavelength w, Stokes]
-    -> Eff es (Profile info w)
+    -> Eff es (Profile info)
   profile info wprofile image = do
     h <- profileHeader info wprofile image
     pure $ Profile image h
@@ -116,6 +126,16 @@ profiles slice now l1 wpo wpf po pf = do
       and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
 
 
+profileHeaders :: Profiles -> Profiles' ProfileHeader
+profileHeaders ps =
+  Profiles
+    { orig630 = ps.orig630.header
+    , orig854 = ps.orig854.header
+    , fit630 = ps.fit630.header
+    , fit854 = ps.fit854.header
+    }
+
+
 profileHDUs
   :: Profiles
   -> [ImageHDU]
@@ -128,7 +148,7 @@ profileHDUs ps =
  where
   profileHDU
     :: (HeaderKeywords info)
-    => Profile info w
+    => Profile info
     -> ImageHDU
   profileHDU p =
     let darr = encodeDataArray p.image.array

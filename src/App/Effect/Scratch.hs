@@ -6,8 +6,8 @@ import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
-import NSO.Fits.Generate (L2Frame, filenameL2Frame)
-import NSO.Fits.Generate.Headers.Types (DateTime (..))
+import NSO.Image.Frame (L2Frame, filenameL2Frame)
+import NSO.Image.Headers.Types (DateTime (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset

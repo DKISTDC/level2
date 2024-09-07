@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module NSO.Fits.Generate.DataCube where
+module NSO.Image.DataCube where
 
 import Data.Kind
 import Data.Massiv.Array as M hiding (mapM)

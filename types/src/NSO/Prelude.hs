@@ -12,6 +12,7 @@ module NSO.Prelude
   , Text
   , UTCTime
   , Tagged (..)
+  , Type
 
     -- * List functions
   , module Data.List
@@ -38,6 +39,7 @@ import Control.Monad (forM, forM_, guard, unless, when, zipWithM_)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Function ((&))
 import Data.Functor.Identity (Identity)
+import Data.Kind (Type)
 import Data.List (find, group, groupBy, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)), head, last, nonEmpty, reverse, sort, sortWith, (!!))
 import Data.Map (Map)

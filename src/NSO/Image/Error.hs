@@ -1,8 +1,8 @@
-module NSO.Fits.Generate.Error where
+module NSO.Image.Error where
 
 import Control.Exception
 import Data.Massiv.Array
-import NSO.Fits.Generate.Headers.Parse
+import NSO.Image.Headers.Parse
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram

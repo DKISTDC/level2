@@ -1,10 +1,10 @@
-module NSO.Fits.Generate.Headers.Parse where
+module NSO.Image.Headers.Parse where
 
 import Control.Monad.Catch (Exception)
 import Data.Text (unpack)
 import Effectful
 import Effectful.Error.Static
-import NSO.Fits.Generate.Headers.Types
+import NSO.Image.Headers.Types
 import NSO.Prelude
 import Telescope.Fits as Fits
 import Telescope.Fits.Header (KeywordRecord, getKeywords, toText)

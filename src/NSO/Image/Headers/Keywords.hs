@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module NSO.Fits.Generate.Headers.Keywords where
+module NSO.Image.Headers.Keywords where
 
 import Data.Text (pack)
 import Data.Text qualified as T

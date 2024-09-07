@@ -15,9 +15,13 @@ availableWorkerCPUs = do
   pure $ max 1 $ cores - saveCoresForWebserver
 
 
-parallelize_ :: (Concurrent :> es, Log :> es) => [Eff es a] -> Eff es ()
-parallelize_ effs = do
+parallelize :: (Concurrent :> es, Log :> es) => [Eff es a] -> Eff es [a]
+parallelize effs = do
   cpus <- availableWorkerCPUs
   let numThreads = min 16 cpus
   log Debug $ "Parallelize: " <> show numThreads
-  void $ pooledMapConcurrentlyN_ numThreads id effs
+  pooledMapConcurrentlyN numThreads id effs
+
+
+parallelize_ :: (Concurrent :> es, Log :> es) => [Eff es a] -> Eff es ()
+parallelize_ effs = void $ parallelize effs

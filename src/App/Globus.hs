@@ -49,7 +49,7 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
-import NSO.Fits.Generate (L2Frame)
+import NSO.Image.Frame (L2Frame)
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset

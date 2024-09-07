@@ -66,18 +66,18 @@ library
       NSO.Data.Scan
       NSO.Data.Spectra
       NSO.Error
-      NSO.Fits.Generate
-      NSO.Fits.Generate.DataCube
-      NSO.Fits.Generate.Error
-      NSO.Fits.Generate.FetchL1
-      NSO.Fits.Generate.Headers
-      NSO.Fits.Generate.Headers.Doc
-      NSO.Fits.Generate.Headers.Keywords
-      NSO.Fits.Generate.Headers.Parse
-      NSO.Fits.Generate.Headers.Types
-      NSO.Fits.Generate.Headers.WCS
-      NSO.Fits.Generate.Profile
-      NSO.Fits.Generate.Quantities
+      NSO.Image.DataCube
+      NSO.Image.Error
+      NSO.Image.Frame
+      NSO.Image.Generate.FetchL1
+      NSO.Image.Headers
+      NSO.Image.Headers.Doc
+      NSO.Image.Headers.Keywords
+      NSO.Image.Headers.Parse
+      NSO.Image.Headers.Types
+      NSO.Image.Headers.WCS
+      NSO.Image.Profile
+      NSO.Image.Quantities
       NSO.Level2
       NSO.Metadata
       NSO.Steps

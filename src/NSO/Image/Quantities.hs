@@ -1,11 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module NSO.Fits.Generate.Quantities where
+module NSO.Image.Quantities where
 
 import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
 import Data.ByteString (ByteString)
-import Data.Kind (Type)
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
 import Data.Maybe (isJust)
 import Data.Text (pack)
@@ -15,14 +14,14 @@ import Effectful.Error.Static
 import Effectful.Writer.Static.Local
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Fits.Generate.DataCube
-import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.Headers
-import NSO.Fits.Generate.Headers.Doc as Doc
-import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.Parse
-import NSO.Fits.Generate.Headers.Types
-import NSO.Fits.Generate.Headers.WCS
+import NSO.Image.DataCube
+import NSO.Image.Error
+import NSO.Image.Headers
+import NSO.Image.Headers.Doc as Doc
+import NSO.Image.Headers.Keywords
+import NSO.Image.Headers.Parse
+import NSO.Image.Headers.Types
+import NSO.Image.Headers.WCS
 import NSO.Prelude
 import Telescope.Fits
 import Telescope.Fits.Types (Axes (..))
@@ -214,6 +213,23 @@ quantities slice now l1 q = do
     isWcsValid :: QuantityAxes alt -> Bool
     isWcsValid axs =
       isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
+
+
+quantityHeaders :: Quantities -> Quantities' QuantityHeader
+quantityHeaders qs =
+  Quantities
+    { opticalDepth = qs.opticalDepth.header
+    , temperature = qs.temperature.header
+    , electronPressure = qs.electronPressure.header
+    , microTurbulence = qs.microTurbulence.header
+    , magStrength = qs.magStrength.header
+    , velocity = qs.velocity.header
+    , magInclination = qs.magInclination.header
+    , magAzimuth = qs.magAzimuth.header
+    , geoHeight = qs.geoHeight.header
+    , gasPressure = qs.gasPressure.header
+    , density = qs.density.header
+    }
 
 
 quantityHDUs :: Quantities -> [ImageHDU]

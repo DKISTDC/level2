@@ -1,4 +1,4 @@
-module NSO.Fits.Generate.FetchL1 where
+module NSO.Image.Generate.FetchL1 where
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
@@ -15,8 +15,8 @@ import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets
 import NSO.Data.Spectra (identifyLine)
-import NSO.Fits.Generate.Error
-import NSO.Fits.Generate.Headers.Types (SliceXY (..))
+import NSO.Image.Error
+import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions)

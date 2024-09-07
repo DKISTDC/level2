@@ -1,11 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module NSO.Fits.Generate.Headers.Doc where
+module NSO.Image.Headers.Doc where
 
 import Data.Text (pack)
 import GHC.Generics
-import NSO.Fits.Generate.Headers.Keywords
+import NSO.Image.Headers.Keywords
 import NSO.Prelude
 import Telescope.Fits.Types (Value (..))
 import Web.View

@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module NSO.Fits.Generate.Headers where
+module NSO.Image.Headers where
 
 import App.Version (appVersion)
 import Data.List qualified as L
@@ -13,10 +13,10 @@ import Effectful.Error.Static
 import Effectful.GenRandom
 import Effectful.Writer.Static.Local
 import GHC.Generics
-import NSO.Fits.Generate.Headers.Doc as Doc
-import NSO.Fits.Generate.Headers.Keywords
-import NSO.Fits.Generate.Headers.Parse
-import NSO.Fits.Generate.Headers.Types
+import NSO.Image.Headers.Doc as Doc
+import NSO.Image.Headers.Keywords
+import NSO.Image.Headers.Parse
+import NSO.Image.Headers.Types
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
@@ -62,7 +62,7 @@ headerSpecVersion = "L2." <> pack appVersion
 --
 -- NOPE: CONTINUE - if a url is too long. Or make sure they aren't too long :)
 
-data ObservationHeader = ObservationHeader
+data Observation = Observation
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
   , telescope :: Key (Constant "Daniel K. Inouye Solar Telescope") "The telescope used to acquire the data associated with the header."
   , obsrvtry :: Key (Constant "Haleakala High Altitude Observatory Site") "A character string identifying the physical entity, located in a defined location, which provides the resources necessary for the installation of an instrument"
@@ -127,7 +127,7 @@ instance HeaderDoc ContribExpProp where
 
 -- TelescopeHeader -------------------------------------------------
 
-data TelescopeHeader = TelescopeHeader
+data Telescope = Telescope
   { tazimuth :: Key Degrees "Raw Telescope azimuth angle"
   , elevAng :: Key Degrees "Raw Telescope elevation angle"
   , teltrack :: Teltrack
@@ -192,7 +192,7 @@ instance HeaderKeywords Ttbltrck where
 
 -- GENERATE ------------------------------------------------------------
 
-observationHeader :: (Error ParseKeyError :> es) => Header -> Eff es ObservationHeader
+observationHeader :: (Error ParseKeyError :> es) => Header -> Eff es Observation
 observationHeader l1 = do
   dateBeg <- requireKey "DATE-BEG" toDate l1
   dateEnd <- requireKey "DATE-END" toDate l1
@@ -202,7 +202,7 @@ observationHeader l1 = do
   instrument <- requireKey "INSTRUME" toText l1
 
   pure $
-    ObservationHeader
+    Observation
       { telapse = Key (Seconds telapse)
       , instrume = Instrument instrument
       , timesys = Key Constant
@@ -289,7 +289,7 @@ adaptiveOpticsHeader l1 = do
   toBool _ = Nothing
 
 
-telescopeHeader :: (Error ParseKeyError :> es) => Header -> Eff es TelescopeHeader
+telescopeHeader :: (Error ParseKeyError :> es) => Header -> Eff es Telescope
 telescopeHeader l1 = do
   tazimuth <- Key . Degrees <$> requireKey "TAZIMUTH" toFloat l1
   elevAng <- Key . Degrees <$> requireKey "ELEV_ANG" toFloat l1
@@ -303,7 +303,7 @@ telescopeHeader l1 = do
   obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" toFloat l1
   rotcomp <- fmap Key <$> lookupKey "ROTCOMP" toInt l1
   obsVr <- Key . Mps <$> requireKey "OBS_VR" toFloat l1
-  pure $ TelescopeHeader{..}
+  pure $ Telescope{..}
 
 
 -- statsHeader :: Results Frame -> Eff es StatisticsHeader
