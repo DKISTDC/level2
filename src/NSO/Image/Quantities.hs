@@ -21,6 +21,7 @@ import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Prelude
+import Telescope.Asdf hiding (Key)
 import Telescope.Fits as Fits
 import Telescope.Fits.Types (Axes (..))
 
@@ -383,6 +384,8 @@ data Quantities (f :: Type -> Type) = Quantities
   , gasPressure :: f GasPressure
   , density :: f Density
   }
+  deriving (Generic)
+instance ToAsdf (Quantities Quantity)
 
 
 newtype QuantityImage as info = QuantityImage {image :: DataCube as}
@@ -395,6 +398,10 @@ data Quantity info = Quantity
   { header :: QuantityHeader info
   , image :: DataCube [SlitX, Depth]
   }
+
+
+instance ToAsdf (Quantity x) where
+  toValue _ = Null
 
 
 data QuantityHeader info = QuantityHeader

@@ -58,6 +58,7 @@ dependencies:
   - hyperbole >= 0.4
   - hasql
   - exceptions
+  - binary
   - effectful == 2.3.0.0
   - data-diverse >= 4.7
   - data-diverse

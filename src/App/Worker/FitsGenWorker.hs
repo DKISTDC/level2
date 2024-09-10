@@ -30,7 +30,8 @@ import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Image.Frame as Frame
-import NSO.Image.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
+import NSO.Image.Headers.Types (SliceXY (..))
+import NSO.Image.Profile (Fit, Original, ProfileFit (..), ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
 import NSO.Image.Quantities (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram

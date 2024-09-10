@@ -55,6 +55,7 @@ dependencies:
   - bytestring
   - aeson
   - globus
+  - telescope
 
 
 library:

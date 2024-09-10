@@ -4,12 +4,12 @@ import Control.Monad.Catch (throwM)
 import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists')
 import Effectful
 import Effectful.Error.Static
-import NSO.Fits.Generate.DataCube
-import NSO.Fits.Generate.FetchL1
-import NSO.Fits.Generate.Headers.Parse
-import NSO.Fits.Generate.Headers.Types
-import NSO.Fits.Generate.Headers.WCS
-import NSO.Fits.Generate.Profile
+import NSO.Image.DataCube
+import NSO.Image.Headers.Parse
+import NSO.Image.Headers.Types
+import NSO.Image.Headers.WCS
+import NSO.Image.L1Input
+import NSO.Image.Profile
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
@@ -160,7 +160,7 @@ wav630 =
         [-288.79998779, -160.80000305, -32.79999924, 95.19999695, 223.19999695, 351.20001221, 479.20001221, 607.20001221, 735.20001221, 863.20001221, 991.20001221, 1119.19995117, 1247.19995117, 1375.19995117, 1503.19995117]
 
 
-runErrorIO :: Eff [Error ParseKeyError, IOE] a -> IO a
+runErrorIO :: Eff [Error ParseError, IOE] a -> IO a
 runErrorIO eff = do
   res <- runEff $ runErrorNoCallStack eff
   case res of

@@ -1,20 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module NSO.Image.Frame
-  ( generateL2Frame
-  , frameToFits
-  , frameMeta
-  , L2Frame (..)
-  , L2FrameMeta (..)
-  , L2FrameInputs (..)
-  , ProfileFit (..)
-  , filenameL2Frame
-  , encodeL2
-  , SliceXY
-  , PrimaryHeader (..)
-  , Observation (..)
-  , Key (..)
-  ) where
+module NSO.Image.Frame where
 
 import Data.ByteString qualified as BS
 import Data.Massiv.Array ()
@@ -30,6 +16,7 @@ import NSO.Image.Quantities (Quantities (..), Quantity, QuantityError, QuantityH
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
+import Telescope.Asdf as Asdf
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
 
@@ -39,6 +26,16 @@ data L2Frame = L2Frame
   , quantities :: Quantities Quantity
   , profiles :: Profiles Profile
   }
+  deriving (Generic)
+
+
+instance ToAsdf L2Frame where
+  toValue _ =
+    Object
+      [ ("primary", fromValue Null)
+      , ("quantities", fromValue Null)
+      , ("profiles", fromValue Null)
+      ]
 
 
 data L2FrameMeta = L2FrameMeta
@@ -65,14 +62,6 @@ filenameL2Frame ii (DateTime dt) = Path $ cs (T.toUpper $ T.map toUnderscore $ i
   toUnderscore ':' = '_'
   toUnderscore '-' = '_'
   toUnderscore c = c
-
-
--- | Encode and insert framevol
-encodeL2 :: Fits -> BS.ByteString
-encodeL2 f' =
-  let out = Fits.encode f'
-      mb = fromIntegral (BS.length out) / 1000000
-   in replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
 
 
 generateL2Frame
@@ -108,4 +97,16 @@ frameToFits frame =
   let prim = primaryHDU frame.primary
       images = quantityHDUs frame.quantities
       profs = profileHDUs frame.profiles
-   in Fits prim $ fmap Image $ images <> profs
+   in Fits prim $ fmap Image (images <> profs)
+
+
+-- | Encode and insert framevol
+encodeL2 :: Fits -> BS.ByteString
+encodeL2 f' =
+  let out = Fits.encode f'
+      mb = fromIntegral (BS.length out) / 1000000
+   in replaceKeywordLine "FRAMEVOL" (Float mb) (Just "[Mb]") out
+
+
+encodeL2Asdf :: (Error AsdfError :> es, IOE :> es) => L2Frame -> Eff es BS.ByteString
+encodeL2Asdf = Asdf.encode

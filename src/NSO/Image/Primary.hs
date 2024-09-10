@@ -22,7 +22,11 @@ data PrimaryHeader = PrimaryHeader
   , adaptive :: AdaptiveOptics
   , contributing :: ContribExpProp
   }
+  deriving (Generic, HeaderKeywords)
 
+
+-- TODO: You can't make an instance for PrimaryHeader
+-- because you need to do [PrimaryHeader] or something equivalent
 
 primaryHeader :: (Error PrimaryError :> es, GenRandom :> es) => Id Inversion -> BinTableHDU -> Eff es PrimaryHeader
 primaryHeader ii l1 = runParseError PrimaryParse $ do
