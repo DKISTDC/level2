@@ -6,6 +6,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
+import NSO.Image.Asdf (L2Asdf, filenameL2Asdf)
 import NSO.Image.Frame (L2Frame, filenameL2Frame)
 import NSO.Image.Headers.Types (DateTime (..))
 import NSO.Prelude
@@ -53,7 +54,9 @@ runScratch cfg = interpret $ \_ -> \case
     FS.copyFile src (mounted dest)
   CreateDirectoryLink (Path src) dest -> do
     FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
-    FS.createDirectoryLink src (mounted dest)
+    exists <- FS.doesPathExist (mounted dest)
+    unless exists $
+      FS.createDirectoryLink src (mounted dest)
   Globus -> pure $ Id cfg.collection.unTagged
  where
   mounted :: Path' x a -> FilePath
@@ -110,6 +113,11 @@ outputL2Dir ip ii =
 outputL2Frame :: Id Proposal -> Id Inversion -> DateTime -> Path L2Frame
 outputL2Frame ip ii dt =
   filePath (outputL2Dir ip ii) $ filenameL2Frame ii dt
+
+
+outputL2Asdf :: Id Proposal -> Id Inversion -> Path L2Asdf
+outputL2Asdf ip ii =
+  filePath (outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
 data Input

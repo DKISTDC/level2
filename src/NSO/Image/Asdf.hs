@@ -1,6 +1,9 @@
 module NSO.Image.Asdf where
 
+import Data.ByteString (ByteString)
 import Data.List.NonEmpty qualified as NE
+import Effectful
+import Effectful.Error.Static
 import GHC.Generics (from)
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
@@ -11,12 +14,16 @@ import NSO.Image.Quantities hiding (quantities)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset)
+import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, Wavelength)
-import Telescope.Asdf
+import Telescope.Asdf as Asdf
 import Telescope.Asdf.Class (GToObject (..))
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Data.Axes (Axes, Row)
+
+
+data L2Asdf
 
 
 inversionTree :: Id Inversion -> [Id Dataset] -> UTCTime -> NonEmpty L2FrameMeta -> InversionTree
@@ -29,6 +36,22 @@ inversionTree inversionId datasetIds now metas =
     , profiles = profilesTree $ fmap (.profiles) metas
     }
 
+
+filenameL2Asdf :: Id Proposal -> Id Inversion -> Path' Filename L2Asdf
+filenameL2Asdf _ _ = Path "test.asdf"
+
+
+encodeL2 :: (Error AsdfError :> es, IOE :> es) => InversionTree -> Eff es ByteString
+encodeL2 = Asdf.encode
+
+
+-- Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
+-- where
+-- toUnderscore :: Char -> Char
+-- toUnderscore '.' = '_'
+-- toUnderscore ':' = '_'
+-- toUnderscore '-' = '_'
+-- toUnderscore c = c
 
 -- Inversion ---------------------------------------
 

@@ -21,14 +21,18 @@ import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion (Inversion)
 import Network.Globus qualified as Globus
 import System.FilePath (takeExtensions)
+import Telescope.Asdf.Error (AsdfError)
 import Telescope.Fits as Fits
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es [L2FrameInputs]
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
 collateFrames qs pfs pos ts
-  | allFramesEqual = pure $ L.zipWith4 L2FrameInputs qs pfs pos ts
+  | allFramesEqual = frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
   | otherwise = throwError $ MismatchedFrames frameSizes
  where
+  frames [] = throwError $ NoFrames frameSizes
+  frames (f : fs) = pure $ f :| fs
+
   allFramesEqual :: Bool
   allFramesEqual =
     all (== length qs) $ allSizes frameSizes
@@ -53,7 +57,9 @@ data GenerateError
   | ProfileError ProfileError
   | QuantityError QuantityError
   | PrimaryError PrimaryError
+  | AsdfError AsdfError
   | MismatchedFrames FrameSizes
+  | NoFrames FrameSizes
   | GenIOError IOError
   deriving (Show, Eq, Exception)
 
@@ -64,10 +70,11 @@ data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1
 
 runGenerateError
   :: (Error GenerateError :> es)
-  => Eff (Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : es) a
+  => Eff (Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : es) a
   -> Eff es a
 runGenerateError =
-  runErrorNoCallStackWith @PrimaryError (throwError . PrimaryError)
+  runErrorNoCallStackWith @AsdfError (throwError . AsdfError)
+    . runErrorNoCallStackWith @PrimaryError (throwError . PrimaryError)
     . runErrorNoCallStackWith @FetchError (throwError . L1FetchError)
     . runErrorNoCallStackWith @QuantityError (throwError . QuantityError)
     . runErrorNoCallStackWith @ProfileError (throwError . ProfileError)

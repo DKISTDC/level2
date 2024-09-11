@@ -43,7 +43,11 @@ data Inverted = Inverted {inverted :: UTCTime, inversionSoftware :: GitCommit, u
   deriving (Show, Eq)
 
 
-data Generated = Generated {timestamp :: UTCTime}
+data Generated = Generated {fits :: UTCTime, asdf :: UTCTime}
+  deriving (Show, Eq)
+
+
+data GeneratedFits = GeneratedFits {fits :: UTCTime}
   deriving (Show, Eq)
 
 
@@ -79,6 +83,9 @@ type StepPreprocessed = Preprocessed : StepDownloaded
 type StepInverted = Inverted : StepPreprocessed
 type StepInverting = Invert : StepPreprocessed
 type StepGenerated = Generated : StepInverted
+
+
+-- type StepGeneratedFits = Geen : StepInverted
 type StepGenTransfer = Transfer : StepInverted
 type StepGenerating = Generate : StepGenTransfer
 type StepPublished = Published : StepGenerated
@@ -93,7 +100,8 @@ data InversionStep
   | -- record the inversion metadata first, then upload files
     StepInverted (Many StepInverted)
   | StepInverting (Many StepInverting)
-  | StepGenerated (Many StepGenerated)
+  | -- | StepGeneratedFits (Many StepGeneratedFits)
+    StepGenerated (Many StepGenerated)
   | StepGenerating (Many StepGenerating)
   | StepGenTransfer (Many StepGenTransfer)
   | StepPublished (Many StepPublished)
@@ -130,3 +138,21 @@ selectPreprocessed m = grab @Preprocessed m ./ selectDownloaded m
 
 selectInverted :: (UniqueMembers StepInverted xs) => Many xs -> Many StepInverted
 selectInverted m = grab @Inverted m ./ selectPreprocessed m
+
+
+stepDownloaded :: InversionStep -> Maybe (Many StepDownloaded)
+stepDownloaded = \case
+  StepDownloaded inv -> pure $ selectDownloaded inv
+  StepPreprocessed inv -> pure $ selectDownloaded inv
+  StepInverted inv -> pure $ selectDownloaded inv
+  StepGenerated inv -> pure $ selectDownloaded inv
+  StepGenerating inv -> pure $ selectDownloaded inv
+  StepGenTransfer inv -> pure $ selectDownloaded inv
+  StepPublished inv -> pure $ selectDownloaded inv
+  _ -> Nothing
+
+
+findDownloaded :: InversionStep -> Maybe Downloaded
+findDownloaded s = do
+  d <- stepDownloaded s
+  pure $ grab @Downloaded d

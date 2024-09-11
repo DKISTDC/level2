@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS inversions (
   inversion TIMESTAMP,
   inversion_software TEXT,
 
-  generate TIMESTAMP,
+  generate_fits TIMESTAMP,
+  generate_asdf TIMESTAMP,
   generate_task_id TEXT,
   generate_task_completed TIMESTAMP,
 

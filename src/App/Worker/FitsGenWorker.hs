@@ -18,6 +18,7 @@ import App.Worker.Generate as Gen
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
+import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -29,6 +30,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Image.Asdf as Asdf
 import NSO.Image.Frame as Frame
 import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Profile (Fit, Original, ProfileFit (..), ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
@@ -55,6 +57,7 @@ data GenInvStep
   | GenStarted
   | GenTransferring
   | GenCreating
+  | GenCreatingAsdf
   deriving (Show, Eq, Ord)
 
 
@@ -82,6 +85,7 @@ workTask
      , Concurrent :> es
      , Tasks GenInversion :> es
      , GenRandom :> es
+     , IOE :> es
      )
   => GenInversion
   -> Eff es ()
@@ -127,19 +131,20 @@ workTask t = do
     log Debug $ dump "Frames" (length quantities, length profileFit.frames, length profileOrig.frames, length l1)
 
     gfs <- Gen.collateFrames quantities profileFit.frames profileOrig.frames l1
-    send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = length gfs}
+    send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = NE.length gfs}
 
     -- Generate them in parallel with N = available CPUs
     metas <- CPU.parallelize $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
 
     log Debug $ dump "DONE: " (length metas)
+    send $ SetGeneratedFits t.inversionId
+    send $ TaskSetStatus t $ GenStatus{step = GenCreatingAsdf, complete = NE.length gfs, total = NE.length gfs}
 
-    workAsdf metas
+    workAsdf inv metas
 
     log Debug " - Generated ASDF"
-
-    send $ SetGenerated t.inversionId
     log Debug " - done"
+    send $ SetGeneratedAsdf t.inversionId
 
   failed :: GenerateError -> Eff es ()
   failed err = do
@@ -162,9 +167,9 @@ workFrame
   -> WavProfiles Fit
   -> L2FrameInputs
   -> Eff es L2FrameMeta
-workFrame t slice wavOrig wavFit g = runGenerateError $ do
+workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
   now <- currentTime
-  (frame, dateBeg) <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit g
+  (frame, dateBeg) <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit frameInputs
   let fits = Frame.frameToFits frame
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
   Scratch.writeFile path $ Frame.encodeL2 fits
@@ -177,9 +182,17 @@ workFrame t slice wavOrig wavFit g = runGenerateError $ do
 
 
 workAsdf
-  :: [L2FrameMeta]
+  :: (Time :> es, Error GenerateError :> es, IOE :> es, Scratch :> es)
+  => Inversion
+  -> NonEmpty L2FrameMeta
   -> Eff es ()
-workAsdf = _
+workAsdf inv metas = runGenerateError $ do
+  now <- currentTime
+  let datasetIds = fmap Id $ maybe [] (.datasets) (findDownloaded inv.step)
+  let tree = inversionTree inv.inversionId datasetIds now metas
+  let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
+  output <- Asdf.encodeL2 tree
+  Scratch.writeFile path output
 
 
 startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> InversionStep -> Eff es (Id Globus.Task)

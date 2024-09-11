@@ -43,7 +43,8 @@ data Inversions :: Effect where
   SetUploading :: Id Inversion -> Id Task -> Inversions m ()
   SetUploaded :: Id Inversion -> Inversions m ()
   SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
-  SetGenerated :: Id Inversion -> Inversions m ()
+  SetGeneratedFits :: Id Inversion -> Inversions m ()
+  SetGeneratedAsdf :: Id Inversion -> Inversions m ()
   ResetGenerating :: Id Inversion -> Inversions m ()
   SetGenerating :: Id Inversion -> Id Task -> Inversions m ()
   SetGenTransferred :: Id Inversion -> Inversions m ()
@@ -94,6 +95,7 @@ fromRow row =
   step =
     (StepPublished <$> published)
       <|> (StepGenerated <$> generated)
+      -- <|> (StepGeneratedFits <$> generatedFits)
       <|> (StepGenerating <$> generating)
       <|> (StepGenTransfer <$> genTransfer)
       <|> (StepInverted <$> inverted)
@@ -157,11 +159,18 @@ fromRow row =
     let e = row.invError
     pure $ Generate tc e ./ prev
 
+  -- generatedFits :: Maybe (Many StepGeneratedFits)
+  -- generatedFits = do
+  --   prev <- inverted
+  --   fits <- row.generateFits
+  --   pure $ GeneratedFits{fits} ./ prev
+
   generated :: Maybe (Many StepGenerated)
   generated = do
     prev <- inverted
-    proc <- row.generate
-    pure $ Generated proc ./ prev
+    fits <- row.generateFits
+    asdf <- row.generateAsdf
+    pure $ Generated{fits, asdf} ./ prev
 
   published :: Maybe (Many StepPublished)
   published = do
@@ -186,7 +195,8 @@ runDataInversions = interpret $ \_ -> \case
   SetUploaded iid -> setUploaded iid
   SetUploading iid tid -> setUploading iid tid
   SetInversion iid soft -> setInversion iid soft
-  SetGenerated iid -> setGenerated iid
+  SetGeneratedFits iid -> setGeneratedFits iid
+  SetGeneratedAsdf iid -> setGeneratedAsdf iid
   SetGenerating iid tid -> setGenerating iid tid
   SetGenTransferred iid -> setGenTransferred iid
   SetPublished iid -> setPublished iid
@@ -268,9 +278,13 @@ runDataInversions = interpret $ \_ -> \case
     now <- currentTime
     updateInversion iid $ \r -> r{inversion = lit (Just now), inversionSoftware = lit (Just soft)}
 
-  setGenerated iid = do
+  setGeneratedFits iid = do
     now <- currentTime
-    updateInversion iid $ \r -> r{generate = lit (Just now)}
+    updateInversion iid $ \r -> r{generateFits = lit (Just now)}
+
+  setGeneratedAsdf iid = do
+    now <- currentTime
+    updateInversion iid $ \r -> r{generateAsdf = lit (Just now)}
 
   setGenerating iid tid = do
     updateInversion iid $ \r -> r{generateTaskId = lit (Just tid)}
@@ -314,7 +328,8 @@ runDataInversions = interpret $ \_ -> \case
         , uploadTaskId = Nothing
         , inversion = Nothing
         , inversionSoftware = Nothing
-        , generate = Nothing
+        , generateFits = Nothing
+        , generateAsdf = Nothing
         , generateTaskId = Nothing
         , generateTaskCompleted = Nothing
         , publish = Nothing
@@ -342,7 +357,8 @@ inversions =
           , uploadTaskId = "upload_task_id"
           , inversion = "inversion"
           , inversionSoftware = "inversion_software"
-          , generate = "generate"
+          , generateFits = "generate_fits"
+          , generateAsdf = "generate_asdf"
           , generateTaskId = "generate_task_id"
           , generateTaskCompleted = "generate_task_completed"
           , publish = "publish"

@@ -118,7 +118,6 @@ data InversionAction
   = Download
   | Cancel
   | Upload
-  | PostProcess
   | Publish
   | Reload
   | RestartGen
@@ -147,9 +146,6 @@ inversions onCancel (InversionStatus ip iip ii) = \case
     r <- request
     requireLogin $ do
       redirect $ Globus.fileManagerSelectUrl (Files 4) (Route.Proposal ip $ Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
-  PostProcess -> do
-    send $ Inversions.SetGenerated ii
-    refresh
   Publish -> do
     send $ Inversions.SetPublished ii
     refresh
@@ -444,6 +440,8 @@ viewGenerateWait s =
       el_ "Started"
     GenTransferring ->
       el_ "Transferring L1 Files"
+    GenCreatingAsdf ->
+      el_ "Creating Asdf"
 
 
 data GenerateStep

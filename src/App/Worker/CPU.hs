@@ -15,7 +15,7 @@ availableWorkerCPUs = do
   pure $ max 1 $ cores - saveCoresForWebserver
 
 
-parallelize :: (Concurrent :> es, Log :> es) => [Eff es a] -> Eff es [a]
+parallelize :: (Concurrent :> es, Log :> es, Traversable t) => t (Eff es a) -> Eff es (t a)
 parallelize effs = do
   cpus <- availableWorkerCPUs
   let numThreads = min 16 cpus
@@ -23,5 +23,5 @@ parallelize effs = do
   pooledMapConcurrentlyN numThreads id effs
 
 
-parallelize_ :: (Concurrent :> es, Log :> es) => [Eff es a] -> Eff es ()
+parallelize_ :: (Concurrent :> es, Log :> es, Traversable t) => t (Eff es a) -> Eff es ()
 parallelize_ effs = void $ parallelize effs

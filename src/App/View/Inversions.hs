@@ -13,13 +13,14 @@ inversionStatusTag i =
 
 
 inversionStatusLabel :: InversionStep -> Text
-inversionStatusLabel (StepCreated _) = "Downloading"
-inversionStatusLabel (StepDownloading _) = "Downloading"
-inversionStatusLabel (StepDownloaded _) = "Preprocessing"
-inversionStatusLabel (StepPreprocessed _) = "Inverting"
-inversionStatusLabel (StepInverting _) = "Inverting"
-inversionStatusLabel (StepInverted _) = "Generating"
-inversionStatusLabel (StepGenTransfer _) = "Generating"
-inversionStatusLabel (StepGenerating _) = "Generating"
-inversionStatusLabel (StepGenerated _) = "Publishing"
-inversionStatusLabel (StepPublished _) = "Complete"
+inversionStatusLabel = \case
+  StepCreated _ -> "Downloading"
+  StepDownloading _ -> "Downloading"
+  StepDownloaded _ -> "Preprocessing"
+  StepPreprocessed _ -> "Inverting"
+  StepInverting _ -> "Inverting"
+  StepInverted _ -> "Generating"
+  StepGenTransfer _ -> "Generating"
+  StepGenerating _ -> "Generating"
+  StepGenerated _ -> "Publishing"
+  StepPublished _ -> "Complete"
