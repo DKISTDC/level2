@@ -275,6 +275,7 @@ instance AxisOrder QuantityAxes X where
 instance AxisOrder QuantityAxes Depth where
   axisN = 1
 instance (KnownValue alt) => HeaderKeywords (QuantityAxes alt)
+instance HeaderKeywords (WCSHeader QuantityAxes)
 
 
 data QuantityAxis alt ax = QuantityAxis
@@ -409,6 +410,8 @@ data QuantityHeader info = QuantityHeader
   , common :: DataCommon
   , wcs :: WCSHeader QuantityAxes
   }
+  deriving (Generic)
+instance (HeaderKeywords info) => HeaderKeywords (QuantityHeader info)
 
 
 fromList :: (forall x. a -> f x) -> [a] -> Maybe (Quantities f)

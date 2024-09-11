@@ -41,7 +41,7 @@ inversion: !<asdf://dkist.nso.edu/tags/inversion-1.0.0>
       frameCount: 490
       ...
 
-  data:
+  quantities:
     # wcs is common for all data hdus
     wcs: {name: ..., steps: ...}
 

@@ -39,31 +39,39 @@ type Wav854 = Center 854 Nm
 type ProfileInfo' ext = DataHDUInfo ext "spect.line.profile" Dimensionless
 
 
-type family ProfileInfo profile wav where
-  ProfileInfo Original Wav630 = ProfileInfo' "Original Profile 630.2nm"
-  ProfileInfo Original Wav854 = ProfileInfo' "Original Profile 854.2nm"
-  ProfileInfo Fit Wav630 = ProfileInfo' "Fit Profile 630.2nm"
-  ProfileInfo Fit Wav854 = ProfileInfo' "Fit Profile 854.2nm"
+type Orig630 = ProfileInfo' "Original Profile 630.2nm"
+type Orig854 = ProfileInfo' "Original Profile 854.2nm"
+type Fit630 = ProfileInfo' "Fit Profile 630.2nm"
+type Fit854 = ProfileInfo' "Fit Profile 854.2nm"
 
 
-data Profiles (f :: Type -> Type -> Type) = Profiles
-  { orig630 :: f Original Wav630
-  , orig854 :: f Original Wav854
-  , fit630 :: f Fit Wav630
-  , fit854 :: f Fit Wav854
+type family ProfileWav info where
+  ProfileWav Orig630 = Wav630
+  ProfileWav Orig854 = Wav854
+  ProfileWav Fit630 = Wav630
+  ProfileWav Fit854 = Wav854
+
+
+data Profiles (f :: Type -> Type) = Profiles
+  { orig630 :: f Orig630
+  , orig854 :: f Orig854
+  , fit630 :: f Fit630
+  , fit854 :: f Fit854
   }
 
 
-data ProfileHeader profile wav = ProfileHeader
-  { info :: ProfileInfo profile wav
+data ProfileHeader info = ProfileHeader
+  { info :: info
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
+  deriving (Generic)
+instance (HeaderKeywords info) => HeaderKeywords (ProfileHeader info)
 
 
-data Profile profile wav = Profile
-  { image :: DataCube [SlitX, Wavelength wav, Stokes]
-  , header :: ProfileHeader profile wav
+data Profile info = Profile
+  { image :: DataCube [SlitX, Wavelength (ProfileWav info), Stokes]
+  , header :: ProfileHeader info
   }
 
 
@@ -78,29 +86,30 @@ profiles
   -> ProfileFrame Fit
   -> Eff es (Profiles Profile)
 profiles slice now l1 wpo wpf po pf = do
-  orig630 <- profile @Original @Wav630 DataHDUInfo wpo.wav630 po.wav630
-  orig854 <- profile @Original @Wav854 DataHDUInfo wpo.wav854 po.wav854
-  fit630 <- profile @Fit @Wav630 DataHDUInfo wpf.wav630 pf.wav630
-  fit854 <- profile @Fit @Wav854 DataHDUInfo wpf.wav854 pf.wav854
+  orig630 <- profile @Orig630 DataHDUInfo wpo.wav630 po.wav630
+  orig854 <- profile @Orig854 DataHDUInfo wpo.wav854 po.wav854
+  fit630 <- profile @Fit630 DataHDUInfo wpf.wav630 pf.wav630
+  fit854 <- profile @Fit854 DataHDUInfo wpf.wav854 pf.wav854
   pure $ Profiles{orig630, orig854, fit630, fit854}
  where
   profile
-    :: forall profile wav es
-     . (HeaderKeywords (ProfileInfo profile wav), Error ProfileError :> es)
-    => ProfileInfo profile wav
+    :: forall info wav es
+     . (HeaderKeywords info, wav ~ ProfileWav info, Error ProfileError :> es)
+    => info
     -> WavProfile wav
     -> DataCube [SlitX, Wavelength wav, Stokes]
-    -> Eff es (Profile profile wav)
+    -> Eff es (Profile info)
   profile info wprofile image = do
     h <- profileHeader info wprofile image
     pure $ Profile image h
 
   profileHeader
-    :: (HeaderKeywords (ProfileInfo profile wav), Error ProfileError :> es)
-    => ProfileInfo profile wav
+    :: forall info wav es
+     . (HeaderKeywords info, Error ProfileError :> es)
+    => info
     -> WavProfile wav
     -> DataCube [SlitX, Wavelength wav, Stokes]
-    -> Eff es (ProfileHeader profile wav)
+    -> Eff es (ProfileHeader info)
   profileHeader info wp image = do
     wcs <- wcsHeader
     common <- dataCommon now image
@@ -141,8 +150,8 @@ profileHDUs ps =
   ]
  where
   profileHDU
-    :: (HeaderKeywords (ProfileInfo profile wav))
-    => Profile profile wav
+    :: (HeaderKeywords info)
+    => Profile info
     -> ImageHDU
   profileHDU p =
     let darr = encodeDataArray p.image.array
@@ -177,6 +186,7 @@ instance AxisOrder ProfileAxes Wav where
 instance AxisOrder ProfileAxes Stokes where
   axisN = 1
 instance (KnownValue alt) => HeaderKeywords (ProfileAxes alt)
+instance HeaderKeywords (WCSHeader ProfileAxes)
 
 
 data ProfileAxis alt ax = ProfileAxis

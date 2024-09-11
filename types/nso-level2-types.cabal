@@ -71,6 +71,7 @@ library
     , random
     , rel8
     , req
+    , scientific
     , string-conversions
     , string-interpolate
     , tagged

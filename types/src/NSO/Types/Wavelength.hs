@@ -2,9 +2,11 @@
 
 module NSO.Types.Wavelength where
 
+import Data.Scientific (fromFloatDigits)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBType)
+import Telescope.Asdf
 
 
 data Nm
@@ -20,6 +22,10 @@ instance Eq (Wavelength a) where
    where
     decimals :: Double -> Int
     decimals n = round (n * 100)
+
+
+instance ToAsdf (Wavelength a) where
+  toValue (Wavelength d) = Number (fromFloatDigits d)
 
 
 -- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py

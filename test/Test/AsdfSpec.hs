@@ -5,7 +5,7 @@ import Data.Binary.Put
 import Data.ByteString.Lazy qualified as BL
 import Data.List.NonEmpty qualified as NE
 import GHC.Int (Int32)
-import NSO.Image.Asdf
+import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
 import Skeletest
@@ -15,6 +15,8 @@ import Telescope.Data.Axes
 import Telescope.Fits qualified as Fits
 import Telescope.Fits.Types (KeywordRecord (..))
 
+
+-- import NSO.Image.Asdf
 
 spec :: Spec
 spec =

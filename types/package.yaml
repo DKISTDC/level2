@@ -56,6 +56,7 @@ dependencies:
   - aeson
   - globus
   - telescope
+  - scientific
 
 
 library:
