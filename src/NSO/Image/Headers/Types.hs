@@ -213,22 +213,30 @@ instance Show Unit where
   show Kg_m3 = "kg/m^3"
 
 
-instance KnownValue N_m2 where
-  knownValue = String $ pack $ show N_m2
-instance KnownValue Km_s where
-  knownValue = String $ pack $ show Km_s
-instance KnownValue Dimensionless where
-  knownValue = String $ pack $ show Dimensionless
-instance KnownValue Kelvin where
-  knownValue = String $ pack $ show Kelvin
-instance KnownValue Tesla where
-  knownValue = String $ pack $ show Tesla
-instance KnownValue Deg where
-  knownValue = String $ pack $ show Deg
-instance KnownValue Km where
-  knownValue = String $ pack $ show Km
-instance KnownValue Kg_m3 where
-  knownValue = String $ pack $ show Kg_m3
+instance KnownText N_m2 where
+  knownText = pack $ show N_m2
+instance KnownText Km_s where
+  knownText = pack $ show Km_s
+instance KnownText Dimensionless where
+  knownText = pack $ show Dimensionless
+instance KnownText Kelvin where
+  knownText = pack $ show Kelvin
+instance KnownText Tesla where
+  knownText = pack $ show Tesla
+instance KnownText Deg where
+  knownText = pack $ show Deg
+instance KnownText Km where
+  knownText = pack $ show Km
+instance KnownText Kg_m3 where
+  knownText = pack $ show Kg_m3
+instance KnownValue N_m2
+instance KnownValue Km_s
+instance KnownValue Dimensionless
+instance KnownValue Kelvin
+instance KnownValue Tesla
+instance KnownValue Deg
+instance KnownValue Km
+instance KnownValue Kg_m3
 
 
 data WCSAlt
@@ -236,10 +244,10 @@ data WCSAlt
   | A
 
 
-instance KnownValue WCSMain where
-  knownValueText = ""
-instance KnownValue A where
-  knownValueText = "A"
+instance KnownText WCSMain where
+  knownText = ""
+instance KnownText A where
+  knownText = "A"
 
 
 -- | Headers in inv_res_pre (Profile Fit) that describe the subsection of the canonical data we use

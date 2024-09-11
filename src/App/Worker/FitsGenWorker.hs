@@ -132,7 +132,11 @@ workTask t = do
     -- Generate them in parallel with N = available CPUs
     metas <- CPU.parallelize $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
 
-    log Debug $ dump "METAS" (length metas)
+    log Debug $ dump "DONE: " (length metas)
+
+    workAsdf metas
+
+    log Debug " - Generated ASDF"
 
     send $ SetGenerated t.inversionId
     log Debug " - done"
@@ -166,10 +170,16 @@ workFrame t slice wavOrig wavFit g = runGenerateError $ do
   Scratch.writeFile path $ Frame.encodeL2 fits
   send $ TaskModStatus @GenInversion t updateNumFrame
   log Debug path.filePath
-  pure $ Frame.frameMeta frame path
+  pure $ Frame.frameMeta frame (filenameL2Frame t.inversionId dateBeg)
  where
   updateNumFrame :: GenStatus -> GenStatus
   updateNumFrame GenStatus{..} = GenStatus{complete = complete + 1, ..}
+
+
+workAsdf
+  :: [L2FrameMeta]
+  -> Eff es ()
+workAsdf = _
 
 
 startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> InversionStep -> Eff es (Id Globus.Task)

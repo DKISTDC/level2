@@ -6,6 +6,8 @@ import Data.Kind
 import Data.Massiv.Array as M hiding (mapM)
 import GHC.TypeLits (natVal)
 import NSO.Prelude
+import Telescope.Data.Array (AxesIndex (..))
+import Telescope.Data.Axes (Axes, Row)
 
 
 -- Results ------------------------------------------------------------------------------
@@ -140,3 +142,9 @@ splitM1 b (DataCube arr) = do
   let dims = fromIntegral $ natVal @(Dimensions (IndexOf (a : xs))) Proxy
   (arr1, arr2) <- M.splitAtM (Dim dims) b arr
   pure (DataCube arr1, DataCube arr2)
+
+
+dataCubeAxes :: (Index (IndexOf as), AxesIndex (IndexOf as)) => DataCube as -> Axes Row
+dataCubeAxes (DataCube arr) =
+  let Sz ix = M.size arr
+   in indexAxes ix

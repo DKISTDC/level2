@@ -192,20 +192,22 @@ instance (Datatype d) => GTypeName (D1 d f) where
   gtypeName = datatypeName
 
 
+class KnownText a where
+  knownText :: Text
+
+
+instance (KnownSymbol s) => KnownText s where
+  knownText = pack $ symbolVal @s Proxy
+
+
 class KnownValue a where
   knownValue :: Value
-  default knownValue :: Value
-  knownValue = String (knownValueText @a)
-
-
-  knownValueText :: Text
-  default knownValueText :: Text
-  knownValueText = ""
+  default knownValue :: (KnownText a) => Value
+  knownValue = String (knownText @a)
 
 
 instance KnownValue True where
   knownValue = Logic T
 instance (KnownNat n) => KnownValue (n :: Nat) where
   knownValue = Integer $ fromIntegral $ natVal @n Proxy
-instance (KnownSymbol s) => KnownValue s where
-  knownValue = String $ pack $ symbolVal @s Proxy
+instance (KnownSymbol s) => KnownValue s

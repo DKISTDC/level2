@@ -1,4 +1,4 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module NSO.Image.Frame where
 
@@ -8,11 +8,12 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
+import NSO.Image.DataCube (dataCubeAxes)
 import NSO.Image.Headers
 import NSO.Image.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
 import NSO.Image.Primary
 import NSO.Image.Profile
-import NSO.Image.Quantities (Quantities (..), Quantity, QuantityError, QuantityHeader, QuantityImage, quantities, quantityHDUs, quantityHeaders)
+import NSO.Image.Quantities
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
@@ -40,9 +41,21 @@ instance ToAsdf L2Frame where
 
 data L2FrameMeta = L2FrameMeta
   { primary :: PrimaryHeader
+  , quantities :: FrameQuantitiesMeta
+  , profiles :: FrameProfilesMeta
+  , path :: Path' Filename L2Frame
+  }
+
+
+data FrameQuantitiesMeta = FrameQuantitiesMeta
+  { shape :: Axes Row
   , quantities :: Quantities QuantityHeader
+  }
+
+
+data FrameProfilesMeta = FrameProfilesMeta
+  { shape :: Axes Row
   , profiles :: Profiles ProfileHeader
-  , path :: Path L2Frame
   }
 
 
@@ -82,16 +95,29 @@ generateL2Frame now i slice wpo wpf gf = do
   pure (frame, dateBeg)
 
 
-frameMeta :: L2Frame -> Path L2Frame -> L2FrameMeta
+frameMeta :: L2Frame -> Path' Filename L2Frame -> L2FrameMeta
 frameMeta frame path =
   L2FrameMeta
     { primary = frame.primary
-    , quantities = quantityHeaders frame.quantities
-    , profiles = profileHeaders frame.profiles
+    , quantities = quantitiesMeta frame.quantities
+    , profiles = profilesMeta frame.profiles
     , path
     }
+ where
+  quantitiesMeta qs =
+    FrameQuantitiesMeta
+      { quantities = quantityHeaders qs
+      , shape = dataCubeAxes qs.opticalDepth.image
+      }
+
+  profilesMeta ps =
+    FrameProfilesMeta
+      { profiles = profileHeaders ps
+      , shape = dataCubeAxes ps.orig630.image
+      }
 
 
+-- | See the HDUOrder class below
 frameToFits :: L2Frame -> Fits
 frameToFits frame =
   let prim = primaryHDU frame.primary
@@ -110,3 +136,43 @@ encodeL2 f' =
 
 encodeL2Asdf :: (Error AsdfError :> es, IOE :> es) => L2Frame -> Eff es BS.ByteString
 encodeL2Asdf = Asdf.encode
+
+
+class HDUOrder a where
+  hduIndex :: HDUIndex
+
+
+newtype HDUIndex = HDUIndex Int
+  deriving newtype (ToAsdf, Num)
+
+
+instance HDUOrder OpticalDepth where
+  hduIndex = 1
+instance HDUOrder Temperature where
+  hduIndex = 2
+instance HDUOrder ElectronPressure where
+  hduIndex = 3
+instance HDUOrder Microturbulence where
+  hduIndex = 4
+instance HDUOrder MagStrength where
+  hduIndex = 5
+instance HDUOrder Velocity where
+  hduIndex = 6
+instance HDUOrder MagInclination where
+  hduIndex = 7
+instance HDUOrder MagAzimuth where
+  hduIndex = 8
+instance HDUOrder GeoHeight where
+  hduIndex = 9
+instance HDUOrder GasPressure where
+  hduIndex = 10
+instance HDUOrder Density where
+  hduIndex = 11
+instance HDUOrder Orig630 where
+  hduIndex = 11
+instance HDUOrder Orig854 where
+  hduIndex = 12
+instance HDUOrder Fit630 where
+  hduIndex = 13
+instance HDUOrder Fit854 where
+  hduIndex = 14

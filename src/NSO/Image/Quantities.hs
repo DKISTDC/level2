@@ -138,7 +138,7 @@ data DataHeader info = DataHeader
   }
 
 
--- The Header Docs need to contain info, axes, and common
+-- The library already inserts the NAXIS headers. No need to write them manually
 instance (HeaderKeywords info) => HeaderKeywords (DataHeader info) where
   headerKeywords (DataHeader info common) =
     headerKeywords info
@@ -274,7 +274,7 @@ instance AxisOrder QuantityAxes X where
   axisN = 2
 instance AxisOrder QuantityAxes Depth where
   axisN = 1
-instance (KnownValue alt) => HeaderKeywords (QuantityAxes alt)
+instance (KnownText alt) => HeaderKeywords (QuantityAxes alt)
 instance HeaderKeywords (WCSHeader QuantityAxes)
 
 
@@ -283,7 +283,7 @@ data QuantityAxis alt ax = QuantityAxis
   , pcs :: Maybe (QuantityPCs alt ax)
   }
   deriving (Generic)
-instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityAxis alt ax)
+instance (KnownText alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityAxis alt ax)
 
 
 data QuantityPCs alt ax = QuantityPCs
@@ -292,10 +292,10 @@ data QuantityPCs alt ax = QuantityPCs
   , dummyY :: PC QuantityAxes alt ax Y
   }
   deriving (Generic)
-instance (KnownValue alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
+instance (KnownText alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
 
 
-wcsAxes :: forall alt es. (Error ParseError :> es, KnownValue alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
+wcsAxes :: forall alt es. (Error ParseError :> es, KnownText alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
 wcsAxes s h = do
   (ax, ay) <- requireWCSAxes h
   pcsl1 <- requirePCs ax ay h

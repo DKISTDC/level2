@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module NSO.Image.Profile where
@@ -26,15 +27,13 @@ import Telescope.Fits.Header (toInt)
 -- BUG: PC self_self is wrong
 --  ?? Is this still an issue?
 
+-- Generating Profiles -------------------------------------------------------------------------------
+
 data Original
 data Fit
-
-
 type Wav630 = Center 630 Nm
 type Wav854 = Center 854 Nm
 
-
--- Generating Profiles -------------------------------------------------------------------------------
 
 type ProfileInfo' ext = DataHDUInfo ext "spect.line.profile" Dimensionless
 
@@ -45,11 +44,34 @@ type Fit630 = ProfileInfo' "Fit Profile 630.2nm"
 type Fit854 = ProfileInfo' "Fit Profile 854.2nm"
 
 
-type family ProfileWav info where
-  ProfileWav Orig630 = Wav630
-  ProfileWav Orig854 = Wav854
-  ProfileWav Fit630 = Wav630
-  ProfileWav Fit854 = Wav854
+class ProfileInfo info where
+  type ProfileWav info :: Type
+  type ProfileType info :: Type
+  profileWav :: Wavelength Nm
+
+
+instance ProfileInfo Orig630 where
+  type ProfileWav Orig630 = Wav630
+  type ProfileType Orig630 = Original
+  profileWav = Wavelength 630.15
+
+
+instance ProfileInfo Orig854 where
+  type ProfileWav Orig854 = Wav854
+  type ProfileType Orig854 = Original
+  profileWav = Wavelength 854.2
+
+
+instance ProfileInfo Fit630 where
+  type ProfileWav Fit630 = Wav630
+  type ProfileType Fit630 = Fit
+  profileWav = Wavelength 630.15
+
+
+instance ProfileInfo Fit854 where
+  type ProfileWav Fit854 = Wav854
+  type ProfileType Fit854 = Fit
+  profileWav = Wavelength 854.2
 
 
 data Profiles (f :: Type -> Type) = Profiles
@@ -185,7 +207,7 @@ instance AxisOrder ProfileAxes Wav where
   axisN = 2
 instance AxisOrder ProfileAxes Stokes where
   axisN = 1
-instance (KnownValue alt) => HeaderKeywords (ProfileAxes alt)
+instance (KnownText alt) => HeaderKeywords (ProfileAxes alt)
 instance HeaderKeywords (WCSHeader ProfileAxes)
 
 
@@ -194,7 +216,7 @@ data ProfileAxis alt ax = ProfileAxis
   , pcs :: Maybe (ProfilePCs alt ax)
   }
   deriving (Generic)
-instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfileAxis alt ax)
+instance (KnownText alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfileAxis alt ax)
 
 
 data ProfilePCs alt ax = ProfilePCs
@@ -204,12 +226,12 @@ data ProfilePCs alt ax = ProfilePCs
   , stokes :: PC ProfileAxes alt ax Stokes
   }
   deriving (Generic)
-instance (KnownValue alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePCs alt ax)
+instance (KnownText alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePCs alt ax)
 
 
 wcsAxes
   :: forall alt w es
-   . (Error ParseError :> es, KnownValue alt)
+   . (Error ParseError :> es, KnownText alt)
   => SliceXY
   -> WavProfile w
   -> Header

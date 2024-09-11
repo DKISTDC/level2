@@ -84,13 +84,13 @@ data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
   , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n"
   }
   deriving (Generic)
-instance (AxisOrder s ax, KnownValue alt) => HeaderKeywords (WCSAxisKeywords s alt ax) where
+instance (AxisOrder s ax, KnownText alt) => HeaderKeywords (WCSAxisKeywords s alt ax) where
   headerKeywords =
     fmap modKey . genHeaderKeywords . from
    where
     modKey KeywordRecord{_keyword, _value, _comment} = KeywordRecord{_keyword = addA $ addN _keyword, _value, _comment}
     addN k = k <> pack (show (axisN @s @ax))
-    addA k = k <> knownValueText @alt
+    addA k = k <> knownText @alt
 
 
 -- data WCSAxis (alt :: WCSAlt) axes (n :: Nat) = WCSAxis
@@ -105,12 +105,12 @@ instance (AxisOrder s ax, KnownValue alt) => HeaderKeywords (WCSAxisKeywords s a
 -- it's a mapping of one axis type to another
 data PC s (alt :: WCSAlt) ai aj = PC {value :: Float}
   deriving (Show, Eq)
-instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => KeywordInfo (PC s alt ai aj) where
-  keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownValueText @alt
+instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => KeywordInfo (PC s alt ai aj) where
+  keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownText @alt
   keytype = "PCi_j"
   description = "Linear transformation matrix used with the coordinate system"
   keyValue (PC n) = Float n
-instance (KnownValue alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC s alt ai aj) where
+instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC s alt ai aj) where
   headerKeywords p = [keywordRecord p]
 
 
@@ -137,7 +137,7 @@ wcsCommonA l1 = do
       }
 
 
-requireWCS :: forall s alt ax es. (Error ParseError :> es, KnownValue alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
+requireWCS :: forall s alt ax es. (Error ParseError :> es, KnownText alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
 requireWCS (Axis n) l1 = do
   crpix <- Key <$> requireKey (keyN "CRPIX") toFloat l1
   crval <- Key <$> requireKey (keyN "CRVAL") toFloat l1
@@ -146,7 +146,7 @@ requireWCS (Axis n) l1 = do
   ctype <- Key <$> requireKey (keyN "CTYPE") toText l1
   pure $ WCSAxisKeywords{cunit, ctype, crpix, crval, cdelt}
  where
-  keyN k = k <> pack (show n) <> knownValueText @alt
+  keyN k = k <> pack (show n) <> knownText @alt
 
 
 -- | Look up the order of the spatial axes and report which is which
@@ -173,7 +173,7 @@ requireCtypeAxis ctype l1 = do
 
 
 -- can we detect that they are incorrect here?
-requirePCs :: forall alt s es. (Error ParseError :> es, KnownValue alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
+requirePCs :: forall alt s es. (Error ParseError :> es, KnownText alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
 requirePCs (Axis xn) (Axis yn) l1 = do
   yy <- PC <$> requireKey (pcN yn yn) toFloat l1
   yx <- PC <$> requireKey (pcN yn xn) toFloat l1
@@ -182,7 +182,7 @@ requirePCs (Axis xn) (Axis yn) l1 = do
   pure PCL1{yy, yx, xx, xy}
  where
   pcN :: Int -> Int -> Text
-  pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownValueText @alt
+  pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownText @alt
 
 
 isPCsValid :: PCL1 s alt -> Bool
@@ -190,13 +190,13 @@ isPCsValid pcs =
   0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 
 
-wcsDummyY :: (KnownValue alt, Error ParseError :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
+wcsDummyY :: (KnownText alt, Error ParseError :> es) => Axis Y -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt Y)
 wcsDummyY y s l1 = do
   keys <- requireWCS y l1
   pure $ adjustDummyY s keys
 
 
-wcsSlitX :: forall alt s es. (Error ParseError :> es, KnownValue alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
+wcsSlitX :: forall alt s es. (Error ParseError :> es, KnownText alt) => Axis X -> SliceXY -> Header -> Eff es (WCSAxisKeywords s alt X)
 wcsSlitX ax bx l1 = do
   keys <- requireWCS @s @alt ax l1
   pure $ adjustSlitX bx keys
