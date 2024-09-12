@@ -5,18 +5,14 @@ import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BL
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
-import NSO.Image.Frame (L2Frame)
 import NSO.Image.Headers.Keywords (HeaderKeywords (..))
-import NSO.Image.Primary
 import NSO.Prelude
-import NSO.Types.Common
-import NSO.Types.Dataset (Dataset)
-import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf
 import Telescope.Asdf.NDArray (ByteOrder (..), DataType (..), putUcs4)
 import Telescope.Data.Axes (axesRowMajor)
 import Telescope.Fits qualified as Fits
 import Telescope.Fits.Types as Fits (KeywordRecord (..), LogicalConstant (..))
+
 
 -- Data ---------------------------------------
 
@@ -93,6 +89,3 @@ keywordColumns =
   keyColumn [] = Nothing
   keyColumn (k : ks) = do
     pure $ KeywordColumn k._keyword $ fmap (._value) (k :| ks)
-
-
-

@@ -15,6 +15,14 @@ data SlitX
 data FrameY
 data Stokes
 data WavIds
+instance KnownText Depth where
+  knownText = "OpticalDepth"
+instance KnownText SlitX where
+  knownText = "SlitX"
+instance KnownText FrameY where
+  knownText = "FrameY"
+instance KnownText Stokes where
+  knownText = "Stokes"
 
 
 -- Keywords ------------------------------------------------------------------

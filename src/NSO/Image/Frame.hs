@@ -18,6 +18,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf as Asdf
+import Telescope.Data.Axes (Axes (..))
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
 
@@ -107,14 +108,16 @@ frameMeta frame path =
   quantitiesMeta qs =
     FrameQuantitiesMeta
       { quantities = quantityHeaders qs
-      , shape = dataCubeAxes qs.opticalDepth.image
+      , shape = addDummyY $ dataCubeAxes qs.opticalDepth.image
       }
 
   profilesMeta ps =
     FrameProfilesMeta
       { profiles = profileHeaders ps
-      , shape = dataCubeAxes ps.orig630.image
+      , shape = addDummyY $ dataCubeAxes ps.orig630.image
       }
+
+  addDummyY (Axes axs) = Axes (1 : axs)
 
 
 -- | See the HDUOrder class below

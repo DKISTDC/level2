@@ -41,7 +41,7 @@ spec = do
         toLists (computeAs P (sliceM1 1 sampleRC).array) `shouldBe` [1.0, 2.0]
 
       it "should slice cube by row" $ do
-        print sampleDRC
+        -- print sampleDRC
         size (sliceM1 0 sampleDRC).array `shouldBe` Sz (1 :. 3)
         -- \| 0 1 2 |
         -- \| 1 2 3 |

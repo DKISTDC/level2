@@ -35,6 +35,12 @@ type Wav630 = Center 630 Nm
 type Wav854 = Center 854 Nm
 
 
+instance KnownText Original where
+  knownText = "Original"
+instance KnownText Fit where
+  knownText = "Fit"
+
+
 type ProfileInfo' ext = DataHDUInfo ext "spect.line.profile" Dimensionless
 
 
@@ -53,7 +59,7 @@ class ProfileInfo info where
 instance ProfileInfo Orig630 where
   type ProfileWav Orig630 = Wav630
   type ProfileType Orig630 = Original
-  profileWav = Wavelength 630.15
+  profileWav = Wavelength 630.2
 
 
 instance ProfileInfo Orig854 where
@@ -65,7 +71,7 @@ instance ProfileInfo Orig854 where
 instance ProfileInfo Fit630 where
   type ProfileWav Fit630 = Wav630
   type ProfileType Fit630 = Fit
-  profileWav = Wavelength 630.15
+  profileWav = Wavelength 630.2
 
 
 instance ProfileInfo Fit854 where
@@ -80,6 +86,7 @@ data Profiles (f :: Type -> Type) = Profiles
   , fit630 :: f Fit630
   , fit854 :: f Fit854
   }
+  deriving (Generic)
 
 
 data ProfileHeader info = ProfileHeader
