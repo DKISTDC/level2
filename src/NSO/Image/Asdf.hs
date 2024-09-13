@@ -2,6 +2,7 @@ module NSO.Image.Asdf where
 
 import Data.ByteString (ByteString)
 import Data.List.NonEmpty qualified as NE
+import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import NSO.Image.Asdf.HeaderTable
@@ -18,9 +19,6 @@ import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
-import Telescope.Asdf.Core qualified as Asdf
-import Telescope.Asdf.Encoding qualified as Asdf
-import Telescope.Asdf.Encoding.File qualified as Asdf
 import Telescope.Data.Axes (Axes, Row)
 
 
@@ -67,10 +65,7 @@ filenameL2Asdf _ _ = Path "test.asdf"
 
 
 encodeL2 :: (Error AsdfError :> es, IOE :> es) => Document -> Eff es ByteString
-encodeL2 tree = do
-  doc <- Asdf.toAsdfDoc tree
-  file <- Asdf.encodeToAsdfFile doc
-  pure $ Asdf.concatAsdfFile file
+encodeL2 = Asdf.encode
 
 
 -- Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
@@ -258,7 +253,7 @@ instance ToAsdf (Profiles ProfileTree)
 profileTree :: forall info. (ProfileInfo info, KnownText (ProfileType info), HDUOrder info) => NonEmpty (ProfileHeader info) -> ProfileTree info
 profileTree heads =
   ProfileTree
-    { profile = knownText @(ProfileType info)
+    { profile = T.toLower $ knownText @(ProfileType info)
     , wavelength = profileWav @info
     , unit = Count
     , hdu = hduIndex @info
