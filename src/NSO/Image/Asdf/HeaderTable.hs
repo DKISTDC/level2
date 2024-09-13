@@ -3,6 +3,7 @@ module NSO.Image.Asdf.HeaderTable where
 import Data.Binary.Put (putByteString, putFloatbe, putInt32be, runPut)
 import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BL
+import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import NSO.Image.Headers.Keywords (HeaderKeywords (..))
@@ -27,11 +28,11 @@ instance (HeaderKeywords a) => ToAsdf (HeaderTable a) where
       , ("qtable", toNode False)
       ]
    where
-    colname (KeywordRecord k _ _) = fromValue $ String k
+    colname (KeywordRecord k _ _) = k
 
     colnames vals =
       let krs = headerKeywords (head vals)
-       in fromValue $ Array $ fmap colname krs
+       in fromValue $ Array $ fmap (toNode . String) $ L.sort $ fmap colname krs
 
 
 data KeywordColumn = KeywordColumn
@@ -42,8 +43,12 @@ data KeywordColumn = KeywordColumn
 
 
 instance ToAsdf KeywordColumn where
-  schema = "core/column-1.0.0"
-  toValue col = NDArray $ toNDArray col
+  schema = "!core/column-1.0.0"
+  toValue col =
+    Object
+      [ ("name", toNode $ String col.keyword)
+      , ("data", toNode $ NDArray $ toNDArray col)
+      ]
 
 
 instance ToNDArray KeywordColumn where

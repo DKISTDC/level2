@@ -41,11 +41,15 @@ instance ToAsdf L2Frame where
 
 
 data L2FrameMeta = L2FrameMeta
-  { primary :: PrimaryHeader
+  { path :: Path' Filename L2Frame
+  , primary :: PrimaryHeader
   , quantities :: FrameQuantitiesMeta
   , profiles :: FrameProfilesMeta
-  , path :: Path' Filename L2Frame
   }
+instance Eq L2FrameMeta where
+  m1 == m2 = m1.path == m2.path
+instance Ord L2FrameMeta where
+  m1 <= m2 = m1.path <= m2.path
 
 
 data FrameQuantitiesMeta = FrameQuantitiesMeta

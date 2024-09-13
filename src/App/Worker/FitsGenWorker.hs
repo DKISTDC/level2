@@ -189,7 +189,7 @@ workAsdf
 workAsdf inv metas = runGenerateError $ do
   now <- currentTime
   let datasetIds = fmap Id $ maybe [] (.datasets) (findDownloaded inv.step)
-  let tree = asdfDocument inv.inversionId datasetIds now metas
+  let tree = asdfDocument inv.inversionId datasetIds now $ NE.sort metas
   let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
   output <- Asdf.encodeL2 tree
   Scratch.writeFile path output

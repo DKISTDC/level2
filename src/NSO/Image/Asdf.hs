@@ -34,13 +34,16 @@ asdfDocument inversionId datasetIds now metas =
  where
   wavs = [profileWav @Orig630, profileWav @Orig854]
 
+  -- they need to be sorted!
+  frames = NE.sort metas
+
   inversionTree :: InversionTree
   inversionTree =
     InversionTree
-      { fileuris = Fileuris $ fmap (.path) $ NE.toList metas
-      , meta = inversionTreeMeta $ fmap (.primary) metas
-      , quantities = quantitiesSection $ fmap (.quantities) metas
-      , profiles = profilesSection $ fmap (.profiles) metas
+      { fileuris = Fileuris $ fmap (.path) $ NE.toList frames
+      , meta = inversionTreeMeta $ fmap (.primary) frames
+      , quantities = quantitiesSection $ fmap (.quantities) frames
+      , profiles = profilesSection $ fmap (.profiles) frames
       }
 
   inversionTreeMeta :: NonEmpty PrimaryHeader -> InversionTreeMeta
@@ -146,10 +149,10 @@ instance (ToAsdf hdus) => ToAsdf (HDUSection hdus) where
 -- Quantities ------------------------------------------------
 
 quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities QuantityTree)
-quantitiesSection metas =
+quantitiesSection frames =
   HDUSection
     { axes = ["frameY", "slitX", "opticalDepth"]
-    , shape = (head metas).shape
+    , shape = (head frames).shape
     , hdus =
         Quantities
           { opticalDepth = quantity (.opticalDepth)
@@ -174,7 +177,7 @@ quantitiesSection metas =
     -> QuantityTree info
   quantity f = quantityTree $ fmap f quantities
 
-  quantities = fmap (.quantities) metas
+  quantities = fmap (.quantities) frames
 
 
 data QuantityTree info = QuantityTree
@@ -214,19 +217,19 @@ instance ToAsdf WCSTodo where
 -- Profiles ------------------------------------------------
 
 profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
-profilesSection metas =
-  let shape = (head metas).shape
+profilesSection frames =
+  let shape = (head frames).shape
    in HDUSection
         { wcs = WCSTodo
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape
-        , hdus = profilesTree metas
+        , hdus = profilesTree frames
         }
 
 
 profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree metas =
-  let ps = fmap (.profiles) metas
+profilesTree frames =
+  let ps = fmap (.profiles) frames
    in Profiles
         { orig630 = profileTree $ fmap (.orig630) ps
         , orig854 = profileTree $ fmap (.orig854) ps
@@ -244,7 +247,24 @@ data ProfileTree info = ProfileTree
   }
   deriving (Generic)
 instance (HeaderKeywords info) => ToAsdf (ProfileTree info)
-instance ToAsdf (Profiles ProfileTree)
+instance ToAsdf (Profiles ProfileTree) where
+  -- split into .original and .fit
+  toValue ps =
+    Object
+      [ ("original", toNode original)
+      , ("fit", toNode fit)
+      ]
+   where
+    original =
+      Object
+        [ ("wav6302", toNode ps.orig630)
+        , ("wav8542", toNode ps.orig854)
+        ]
+    fit =
+      Object
+        [ ("wav6302", toNode ps.fit630)
+        , ("wav8542", toNode ps.fit854)
+        ]
 
 
 -- instance ToAsdf (Profiles ProfileTree)
