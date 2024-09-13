@@ -205,7 +205,7 @@ runDataInversions = interpret $ \_ -> \case
     updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit (Just e), ..}
   ResetGenerating iid -> do
     -- updateInversion iid $ \r -> r{generateTaskId = lit Nothing, generateL1FrameDir = lit Nothing, generateTaskCompleted = lit Nothing, invError = lit Nothing}
-    updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, ..}
+    updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generateFits = lit Nothing, generateAsdf = lit Nothing, ..}
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es) => Eff es AllInversions

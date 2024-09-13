@@ -201,7 +201,9 @@ viewInversion inv step = do
 
   stepPublish = do
     button Publish (Style.btn Primary . grow) "Mark as Published"
-    viewFiles
+    row (gap 10) $ do
+      button RestartGen (Style.btnOutline Secondary) "Regenerate"
+      viewFiles
 
   stepDone = do
     el_ "Inversion Complete"
@@ -556,14 +558,6 @@ invProgress curr = do
     stat clr (statIcon (Generating GenWaitStart) icn) lbl
     line clr
 
-  -- prgGen (Generating _) icn lbl = do
-  --   stat Info icn lbl
-  --   line Gray
-  -- prgGen _ icn lbl = do
-  --   let clr = statColor (Generating (Id mempty))
-  --   stat clr (statIcon (Generating (Id mempty)) icn) lbl
-  --   line clr
-
   prgStep s icn lbl = do
     stat (statColor s) (statIcon s icn) lbl
     line (lineColor s)
@@ -586,6 +580,3 @@ invProgress curr = do
     | otherwise = Gray
 
   circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
-
--- isInverting (Inverting _) = True
--- isInverting _ = False

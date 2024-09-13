@@ -183,8 +183,7 @@ data QuantityTree info = QuantityTree
   , meta :: QuantityTreeMeta info
   }
   deriving (Generic)
-instance (HeaderKeywords info) => ToAsdf (QuantityTree info) where
-  schema = "todo/todo-1.0.0"
+instance (HeaderKeywords info) => ToAsdf (QuantityTree info)
 instance ToAsdf (Quantities QuantityTree)
 
 
