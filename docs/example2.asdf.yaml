@@ -1,3 +1,6 @@
+# TODO: Check that FileManager works, and DKIST plugin
+# TODO: Anchors for WCS and fileuris
+# TODO: Empty valid WCS
 #ASDF 1.0.0
 #ASDF_STANDARD 1.5.0
 %YAML 1.1
@@ -12,8 +15,6 @@ history:
     software: !core/software-1.0.0 {name: asdf, version: 2.11.0}
   - ...
 inversion: !<asdf://dkist.nso.edu/tags/inversion-1.0.0>
-  wavelengths: [630.2, 854.2]
-
   created: 2022-06-02T21:47:26.641000
 
   fileuris:
@@ -55,14 +56,11 @@ inversion: !<asdf://dkist.nso.edu/tags/inversion-1.0.0>
 
     # CANONICAL EXAMPLE
     opticalDepth: !<asdf://dkist.nso.edu/tags/quantity-1.0.0>
-      # TODO: filemanager
       data: !<asdf://dkist.nso.edu/tags/file_manager-1.0.0>
-        # TODO: references
         fileuris: &fileuris
         shape: &shape
         target: 1
       unit: !unit/unit-1.0.0 ""
-      # TODO: wcs reference
       wcs: &wcs
       meta: 
         # Leave in for testing to try to load into user tools
@@ -106,12 +104,9 @@ inversion: !<asdf://dkist.nso.edu/tags/inversion-1.0.0>
       wav6302: !<asdf://dkist.nso.edu/tags/profile-1.0.0>
         unit: !unit/unit-1.0.0 count
         wcs: &wcs
-        # TODO: file manager
         data: !filemanager
-          stuff: ...
-          target: 12
+          ...
         meta:
-          # TODO: move these to meta
           wavelength: 630.2
           profile: original
           headers: !<tag:astropy.org:astropy/table/table-1.0.0>

@@ -89,7 +89,7 @@ specHeader = describe "Header Keywords" $ do
       lookupKeyword "PC3_2A" hya `shouldSatisfy` P.just P.anything
       lookupKeyword "PC3_3A" hya `shouldSatisfy` P.just P.anything
 
-    it "should include all WCS headers" $ do
+    it "should include WCS headers" $ do
       q <- genQuantity
       let h = toHeader q
       lookupKeyword "WCSNAME" h `shouldBe` Just (String "Helioprojective Cartesian")
@@ -109,16 +109,16 @@ specHeader = describe "Header Keywords" $ do
       lookupKeyword "BZERO" h `shouldBe` Just (Integer 0)
       lookupKeyword "DATAMIN" h `shouldBe` Just (Float 1.0)
 
-    it "should include all WCS headers" $ do
+    it "should include WCS headers" $ do
       h <- toHeader <$> genProfile
       lookupKeyword "WCSNAME" h `shouldBe` Just (String "Helioprojective Cartesian")
       lookupKeyword "CRPIX1" h `shouldSatisfy` P.just P.anything
       lookupKeyword "PC1_1" h `shouldSatisfy` P.just P.anything
       lookupKeyword "PC1_3" h `shouldSatisfy` P.just P.anything
-      lookupKeyword "PC3_1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC2_2" h `shouldSatisfy` P.just P.anything
       lookupKeyword "PC1_1A" h `shouldSatisfy` P.just P.anything
       lookupKeyword "WCSNAMEA" h `shouldBe` Just (String "Equatorial equinox J2000")
-      lookupKeyword "CUNIT1A" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "CUNIT2A" h `shouldSatisfy` P.just P.anything
       lookupKeyword "WCSVALID" h `shouldBe` Just (Logic T)
  where
   genPrimary :: IO PrimaryHeader

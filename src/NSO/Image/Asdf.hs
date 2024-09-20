@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module NSO.Image.Asdf where
 
 import Data.ByteString (ByteString)
@@ -19,6 +21,7 @@ import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
+import Telescope.Asdf.NDArray (DataType (..))
 import Telescope.Data.Axes (Axes, Row)
 import Telescope.Fits (ToHeader (..))
 
@@ -28,40 +31,32 @@ data L2Asdf
 
 asdfDocument :: Id Inversion -> [Id Dataset] -> UTCTime -> NonEmpty L2FrameMeta -> Document
 asdfDocument inversionId datasetIds now metas =
-  Document
-    { wavelengths = wavs
-    , inversion = inversionTree
-    }
+  Document inversionTree
  where
-  wavs = [profileWav @Orig630, profileWav @Orig854]
-
   -- they need to be sorted!
   frames = NE.sort metas
 
   inversionTree :: InversionTree
   inversionTree =
     InversionTree
-      { fileuris = Fileuris $ fmap (.path) $ NE.toList frames
+      { fileuris
       , meta = inversionTreeMeta $ fmap (.primary) frames
-      , quantities = quantitiesSection $ fmap (.quantities) frames
-      , profiles = profilesSection $ fmap (.profiles) frames
+      , quantities = quantitiesSection fileuris $ fmap (.quantities) frames
+      , profiles = profilesSection fileuris $ fmap (.profiles) frames
       }
 
   inversionTreeMeta :: NonEmpty PrimaryHeader -> InversionTreeMeta
   inversionTreeMeta headers =
     InversionTreeMeta
       { headers = HeaderTable headers
-      , inventory = inversionInventory
+      , frameCount = length headers
+      , inversionId
+      , datasetIds
+      , wavelengths = [profileWav @Orig630, profileWav @Orig854]
+      , created = now
       }
-   where
-    inversionInventory =
-      InversionInventory
-        { frameCount = length headers
-        , inversionId
-        , datasetIds
-        , wavelengths = wavs
-        , created = now
-        }
+
+  fileuris = Fileuris $ fmap (.path) $ NE.toList frames
 
 
 filenameL2Asdf :: Id Proposal -> Id Inversion -> Path' Filename L2Asdf
@@ -83,8 +78,7 @@ encodeL2 = Asdf.encode
 -- Inversion ---------------------------------------
 
 data Document = Document
-  { wavelengths :: [Wavelength Nm]
-  , inversion :: InversionTree
+  { inversion :: InversionTree
   }
   deriving (Generic, ToAsdf)
 
@@ -92,25 +86,19 @@ data Document = Document
 data InversionTree = InversionTree
   { fileuris :: Fileuris
   , meta :: InversionTreeMeta
-  , quantities :: HDUSection (Quantities QuantityTree)
+  , quantities :: HDUSection (Quantities (DataTree QuantityMeta))
   , profiles :: HDUSection (Profiles ProfileTree)
   }
   deriving (Generic, ToAsdf)
 
 
 data InversionTreeMeta = InversionTreeMeta
-  { headers :: HeaderTable PrimaryHeader
-  , inventory :: InversionInventory
-  }
-  deriving (Generic, ToAsdf)
-
-
-data InversionInventory = InversionInventory
   { inversionId :: Id Inversion
-  , datasetIds :: [Id Dataset]
-  , frameCount :: Int
   , created :: UTCTime
   , wavelengths :: [Wavelength Nm]
+  , datasetIds :: [Id Dataset]
+  , frameCount :: Int
+  , headers :: HeaderTable PrimaryHeader
   }
   deriving (Generic, ToAsdf)
 
@@ -149,11 +137,11 @@ instance (ToAsdf hdus) => ToAsdf (HDUSection hdus) where
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities QuantityTree)
-quantitiesSection frames =
+quantitiesSection :: Fileuris -> NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities (DataTree QuantityMeta))
+quantitiesSection files frames =
   HDUSection
     { axes = ["frameY", "slitX", "opticalDepth"]
-    , shape = (head frames).shape
+    , shape
     , hdus =
         Quantities
           { opticalDepth = quantity (.opticalDepth)
@@ -175,36 +163,49 @@ quantitiesSection frames =
     :: forall info ext btype unit
      . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info)
     => (Quantities QuantityHeader -> QuantityHeader info)
-    -> QuantityTree info
-  quantity f = quantityTree $ fmap f quantities
+    -> DataTree QuantityMeta info
+  quantity f = quantityTree files shape $ fmap f quantities
 
   quantities = fmap (.quantities) frames
 
+  shape = (head frames).shape
 
-data QuantityTree info = QuantityTree
+
+data DataTree meta info = DataTree
   { unit :: Unit
-  , hdu :: HDUIndex
-  , meta :: QuantityTreeMeta info
+  , data_ :: FileManager
+  , meta :: meta info
+  , wcs :: WCSTodo
   }
   deriving (Generic)
-instance (ToHeader info) => ToAsdf (QuantityTree info)
-instance ToAsdf (Quantities QuantityTree)
+instance (ToAsdf (meta info)) => ToAsdf (DataTree meta info) where
+  toValue q =
+    Object
+      [ ("unit", toNode q.unit)
+      , ("data", toNode q.data_)
+      , ("meta", toNode q.meta)
+      , ("wcs", toNode q.wcs)
+      ]
+instance ToAsdf (Quantities (DataTree QuantityMeta))
 
 
 quantityTree
   :: forall info ext btype unit
    . (KnownText unit, HDUOrder info, info ~ DataHDUInfo ext btype unit)
-  => NonEmpty (QuantityHeader info)
-  -> QuantityTree info
-quantityTree heads =
-  QuantityTree
+  => Fileuris
+  -> Axes Row
+  -> NonEmpty (QuantityHeader info)
+  -> DataTree QuantityMeta info
+quantityTree files shape heads =
+  DataTree
     { unit = Unit (knownText @unit)
-    , hdu = hduIndex @(DataHDUInfo ext btype unit)
-    , meta = QuantityTreeMeta{headers = HeaderTable heads}
+    , wcs = WCSTodo
+    , data_ = fileManager @info files shape
+    , meta = QuantityMeta{headers = HeaderTable heads}
     }
 
 
-data QuantityTreeMeta info = QuantityTreeMeta
+data QuantityMeta info = QuantityMeta
   { headers :: HeaderTable (QuantityHeader info)
   }
   deriving (Generic, ToAsdf)
@@ -217,37 +218,43 @@ instance ToAsdf WCSTodo where
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
-profilesSection frames =
+profilesSection :: Fileuris -> NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
+profilesSection files frames =
   let shape = (head frames).shape
    in HDUSection
         { wcs = WCSTodo
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape
-        , hdus = profilesTree frames
+        , hdus = profilesTree files shape frames
         }
 
 
-profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree frames =
+profilesTree :: Fileuris -> Axes Row -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+profilesTree files shape frames =
   let ps = fmap (.profiles) frames
    in Profiles
-        { orig630 = profileTree $ fmap (.orig630) ps
-        , orig854 = profileTree $ fmap (.orig854) ps
-        , fit630 = profileTree $ fmap (.fit630) ps
-        , fit854 = profileTree $ fmap (.fit854) ps
+        { orig630 = profileTree files shape $ fmap (.orig630) ps
+        , orig854 = profileTree files shape $ fmap (.orig854) ps
+        , fit630 = profileTree files shape $ fmap (.fit630) ps
+        , fit854 = profileTree files shape $ fmap (.fit854) ps
         }
 
 
 data ProfileTree info = ProfileTree
-  { profile :: Text
-  , wavelength :: Wavelength Nm
-  , unit :: Unit
-  , hdu :: HDUIndex
+  { unit :: Unit
+  , data_ :: FileManager
   , meta :: ProfileTreeMeta info
+  , wcs :: WCSTodo
   }
   deriving (Generic)
-instance (ToHeader info) => ToAsdf (ProfileTree info)
+instance (ToHeader info) => ToAsdf (ProfileTree info) where
+  toValue p =
+    Object
+      [ ("unit", toNode p.unit)
+      , ("data", toNode p.data_)
+      , ("meta", toNode p.meta)
+      , ("wcs", toNode p.wcs)
+      ]
 instance ToAsdf (Profiles ProfileTree) where
   -- split into .original and .fit
   toValue ps =
@@ -270,18 +277,46 @@ instance ToAsdf (Profiles ProfileTree) where
 
 -- instance ToAsdf (Profiles ProfileTree)
 
-profileTree :: forall info. (ProfileInfo info, KnownText (ProfileType info), HDUOrder info) => NonEmpty (ProfileHeader info) -> ProfileTree info
-profileTree heads =
+profileTree
+  :: forall info
+   . (ProfileInfo info, KnownText (ProfileType info), HDUOrder info)
+  => Fileuris
+  -> Axes Row
+  -> NonEmpty (ProfileHeader info)
+  -> ProfileTree info
+profileTree files shape heads =
   ProfileTree
-    { profile = T.toLower $ knownText @(ProfileType info)
-    , wavelength = profileWav @info
-    , unit = Count
-    , hdu = hduIndex @info
-    , meta = ProfileTreeMeta{headers = HeaderTable heads}
+    { unit = Count
+    , wcs = WCSTodo
+    , data_ = fileManager @info files shape
+    , meta =
+        ProfileTreeMeta
+          { headers = HeaderTable heads
+          , wavelength = profileWav @info
+          , profile = T.toLower $ knownText @(ProfileType info)
+          }
     }
 
 
 data ProfileTreeMeta info = ProfileTreeMeta
   { headers :: HeaderTable (ProfileHeader info)
+  , wavelength :: Wavelength Nm
+  , profile :: Text
   }
   deriving (Generic, ToAsdf)
+
+
+data FileManager = FileManager
+  { datatype :: DataType
+  , fileuris :: Fileuris
+  , shape :: Axes Row
+  , target :: HDUIndex
+  }
+  deriving (Generic)
+instance ToAsdf FileManager where
+  schema = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
+
+
+fileManager :: forall info. (HDUOrder info) => Fileuris -> Axes Row -> FileManager
+fileManager fileuris shape =
+  FileManager{datatype = Float64, fileuris, shape, target = hduIndex @info}

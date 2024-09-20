@@ -21,6 +21,7 @@ newtype HeaderTable a = HeaderTable (NonEmpty a)
 
 
 instance (ToHeader a) => ToAsdf (HeaderTable a) where
+  schema = "tag:astropy.org:astropy/table/table-1.0.0"
   toValue (HeaderTable as) =
     Object
       [ ("colnames", colnames as)
