@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module NSO.Image.Quantities where
+module NSO.Image.Quantity where
 
 import Control.Exception (Exception)
 import Data.ByteString (ByteString)
@@ -23,7 +23,7 @@ import NSO.Image.Headers.WCS
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
 import Telescope.Fits as Fits
-import Telescope.Fits.Types (Axes (..))
+import Telescope.Fits.Types (Axes (..), HeaderRecord (..))
 
 
 type OpticalDepth =
@@ -116,12 +116,15 @@ data DataHDUAxes = DataHDUAxes
 data DataHDUInfo (extName :: Symbol) (btype :: Symbol) (bunit :: Unit) = DataHDUInfo
 
 
-instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderKeywords (DataHDUInfo ext btype bunit) where
-  headerKeywords _ =
-    [ keywordRecord @(ExtName ext) ExtName
-    , keywordRecord @(BType btype) BType
-    , keywordRecord @(BUnit bunit) BUnit
-    ]
+instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => ToHeader (DataHDUInfo ext btype bunit) where
+  toHeader _ =
+    Header $
+      fmap
+        Keyword
+        [ keywordRecord @(ExtName ext) ExtName
+        , keywordRecord @(BType btype) BType
+        , keywordRecord @(BUnit bunit) BUnit
+        ]
 
 
 instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (DataHDUInfo ext btype bunit) where
@@ -139,10 +142,9 @@ data DataHeader info = DataHeader
 
 
 -- The library already inserts the NAXIS headers. No need to write them manually
-instance (HeaderKeywords info) => HeaderKeywords (DataHeader info) where
-  headerKeywords (DataHeader info common) =
-    headerKeywords info
-      <> headerKeywords common
+instance (ToHeader info) => ToHeader (DataHeader info) where
+  toHeader (DataHeader info common) =
+    toHeader info <> toHeader common
 
 
 -- The Header Docs need to contain info, axes, and common
@@ -160,7 +162,7 @@ data DataCommon = DataCommon
   , datamax :: Key Float "The maximum data value"
   , date :: Key DateTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
+  deriving (Generic, HeaderDoc, ToHeader)
 
 
 quantities :: (Error QuantityError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities Quantity)
@@ -178,33 +180,34 @@ quantities slice now l1 q = do
   density <- quantity @Density DataHDUInfo q.density
   pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
  where
-  quantity :: forall info es. (Error QuantityError :> es, HeaderKeywords info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (Quantity info)
+  quantity :: forall info es. (Error QuantityError :> es, ToHeader info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (Quantity info)
   quantity info d = do
     h <- quantityHeader info d
     pure $ Quantity{header = h, image = d.image}
 
   quantityHeader
-    :: forall hduInfo es
-     . (HeaderKeywords hduInfo, Error QuantityError :> es)
-    => hduInfo
-    -> QuantityImage [SlitX, Depth] hduInfo
-    -> Eff es (QuantityHeader hduInfo)
+    :: forall info es
+     . (ToHeader info, Error QuantityError :> es)
+    => info
+    -> QuantityImage [SlitX, Depth] info
+    -> Eff es (QuantityHeader info)
   quantityHeader info res = do
     common <- dataCommon now res.image
-    wcs <- wcsHeader
+    wcs <- wcsHeader slice l1
     pure $ QuantityHeader{info, common, wcs}
 
-  wcsHeader :: (Error QuantityError :> es) => Eff es (WCSHeader QuantityAxes)
-  wcsHeader = runParseError InvalidWCS $ do
-    wm <- wcsAxes @WCSMain slice l1
-    wc <- wcsCommon (isWcsValid wm) l1
-    wca <- wcsCommonA l1
-    wa <- wcsAxes @A slice l1
-    pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
-   where
-    isWcsValid :: QuantityAxes alt -> Bool
-    isWcsValid axs =
-      isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
+
+wcsHeader :: (Error QuantityError :> es) => SliceXY -> Header -> Eff es (WCSHeader QuantityAxes)
+wcsHeader slice l1 = runParseError InvalidWCS $ do
+  wm <- wcsAxes @WCSMain slice l1
+  wc <- wcsCommon (isWcsValid wm) l1
+  wca <- wcsCommonA l1
+  wa <- wcsAxes @A slice l1
+  pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
+ where
+  isWcsValid :: QuantityAxes alt -> Bool
+  isWcsValid axs =
+    isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
 
 
 quantityHeaders :: Quantities Quantity -> Quantities QuantityHeader
@@ -241,25 +244,12 @@ quantityHDUs qs = runPureEff $ do
 
   dataHDU
     :: forall info es
-     . (HeaderKeywords info)
+     . (ToHeader info)
     => Quantity info
     -> Eff es (QuantityHDU info)
   dataHDU q = do
     let darr = encodeDataArray q.image.array
-    hd <- writeHeader header
-    pure $ QuantityHDU $ ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
-   where
-    header = do
-      sectionHeader "L2 Quantity" "Headers describing the physical quantity"
-      let dh = DataHeader{common = q.header.common, info = q.header.info}
-      addKeywords $ headerKeywords dh
-
-      sectionHeader "WCS" "WCS Related Keywords"
-      addKeywords $ headerKeywords q.header.wcs.common
-      addKeywords $ headerKeywords q.header.wcs.axes
-
-      addKeywords $ headerKeywords q.header.wcs.commonA
-      addKeywords $ headerKeywords q.header.wcs.axesA
+    pure $ QuantityHDU $ ImageHDU{header = toHeader q.header, dataArray = addDummyAxis darr}
 
 
 data QuantityAxes alt = QuantityAxes
@@ -267,23 +257,24 @@ data QuantityAxes alt = QuantityAxes
   , slitX :: QuantityAxis alt X
   , dummyY :: QuantityAxis alt Y
   }
-  deriving (Generic)
+  deriving (Generic, Show)
 instance AxisOrder QuantityAxes Y where
   axisN = 3
 instance AxisOrder QuantityAxes X where
   axisN = 2
 instance AxisOrder QuantityAxes Depth where
   axisN = 1
-instance (KnownText alt) => HeaderKeywords (QuantityAxes alt)
-instance HeaderKeywords (WCSHeader QuantityAxes)
+instance (KnownText alt) => ToHeader (QuantityAxes alt) where
+  toHeader (QuantityAxes d x y) = mconcat [toHeader d, toHeader x, toHeader y]
 
 
 data QuantityAxis alt ax = QuantityAxis
   { keys :: WCSAxisKeywords QuantityAxes alt ax
   , pcs :: Maybe (QuantityPCs alt ax)
   }
-  deriving (Generic)
-instance (KnownText alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityAxis alt ax)
+  deriving (Generic, Show)
+instance (KnownText alt, AxisOrder QuantityAxes ax) => ToHeader (QuantityAxis alt ax) where
+  toHeader (QuantityAxis keys pcs) = toHeader keys <> toHeader pcs
 
 
 data QuantityPCs alt ax = QuantityPCs
@@ -291,8 +282,14 @@ data QuantityPCs alt ax = QuantityPCs
   , slitX :: PC QuantityAxes alt ax X
   , dummyY :: PC QuantityAxes alt ax Y
   }
-  deriving (Generic)
-instance (KnownText alt, AxisOrder QuantityAxes ax) => HeaderKeywords (QuantityPCs alt ax)
+  deriving (Generic, Show)
+instance (KnownText alt, AxisOrder QuantityAxes ax) => ToHeader (QuantityPCs alt ax) where
+  toHeader pcs =
+    Header
+      [ Keyword $ keywordRecord pcs.depth
+      , Keyword $ keywordRecord pcs.slitX
+      , Keyword $ keywordRecord pcs.dummyY
+      ]
 
 
 wcsAxes :: forall alt es. (Error ParseError :> es, KnownText alt) => SliceXY -> Header -> Eff es (QuantityAxes alt)
@@ -411,7 +408,18 @@ data QuantityHeader info = QuantityHeader
   , wcs :: WCSHeader QuantityAxes
   }
   deriving (Generic)
-instance (HeaderKeywords info) => HeaderKeywords (QuantityHeader info)
+instance (ToHeader info) => ToHeader (QuantityHeader info) where
+  toHeader h = writeHeader $ do
+    sectionHeader "L2 Quantity" "Headers describing the physical quantity"
+    let dh = DataHeader{common = h.common, info = h.info}
+    addKeywords dh
+
+    sectionHeader "WCS" "WCS Related Keywords"
+    addKeywords h.wcs.common
+    addKeywords h.wcs.axes
+
+    addKeywords h.wcs.commonA
+    addKeywords h.wcs.axesA
 
 
 fromList :: (forall x. a -> f x) -> [a] -> Maybe (Quantities f)

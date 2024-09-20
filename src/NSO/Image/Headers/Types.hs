@@ -7,7 +7,7 @@ import Data.Text qualified as T
 import GHC.TypeLits
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
-import Telescope.Fits (Value (..))
+import Telescope.Fits.Header
 
 
 data Depth
@@ -30,139 +30,150 @@ instance KnownText Stokes where
 data ExtName (ext :: Symbol) = ExtName
   deriving (Generic)
 instance (KnownSymbol ext) => KeywordInfo (ExtName ext) where
-  keyword = "extname"
   description = "Name of the HDU"
-  allowed = [keyValue @(ExtName ext) ExtName]
-  keyValue _ = String (pack $ symbolVal @ext Proxy)
+  allowed = [toKeywordValue @(ExtName ext) ExtName]
+instance (KnownSymbol ext) => ToKeyword (ExtName ext) where
+  toKeywordValue _ = String (pack $ symbolVal @ext Proxy)
+instance IsKeyword (ExtName ext) where
+  keyword = "EXTNAME"
 
 
-data BType (ucd :: Symbol) = BType deriving (Generic)
+data BType (ucd :: Symbol) = BType
 instance (KnownSymbol ucd) => KeywordInfo (BType ucd) where
-  keyword = "btype"
   keytype = "Uniform Content Descriptor"
-  allowed = [keyValue @(BType ucd) BType]
+  allowed = [toKeywordValue @(BType ucd) BType]
   description = "The type of the values in the data array"
   comment = "[ucd]"
-  keyValue _ = String (pack $ symbolVal @ucd Proxy)
+instance (KnownSymbol ucd) => ToKeyword (BType ucd) where
+  toKeywordValue _ = String (pack $ symbolVal @ucd Proxy)
+instance IsKeyword (BType ucd) where
+  keyword = "BTYPE"
 
 
-data BUnit (unit :: Unit) = BUnit deriving (Generic)
+data BUnit (unit :: Unit) = BUnit
 instance (KnownValue unit) => KeywordInfo (BUnit unit) where
-  keyword = "bunit"
   keytype = "Unit"
-  allowed = [keyValue @(BUnit unit) BUnit]
+  allowed = [toKeywordValue @(BUnit unit) BUnit]
   description = "The unit of the values in the data array"
-  keyValue _ = knownValue @unit
+instance (KnownValue unit) => ToKeyword (BUnit unit) where
+  toKeywordValue _ = knownValue @unit
+instance IsKeyword (BUnit unit) where
+  keyword = "BUNIT"
 
 
 data Key ktype (description :: Symbol) = Key {ktype :: ktype}
-  deriving (Generic, Show, Eq)
+  deriving (Show, Eq)
 instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (Key ktype desc) where
   keytype = typeName @ktype
   description = pack $ symbolVal @desc Proxy
   allowed = []
   comment = typeComment @ktype
-  keyValue (Key t) = typeValue @ktype t
-instance (KeyType ktype, KnownSymbol desc) => HeaderKeywords (Key ktype desc) where
-  headerKeywords k = [keywordRecord k]
+instance {-# OVERLAPPABLE #-} (ToKeyword ktype) => ToKeyword (Key ktype desc) where
+  toKeywordValue (Key k) = toKeywordValue @ktype k
 
 
 instance (KnownValue kvalue, KnownSymbol desc) => KeywordInfo (Key (Constant kvalue) desc) where
   keytype = "Constant"
   allowed = [typeValue @(Constant kvalue) Constant]
   description = pack $ symbolVal @desc Proxy
-  keyValue _ = typeValue @(Constant kvalue) Constant
+instance (KnownValue kvalue) => ToKeyword (Key (Constant kvalue) desc) where
+  toKeywordValue _ = typeValue @(Constant kvalue) Constant
 
 
-data Naxis cmt = Naxis deriving (Generic)
+data Naxis cmt = Naxis
 instance (KnownSymbol cmt) => KeywordInfo (Naxis cmt) where
   keytype = "Int"
   description = pack $ symbolVal @cmt Proxy
   comment = pack $ symbolVal @cmt Proxy
-  keyValue _ = Integer 0
 
 
-data NaxisY = NaxisY deriving (Generic)
+-- you shouldn't convert this into a value... it's done by the library
+-- instance (KnownSymbol cmt) => ToKeyword (Naxis cmt) where
+--   toKeywordValue _ = Integer 0
+
+data NaxisY = NaxisY
 instance KeywordInfo NaxisY where
   keytype = "Int"
   description = "Dummy WCS Y Coordinate"
   comment = "Dummy WCS Y Coordinate"
-  allowed = [keyValue NaxisY]
-  keyValue _ = Integer 1
+  allowed = [Integer 1]
 
 
-data BZero = BZero deriving (Generic)
+-- instance ToKeyword NaxisY where
+--   toKeywordValue _ = Integer 1
+
+data BZero = BZero
 instance KeywordInfo BZero where
   keytype = "Float"
   description = "This keyword represents the physical value corresponding to an array value of zero. The default value for this keyword is 0.0. This keyword, along with BSCALE, is used to linearly scale the array pixel values to transform them into the phyical values that they represent. physical_value = BZERO + BSCALE x array_value"
-  allowed = [keyValue BZero]
-  keyValue _ = Integer 0
-instance HeaderKeywords BZero where
-  headerKeywords b = [keywordRecord b]
+  allowed = [toKeywordValue BZero]
+instance ToKeyword BZero where
+  toKeywordValue _ = Integer 0
 
 
-data BScale = BScale deriving (Generic)
+data BScale = BScale
 instance KeywordInfo BScale where
   keytype = "Float"
   description = "This keyword represents the coefficient of the linear term in the scaling equation, the ratio of physical value to array value at zero offset. The default value for this keyword is 1.0. This keyword, along with BZERO, is used to linearly scale the array pixel values to transform them into the phyical values that they represent."
-  allowed = [keyValue BScale]
-  keyValue _ = Integer 1
-instance HeaderKeywords BScale where
-  headerKeywords b = [keywordRecord b]
+  allowed = [toKeywordValue BScale]
+instance ToKeyword BScale where
+  toKeywordValue _ = Integer 1
 
 
-data Object = Object Text deriving (Generic)
+newtype Object = Object Text
+  deriving newtype (ToKeyword)
 instance KeywordInfo Object where
   keytype = "Object"
   description = "The value field shall contain a character string giving a name for the observed object. Applicable standard values are TBD"
   allowed = fmap String ["unknown", "quietsun", "sunspot", "pore", "plages", "spicules", "filament", "prominence", "coronalhole", "quietcorona", "activecorona"]
-  keyValue (Object s) = String s
-instance HeaderKeywords Object where
-  headerKeywords b = [keywordRecord b]
 
 
-data Instrument = Instrument Text deriving (Generic)
+newtype Instrument = Instrument Text
+  deriving newtype (ToKeyword)
 instance KeywordInfo Instrument where
   keytype = "Instrument"
   description = "The instrument used to acquire the data associated with the header"
   allowed = fmap String ["VBI", "VISP", "VTF", "DL-NIRSP", "CRYO-NIRSP", "WFC"]
-  keyValue (Instrument s) = String s
-instance HeaderKeywords Instrument where
-  headerKeywords b = [keywordRecord b]
 
 
-data OCSCtrl = OCSCtrl Text deriving (Generic)
+newtype OCSCtrl = OCSCtrl Text
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeywordInfo OCSCtrl where
   keytype = "OCSCtrl"
   description = "Control mode the telescope was operated in: ‘Auto’: Data were acquired as part of a regular, automatic execution of an Observing Program ‘Manual’: Data were acquired executing either a part of an or a complete Observing Program manually"
   allowed = fmap String ["auto", "manual"]
-  keyValue (OCSCtrl s) = String s
 
 
-data EnumKey (ss :: Symbol) (desc :: Symbol) = EnumKey Text deriving (Generic)
+newtype EnumKey (ss :: Symbol) (desc :: Symbol) = EnumKey Text
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance (KnownSymbol desc, KnownSymbol ss) => KeywordInfo (EnumKey ss desc) where
   keytype = "Enum"
   description = pack $ symbolVal @desc Proxy
   allowed = fmap String $ T.splitOn "/" $ pack $ symbolVal @ss Proxy
-  keyValue (EnumKey s) = String s
-instance (KnownSymbol desc, KnownSymbol ss) => HeaderKeywords (EnumKey ss desc) where
-  headerKeywords b = [keywordRecord b]
 
 
 -- Key Types ---------------------------------------------------------
 
-newtype MB = MB Float deriving (Generic)
+newtype MB = MB Float
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeyType MB where
   typeValue (MB s) = Float s
 
 
-newtype Seconds = Seconds Float deriving (Generic)
+newtype Seconds = Seconds Float
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeyType Seconds where
   typeComment = "[s]"
   typeValue (Seconds s) = Float s
 
 
-newtype Degrees = Degrees Float deriving (Generic)
+newtype Degrees = Degrees Float
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeyType Degrees where
   typeComment = "[deg]"
   typeValue (Degrees s) = Float s
@@ -174,25 +185,33 @@ instance (KnownValue c) => KeyType (Constant c) where
   typeComment = ""
 
 
-data DateTime = DateTime {timestamp :: Text} deriving (Generic, Show)
+newtype DateTime = DateTime {timestamp :: Text}
+  deriving (Generic, Show)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType DateTime where
   typeValue (DateTime s) = String s
   typeComment = ""
 
 
-data Url = Url Text deriving (Generic)
+newtype Url = Url Text
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeyType Url where
   typeValue (Url u) = String u
   typeComment = ""
 
 
-data Meters = Meters Float deriving (Generic)
+newtype Meters = Meters Float
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeyType Meters where
   typeValue (Meters m) = Float m
   typeComment = "[m]"
 
 
-data Mps = Mps Float deriving (Generic)
+newtype Mps = Mps Float
+  deriving (Generic)
+  deriving newtype (ToKeyword)
 instance KeyType Mps where
   typeValue (Mps m) = Float m
   typeComment = "[m/s]"

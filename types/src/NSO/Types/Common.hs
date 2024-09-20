@@ -12,12 +12,13 @@ import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
 import System.FilePath qualified as FP
 import Telescope.Asdf
+import Telescope.Fits
 import Web.HttpApiData
 import Web.Hyperbole (Route)
 
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Read, Eq, Ord, DBType, FromJSON, Route, DBEq, ToAsdf)
+  deriving newtype (Show, Read, Eq, Ord, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword)
   deriving (Generic)
 
 

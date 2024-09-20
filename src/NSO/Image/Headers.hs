@@ -21,8 +21,7 @@ import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
-import Telescope.Fits.Header (KeywordRecord (..), LogicalConstant (..), getKeywords, toFloat, toInt, toText)
-import Telescope.Fits.Types (HeaderRecord (..))
+import Telescope.Fits.Types (HeaderRecord (..), KeywordRecord (..), getKeywords)
 
 
 headerSpecVersion :: Text
@@ -76,7 +75,7 @@ data Observation = Observation
   , timesys :: Key (Constant "UTC") "Time scale of the time related keywords"
   , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
   }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
+  deriving (Generic, HeaderDoc, ToHeader)
 
 
 data Datacenter = Datacenter
@@ -100,17 +99,21 @@ data Datacenter = Datacenter
   , npropos :: Key Int "Number of proposals that contributed to the input data used to make this output. Must be > 0"
   , nexpers :: Key Int "Number of experiments that contributed to the input data used to make this output. Must be > 0"
   }
-  deriving (Generic, HeaderKeywords)
+  deriving (Generic, ToHeader)
 
 
+-- | contains an variable number of contributing proposals and experiments
 data ContribExpProp = ContribExpProp [KeywordRecord]
-instance HeaderKeywords ContribExpProp where
-  headerKeywords (ContribExpProp krs) = filter (isProp `or_` isExpr) krs
+
+
+instance ToHeader ContribExpProp where
+  toHeader (ContribExpProp krs) = Header $ fmap Keyword $ filter (isProp `or_` isExpr) krs
    where
     or_ f g a = f a || g a
     isProp kr = "PROPID" `T.isPrefixOf` kr._keyword
     isExpr kr = "EXPRID" `T.isPrefixOf` kr._keyword
 instance HeaderDoc ContribExpProp where
+  -- LATER: documentation for ContribExpProp
   headerDoc = []
 
 
@@ -141,7 +144,7 @@ data Telescope = Telescope
   , rotcomp :: Maybe (Key Int "Solar rotation compensation: 1: On 2: Off")
   , obsVr :: Key Mps "Observer’s outward velocity w.r.t. the Sun"
   }
-  deriving (Generic, HeaderKeywords)
+  deriving (Generic, ToHeader)
 
 
 data DKISTHeader = DKISTHeader
@@ -150,56 +153,50 @@ data DKISTHeader = DKISTHeader
   , dshealth :: EnumKey "good/bad/ill/unknown" "Worst health status of the data source (e.g. instrument arm) during data acquisition Good, Ill, Bad, Unknown"
   , lightlvl :: Key Float "Value of the telescope light level at start of data acquisition"
   }
-  deriving (Generic, HeaderKeywords)
+  deriving (Generic, ToHeader)
 
 
 data AdaptiveOptics = AdaptiveOptics
   { atmosR0 :: Key Float "Value of Fried’s parameter at start of data acquisition"
   , aoLock :: Key Bool "Lock status of HOAO during data acquisition. False: HOAO was unlocked for some duration of data acquisition True: HOAO was locked for the complete duration of data acquisition"
   }
-  deriving (Generic, HeaderKeywords)
+  deriving (Generic, ToHeader)
 
 
-data Teltrack = Teltrack Text deriving (Generic)
+newtype Teltrack = Teltrack Text
+  deriving newtype (ToKeyword)
 instance KeywordInfo Teltrack where
   keytype = "Teltrack"
   description = "Tracking Mode of the Telescope"
   allowed = fmap String ["None", "Fixed Solar Rotation Tracking", "Standard Differential Rotation Tracking", "Custom Differential Rotation Tracking"]
-  keyValue (Teltrack s) = String s
-instance HeaderKeywords Teltrack where
-  headerKeywords b = [keywordRecord b]
 
 
-data Telscan = Telscan Text deriving (Generic)
+newtype Telscan = Telscan Text
+  deriving newtype (ToKeyword)
 instance KeywordInfo Telscan where
   keytype = "Telscan"
   description = "Scanning Mode of the Telescope"
   allowed = fmap String ["None", "Random", "Raster", "Spiral"]
-  keyValue (Telscan s) = String s
-instance HeaderKeywords Telscan where
-  headerKeywords b = [keywordRecord b]
 
 
-data Ttbltrck = Ttbltrck Text deriving (Generic)
+newtype Ttbltrck = Ttbltrck Text
+  deriving newtype (ToKeyword)
 instance KeywordInfo Ttbltrck where
   keytype = "Ttbltrck"
   description = "Coude table tracking mode."
   allowed = fmap String ["(stepped) parallactic", "fixed angle on sun", "fixed difference-angle btwn", "coude and tel. azimuth", "fixed coude table angle"]
-  keyValue (Ttbltrck s) = String s
-instance HeaderKeywords Ttbltrck where
-  headerKeywords b = [keywordRecord b]
 
 
 -- GENERATE ------------------------------------------------------------
 
 observationHeader :: (Error ParseError :> es) => Header -> Eff es Observation
 observationHeader l1 = do
-  dateBeg <- requireKey "DATE-BEG" toDate l1
-  dateEnd <- requireKey "DATE-END" toDate l1
-  dateAvg <- requireKey "DATE-AVG" toDate l1
-  telapse <- requireKey "TELAPSE" toFloat l1
-  object <- requireKey "OBJECT" toText l1
-  instrument <- requireKey "INSTRUME" toText l1
+  dateBeg <- requireKey "DATE-BEG" l1
+  dateEnd <- requireKey "DATE-END" l1
+  dateAvg <- requireKey "DATE-AVG" l1
+  telapse <- requireKey "TELAPSE" l1
+  object <- requireKey "OBJECT" l1
+  instrument <- requireKey "INSTRUME" l1
 
   pure $
     Observation
@@ -220,16 +217,16 @@ observationHeader l1 = do
 
 datacenterHeader :: (Error ParseError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
-  dateBeg <- requireKey "DATE-BEG" toDate l1
-  dkistver <- requireKey "DKISTVER" toText l1
-  obsprId <- Key <$> requireKey "OBSPR_ID" toText l1
-  experId <- Key <$> requireKey "EXPER_ID" toText l1
-  propId <- Key <$> requireKey "PROP_ID" toText l1
-  dspId <- Key <$> requireKey "DSP_ID" toText l1
-  ipId <- Key <$> requireKey "IP_ID" toText l1
-  hlsvers <- Key <$> requireKey "HLSVERS" toText l1
-  npropos <- Key <$> requireKey "NPROPOS" toInt l1
-  nexpers <- Key <$> requireKey "NEXPERS" toInt l1
+  dateBeg <- requireKey "DATE-BEG" l1
+  dkistver <- requireKey "DKISTVER" l1
+  obsprId <- Key <$> requireKey "OBSPR_ID" l1
+  experId <- Key <$> requireKey "EXPER_ID" l1
+  propId <- Key <$> requireKey "PROP_ID" l1
+  dspId <- Key <$> requireKey "DSP_ID" l1
+  ipId <- Key <$> requireKey "IP_ID" l1
+  hlsvers <- Key <$> requireKey "HLSVERS" l1
+  npropos <- Key <$> requireKey "NPROPOS" l1
+  nexpers <- Key <$> requireKey "NEXPERS" l1
   fileId <- Key . UUID.toText <$> randomValue
   pure $
     Datacenter
@@ -261,10 +258,10 @@ contribExpProp l1 = do
 
 dkistHeader :: (Error ParseError :> es) => Header -> Eff es DKISTHeader
 dkistHeader l1 = do
-  ocsCtrl <- EnumKey <$> requireKey "OCS_CTRL" toText l1
-  fidoCfg <- Key <$> requireKey "FIDO_CFG" toText l1
-  dshealth <- EnumKey <$> requireKey "DSHEALTH" toText l1
-  lightlvl <- Key <$> requireKey "LIGHTLVL" toFloat l1
+  ocsCtrl <- EnumKey <$> requireKey "OCS_CTRL" l1
+  fidoCfg <- Key <$> requireKey "FIDO_CFG" l1
+  dshealth <- EnumKey <$> requireKey "DSHEALTH" l1
+  lightlvl <- Key <$> requireKey "LIGHTLVL" l1
   pure $
     DKISTHeader
       { ocsCtrl
@@ -276,33 +273,29 @@ dkistHeader l1 = do
 
 adaptiveOpticsHeader :: (Error ParseError :> es) => Header -> Eff es AdaptiveOptics
 adaptiveOpticsHeader l1 = do
-  atmosR0 <- Key <$> requireKey "ATMOS_R0" toFloat l1
-  aoLock <- Key <$> requireKey "AO_LOCK" toBool l1
+  atmosR0 <- Key <$> requireKey "ATMOS_R0" l1
+  aoLock <- Key <$> requireKey "AO_LOCK" l1
   pure $
     AdaptiveOptics
       { atmosR0
       , aoLock
       }
- where
-  toBool (Logic T) = Just True
-  toBool (Logic F) = Just False
-  toBool _ = Nothing
 
 
 telescopeHeader :: (Error ParseError :> es) => Header -> Eff es Telescope
 telescopeHeader l1 = do
-  tazimuth <- Key . Degrees <$> requireKey "TAZIMUTH" toFloat l1
-  elevAng <- Key . Degrees <$> requireKey "ELEV_ANG" toFloat l1
-  teltrack <- Teltrack <$> requireKey "TELTRACK" toText l1
-  telscan <- fmap Telscan <$> lookupKey "TELSCAN" toText l1
-  ttblangl <- Key . Degrees <$> requireKey "TTBLANGL" toFloat l1
-  ttbltrck <- Ttbltrck <$> requireKey "TTBLTRCK" toText l1
-  dateref <- Key . DateTime <$> requireKey "DATEREF" toText l1
-  obsgeoX <- Key . Meters <$> requireKey "OBSGEO-X" toFloat l1
-  obsgeoY <- Key . Meters <$> requireKey "OBSGEO-Y" toFloat l1
-  obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" toFloat l1
-  rotcomp <- fmap Key <$> lookupKey "ROTCOMP" toInt l1
-  obsVr <- Key . Mps <$> requireKey "OBS_VR" toFloat l1
+  tazimuth <- Key . Degrees <$> requireKey "TAZIMUTH" l1
+  elevAng <- Key . Degrees <$> requireKey "ELEV_ANG" l1
+  teltrack <- Teltrack <$> requireKey "TELTRACK" l1
+  telscan <- fmap Telscan <$> lookupKey "TELSCAN" l1
+  ttblangl <- Key . Degrees <$> requireKey "TTBLANGL" l1
+  ttbltrck <- Ttbltrck <$> requireKey "TTBLTRCK" l1
+  dateref <- Key . DateTime <$> requireKey "DATEREF" l1
+  obsgeoX <- Key . Meters <$> requireKey "OBSGEO-X" l1
+  obsgeoY <- Key . Meters <$> requireKey "OBSGEO-Y" l1
+  obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" l1
+  rotcomp <- fmap Key <$> lookupKey "ROTCOMP" l1
+  obsVr <- Key . Mps <$> requireKey "OBS_VR" l1
   pure $ Telescope{..}
 
 
@@ -335,19 +328,19 @@ frameFilename (DateTime start) iv =
   addExtension f = f <> ".fits"
 
 
-writeHeader :: Eff (Writer [HeaderRecord] : es) () -> Eff es [HeaderRecord]
-writeHeader = execWriter
+writeHeader :: Eff '[Writer Header] () -> Header
+writeHeader = runPureEff . execWriter
 
 
-addKeywords :: (Writer [HeaderRecord] :> es) => [KeywordRecord] -> Eff es ()
-addKeywords = tell . fmap Keyword
+addKeywords :: (Writer Header :> es, ToHeader a) => a -> Eff es ()
+addKeywords a = tell $ toHeader a
 
 
-sectionHeader :: (Writer [HeaderRecord] :> es) => Text -> Text -> Eff es ()
+sectionHeader :: (Writer Header :> es) => Text -> Text -> Eff es ()
 sectionHeader title desc = do
-  tell [BlankLine, Comment $ center "-" title]
-  tell $ fmap (Comment . center " ") (wrapWords desc)
-  tell [Comment $ T.replicate maxSize "-"]
+  tell $ Header [BlankLine, Comment $ center "-" title]
+  tell $ Header $ fmap (Comment . center " ") (wrapWords desc)
+  tell $ Header [Comment $ T.replicate maxSize "-"]
  where
   maxSize = 70
 

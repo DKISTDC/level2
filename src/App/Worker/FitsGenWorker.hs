@@ -34,7 +34,7 @@ import NSO.Image.Asdf as Asdf
 import NSO.Image.Frame as Frame
 import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Profile (Fit, Original, ProfileFit (..), ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
-import NSO.Image.Quantities (decodeQuantitiesFrames)
+import NSO.Image.Quantity (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 

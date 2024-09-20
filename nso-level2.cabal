@@ -79,7 +79,7 @@ library
       NSO.Image.L1Input
       NSO.Image.Primary
       NSO.Image.Profile
-      NSO.Image.Quantities
+      NSO.Image.Quantity
       NSO.Level2
       NSO.Metadata
       NSO.Steps

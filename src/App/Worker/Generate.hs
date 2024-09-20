@@ -15,7 +15,7 @@ import NSO.Image.Headers.Types (Depth, SliceXY (..), SlitX)
 import NSO.Image.L1Input
 import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Profile (Fit, Original, ProfileError, ProfileFrame)
-import NSO.Image.Quantities (Quantities, QuantityError, QuantityImage)
+import NSO.Image.Quantity (Quantities, QuantityError, QuantityImage)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion (Inversion)

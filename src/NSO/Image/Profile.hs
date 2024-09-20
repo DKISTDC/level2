@@ -17,11 +17,11 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import NSO.Image.Quantities (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
+import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Fits as Fits
-import Telescope.Fits.Header (toInt)
+import Telescope.Fits.Types (HeaderRecord (..))
 
 
 -- BUG: PC self_self is wrong
@@ -95,7 +95,17 @@ data ProfileHeader info = ProfileHeader
   , wcs :: WCSHeader ProfileAxes
   }
   deriving (Generic)
-instance (HeaderKeywords info) => HeaderKeywords (ProfileHeader info)
+instance (ToHeader info) => ToHeader (ProfileHeader info) where
+  toHeader h = writeHeader $ do
+    sectionHeader "Spectral Profile" "Headers describing the spectral profile"
+    addKeywords $ DataHeader{common = h.common, info = h.info}
+
+    sectionHeader "WCS" "WCS Related Keywords"
+    addKeywords h.wcs.common
+    addKeywords h.wcs.axes
+
+    addKeywords h.wcs.commonA
+    addKeywords h.wcs.axesA
 
 
 data Profile info = Profile
@@ -123,39 +133,29 @@ profiles slice now l1 wpo wpf po pf = do
  where
   profile
     :: forall info wav es
-     . (HeaderKeywords info, wav ~ ProfileWav info, Error ProfileError :> es)
+     . (ToHeader info, wav ~ ProfileWav info, Error ProfileError :> es)
     => info
     -> WavProfile wav
     -> DataCube [SlitX, Wavelength wav, Stokes]
     -> Eff es (Profile info)
   profile info wprofile image = do
-    h <- profileHeader info wprofile image
-    pure $ Profile image h
-
-  profileHeader
-    :: forall info wav es
-     . (HeaderKeywords info, Error ProfileError :> es)
-    => info
-    -> WavProfile wav
-    -> DataCube [SlitX, Wavelength wav, Stokes]
-    -> Eff es (ProfileHeader info)
-  profileHeader info wp image = do
-    wcs <- wcsHeader
     common <- dataCommon now image
-    pure $ ProfileHeader{common, wcs, info}
-   where
-    wcsHeader :: (Error ProfileError :> es) => Eff es (WCSHeader ProfileAxes)
-    wcsHeader = runParseError InvalidWCS $ do
-      wm <- wcsAxes @WCSMain slice wp l1
-      wc <- wcsCommon (isWcsValid wm) l1
+    wcs <- wcsHeader wprofile slice l1
+    pure $ Profile image $ ProfileHeader{common, wcs, info}
 
-      wca <- wcsCommonA l1
-      wa <- wcsAxes @A slice wp l1
-      pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
 
-    isWcsValid :: ProfileAxes alt -> Bool
-    isWcsValid axs =
-      and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
+wcsHeader :: (Error ProfileError :> es) => WavProfile wav -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
+wcsHeader wp slice l1 = runParseError InvalidWCS $ do
+  wm <- wcsAxes @WCSMain slice wp l1
+  wc <- wcsCommon (isWcsValid wm) l1
+
+  wca <- wcsCommonA l1
+  wa <- wcsAxes @A slice wp l1
+  pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
+ where
+  isWcsValid :: ProfileAxes alt -> Bool
+  isWcsValid axs =
+    and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
 
 
 profileHeaders :: Profiles Profile -> Profiles ProfileHeader
@@ -179,24 +179,12 @@ profileHDUs ps =
   ]
  where
   profileHDU
-    :: (HeaderKeywords info)
+    :: (ToHeader info)
     => Profile info
     -> ImageHDU
   profileHDU p =
     let darr = encodeDataArray p.image.array
-        hd = runPureEff $ writeHeader header
-     in ImageHDU{header = Header hd, dataArray = addDummyAxis darr}
-   where
-    header = do
-      sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-      addKeywords $ headerKeywords $ DataHeader{common = p.header.common, info = p.header.info}
-
-      sectionHeader "WCS" "WCS Related Keywords"
-      addKeywords $ headerKeywords p.header.wcs.common
-      addKeywords $ headerKeywords p.header.wcs.axes
-
-      addKeywords $ headerKeywords p.header.wcs.commonA
-      addKeywords $ headerKeywords p.header.wcs.axesA
+     in ImageHDU{header = toHeader p.header, dataArray = addDummyAxis darr}
 
 
 data ProfileAxes alt = ProfileAxes
@@ -214,8 +202,9 @@ instance AxisOrder ProfileAxes Wav where
   axisN = 2
 instance AxisOrder ProfileAxes Stokes where
   axisN = 1
-instance (KnownText alt) => HeaderKeywords (ProfileAxes alt)
-instance HeaderKeywords (WCSHeader ProfileAxes)
+instance (KnownText alt) => ToHeader (ProfileAxes alt) where
+  toHeader (ProfileAxes y x w s) =
+    mconcat [toHeader y, toHeader x, toHeader w, toHeader s]
 
 
 data ProfileAxis alt ax = ProfileAxis
@@ -223,7 +212,8 @@ data ProfileAxis alt ax = ProfileAxis
   , pcs :: Maybe (ProfilePCs alt ax)
   }
   deriving (Generic)
-instance (KnownText alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfileAxis alt ax)
+instance (KnownText alt, AxisOrder ProfileAxes ax) => ToHeader (ProfileAxis alt ax) where
+  toHeader pa = toHeader pa.keys <> toHeader pa.pcs
 
 
 data ProfilePCs alt ax = ProfilePCs
@@ -233,7 +223,14 @@ data ProfilePCs alt ax = ProfilePCs
   , stokes :: PC ProfileAxes alt ax Stokes
   }
   deriving (Generic)
-instance (KnownText alt, AxisOrder ProfileAxes ax) => HeaderKeywords (ProfilePCs alt ax)
+instance (KnownText alt, AxisOrder ProfileAxes ax) => ToHeader (ProfilePCs alt ax) where
+  toHeader pcs =
+    Header
+      [ Keyword $ keywordRecord pcs.dummyY
+      , Keyword $ keywordRecord pcs.slitX
+      , Keyword $ keywordRecord pcs.wavelength
+      , Keyword $ keywordRecord pcs.stokes
+      ]
 
 
 wcsAxes
@@ -320,7 +317,7 @@ data ProfileFrame profile = ProfileFrame
   }
 
 
-data WavProfile n = WaveProfile
+data WavProfile n = WavProfile
   { pixel :: Float
   , delta :: Float
   , line :: SpectralLine
@@ -358,11 +355,11 @@ decodeProfileFit inp = do
   pure $ ProfileFit{profile, slice}
  where
   requireSlice h = do
-    pixelsPerBin <- requireKey "DESR-BIN" toInt h
-    pixelBeg <- requireKey "DESR-BEG" toInt h
-    pixelEnd <- requireKey "DESR-END" toInt h
-    frameBeg <- requireKey "DESR-SC0" toInt h
-    frameEnd <- requireKey "DESR-SCN" toInt h
+    pixelsPerBin <- requireKey "DESR-BIN" h
+    pixelBeg <- requireKey "DESR-BEG" h
+    pixelEnd <- requireKey "DESR-END" h
+    frameBeg <- requireKey "DESR-SC0" h
+    frameEnd <- requireKey "DESR-SCN" h
     pure $ SliceXY{pixelsPerBin, pixelBeg, pixelEnd, frameBeg, frameEnd}
 
 
@@ -428,7 +425,7 @@ wavProfile l da =
   let DataCube arr = toNanometers da
       ws = M.toList arr
       delta = avgDelta ws
-   in WaveProfile
+   in WavProfile
         { delta
         , pixel = pixel0 delta ws
         , line = l

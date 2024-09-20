@@ -3,6 +3,7 @@ packages:
   .
   ./types/
   ../telescope.hs/
+  ../fits-parse/
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz
   -- https://hackage.haskell.org/package/globus-0.1.2/candidate/globus-0.1.2.tar.gz
 

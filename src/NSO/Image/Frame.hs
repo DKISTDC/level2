@@ -13,7 +13,7 @@ import NSO.Image.Headers
 import NSO.Image.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
 import NSO.Image.Primary
 import NSO.Image.Profile
-import NSO.Image.Quantities
+import NSO.Image.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
@@ -92,7 +92,7 @@ generateL2Frame
   -> L2FrameInputs
   -> Eff es (L2Frame, DateTime)
 generateL2Frame now i slice wpo wpf gf = do
-  ph <- primaryHeader i gf.l1Frame
+  ph <- primaryHeader i gf.l1Frame.header
   qs <- quantities slice now gf.l1Frame.header gf.quantities
   ps <- profiles slice now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
   let dateBeg = ph.observation.dateBeg.ktype

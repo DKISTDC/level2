@@ -11,8 +11,12 @@ import Telescope.Fits.Types (Value (..))
 import Web.View
 
 
-docKey :: forall a. (KeywordInfo a) => DocKey
-docKey = DocKey (keyword @a) (keytype @a) (allowedValues $ allowed @a) (description @a)
+docKey :: forall a. (KeywordInfo a, IsKeyword a) => DocKey
+docKey = docKey' @a (keyword @a)
+
+
+docKey' :: forall a. (KeywordInfo a) => Text -> DocKey
+docKey' key = DocKey key (keytype @a) (allowedValues $ allowed @a) (description @a)
  where
   allowedValues [] = Nothing
   allowedValues as = Just $ fmap (pack . val) as
@@ -60,18 +64,12 @@ instance (GenHeaderDoc f) => GenHeaderDoc (M1 C c f) where
   genHeaderDoc = genHeaderDoc @f
 
 
+instance (GenHeaderDoc a, GenHeaderDoc b) => GenHeaderDoc (a :*: b) where
+  genHeaderDoc = genHeaderDoc @a <> genHeaderDoc @b
+
+
 -- Selectors
-instance (GenHeaderDoc f, Selector s) => GenHeaderDoc (M1 S s f) where
+instance (KeywordInfo field, Selector s) => GenHeaderDoc (M1 S s (K1 R field)) where
   genHeaderDoc =
     let s = selName (undefined :: M1 S s f x)
-     in fmap (setKeyword s) $ genHeaderDoc @f
-   where
-    setKeyword s d = d{keyword = pack s}
-
-
-instance (GenHeaderDoc a, GenHeaderDoc b) => GenHeaderDoc (a :*: b) where
-  genHeaderDoc = genHeaderDoc @a ++ genHeaderDoc @b
-
-
-instance (KeywordInfo field) => GenHeaderDoc (K1 i field) where
-  genHeaderDoc = [docKey @field]
+     in [docKey' @field (pack s)]

@@ -1,21 +1,29 @@
 module Test.FitsGenSpec where
 
+import App.Worker.Generate (GenerateError, runGenerateError)
 import Control.Monad.Catch (throwM)
-import Data.Massiv.Array as M (Comp (..), Ix1, P, delay, fromLists')
+import Data.ByteString qualified as BS
+import Data.Massiv.Array as M (Comp (..), P)
+import Data.Massiv.Array qualified as M
+import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
+import Effectful.GenRandom
 import NSO.Image.DataCube
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.L1Input
-import NSO.Image.Profile
+import NSO.Image.Primary as Primary
+import NSO.Image.Profile as Profile
+import NSO.Image.Quantity as Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
 import Skeletest
 import Skeletest.Predicate qualified as P
-import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..), Value (..))
+import Telescope.Fits as Fits hiding (Axis)
+import Telescope.Fits.Header (HeaderRecord (..), KeywordRecord (..), LogicalConstant (..))
 
 
 spec :: Spec
@@ -23,14 +31,120 @@ spec = describe "Fits Generation" $ do
   specWavProfile
   specWCS
   specL1Frames
+  specHeader
 
 
-ctypeY :: Text
-ctypeY = "HPLN-TAN"
+specHeader :: Spec
+specHeader = describe "Header Keywords" $ do
+  describe "HDU Info" $ do
+    it "should include headers" $ do
+      let depth = DataHDUInfo :: Temperature
+      let h = toHeader depth
+      lookupKeyword "EXTNAME" h `shouldBe` Just (String "Temperature")
+      lookupKeyword "BTYPE" h `shouldBe` Just (String "phys.temperature")
+      lookupKeyword "BUNIT" h `shouldBe` Just (String "K")
 
+  describe "Primary" $ do
+    it "should include datacenter" $ do
+      h <- toHeader <$> genPrimary
+      lookupKeyword "LEVEL" h `shouldBe` Just (Integer 2)
+      lookupKeyword "PROP_ID" h `shouldBe` Just (String "pid_2_95")
 
-ctypeX :: Text
-ctypeX = "HPLT-TAN"
+    it "should include DKIST Operations" $ do
+      h <- toHeader <$> genPrimary
+      lookupKeyword "DSHEALTH" h `shouldBe` Just (String "GOOD")
+
+    it "should include AdaptiveOptics" $ do
+      h <- toHeader <$> genPrimary
+      lookupKeyword "AO_LOCK" h `shouldBe` Just (Logic T)
+
+    it "should include Telescope" $ do
+      h <- toHeader <$> genPrimary
+      lookupKeyword "TAZIMUTH" h `shouldSatisfy` P.just (P.con (Float P.anything))
+      lookupKeyword "OBSGEO_X" h `shouldSatisfy` P.just (P.con (Float P.anything))
+      lookupKeyword "TELTRACK" h `shouldSatisfy` P.just (P.con (String P.anything))
+
+    it "should include Observation" $ do
+      h <- toHeader <$> genPrimary
+      lookupKeyword "ORIGIN" h `shouldBe` Just (String "National Solar Observatory")
+      lookupKeyword "INSTRUME" h `shouldBe` Just (String "VISP")
+
+  describe "Quantities" $ do
+    it "should include Common and Data HDU Headers" $ do
+      h <- toHeader <$> genQuantity
+      lookupKeyword "BTYPE" h `shouldBe` Just (String "phys.temperature")
+      lookupKeyword "BZERO" h `shouldBe` Just (Integer 0)
+      lookupKeyword "DATAMIN" h `shouldBe` Just (Float 1.0)
+
+    it "should include pcs headers" $ do
+      let hx = toHeader $ QuantityPCs @WCSMain @X (PC 1) (PC 2) (PC 3)
+      axisN @QuantityAxes @X `shouldBe` 2
+      lookupKeyword "PC2_1" hx `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC2_2" hx `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC2_3" hx `shouldSatisfy` P.just P.anything
+
+      let hya = toHeader $ QuantityPCs @A @Y (PC 1) (PC 2) (PC 3)
+      axisN @QuantityAxes @Y `shouldBe` 3
+      lookupKeyword "PC3_1A" hya `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC3_2A" hya `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC3_3A" hya `shouldSatisfy` P.just P.anything
+
+    it "should include all WCS headers" $ do
+      q <- genQuantity
+      let h = toHeader q
+      lookupKeyword "WCSNAME" h `shouldBe` Just (String "Helioprojective Cartesian")
+      lookupKeyword "CRPIX1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC1_1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC1_3" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC3_1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC1_1A" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "WCSNAMEA" h `shouldBe` Just (String "Equatorial equinox J2000")
+      lookupKeyword "CUNIT1A" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "WCSVALID" h `shouldBe` Just (Logic T)
+
+  describe "Porfiles" $ do
+    it "should include Common and Data HDU Headers" $ do
+      h <- toHeader <$> genProfile
+      lookupKeyword "BTYPE" h `shouldBe` Just (String "spect.line.profile")
+      lookupKeyword "BZERO" h `shouldBe` Just (Integer 0)
+      lookupKeyword "DATAMIN" h `shouldBe` Just (Float 1.0)
+
+    it "should include all WCS headers" $ do
+      h <- toHeader <$> genProfile
+      lookupKeyword "WCSNAME" h `shouldBe` Just (String "Helioprojective Cartesian")
+      lookupKeyword "CRPIX1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC1_1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC1_3" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC3_1" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "PC1_1A" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "WCSNAMEA" h `shouldBe` Just (String "Equatorial equinox J2000")
+      lookupKeyword "CUNIT1A" h `shouldSatisfy` P.just P.anything
+      lookupKeyword "WCSVALID" h `shouldBe` Just (Logic T)
+ where
+  genPrimary :: IO PrimaryHeader
+  genPrimary = do
+    L1HeaderFix l1 <- getFixture
+    runGen $ Primary.primaryHeader (Id "inv.ID") l1
+
+  genQuantity :: IO (QuantityHeader Temperature)
+  genQuantity = do
+    DataCommonFix common <- getFixture
+    L1HeaderFix l1 <- getFixture
+    wcs <- runGen $ Quantity.wcsHeader slice l1 :: IO (WCSHeader QuantityAxes)
+    pure $ QuantityHeader @Temperature DataHDUInfo common wcs
+
+  genProfile :: IO (ProfileHeader Orig630)
+  genProfile = do
+    DataCommonFix common <- getFixture
+    L1HeaderFix l1 <- getFixture
+    let wp = WavProfile 0 1 FeI
+    wcs <- runGen $ Profile.wcsHeader wp slice l1
+    pure $ ProfileHeader @Orig630 DataHDUInfo common wcs
+
+  slice = SliceXY{pixelsPerBin = 7, pixelBeg = 100, pixelEnd = 800, frameBeg = 10, frameEnd = 20}
+
+  runGen =
+    runEff . runErrorNoCallStackWith @GenerateError throwM . runGenerateError . runGenRandom
 
 
 specWCS :: Spec
@@ -196,9 +310,36 @@ instance Fixture WCSAxesFix where
     pure $ noCleanup $ WCSAxesFix x y
 
 
+data FrameCubeFix = FrameCubeFix {cube :: DataCube [SlitX, Depth]}
+instance Fixture FrameCubeFix where
+  fixtureAction = do
+    let cube = DataCube $ M.delay $ M.fromLists' @P Seq [[1, 2, 3], [4, 5, 6]] :: DataCube [SlitX, Depth]
+    pure $ noCleanup $ FrameCubeFix cube
+
+
+data DataCommonFix = DataCommonFix {common :: DataCommon}
+instance Fixture DataCommonFix where
+  fixtureAction = do
+    now <- getCurrentTime
+    FrameCubeFix cube <- getFixture
+    common <- dataCommon now cube
+    pure $ noCleanup $ DataCommonFix common
+
+
+data L1HeaderFix = L1HeaderFix {header :: Header}
+instance Fixture L1HeaderFix where
+  fixtureAction = do
+    bs <- BS.readFile "./docs/l1.fits"
+    fits <- Fits.decode bs
+    case fits.extensions of
+      [BinTable b] -> do
+        pure $ noCleanup $ L1HeaderFix b.header
+      _ -> fail "Expected [BinTable] Extensions"
+
+
 keys_2_114 :: Header
 keys_2_114 =
-  -- Adjusted to make the math easy in "binning adjustment"
+  -- Adjusted for each checking in some cases
   Header $
     fmap
       Keyword
@@ -314,3 +455,11 @@ keys_1_118 =
       , KeywordRecord "LONPOLEA" (Float 180.0) Nothing
       , KeywordRecord "ZNAXIS1" (Integer 2555) Nothing
       ]
+
+
+ctypeY :: Text
+ctypeY = "HPLN-TAN"
+
+
+ctypeX :: Text
+ctypeX = "HPLT-TAN"

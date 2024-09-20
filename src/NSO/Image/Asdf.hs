@@ -7,10 +7,10 @@ import Effectful
 import Effectful.Error.Static
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
-import NSO.Image.Headers.Keywords (HeaderKeywords (..), KnownText (..))
+import NSO.Image.Headers.Keywords (KnownText (..))
 import NSO.Image.Primary
 import NSO.Image.Profile
-import NSO.Image.Quantities hiding (quantities)
+import NSO.Image.Quantity hiding (quantities)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset)
@@ -20,6 +20,7 @@ import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Data.Axes (Axes, Row)
+import Telescope.Fits (ToHeader (..))
 
 
 data L2Asdf
@@ -186,7 +187,7 @@ data QuantityTree info = QuantityTree
   , meta :: QuantityTreeMeta info
   }
   deriving (Generic)
-instance (HeaderKeywords info) => ToAsdf (QuantityTree info)
+instance (ToHeader info) => ToAsdf (QuantityTree info)
 instance ToAsdf (Quantities QuantityTree)
 
 
@@ -246,7 +247,7 @@ data ProfileTree info = ProfileTree
   , meta :: ProfileTreeMeta info
   }
   deriving (Generic)
-instance (HeaderKeywords info) => ToAsdf (ProfileTree info)
+instance (ToHeader info) => ToAsdf (ProfileTree info)
 instance ToAsdf (Profiles ProfileTree) where
   -- split into .original and .fit
   toValue ps =

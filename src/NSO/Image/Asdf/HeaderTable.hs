@@ -6,12 +6,12 @@ import Data.ByteString.Lazy qualified as BL
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
-import NSO.Image.Headers.Keywords (HeaderKeywords (..))
 import NSO.Prelude
 import Telescope.Asdf
 import Telescope.Asdf.NDArray (ByteOrder (..), DataType (..), putUcs4)
 import Telescope.Data.Axes (axesRowMajor)
 import Telescope.Fits qualified as Fits
+import Telescope.Fits.Header as Fits (Header, ToHeader (..), getKeywords)
 import Telescope.Fits.Types as Fits (KeywordRecord (..), LogicalConstant (..))
 
 
@@ -20,19 +20,19 @@ import Telescope.Fits.Types as Fits (KeywordRecord (..), LogicalConstant (..))
 newtype HeaderTable a = HeaderTable (NonEmpty a)
 
 
-instance (HeaderKeywords a) => ToAsdf (HeaderTable a) where
+instance (ToHeader a) => ToAsdf (HeaderTable a) where
   toValue (HeaderTable as) =
     Object
       [ ("colnames", colnames as)
-      , ("columns", toNode $ Array $ fmap toNode $ keywordColumns $ fmap headerKeywords as)
+      , ("columns", toNode $ Array $ fmap toNode $ keywordColumns $ fmap toHeader as)
       , ("qtable", toNode False)
       ]
    where
     colname (KeywordRecord k _ _) = k
 
     colnames vals =
-      let krs = headerKeywords (head vals)
-       in fromValue $ Array $ fmap (toNode . String) $ L.sort $ fmap colname krs
+      let krs = toHeader (head vals)
+       in fromValue $ Array $ fmap (toNode . String) $ L.sort $ fmap colname $ Fits.getKeywords krs
 
 
 data KeywordColumn = KeywordColumn
@@ -84,12 +84,12 @@ instance ToNDArray KeywordColumn where
               F -> 0x0
 
 
-keywordColumns :: NonEmpty [KeywordRecord] -> [KeywordColumn]
+keywordColumns :: NonEmpty Header -> [KeywordColumn]
 keywordColumns =
   mapMaybe keyColumn . keyGroups
  where
-  keyGroups :: NonEmpty [KeywordRecord] -> [[KeywordRecord]]
-  keyGroups = groupBy isSameKey . sortOn (._keyword) . mconcat . NE.toList
+  keyGroups :: NonEmpty Header -> [[KeywordRecord]]
+  keyGroups = groupBy isSameKey . sortOn (._keyword) . mconcat . NE.toList . fmap Fits.getKeywords
   isSameKey kr1 kr2 = kr1._keyword == kr2._keyword
   keyColumn [] = Nothing
   keyColumn (k : ks) = do

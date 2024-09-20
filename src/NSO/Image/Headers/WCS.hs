@@ -14,6 +14,7 @@ import NSO.Image.Headers.Types
 import NSO.Prelude
 import Telescope.Fits as Fits hiding (Axis)
 import Telescope.Fits.Header as Fits
+import Telescope.Fits.Header.Class (GToHeader (..))
 import Text.Read (readMaybe)
 
 
@@ -65,7 +66,7 @@ data WCSCommon = WCSCommon
   , wcsaxes :: Key Int "Number of axes in the Helioprojective Cartesian WCS description" -- MUST precede other WCS keywords
   , lonpole :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
+  deriving (Generic, HeaderDoc, ToHeader)
 
 
 data WCSCommonA = WCSCommonA
@@ -73,7 +74,7 @@ data WCSCommonA = WCSCommonA
   , wcsaxesa :: Key Int "Number of axes in the Equatorial equinox J2000 WCS description" -- MUST precede other WCS keywords
   , lonpolea :: Key Degrees "Native longitude of the celestial pole in Helioprojective coordinate system"
   }
-  deriving (Generic, HeaderDoc, HeaderKeywords)
+  deriving (Generic, HeaderDoc, ToHeader)
 
 
 data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
@@ -83,12 +84,18 @@ data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
   , crval :: Key Float "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn"
   , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n"
   }
-  deriving (Generic)
-instance (AxisOrder s ax, KnownText alt) => HeaderKeywords (WCSAxisKeywords s alt ax) where
-  headerKeywords =
-    fmap modKey . genHeaderKeywords . from
+  deriving (Generic, Show)
+instance (AxisOrder s ax, KnownText alt) => ToHeader (WCSAxisKeywords s alt ax) where
+  toHeader =
+    modHeader . gToHeader . from
    where
-    modKey KeywordRecord{_keyword, _value, _comment} = KeywordRecord{_keyword = addA $ addN _keyword, _value, _comment}
+    modHeader (Header recs) =
+      Header $ fmap modKey recs
+    modKey = \case
+      Keyword (KeywordRecord key val cmt) ->
+        Keyword $ KeywordRecord (addA $ addN key) val cmt
+      rec -> rec
+
     addN k = k <> pack (show (axisN @s @ax))
     addA k = k <> knownText @alt
 
@@ -105,18 +112,21 @@ instance (AxisOrder s ax, KnownText alt) => HeaderKeywords (WCSAxisKeywords s al
 -- it's a mapping of one axis type to another
 data PC s (alt :: WCSAlt) ai aj = PC {value :: Float}
   deriving (Show, Eq)
-instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => KeywordInfo (PC s alt ai aj) where
-  keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownText @alt
+instance KeywordInfo (PC s alt ai aj) where
   keytype = "PCi_j"
   description = "Linear transformation matrix used with the coordinate system"
-  keyValue (PC n) = Float n
-instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => HeaderKeywords (PC s alt ai aj) where
-  headerKeywords p = [keywordRecord p]
+instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => IsKeyword (PC s alt ai aj) where
+  keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownText @alt
+instance ToKeyword (PC s alt ai aj) where
+  toKeywordValue (PC n) = Float n
 
+
+-- instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => ToHeader (PC s alt ai aj) where
+--   toHeader pc = Header [Keyword $ KeywordRecord key (toKeywordValue pc) Nothing]
 
 wcsCommon :: forall es. (Error ParseError :> es) => Bool -> Header -> Eff es WCSCommon
 wcsCommon valid l1 = do
-  lonpole <- Degrees <$> requireKey "LONPOLE" toFloat l1
+  lonpole <- Degrees <$> requireKey "LONPOLE" l1
   pure $
     WCSCommon
       { wcsvalid = Key valid
@@ -128,7 +138,7 @@ wcsCommon valid l1 = do
 
 wcsCommonA :: forall es. (Error ParseError :> es) => Header -> Eff es WCSCommonA
 wcsCommonA l1 = do
-  lonpolea <- Degrees <$> requireKey "LONPOLEA" toFloat l1
+  lonpolea <- Degrees <$> requireKey "LONPOLEA" l1
   pure $
     WCSCommonA
       { wcsnamea = Key Constant
@@ -139,11 +149,11 @@ wcsCommonA l1 = do
 
 requireWCS :: forall s alt ax es. (Error ParseError :> es, KnownText alt) => Axis ax -> Header -> Eff es (WCSAxisKeywords s alt ax)
 requireWCS (Axis n) l1 = do
-  crpix <- Key <$> requireKey (keyN "CRPIX") toFloat l1
-  crval <- Key <$> requireKey (keyN "CRVAL") toFloat l1
-  cdelt <- Key <$> requireKey (keyN "CDELT") toFloat l1
-  cunit <- Key <$> requireKey (keyN "CUNIT") toText l1
-  ctype <- Key <$> requireKey (keyN "CTYPE") toText l1
+  crpix <- Key <$> requireKey (keyN "CRPIX") l1
+  crval <- Key <$> requireKey (keyN "CRVAL") l1
+  cdelt <- Key <$> requireKey (keyN "CDELT") l1
+  cunit <- Key <$> requireKey (keyN "CUNIT") l1
+  ctype <- Key <$> requireKey (keyN "CTYPE") l1
   pure $ WCSAxisKeywords{cunit, ctype, crpix, crval, cdelt}
  where
   keyN k = k <> pack (show n) <> knownText @alt
@@ -161,24 +171,25 @@ requireWCSAxes h = do
 
 
 requireCtypeAxis :: (Error ParseError :> es) => Text -> Header -> Eff es Int
-requireCtypeAxis ctype l1 = do
-  case findKey toCtypeN l1 of
-    Nothing -> throwError $ MissingKey ("CTYPE: " ++ show ctype)
+requireCtypeAxis ctype (Header h) = parseThrow $ do
+  case listToMaybe $ mapMaybe toCtypeN h of
+    Nothing -> fail $ "Missing Key: CTYPE " ++ show ctype
     Just k -> pure k
  where
-  toCtypeN :: KeywordRecord -> Maybe Int
-  toCtypeN k = do
+  toCtypeN :: HeaderRecord -> Maybe Int
+  toCtypeN (Keyword k) = do
     guard (k._value == String ctype)
     readMaybe $ drop 5 $ unpack k._keyword
+  toCtypeN _ = Nothing
 
 
 -- can we detect that they are incorrect here?
 requirePCs :: forall alt s es. (Error ParseError :> es, KnownText alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
 requirePCs (Axis xn) (Axis yn) l1 = do
-  yy <- PC <$> requireKey (pcN yn yn) toFloat l1
-  yx <- PC <$> requireKey (pcN yn xn) toFloat l1
-  xx <- PC <$> requireKey (pcN xn xn) toFloat l1
-  xy <- PC <$> requireKey (pcN xn yn) toFloat l1
+  yy <- PC <$> requireKey (pcN yn yn) l1
+  yx <- PC <$> requireKey (pcN yn xn) l1
+  xx <- PC <$> requireKey (pcN xn xn) l1
+  xy <- PC <$> requireKey (pcN xn yn) l1
   pure PCL1{yy, yx, xx, xy}
  where
   pcN :: Int -> Int -> Text
