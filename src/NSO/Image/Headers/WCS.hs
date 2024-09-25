@@ -12,6 +12,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
+import Telescope.Data.Parser (parseFail)
 import Telescope.Fits as Fits hiding (Axis)
 import Telescope.Fits.Header as Fits
 import Telescope.Fits.Header.Class (GToHeader (..))
@@ -171,9 +172,9 @@ requireWCSAxes h = do
 
 
 requireCtypeAxis :: (Error ParseError :> es) => Text -> Header -> Eff es Int
-requireCtypeAxis ctype (Header h) = parseThrow $ do
+requireCtypeAxis ctype (Header h) = runParser $ do
   case listToMaybe $ mapMaybe toCtypeN h of
-    Nothing -> fail $ "Missing Key: CTYPE " ++ show ctype
+    Nothing -> parseFail $ "Missing Key: CTYPE " ++ show ctype
     Just k -> pure k
  where
   toCtypeN :: HeaderRecord -> Maybe Int

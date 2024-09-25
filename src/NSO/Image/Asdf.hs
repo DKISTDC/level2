@@ -4,9 +4,11 @@ module NSO.Image.Asdf where
 
 import Data.ByteString (ByteString)
 import Data.List.NonEmpty qualified as NE
+import Data.Text (pack)
 import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
+import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
 import NSO.Image.Headers.Keywords (KnownText (..))
@@ -41,8 +43,8 @@ asdfDocument inversionId datasetIds now metas =
     InversionTree
       { fileuris
       , meta = inversionTreeMeta $ fmap (.primary) frames
-      , quantities = quantitiesSection fileuris $ fmap (.quantities) frames
-      , profiles = profilesSection fileuris $ fmap (.profiles) frames
+      , quantities = quantitiesSection $ fmap (.quantities) frames
+      , profiles = profilesSection $ fmap (.profiles) frames
       }
 
   inversionTreeMeta :: NonEmpty PrimaryHeader -> InversionTreeMeta
@@ -137,8 +139,8 @@ instance (ToAsdf hdus) => ToAsdf (HDUSection hdus) where
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: Fileuris -> NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities (DataTree QuantityMeta))
-quantitiesSection files frames =
+quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities (DataTree QuantityMeta))
+quantitiesSection frames =
   HDUSection
     { axes = ["frameY", "slitX", "opticalDepth"]
     , shape
@@ -164,7 +166,7 @@ quantitiesSection files frames =
      . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info)
     => (Quantities QuantityHeader -> QuantityHeader info)
     -> DataTree QuantityMeta info
-  quantity f = quantityTree files shape $ fmap f quantities
+  quantity f = quantityTree shape $ fmap f quantities
 
   quantities = fmap (.quantities) frames
 
@@ -175,7 +177,7 @@ data DataTree meta info = DataTree
   { unit :: Unit
   , data_ :: FileManager
   , meta :: meta info
-  , wcs :: WCSTodo
+  , wcs :: Ref "/inversion/quantities/wcs"
   }
   deriving (Generic)
 instance (ToAsdf (meta info)) => ToAsdf (DataTree meta info) where
@@ -192,15 +194,14 @@ instance ToAsdf (Quantities (DataTree QuantityMeta))
 quantityTree
   :: forall info ext btype unit
    . (KnownText unit, HDUOrder info, info ~ DataHDUInfo ext btype unit)
-  => Fileuris
-  -> Axes Row
+  => Axes Row
   -> NonEmpty (QuantityHeader info)
   -> DataTree QuantityMeta info
-quantityTree files shape heads =
+quantityTree shape heads =
   DataTree
     { unit = Unit (knownText @unit)
-    , wcs = WCSTodo
-    , data_ = fileManager @info files shape
+    , wcs = Ref
+    , data_ = fileManager @info shape
     , meta = QuantityMeta{headers = HeaderTable heads}
     }
 
@@ -213,30 +214,44 @@ data QuantityMeta info = QuantityMeta
 
 data WCSTodo = WCSTodo
 instance ToAsdf WCSTodo where
-  toValue _ = String "TODO"
+  -- wcs: !<tag:stsci.edu:gwcs/wcs-1.1.0>
+  --   name: ''
+  --   steps:
+  schema = "tag:stsci.edu:gwcs/wcs-1.1.0"
+  toValue _ =
+    Object
+      [ ("name", toNode $ String "")
+      , ("steps", toNode $ Array [])
+      ]
+
+
+data Ref (ref :: Symbol) = Ref
+instance (KnownSymbol ref) => ToAsdf (Ref ref) where
+  toValue _ =
+    InternalRef $ pointer $ pack $ symbolVal @ref Proxy
 
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: Fileuris -> NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
-profilesSection files frames =
+profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
+profilesSection frames =
   let shape = (head frames).shape
    in HDUSection
         { wcs = WCSTodo
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape
-        , hdus = profilesTree files shape frames
+        , hdus = profilesTree shape frames
         }
 
 
-profilesTree :: Fileuris -> Axes Row -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree files shape frames =
+profilesTree :: Axes Row -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+profilesTree shape frames =
   let ps = fmap (.profiles) frames
    in Profiles
-        { orig630 = profileTree files shape $ fmap (.orig630) ps
-        , orig854 = profileTree files shape $ fmap (.orig854) ps
-        , fit630 = profileTree files shape $ fmap (.fit630) ps
-        , fit854 = profileTree files shape $ fmap (.fit854) ps
+        { orig630 = profileTree shape $ fmap (.orig630) ps
+        , orig854 = profileTree shape $ fmap (.orig854) ps
+        , fit630 = profileTree shape $ fmap (.fit630) ps
+        , fit854 = profileTree shape $ fmap (.fit854) ps
         }
 
 
@@ -244,7 +259,7 @@ data ProfileTree info = ProfileTree
   { unit :: Unit
   , data_ :: FileManager
   , meta :: ProfileTreeMeta info
-  , wcs :: WCSTodo
+  , wcs :: Ref "/inversion/profiles/wcs"
   }
   deriving (Generic)
 instance (ToHeader info) => ToAsdf (ProfileTree info) where
@@ -280,15 +295,14 @@ instance ToAsdf (Profiles ProfileTree) where
 profileTree
   :: forall info
    . (ProfileInfo info, KnownText (ProfileType info), HDUOrder info)
-  => Fileuris
-  -> Axes Row
+  => Axes Row
   -> NonEmpty (ProfileHeader info)
   -> ProfileTree info
-profileTree files shape heads =
+profileTree shape heads =
   ProfileTree
     { unit = Count
-    , wcs = WCSTodo
-    , data_ = fileManager @info files shape
+    , wcs = Ref
+    , data_ = fileManager @info shape
     , meta =
         ProfileTreeMeta
           { headers = HeaderTable heads
@@ -308,7 +322,7 @@ data ProfileTreeMeta info = ProfileTreeMeta
 
 data FileManager = FileManager
   { datatype :: DataType
-  , fileuris :: Fileuris
+  , fileuris :: Ref "/inversion/fileuris"
   , shape :: Axes Row
   , target :: HDUIndex
   }
@@ -317,6 +331,6 @@ instance ToAsdf FileManager where
   schema = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
 
 
-fileManager :: forall info. (HDUOrder info) => Fileuris -> Axes Row -> FileManager
-fileManager fileuris shape =
-  FileManager{datatype = Float64, fileuris, shape, target = hduIndex @info}
+fileManager :: forall info. (HDUOrder info) => Axes Row -> FileManager
+fileManager shape =
+  FileManager{datatype = Float64, fileuris = Ref, shape, target = hduIndex @info}

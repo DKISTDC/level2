@@ -6,7 +6,7 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Image.Headers
-import NSO.Image.Headers.Parse (ParseError (..), runParseError)
+import NSO.Image.Headers.Parse (ParseError, runParseError)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
