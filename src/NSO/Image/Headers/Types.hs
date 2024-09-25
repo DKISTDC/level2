@@ -70,6 +70,8 @@ instance {-# OVERLAPPABLE #-} (KeyType ktype, KnownSymbol desc) => KeywordInfo (
   comment = typeComment @ktype
 instance {-# OVERLAPPABLE #-} (ToKeyword ktype) => ToKeyword (Key ktype desc) where
   toKeywordValue (Key k) = toKeywordValue @ktype k
+instance (FromKeyword ktype) => FromKeyword (Key ktype desc) where
+  parseKeywordValue val = Key <$> parseKeywordValue val
 
 
 instance (KnownValue kvalue, KnownSymbol desc) => KeywordInfo (Key (Constant kvalue) desc) where
@@ -109,6 +111,8 @@ instance KeywordInfo BZero where
   allowed = [toKeywordValue BZero]
 instance ToKeyword BZero where
   toKeywordValue _ = Integer 0
+instance FromKeyword BZero where
+  parseKeywordValue _ = pure BZero
 
 
 data BScale = BScale
@@ -118,10 +122,12 @@ instance KeywordInfo BScale where
   allowed = [toKeywordValue BScale]
 instance ToKeyword BScale where
   toKeywordValue _ = Integer 1
+instance FromKeyword BScale where
+  parseKeywordValue _ = pure BScale
 
 
 newtype Object = Object Text
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo Object where
   keytype = "Object"
   description = "The value field shall contain a character string giving a name for the observed object. Applicable standard values are TBD"
@@ -129,7 +135,7 @@ instance KeywordInfo Object where
 
 
 newtype Instrument = Instrument Text
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo Instrument where
   keytype = "Instrument"
   description = "The instrument used to acquire the data associated with the header"
@@ -138,7 +144,7 @@ instance KeywordInfo Instrument where
 
 newtype OCSCtrl = OCSCtrl Text
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo OCSCtrl where
   keytype = "OCSCtrl"
   description = "Control mode the telescope was operated in: ‘Auto’: Data were acquired as part of a regular, automatic execution of an Observing Program ‘Manual’: Data were acquired executing either a part of an or a complete Observing Program manually"
@@ -147,7 +153,7 @@ instance KeywordInfo OCSCtrl where
 
 newtype EnumKey (ss :: Symbol) (desc :: Symbol) = EnumKey Text
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance (KnownSymbol desc, KnownSymbol ss) => KeywordInfo (EnumKey ss desc) where
   keytype = "Enum"
   description = pack $ symbolVal @desc Proxy
@@ -158,14 +164,14 @@ instance (KnownSymbol desc, KnownSymbol ss) => KeywordInfo (EnumKey ss desc) whe
 
 newtype MB = MB Float
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType MB where
   typeValue (MB s) = Float s
 
 
 newtype Seconds = Seconds Float
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Seconds where
   typeComment = "[s]"
   typeValue (Seconds s) = Float s
@@ -173,7 +179,7 @@ instance KeyType Seconds where
 
 newtype Degrees = Degrees Float
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Degrees where
   typeComment = "[deg]"
   typeValue (Degrees s) = Float s
@@ -183,6 +189,8 @@ data Constant c = Constant deriving (Generic)
 instance (KnownValue c) => KeyType (Constant c) where
   typeValue _ = knownValue @c
   typeComment = ""
+instance (KnownValue c) => FromKeyword (Constant c) where
+  parseKeywordValue _ = pure Constant
 
 
 newtype DateTime = DateTime {timestamp :: Text}
@@ -195,7 +203,7 @@ instance KeyType DateTime where
 
 newtype Url = Url Text
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Url where
   typeValue (Url u) = String u
   typeComment = ""
@@ -203,7 +211,7 @@ instance KeyType Url where
 
 newtype Meters = Meters Float
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Meters where
   typeValue (Meters m) = Float m
   typeComment = "[m]"
@@ -211,7 +219,7 @@ instance KeyType Meters where
 
 newtype Mps = Mps Float
   deriving (Generic)
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Mps where
   typeValue (Mps m) = Float m
   typeComment = "[m/s]"

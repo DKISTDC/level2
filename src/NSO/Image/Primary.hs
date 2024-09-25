@@ -43,6 +43,17 @@ instance ToHeader PrimaryHeader where
     addKeywords h.adaptive
 
 
+instance FromHeader PrimaryHeader where
+  parseHeader h = do
+    obs <- parseHeader @Observation h
+    tel <- parseHeader @Telescope h
+    dtc <- parseHeader @Datacenter h
+    dks <- parseHeader @DKISTHeader h
+    adp <- parseHeader @AdaptiveOptics h
+    ctb <- parseHeader @ContribExpProp h
+    pure $ PrimaryHeader obs tel dtc dks adp ctb
+
+
 primaryHeader :: (Error PrimaryError :> es, GenRandom :> es) => Id Inversion -> Header -> Eff es PrimaryHeader
 primaryHeader ii l1 = runParseError PrimaryParse $ do
   observation <- observationHeader l1

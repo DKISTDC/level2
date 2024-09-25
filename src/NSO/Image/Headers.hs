@@ -75,7 +75,7 @@ data Observation = Observation
   , timesys :: Key (Constant "UTC") "Time scale of the time related keywords"
   , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
   }
-  deriving (Generic, HeaderDoc, ToHeader)
+  deriving (Generic, HeaderDoc, ToHeader, FromHeader)
 
 
 data Datacenter = Datacenter
@@ -99,7 +99,7 @@ data Datacenter = Datacenter
   , npropos :: Key Int "Number of proposals that contributed to the input data used to make this output. Must be > 0"
   , nexpers :: Key Int "Number of experiments that contributed to the input data used to make this output. Must be > 0"
   }
-  deriving (Generic, ToHeader)
+  deriving (Generic, ToHeader, FromHeader)
 
 
 -- | contains an variable number of contributing proposals and experiments

@@ -106,6 +106,12 @@ instance (ToHeader info) => ToHeader (ProfileHeader info) where
 
     addKeywords h.wcs.commonA
     addKeywords h.wcs.axesA
+instance (FromHeader info) => FromHeader (ProfileHeader info) where
+  parseHeader h = do
+    info <- parseHeader h
+    common <- parseHeader h
+    wcs <- parseHeader h
+    pure $ ProfileHeader{info, common, wcs}
 
 
 data Profile info = Profile

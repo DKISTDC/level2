@@ -3,6 +3,7 @@
 module NSO.Image.Frame where
 
 import Data.ByteString qualified as BS
+import Data.List ((!?))
 import Data.Massiv.Array ()
 import Data.Text qualified as T
 import Effectful
@@ -12,15 +13,17 @@ import NSO.Image.DataCube (dataCubeAxes)
 import NSO.Image.Headers
 import NSO.Image.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
 import NSO.Image.Primary
-import NSO.Image.Profile
-import NSO.Image.Quantity
+import NSO.Image.Profile as Profile
+import NSO.Image.Quantity as Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf as Asdf
-import Telescope.Data.Axes (Axes (..))
+import Telescope.Data.Axes (Axes (..), axesRowMajor)
+import Telescope.Data.Parser (ParseError, parseFail, runParser)
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
+import Telescope.Fits.Header.Class (parseKeyword)
 
 
 data L2Frame = L2Frame
@@ -53,15 +56,36 @@ instance Ord L2FrameMeta where
 
 
 data FrameQuantitiesMeta = FrameQuantitiesMeta
-  { shape :: Axes Row
+  { shape :: QuantityShape
   , quantities :: Quantities QuantityHeader
   }
+  deriving (Generic)
 
 
 data FrameProfilesMeta = FrameProfilesMeta
-  { shape :: Axes Row
+  { shape :: ProfileShape
   , profiles :: Profiles ProfileHeader
   }
+  deriving (Generic)
+
+
+newtype ProfileShape = ProfileShape (Axes Row)
+instance FromHeader ProfileShape where
+  parseHeader h = do
+    n1 <- parseKeyword "NAXIS1" h
+    n2 <- parseKeyword "NAXIS2" h
+    n3 <- parseKeyword "NAXIS3" h
+    n4 <- parseKeyword "NAXIS4" h
+    pure $ ProfileShape $ axesRowMajor [n4, n3, n2, n1]
+
+
+newtype QuantityShape = QuantityShape (Axes Row)
+instance FromHeader QuantityShape where
+  parseHeader h = do
+    n1 <- parseKeyword "NAXIS1" h
+    n2 <- parseKeyword "NAXIS2" h
+    n3 <- parseKeyword "NAXIS3" h
+    pure $ QuantityShape $ axesRowMajor [n3, n2, n1]
 
 
 data L2FrameInputs = L2FrameInputs
@@ -100,6 +124,83 @@ generateL2Frame now i slice wpo wpf gf = do
   pure (frame, dateBeg)
 
 
+frameMetaFromFits
+  :: (Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
+  => Path' Filename L2Frame
+  -> SliceXY
+  -> WavProfiles Original
+  -> WavProfiles Fit
+  -> Fits
+  -> Eff es L2FrameMeta
+frameMetaFromFits path slice wpo wpf fits = runParser $ do
+  primary <- parseHeader @PrimaryHeader fits.primaryHDU.header
+
+  -- no, we have to look up the appropriate hdu
+  qh <- headerFor @OpticalDepth
+  qshape <- parseHeader @QuantityShape qh
+  quants <- parseQuantities
+
+  ph <- headerFor @Orig630
+  pshape <- parseHeader @ProfileShape ph
+  profs <- parseProfiles
+  pure $
+    L2FrameMeta
+      { path
+      , primary
+      , quantities = FrameQuantitiesMeta{quantities = quants, shape = qshape}
+      , profiles = FrameProfilesMeta{profiles = profs, shape = pshape}
+      }
+ where
+  headerFor :: forall a es. (HDUOrder a, Parser :> es) => Eff es Header
+  headerFor =
+    let HDUIndex index = hduIndex @a
+     in case fits.extensions !? index of
+          Nothing -> parseFail $ "Missing HDU at " ++ show index
+          Just (Image img) -> pure img.header
+          Just _ -> parseFail $ "Expected ImageHDU at " ++ show index
+
+  parseQuantity :: forall q es. (HDUOrder q, FromHeader q, Parser :> es, Error QuantityError :> es) => Eff es (QuantityHeader q)
+  parseQuantity = do
+    h <- headerFor @q
+    info <- parseHeader @q h
+    common <- parseHeader h
+    wcs <- Quantity.wcsHeader slice h
+    pure $ QuantityHeader{info, common, wcs}
+
+  parseProfile
+    :: forall info wav es
+     . (FromHeader info, HDUOrder info, wav ~ ProfileWav info, Error ProfileError :> es, Parser :> es)
+    => WavProfile wav
+    -> Eff es (ProfileHeader info)
+  parseProfile wprofile = do
+    h <- headerFor @info
+    info <- parseHeader @info h
+    common <- parseHeader h
+    wcs <- Profile.wcsHeader wprofile slice h
+    pure $ ProfileHeader{info, common, wcs}
+
+  parseQuantities = do
+    opticalDepth <- parseQuantity
+    temperature <- parseQuantity
+    electronPressure <- parseQuantity
+    microTurbulence <- parseQuantity
+    magStrength <- parseQuantity
+    velocity <- parseQuantity
+    magInclination <- parseQuantity
+    magAzimuth <- parseQuantity
+    geoHeight <- parseQuantity
+    gasPressure <- parseQuantity
+    density <- parseQuantity
+    pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
+
+  parseProfiles = do
+    orig630 <- parseProfile @Orig630 wpo.wav630
+    orig854 <- parseProfile @Orig854 wpo.wav854
+    fit630 <- parseProfile @Fit630 wpf.wav630
+    fit854 <- parseProfile @Fit854 wpf.wav854
+    pure $ Profiles{orig630, orig854, fit630, fit854}
+
+
 frameMeta :: L2Frame -> Path' Filename L2Frame -> L2FrameMeta
 frameMeta frame path =
   L2FrameMeta
@@ -112,15 +213,16 @@ frameMeta frame path =
   quantitiesMeta qs =
     FrameQuantitiesMeta
       { quantities = quantityHeaders qs
-      , shape = addDummyY $ dataCubeAxes qs.opticalDepth.image
+      , shape = QuantityShape $ addDummyY $ dataCubeAxes qs.opticalDepth.image
       }
 
   profilesMeta ps =
     FrameProfilesMeta
       { profiles = profileHeaders ps
-      , shape = addDummyY $ dataCubeAxes ps.orig630.image
+      , shape = ProfileShape $ addDummyY $ dataCubeAxes ps.orig630.image
       }
 
+  addDummyY :: Axes Row -> Axes Row
   addDummyY (Axes axs) = Axes (1 : axs)
 
 

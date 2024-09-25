@@ -135,6 +135,10 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (Da
     ]
 
 
+instance FromHeader (DataHDUInfo ext btye bunit) where
+  parseHeader _ = pure DataHDUInfo
+
+
 data DataHeader info = DataHeader
   { info :: info
   , common :: DataCommon
@@ -162,7 +166,7 @@ data DataCommon = DataCommon
   , datamax :: Key Float "The maximum data value"
   , date :: Key DateTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
-  deriving (Generic, HeaderDoc, ToHeader)
+  deriving (Generic, HeaderDoc, ToHeader, FromHeader)
 
 
 quantities :: (Error QuantityError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities Quantity)
