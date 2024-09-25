@@ -43,8 +43,8 @@ asdfDocument inversionId datasetIds now metas =
     InversionTree
       { fileuris
       , meta = inversionTreeMeta $ fmap (.primary) frames
-      , quantities = quantitiesSection $ fmap (.quantities) frames
-      , profiles = profilesSection $ fmap (.profiles) frames
+      , quantities = quantitiesSection fileuris $ fmap (.quantities) frames
+      , profiles = profilesSection fileuris $ fmap (.profiles) frames
       }
 
   inversionTreeMeta :: NonEmpty PrimaryHeader -> InversionTreeMeta
@@ -139,8 +139,8 @@ instance (ToAsdf hdus) => ToAsdf (HDUSection hdus) where
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities (DataTree QuantityMeta))
-quantitiesSection frames =
+quantitiesSection :: Fileuris -> NonEmpty FrameQuantitiesMeta -> HDUSection (Quantities (DataTree QuantityMeta))
+quantitiesSection files frames =
   HDUSection
     { axes = ["frameY", "slitX", "opticalDepth"]
     , shape
@@ -166,7 +166,7 @@ quantitiesSection frames =
      . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info)
     => (Quantities QuantityHeader -> QuantityHeader info)
     -> DataTree QuantityMeta info
-  quantity f = quantityTree shape $ fmap f quantities
+  quantity f = quantityTree files shape $ fmap f quantities
 
   quantities = fmap (.quantities) frames
 
@@ -194,14 +194,15 @@ instance ToAsdf (Quantities (DataTree QuantityMeta))
 quantityTree
   :: forall info ext btype unit
    . (KnownText unit, HDUOrder info, info ~ DataHDUInfo ext btype unit)
-  => Axes Row
+  => Fileuris
+  -> Axes Row
   -> NonEmpty (QuantityHeader info)
   -> DataTree QuantityMeta info
-quantityTree shape heads =
+quantityTree files shape heads =
   DataTree
     { unit = Unit (knownText @unit)
     , wcs = Ref
-    , data_ = fileManager @info shape
+    , data_ = fileManager @info files shape
     , meta = QuantityMeta{headers = HeaderTable heads}
     }
 
@@ -233,25 +234,25 @@ instance (KnownSymbol ref) => ToAsdf (Ref ref) where
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
-profilesSection frames =
+profilesSection :: Fileuris -> NonEmpty FrameProfilesMeta -> HDUSection (Profiles ProfileTree)
+profilesSection files frames =
   let shape = (head frames).shape
    in HDUSection
         { wcs = WCSTodo
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape
-        , hdus = profilesTree shape frames
+        , hdus = profilesTree files shape frames
         }
 
 
-profilesTree :: Axes Row -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree shape frames =
+profilesTree :: Fileuris -> Axes Row -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+profilesTree files shape frames =
   let ps = fmap (.profiles) frames
    in Profiles
-        { orig630 = profileTree shape $ fmap (.orig630) ps
-        , orig854 = profileTree shape $ fmap (.orig854) ps
-        , fit630 = profileTree shape $ fmap (.fit630) ps
-        , fit854 = profileTree shape $ fmap (.fit854) ps
+        { orig630 = profileTree files shape $ fmap (.orig630) ps
+        , orig854 = profileTree files shape $ fmap (.orig854) ps
+        , fit630 = profileTree files shape $ fmap (.fit630) ps
+        , fit854 = profileTree files shape $ fmap (.fit854) ps
         }
 
 
@@ -295,14 +296,15 @@ instance ToAsdf (Profiles ProfileTree) where
 profileTree
   :: forall info
    . (ProfileInfo info, KnownText (ProfileType info), HDUOrder info)
-  => Axes Row
+  => Fileuris
+  -> Axes Row
   -> NonEmpty (ProfileHeader info)
   -> ProfileTree info
-profileTree shape heads =
+profileTree files shape heads =
   ProfileTree
     { unit = Count
     , wcs = Ref
-    , data_ = fileManager @info shape
+    , data_ = fileManager @info files shape
     , meta =
         ProfileTreeMeta
           { headers = HeaderTable heads
@@ -322,7 +324,7 @@ data ProfileTreeMeta info = ProfileTreeMeta
 
 data FileManager = FileManager
   { datatype :: DataType
-  , fileuris :: Ref "/inversion/fileuris"
+  , fileuris :: Fileuris
   , shape :: Axes Row
   , target :: HDUIndex
   }
@@ -331,6 +333,6 @@ instance ToAsdf FileManager where
   schema = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
 
 
-fileManager :: forall info. (HDUOrder info) => Axes Row -> FileManager
-fileManager shape =
-  FileManager{datatype = Float64, fileuris = Ref, shape, target = hduIndex @info}
+fileManager :: forall info. (HDUOrder info) => Fileuris -> Axes Row -> FileManager
+fileManager files shape =
+  FileManager{datatype = Float64, fileuris = files, shape, target = hduIndex @info}
