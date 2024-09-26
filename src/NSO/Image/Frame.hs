@@ -56,36 +56,40 @@ instance Ord L2FrameMeta where
 
 
 data FrameQuantitiesMeta = FrameQuantitiesMeta
-  { shape :: QuantityShape
+  { shape :: Shape Quantity
   , quantities :: Quantities QuantityHeader
   }
   deriving (Generic)
 
 
 data FrameProfilesMeta = FrameProfilesMeta
-  { shape :: ProfileShape
+  { shape :: Shape Profile
   , profiles :: Profiles ProfileHeader
   }
   deriving (Generic)
 
 
-newtype ProfileShape = ProfileShape (Axes Row)
-instance FromHeader ProfileShape where
+newtype Shape a = Shape {axes :: Axes Row}
+
+
+newtype QuantityShape = QuantityShape {axes :: Axes Row}
+
+
+instance FromHeader (Shape Profile) where
   parseHeader h = do
     n1 <- parseKeyword "NAXIS1" h
     n2 <- parseKeyword "NAXIS2" h
     n3 <- parseKeyword "NAXIS3" h
     n4 <- parseKeyword "NAXIS4" h
-    pure $ ProfileShape $ axesRowMajor [n4, n3, n2, n1]
+    pure $ Shape $ axesRowMajor [n4, n3, n2, n1]
 
 
-newtype QuantityShape = QuantityShape (Axes Row)
-instance FromHeader QuantityShape where
+instance FromHeader (Shape Quantity) where
   parseHeader h = do
     n1 <- parseKeyword "NAXIS1" h
     n2 <- parseKeyword "NAXIS2" h
     n3 <- parseKeyword "NAXIS3" h
-    pure $ QuantityShape $ axesRowMajor [n3, n2, n1]
+    pure $ Shape $ axesRowMajor [n3, n2, n1]
 
 
 data L2FrameInputs = L2FrameInputs
@@ -124,7 +128,7 @@ generateL2Frame now i slice wpo wpf gf = do
   pure (frame, dateBeg)
 
 
-frameMetaFromFits
+frameMetaFromL2Fits
   :: (Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
   => Path' Filename L2Frame
   -> SliceXY
@@ -132,16 +136,16 @@ frameMetaFromFits
   -> WavProfiles Fit
   -> Fits
   -> Eff es L2FrameMeta
-frameMetaFromFits path slice wpo wpf fits = runParser $ do
+frameMetaFromL2Fits path slice wpo wpf fits = runParser $ do
   primary <- parseHeader @PrimaryHeader fits.primaryHDU.header
 
   -- no, we have to look up the appropriate hdu
   qh <- headerFor @OpticalDepth
-  qshape <- parseHeader @QuantityShape qh
+  qshape <- parseHeader @(Shape Quantity) qh
   quants <- parseQuantities
 
   ph <- headerFor @Orig630
-  pshape <- parseHeader @ProfileShape ph
+  pshape <- parseHeader @(Shape Profile) ph
   profs <- parseProfiles
   pure $
     L2FrameMeta
@@ -213,13 +217,13 @@ frameMeta frame path =
   quantitiesMeta qs =
     FrameQuantitiesMeta
       { quantities = quantityHeaders qs
-      , shape = QuantityShape $ addDummyY $ dataCubeAxes qs.opticalDepth.image
+      , shape = Shape $ addDummyY $ dataCubeAxes qs.opticalDepth.image
       }
 
   profilesMeta ps =
     FrameProfilesMeta
       { profiles = profileHeaders ps
-      , shape = ProfileShape $ addDummyY $ dataCubeAxes ps.orig630.image
+      , shape = Shape $ addDummyY $ dataCubeAxes ps.orig630.image
       }
 
   addDummyY :: Axes Row -> Axes Row

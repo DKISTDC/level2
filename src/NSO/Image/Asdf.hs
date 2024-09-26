@@ -143,7 +143,7 @@ quantitiesSection :: Fileuris -> NonEmpty FrameQuantitiesMeta -> HDUSection (Qua
 quantitiesSection files frames =
   HDUSection
     { axes = ["frameY", "slitX", "opticalDepth"]
-    , shape
+    , shape = shape.axes
     , hdus =
         Quantities
           { opticalDepth = quantity (.opticalDepth)
@@ -195,14 +195,14 @@ quantityTree
   :: forall info ext btype unit
    . (KnownText unit, HDUOrder info, info ~ DataHDUInfo ext btype unit)
   => Fileuris
-  -> Axes Row
+  -> Shape Quantity
   -> NonEmpty (QuantityHeader info)
   -> DataTree QuantityMeta info
 quantityTree files shape heads =
   DataTree
     { unit = Unit (knownText @unit)
     , wcs = Ref
-    , data_ = fileManager @info files shape
+    , data_ = fileManager @info files shape.axes
     , meta = QuantityMeta{headers = HeaderTable heads}
     }
 
@@ -240,12 +240,12 @@ profilesSection files frames =
    in HDUSection
         { wcs = WCSTodo
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
-        , shape = shape
+        , shape = shape.axes
         , hdus = profilesTree files shape frames
         }
 
 
-profilesTree :: Fileuris -> Axes Row -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+profilesTree :: Fileuris -> Shape Profile -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
 profilesTree files shape frames =
   let ps = fmap (.profiles) frames
    in Profiles
@@ -297,14 +297,14 @@ profileTree
   :: forall info
    . (ProfileInfo info, KnownText (ProfileType info), HDUOrder info)
   => Fileuris
-  -> Axes Row
+  -> Shape Profile
   -> NonEmpty (ProfileHeader info)
   -> ProfileTree info
 profileTree files shape heads =
   ProfileTree
     { unit = Count
     , wcs = Ref
-    , data_ = fileManager @info files shape
+    , data_ = fileManager @info files shape.axes
     , meta =
         ProfileTreeMeta
           { headers = HeaderTable heads
@@ -334,5 +334,5 @@ instance ToAsdf FileManager where
 
 
 fileManager :: forall info. (HDUOrder info) => Fileuris -> Axes Row -> FileManager
-fileManager files shape =
-  FileManager{datatype = Float64, fileuris = files, shape, target = hduIndex @info}
+fileManager files axes =
+  FileManager{datatype = Float64, fileuris = files, shape = axes, target = hduIndex @info}
