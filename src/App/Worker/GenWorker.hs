@@ -1,20 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module App.Worker.FitsGenWorker
-  ( workTask
-  , GenerateError
-  , GenInversion (..)
-  , GenStatus (..)
-  , GenInvStep (..)
-  , Tasks
-  , workFrame
-  ) where
+module App.Worker.GenWorker where
 
 import App.Effect.Scratch as Scratch
 import App.Globus (Globus, Token, Token' (Access))
 import App.Globus qualified as Globus
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate as Gen
+import Control.Monad (zipWithM)
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.Diverse.Many
@@ -39,41 +32,40 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram
 
 
-data GenInversion = GenInversion {proposalId :: Id Proposal, inversionId :: Id Inversion}
+data GenFits = GenFits {proposalId :: Id Proposal, inversionId :: Id Inversion}
   deriving (Eq)
 
 
-instance Show GenInversion where
-  show g = "GenInversion " <> show g.proposalId <> " " <> show g.inversionId
+instance Show GenFits where
+  show g = "GenFits " <> show g.proposalId <> " " <> show g.inversionId
 
 
-instance WorkerTask GenInversion where
-  type Status GenInversion = GenStatus
-  idle = GenStatus GenWaiting 0 0
+instance WorkerTask GenFits where
+  type Status GenFits = GenFitsStatus
+  idle = GenFitsStatus GenWaiting 0 0
 
 
-data GenInvStep
+data GenFitsStep
   = GenWaiting
   | GenStarted
   | GenTransferring
   | GenCreating
-  | GenCreatingAsdf
   deriving (Show, Eq, Ord)
 
 
-data GenStatus = GenStatus
-  { step :: GenInvStep
+data GenFitsStatus = GenFitsStatus
+  { step :: GenFitsStep
   , complete :: Int
   , total :: Int
   }
   deriving (Eq, Ord)
 
 
-instance Show GenStatus where
-  show g = "GenStatus " <> show g.step <> " " <> show g.complete <> " " <> show g.total
+instance Show GenFitsStatus where
+  show g = "GenFitsStatus " <> show g.step <> " " <> show g.complete <> " " <> show g.total
 
 
-workTask
+fitsTask
   :: forall es
    . ( Reader (Token Access) :> es
      , Globus :> es
@@ -83,34 +75,29 @@ workTask
      , Scratch :> es
      , Log :> es
      , Concurrent :> es
-     , Tasks GenInversion :> es
+     , Tasks GenFits :> es
      , GenRandom :> es
      , IOE :> es
      )
-  => GenInversion
+  => GenFits
   -> Eff es ()
-workTask t = do
+fitsTask t = do
   res <- runErrorNoCallStack $ catch workWithError onCaughtError
-  either failed pure res
+  either (failed t.inversionId) pure res
  where
-  onCaughtError :: IOError -> Eff (Error GenerateError : es) a
-  onCaughtError e = do
-    throwError $ GenIOError e
-
   workWithError :: Eff (Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     log Debug "START"
 
-    send $ TaskSetStatus t $ GenStatus GenStarted 0 0
+    send $ TaskSetStatus t $ GenFitsStatus GenStarted 0 0
 
     inv <- loadInversion t.inversionId
     d <- requireCanonicalDataset inv.programId
 
     taskId <- startTransferIfNeeded d inv.step
-    let frameDir = Scratch.dataset d
     log Debug $ dump "Task" taskId
     send $ Inversions.SetGenerating t.inversionId taskId
-    send $ TaskSetStatus t $ GenStatus GenTransferring 0 0
+    send $ TaskSetStatus t $ GenFitsStatus GenTransferring 0 0
 
     log Debug " - waiting..."
     untilM_ delay (isTransferComplete taskId)
@@ -127,41 +114,29 @@ workTask t = do
     ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.invProfile
     profileOrig <- decodeProfileOrig =<< readFile u.origProfile
 
-    l1 <- Gen.canonicalL1Frames frameDir slice
+    l1 <- Gen.canonicalL1Frames (Scratch.dataset d) slice
     log Debug $ dump "Frames" (length quantities, length profileFit.frames, length profileOrig.frames, length l1)
 
     gfs <- Gen.collateFrames quantities profileFit.frames profileOrig.frames l1
-    send $ TaskSetStatus t $ GenStatus{step = GenCreating, complete = 0, total = NE.length gfs}
+    send $ TaskSetStatus t $ GenFitsStatus{step = GenCreating, complete = 0, total = NE.length gfs}
 
     -- Generate them in parallel with N = available CPUs
     metas <- CPU.parallelize $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
 
     log Debug $ dump "DONE: " (length metas)
     send $ SetGeneratedFits t.inversionId
-    send $ TaskSetStatus t $ GenStatus{step = GenCreatingAsdf, complete = NE.length gfs, total = NE.length gfs}
-
-    workAsdf inv metas
-
-    log Debug " - Generated ASDF"
-    log Debug " - done"
-    send $ SetGeneratedAsdf t.inversionId
-
-  failed :: GenerateError -> Eff es ()
-  failed err = do
-    log Err $ dump "GenerateError" err
-    send $ Inversions.SetError t.inversionId (cs $ show err)
 
 
 -- | Generate a single frame
 workFrame
-  :: ( Tasks GenInversion :> es
+  :: ( Tasks GenFits :> es
      , Time :> es
      , GenRandom :> es
      , Log :> es
      , Scratch :> es
      , Error GenerateError :> es
      )
-  => GenInversion
+  => GenFits
   -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
@@ -173,27 +148,26 @@ workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
   let fits = Frame.frameToFits frame
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
   Scratch.writeFile path $ Frame.encodeL2 fits
-  send $ TaskModStatus @GenInversion t updateNumFrame
+  send $ TaskModStatus @GenFits t updateNumFrame
   log Debug path.filePath
   pure $ Frame.frameMeta frame (filenameL2Frame t.inversionId dateBeg)
  where
-  updateNumFrame :: GenStatus -> GenStatus
-  updateNumFrame GenStatus{..} = GenStatus{complete = complete + 1, ..}
+  updateNumFrame :: GenFitsStatus -> GenFitsStatus
+  updateNumFrame GenFitsStatus{..} = GenFitsStatus{complete = complete + 1, ..}
 
 
-workAsdf
-  :: (Time :> es, Error GenerateError :> es, IOE :> es, Scratch :> es)
-  => Inversion
-  -> NonEmpty L2FrameMeta
-  -> Eff es ()
-workAsdf inv metas = runGenerateError $ do
-  now <- currentTime
-  let datasetIds = fmap Id $ maybe [] (.datasets) (findDownloaded inv.step)
-  let tree = asdfDocument inv.inversionId datasetIds now $ NE.sort metas
-  let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
-  output <- Asdf.encodeL2 tree
-  Scratch.writeFile path output
-
+-- workAsdf
+--   :: (Time :> es, Error GenerateError :> es, IOE :> es, Scratch :> es)
+--   => Inversion
+--   -> NonEmpty L2FrameMeta
+--   -> Eff es ()
+-- workAsdf inv metas = runGenerateError $ do
+--   now <- currentTime
+--   let datasetIds = fmap Id $ maybe [] (.datasets) (findDownloaded inv.step)
+--   let tree = asdfDocument inv.inversionId datasetIds now $ NE.sort metas
+--   let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
+--   output <- Asdf.encodeL2 tree
+--   Scratch.writeFile path output
 
 startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> InversionStep -> Eff es (Id Globus.Task)
 startTransferIfNeeded d = \case
@@ -228,3 +202,95 @@ loadInversion ii = do
 
 delay :: (Concurrent :> es) => Eff es ()
 delay = threadDelay $ 2 * 1000 * 1000
+
+
+-- ASDF -----------------------------
+
+data GenAsdf = GenAsdf {proposalId :: Id Proposal, inversionId :: Id Inversion}
+  deriving (Eq)
+
+
+instance Show GenAsdf where
+  show g = "GenAsdf " <> show g.proposalId <> " " <> show g.inversionId
+
+
+instance WorkerTask GenAsdf where
+  type Status GenAsdf = ()
+  idle = ()
+
+
+asdfTask
+  :: forall es
+   . ( Reader (Token Access) :> es
+     , Globus :> es
+     , Datasets :> es
+     , Inversions :> es
+     , Time :> es
+     , Scratch :> es
+     , Log :> es
+     , Concurrent :> es
+     , Tasks GenAsdf :> es
+     , IOE :> es
+     )
+  => GenAsdf
+  -> Eff es ()
+asdfTask t = do
+  res <- runErrorNoCallStack $ catch workWithError onCaughtError
+  either (failed t.inversionId) pure res
+ where
+  workWithError :: Eff (Error GenerateError : es) ()
+  workWithError = runGenerateError $ do
+    log Debug "ASDF!"
+    log Debug $ dump "Task" t
+
+    inv <- loadInversion t.inversionId
+    d <- requireCanonicalDataset inv.programId
+
+    -- TODO: load the L1 fits files
+    -- TODO: generate all the stuffs
+    let u = Scratch.inversionUploads $ Scratch.blanca t.proposalId t.inversionId
+
+    ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.invProfile
+    profileOrig <- decodeProfileOrig =<< readFile u.origProfile
+
+    l1fits <- Gen.canonicalL1Frames (Scratch.dataset d) slice
+
+    (metas :: NonEmpty L2FrameMeta) <- requireMetas slice profileOrig.wavProfiles profileFit.wavProfiles l1fits
+
+    log Debug $ dump "metas" (length metas)
+
+    now <- currentTime
+    let datasetIds = fmap Id $ maybe [] (.datasets) (findDownloaded inv.step)
+    let tree = asdfDocument inv.inversionId datasetIds now $ NE.sort metas
+    let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
+    output <- Asdf.encodeL2 tree
+    Scratch.writeFile path output
+
+    log Debug " - Generated ASDF"
+    log Debug " - done"
+    send $ SetGeneratedAsdf t.inversionId
+
+  requireMetas slice wpo wpf l1fits = do
+    metas <- loadMetas slice wpo wpf l1fits
+    case metas of
+      (m : ms) -> pure (m :| ms)
+      _ -> throwError MissingL2Fits
+
+  loadMetas slice wpo wpf l1fits = do
+    paths <- l2FramePaths t.proposalId t.inversionId
+    zipWithM loadL2FrameMeta paths l1fits
+   where
+    loadL2FrameMeta path l1 = do
+      fits <- readLevel2Fits t.proposalId t.inversionId path
+      Frame.frameMetaFromL2Fits path slice wpo wpf l1 fits
+
+
+failed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()
+failed iid err = do
+  log Err $ dump "GenerateError" err
+  send $ Inversions.SetError iid (cs $ show err)
+
+
+onCaughtError :: IOError -> Eff (Error GenerateError : es) a
+onCaughtError e = do
+  throwError $ GenIOError e

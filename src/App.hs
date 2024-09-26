@@ -16,8 +16,7 @@ import App.Page.Proposals qualified as Proposals
 import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
-import App.Worker.FitsGenWorker (GenInversion)
-import App.Worker.FitsGenWorker qualified as Fits
+import App.Worker.GenWorker as Gen
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import Control.Monad (forever)
 import Control.Monad.Catch
@@ -58,11 +57,12 @@ main = do
 
     runConcurrent $ do
       fits <- atomically taskChanNew
+      asdf <- atomically taskChanNew
       auth <- initAuth config.auth.admins config.auth.adminToken
 
       concurrently_
-        (startWebServer config auth fits)
-        (runWorkers config auth fits startWorkers)
+        (startWebServer config auth fits asdf)
+        (runWorkers config auth fits asdf startWorkers)
 
       pure ()
  where
@@ -71,28 +71,28 @@ main = do
       forever
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenInversion -> Eff es ()
-  startWebServer config auth fits =
+  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> Eff es ()
+  startWebServer config auth fits asdf =
     runLogger "Server" $ do
       log Debug $ "Starting on :" <> show config.app.port
       log Debug "Develop using https://localhost/"
       liftIO $
         Warp.run config.app.port $
           addHeaders [("app-version", cs appVersion)] $
-            webServer config auth fits
+            webServer config auth fits asdf
 
-  startFitsGen = do
+  startGen = do
     runLogger "FitsGen" $
       waitForGlobusAccess $ do
         mapConcurrently_
           id
-          [startWorker Fits.workTask]
+          [startWorker Gen.fitsTask, startWorker Gen.asdfTask]
 
   startWorkers =
     mapConcurrently_
       id
       [ startPuppetMaster
-      , startFitsGen
+      , startGen
       ]
 
   runInit =
@@ -101,7 +101,7 @@ main = do
       . runFailIO
       . runEnvironment
 
-  runWorkers config auth fits =
+  runWorkers config auth fits asdf =
     runFileSystem
       . runReader config.scratch
       . runRel8 config.db
@@ -112,7 +112,8 @@ main = do
       . runTime
       . runDataInversions
       . runDataDatasets
-      . runTasks @GenInversion fits
+      . runTasks @GenFits fits
+      . runTasks @GenAsdf asdf
 
 
 waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es) => Eff (Reader (Token Access) : es) () -> Eff es ()
@@ -121,8 +122,8 @@ waitForGlobusAccess work = do
   Auth.waitForAccess work
 
 
-webServer :: Config -> AuthState -> TaskChan GenInversion -> Application
-webServer config auth fits =
+webServer :: Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> Application
+webServer config auth fits asdf =
   liveApp
     document
     (runApp . routeRequest $ router)
@@ -144,7 +145,7 @@ webServer config auth fits =
   router Redirect = page Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Tasks GenInversion : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
@@ -163,6 +164,7 @@ webServer config auth fits =
       . runDataInversions
       . runAuth config.app.domain Redirect auth
       . runTasks fits
+      . runTasks asdf
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

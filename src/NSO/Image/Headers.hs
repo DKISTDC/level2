@@ -63,7 +63,7 @@ headerSpecVersion = "L2." <> pack appVersion
 
 data Observation = Observation
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
-  , telescope :: Key (Constant "Daniel K. Inouye Solar Telescope") "The telescope used to acquire the data associated with the header."
+  , telescop :: Key (Constant "Daniel K. Inouye Solar Telescope") "The telescope used to acquire the data associated with the header."
   , obsrvtry :: Key (Constant "Haleakala High Altitude Observatory Site") "A character string identifying the physical entity, located in a defined location, which provides the resources necessary for the installation of an instrument"
   , network :: Key (Constant "NSF-DKIST") "Organizational entity of a series of instruments with similar characteristics or goals that operates in some coordinated manner or produces data with some common purpose"
   , instrume :: Instrument
@@ -107,14 +107,21 @@ data ContribExpProp = ContribExpProp [KeywordRecord]
 
 
 instance ToHeader ContribExpProp where
-  toHeader (ContribExpProp krs) = Header $ fmap Keyword $ filter (isProp `or_` isExpr) krs
-   where
-    or_ f g a = f a || g a
-    isProp kr = "PROPID" `T.isPrefixOf` kr._keyword
-    isExpr kr = "EXPRID" `T.isPrefixOf` kr._keyword
+  toHeader (ContribExpProp krs) =
+    Header $ fmap Keyword $ filter isPropOrExpr krs
+instance FromHeader ContribExpProp where
+  -- TEST: is this working?
+  parseHeader h =
+    pure $ ContribExpProp $ filter isPropOrExpr $ getKeywords h
 instance HeaderDoc ContribExpProp where
   -- LATER: documentation for ContribExpProp
   headerDoc = []
+
+
+isPropOrExpr :: KeywordRecord -> Bool
+isPropOrExpr kr =
+  "PROPID" `T.isPrefixOf` kr._keyword
+    || "EXPRID" `T.isPrefixOf` kr._keyword
 
 
 -- data StatisticsHeader = StatisticsHeader
@@ -144,7 +151,7 @@ data Telescope = Telescope
   , rotcomp :: Maybe (Key Int "Solar rotation compensation: 1: On 2: Off")
   , obsVr :: Key Mps "Observer’s outward velocity w.r.t. the Sun"
   }
-  deriving (Generic, ToHeader)
+  deriving (Generic, ToHeader, FromHeader)
 
 
 data DKISTHeader = DKISTHeader
@@ -153,18 +160,18 @@ data DKISTHeader = DKISTHeader
   , dshealth :: EnumKey "good/bad/ill/unknown" "Worst health status of the data source (e.g. instrument arm) during data acquisition Good, Ill, Bad, Unknown"
   , lightlvl :: Key Float "Value of the telescope light level at start of data acquisition"
   }
-  deriving (Generic, ToHeader)
+  deriving (Generic, ToHeader, FromHeader)
 
 
 data AdaptiveOptics = AdaptiveOptics
   { atmosR0 :: Key Float "Value of Fried’s parameter at start of data acquisition"
   , aoLock :: Key Bool "Lock status of HOAO during data acquisition. False: HOAO was unlocked for some duration of data acquisition True: HOAO was locked for the complete duration of data acquisition"
   }
-  deriving (Generic, ToHeader)
+  deriving (Generic, ToHeader, FromHeader)
 
 
 newtype Teltrack = Teltrack Text
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo Teltrack where
   keytype = "Teltrack"
   description = "Tracking Mode of the Telescope"
@@ -172,7 +179,7 @@ instance KeywordInfo Teltrack where
 
 
 newtype Telscan = Telscan Text
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo Telscan where
   keytype = "Telscan"
   description = "Scanning Mode of the Telescope"
@@ -180,7 +187,7 @@ instance KeywordInfo Telscan where
 
 
 newtype Ttbltrck = Ttbltrck Text
-  deriving newtype (ToKeyword)
+  deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo Ttbltrck where
   keytype = "Ttbltrck"
   description = "Coude table tracking mode."
@@ -203,7 +210,7 @@ observationHeader l1 = do
       { telapse = Key (Seconds telapse)
       , instrume = Instrument instrument
       , timesys = Key Constant
-      , telescope = Key Constant
+      , telescop = Key Constant
       , obsrvtry = Key Constant
       , network = Key Constant
       , object = Object object

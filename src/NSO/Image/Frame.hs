@@ -134,9 +134,10 @@ frameMetaFromL2Fits
   -> SliceXY
   -> WavProfiles Original
   -> WavProfiles Fit
+  -> BinTableHDU
   -> Fits
   -> Eff es L2FrameMeta
-frameMetaFromL2Fits path slice wpo wpf fits = runParser $ do
+frameMetaFromL2Fits path slice wpo wpf l1 fits = runParser $ do
   primary <- parseHeader @PrimaryHeader fits.primaryHDU.header
 
   -- no, we have to look up the appropriate hdu
@@ -168,7 +169,7 @@ frameMetaFromL2Fits path slice wpo wpf fits = runParser $ do
     h <- headerFor @q
     info <- parseHeader @q h
     common <- parseHeader h
-    wcs <- Quantity.wcsHeader slice h
+    wcs <- Quantity.wcsHeader slice l1.header
     pure $ QuantityHeader{info, common, wcs}
 
   parseProfile
@@ -180,7 +181,7 @@ frameMetaFromL2Fits path slice wpo wpf fits = runParser $ do
     h <- headerFor @info
     info <- parseHeader @info h
     common <- parseHeader h
-    wcs <- Profile.wcsHeader wprofile slice h
+    wcs <- Profile.wcsHeader wprofile slice l1.header
     pure $ ProfileHeader{info, common, wcs}
 
   parseQuantities = do

@@ -13,7 +13,7 @@ import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Layout
-import App.Worker.FitsGenWorker
+import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..), GenFitsStep (..))
 import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
@@ -27,13 +27,13 @@ import Web.Hyperbole
 import Web.Hyperbole.Forms (formFields)
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
+page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
 page ip i Inv = pageMain ip i
 page ip i SubmitDownload = pageSubmitDownload ip i
 page ip i SubmitUpload = pageSubmitUpload ip i
 
 
-pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> Page es Response
+pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> Page es Response
 pageMain ip i = do
   handle $ inversions redirectHome
   handle generateTransfer
@@ -120,7 +120,9 @@ data InversionAction
   | Upload
   | Publish
   | Reload
-  | RestartGen
+  | RegenError
+  | RegenFits
+  | RegenAsdf
   | GoStepInv
   deriving (Show, Read, ViewAction)
 
@@ -133,7 +135,7 @@ data InversionSoftware = InversionSoftware Text
   deriving (Generic, FormField)
 
 
-inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenInversion :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
+inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
 inversions onCancel (InversionStatus ip iip ii) = \case
   Cancel -> do
     send $ Inversions.Remove ii
@@ -151,8 +153,14 @@ inversions onCancel (InversionStatus ip iip ii) = \case
     refresh
   Reload -> do
     refresh
-  RestartGen -> do
+  RegenError -> do
+    send $ Inversions.ClearError ii
+    refresh
+  RegenFits -> do
     send $ Inversions.ResetGenerating ii
+    refresh
+  RegenAsdf -> do
+    send $ Inversions.ResetGeneratingAsdf ii
     refresh
   GoStepInv -> do
     inv <- loadInversion ii
@@ -202,8 +210,9 @@ viewInversion inv step = do
   stepPublish = do
     button Publish (Style.btn Primary . grow) "Mark as Published"
     row (gap 10) $ do
-      button RestartGen (Style.btnOutline Secondary) "Regenerate"
       viewFiles
+      button RegenFits (Style.btnOutline Danger) "Regen Fits"
+      button RegenAsdf (Style.btnOutline Danger) "Regen Asdf"
 
   stepDone = do
     el_ "Inversion Complete"
@@ -291,7 +300,7 @@ instance HyperView InversionCommit where
   type Action InversionCommit = CommitAction
 
 
-inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenInversion :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
+inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
 inversionCommit (InversionCommit ip ii) = action
  where
   action LoadValid = InvForm.loadValid inversionCommitLabel
@@ -312,7 +321,7 @@ instance HyperView UploadTransfer where
   type Action UploadTransfer = TransferAction
 
 
-uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenInversion :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
+uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
 uploadTransfer (UploadTransfer ip iip ii ti) = \case
   TaskFailed -> do
     pure $ do
@@ -325,7 +334,7 @@ uploadTransfer (UploadTransfer ip iip ii ti) = \case
   CheckTransfer -> InvForm.checkTransfer ti
 
 
-checkInvertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> View a () -> Eff es (View a ())
+checkInvertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View a () -> Eff es (View a ())
 checkInvertReload ip ii vw = do
   inv <- loadInversion ii
   curr <- currentStep ip ii inv.step
@@ -377,16 +386,16 @@ instance HyperView GenerateTransfer where
   type Action GenerateTransfer = TransferAction
 
 
-generateTransfer :: (Tasks GenInversion :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => GenerateTransfer -> TransferAction -> Eff es (View GenerateTransfer ())
+generateTransfer :: (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => GenerateTransfer -> TransferAction -> Eff es (View GenerateTransfer ())
 generateTransfer (GenerateTransfer ip iip ii ti) = \case
   TaskFailed -> do
     pure $ viewGenerateDownload $ do
       InvForm.viewTransferFailed ti
       target (InversionStatus ip iip ii) $ do
-        button RestartGen (Style.btn Primary) "Restart Transfer"
+        button RegenFits (Style.btn Primary) "Restart Transfer"
   TaskSucceeded -> do
     -- reload immediately... it should be marked as uploaded and go somewhere else
-    s <- send $ TaskGetStatus $ GenInversion ip ii
+    s <- send $ TaskGetStatus $ GenFits ip ii
     pure $ do
       target (InversionStatus ip iip ii) $
         viewGenerateWait s
@@ -405,12 +414,17 @@ stepGenerate inv = \case
   GenTransfering taskId -> do
     hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
       viewGenerateDownload InvForm.viewLoadTransfer
-  GenConverting s -> do
+  GenConvert s -> do
     viewGenerateWait s
+  GenAsdf -> do
+    onLoad Reload 1000 $ do
+      col (gap 5) $ do
+        el bold "Generate Asdf"
+        el_ "Generating..."
   GenConvError e -> do
     el bold "Generate Error!"
     el_ $ text $ cs e
-    button RestartGen (Style.btn Primary) "Restart Generation"
+    button RegenError (Style.btn Primary) "Restart"
     button GoStepInv (Style.btnOutline Secondary) "Go Back to Inversion"
 
 
@@ -420,7 +434,7 @@ viewGenerateDownload vw = col (gap 5) $ do
   vw
 
 
-viewGenerateWait :: GenStatus -> View InversionStatus ()
+viewGenerateWait :: GenFitsStatus -> View InversionStatus ()
 viewGenerateWait s =
   onLoad Reload 1000 $ do
     col (gap 5) $ do
@@ -442,15 +456,14 @@ viewGenerateWait s =
       el_ "Started"
     GenTransferring ->
       el_ "Transferring L1 Files"
-    GenCreatingAsdf ->
-      el_ "Creating Asdf"
 
 
 data GenerateStep
   = GenWaitStart
   | GenTransfering (Id Task)
-  | GenConverting GenStatus
+  | GenConvert GenFitsStatus
   | GenConvError Text
+  | GenAsdf
   deriving (Eq, Show, Ord)
 
 
@@ -486,7 +499,7 @@ newtype CurrentTask = CurrentTask Task
   deriving (Eq)
 
 
-currentStep :: (Globus :> es, Tasks GenInversion :> es) => Id Proposal -> Id Inversion -> InversionStep -> Eff es CurrentStep
+currentStep :: (Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> InversionStep -> Eff es CurrentStep
 currentStep ip ii = \case
   StepCreated _ -> pure (Downloading Select)
   StepDownloading dwn -> do
@@ -504,12 +517,19 @@ currentStep ip ii = \case
     pure $ Generating $ GenTransfering t.taskId
   StepGenerating inv -> do
     let g = grab @Generate inv
+    checkGenError g $ do
+      s <- send $ TaskGetStatus (GenFits ip ii)
+      pure $ Generating (GenConvert s)
+  StepGeneratedFits inv -> do
+    let g = grab @Generate inv
+    checkGenError g $ do
+      pure $ Generating GenAsdf
+  StepPublished _ -> pure Complete
+ where
+  checkGenError g act =
     case g.genError of
       Just e -> pure $ Generating $ GenConvError e
-      Nothing -> do
-        s <- send $ TaskGetStatus (GenInversion ip ii)
-        pure $ Generating (GenConverting s)
-  StepPublished _ -> pure Complete
+      Nothing -> act
 
 
 invProgress :: CurrentStep -> View InversionStatus ()

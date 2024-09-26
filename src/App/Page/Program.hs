@@ -12,12 +12,13 @@ import App.View.DatasetsTable as DatasetsTable
 import App.View.Inversions (inversionStatusLabel)
 import App.View.Layout
 import App.View.ProposalDetails
-import App.Worker.FitsGenWorker
+import App.Worker.GenWorker
 import Data.Grouped as G
 import Data.List (nub)
 import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
+import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -28,7 +29,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenInversion :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es Response
@@ -94,7 +95,7 @@ latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
   sortLatest = sortOn (Down . (.updated))
 
 
-inversionStep :: (Globus :> es, Tasks GenInversion :> es) => Inversion -> Eff es CurrentStep
+inversionStep :: (Globus :> es, Tasks GenFits :> es) => Inversion -> Eff es CurrentStep
 inversionStep inv = currentStep inv.proposalId inv.inversionId inv.step
 
 
@@ -110,7 +111,7 @@ data InvsAction
   deriving (Show, Read, ViewAction)
 
 
-programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenInversion :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
+programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
 programInversions (ProgramInversions ip iip) = \case
   CreateInversion -> do
     _ <- send $ Inversions.Create ip iip
@@ -139,7 +140,7 @@ viewOldInversion inv _ = row (gap 4) $ do
   el_ $ text $ inversionStatusLabel inv.step
 
 
-refreshInversions :: (Inversions :> es, Globus :> es, Tasks GenInversion :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
+refreshInversions :: (Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
 refreshInversions iip = do
   invs <- latestInversions iip
   steps <- mapM inversionStep invs

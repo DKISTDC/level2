@@ -17,11 +17,12 @@ import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Profile (Fit, Original, ProfileError, ProfileFrame)
 import NSO.Image.Quantity (Quantities, QuantityError, QuantityImage)
 import NSO.Prelude
-import NSO.Types.InstrumentProgram (InstrumentProgram)
+import NSO.Types.InstrumentProgram (InstrumentProgram, Proposal)
 import NSO.Types.Inversion (Inversion)
 import Network.Globus qualified as Globus
 import System.FilePath (takeExtensions)
 import Telescope.Asdf.Error (AsdfError)
+import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
 
 
@@ -57,10 +58,12 @@ data GenerateError
   | ProfileError ProfileError
   | QuantityError QuantityError
   | PrimaryError PrimaryError
+  | ParseError ParseError
   | AsdfError AsdfError
   | MismatchedFrames FrameSizes
   | NoFrames FrameSizes
   | GenIOError IOError
+  | MissingL2Fits
   deriving (Show, Eq, Exception)
 
 
@@ -70,7 +73,7 @@ data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1
 
 runGenerateError
   :: (Error GenerateError :> es)
-  => Eff (Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : es) a
+  => Eff (Error ParseError : Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : es) a
   -> Eff es a
 runGenerateError =
   runErrorNoCallStackWith @AsdfError (throwError . AsdfError)
@@ -78,6 +81,7 @@ runGenerateError =
     . runErrorNoCallStackWith @FetchError (throwError . L1FetchError)
     . runErrorNoCallStackWith @QuantityError (throwError . QuantityError)
     . runErrorNoCallStackWith @ProfileError (throwError . ProfileError)
+    . runErrorNoCallStackWith @ParseError (throwError . ParseError)
 
 
 requireCanonicalDataset :: (Error FetchError :> es, Datasets :> es) => Id InstrumentProgram -> Eff es Dataset
@@ -111,7 +115,12 @@ canonicalL1Frames fdir slice = do
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   isL1IntensityFile :: Path' Filename Dataset -> Bool
   isL1IntensityFile (Path f) =
-    takeExtensions f == ".fits" && "_I_" `L.isInfixOf` f
+    isFits (Path f) && "_I_" `L.isInfixOf` f
+
+
+isFits :: Path' Filename a -> Bool
+isFits (Path f) =
+  takeExtensions f == ".fits"
 
 
 -- isFrameUsed :: NonEmpty DateBegTimestamp -> BinTableHDU -> Bool
@@ -144,6 +153,19 @@ readLevel1File dir frame = do
   case fits.extensions of
     [BinTable b] -> pure b
     _ -> throwError $ MissingL1HDU frame.file.filePath
+
+
+readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path' Filename L2Frame -> Eff es Fits
+readLevel2Fits pid iid path = do
+  let dir = Scratch.outputL2Dir pid iid
+  inp <- send $ Scratch.ReadFile $ filePath dir path
+  Fits.decode inp
+
+
+l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2Frame]
+l2FramePaths pid iid = do
+  let dir = Scratch.outputL2Dir pid iid
+  filter isFits <$> Scratch.listDirectory dir
 
 
 data FetchError

@@ -52,8 +52,8 @@ library
       App.View.Layout
       App.View.ProposalDetails
       App.Worker.CPU
-      App.Worker.FitsGenWorker
       App.Worker.Generate
+      App.Worker.GenWorker
       App.Worker.PuppetMaster
       Effectful.Tasks
       Flow

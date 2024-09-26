@@ -43,11 +43,11 @@ data Inverted = Inverted {inverted :: UTCTime, inversionSoftware :: GitCommit, u
   deriving (Show, Eq)
 
 
-data Generated = Generated {fits :: UTCTime, asdf :: UTCTime}
+data GeneratedFits = GeneratedFits {fits :: UTCTime}
   deriving (Show, Eq)
 
 
-data GeneratedFits = GeneratedFits {fits :: UTCTime}
+data Generated = Generated {fits :: UTCTime, asdf :: UTCTime}
   deriving (Show, Eq)
 
 
@@ -82,12 +82,10 @@ type StepDownloading = Transfer : StepCreated
 type StepPreprocessed = Preprocessed : StepDownloaded
 type StepInverted = Inverted : StepPreprocessed
 type StepInverting = Invert : StepPreprocessed
-type StepGenerated = Generated : StepInverted
-
-
--- type StepGeneratedFits = Geen : StepInverted
-type StepGenTransfer = Transfer : StepInverted
 type StepGenerating = Generate : StepGenTransfer
+type StepGeneratedFits = GeneratedFits : Generate : StepInverted
+type StepGenerated = Generated : StepInverted
+type StepGenTransfer = Transfer : StepInverted
 type StepPublished = Published : StepGenerated
 
 
@@ -100,9 +98,9 @@ data InversionStep
   | -- record the inversion metadata first, then upload files
     StepInverted (Many StepInverted)
   | StepInverting (Many StepInverting)
-  | -- | StepGeneratedFits (Many StepGeneratedFits)
-    StepGenerated (Many StepGenerated)
+  | StepGeneratedFits (Many StepGeneratedFits)
   | StepGenerating (Many StepGenerating)
+  | StepGenerated (Many StepGenerated)
   | StepGenTransfer (Many StepGenTransfer)
   | StepPublished (Many StepPublished)
   deriving (Eq, Show)
@@ -112,6 +110,7 @@ stepInverted :: InversionStep -> Maybe (Many StepInverted)
 stepInverted = \case
   StepInverted inv -> pure $ selectInverted inv
   StepGenerated inv -> pure $ selectInverted inv
+  StepGeneratedFits inv -> pure $ selectInverted inv
   StepGenerating inv -> pure $ selectInverted inv
   StepGenTransfer inv -> pure $ selectInverted inv
   StepPublished inv -> pure $ selectInverted inv
@@ -147,6 +146,7 @@ stepDownloaded = \case
   StepInverted inv -> pure $ selectDownloaded inv
   StepGenerated inv -> pure $ selectDownloaded inv
   StepGenerating inv -> pure $ selectDownloaded inv
+  StepGeneratedFits inv -> pure $ selectDownloaded inv
   StepGenTransfer inv -> pure $ selectDownloaded inv
   StepPublished inv -> pure $ selectDownloaded inv
   _ -> Nothing

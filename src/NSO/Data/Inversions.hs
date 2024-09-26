@@ -45,7 +45,9 @@ data Inversions :: Effect where
   SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
   SetGeneratedFits :: Id Inversion -> Inversions m ()
   SetGeneratedAsdf :: Id Inversion -> Inversions m ()
+  ClearError :: Id Inversion -> Inversions m ()
   ResetGenerating :: Id Inversion -> Inversions m ()
+  ResetGeneratingAsdf :: Id Inversion -> Inversions m ()
   SetGenerating :: Id Inversion -> Id Task -> Inversions m ()
   SetGenTransferred :: Id Inversion -> Inversions m ()
   SetPublished :: Id Inversion -> Inversions m ()
@@ -95,7 +97,7 @@ fromRow row =
   step =
     (StepPublished <$> published)
       <|> (StepGenerated <$> generated)
-      -- <|> (StepGeneratedFits <$> generatedFits)
+      <|> (StepGeneratedFits <$> generatedFits)
       <|> (StepGenerating <$> generating)
       <|> (StepGenTransfer <$> genTransfer)
       <|> (StepInverted <$> inverted)
@@ -103,7 +105,6 @@ fromRow row =
       <|> (StepPreprocessed <$> preprocessed)
       <|> (StepDownloaded <$> downloaded)
       <|> (StepDownloading <$> downloading)
-  -- <|> (StepCreated <$> started)
 
   started :: Many StepCreated
   started = do
@@ -159,11 +160,13 @@ fromRow row =
     let e = row.invError
     pure $ Generate tc e ./ prev
 
-  -- generatedFits :: Maybe (Many StepGeneratedFits)
-  -- generatedFits = do
-  --   prev <- inverted
-  --   fits <- row.generateFits
-  --   pure $ GeneratedFits{fits} ./ prev
+  generatedFits :: Maybe (Many StepGeneratedFits)
+  generatedFits = do
+    prev <- inverted
+    tc <- row.generateTaskCompleted
+    let e = row.invError
+    fits <- row.generateFits
+    pure $ GeneratedFits{fits} ./ Generate tc e ./ prev
 
   generated :: Maybe (Many StepGenerated)
   generated = do
@@ -203,9 +206,13 @@ runDataInversions = interpret $ \_ -> \case
   ValidateGitCommit repo gc -> validateGitCommit repo gc
   SetError iid e -> do
     updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit (Just e), ..}
+  ClearError iid -> do
+    updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, ..}
   ResetGenerating iid -> do
     -- updateInversion iid $ \r -> r{generateTaskId = lit Nothing, generateL1FrameDir = lit Nothing, generateTaskCompleted = lit Nothing, invError = lit Nothing}
     updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generateFits = lit Nothing, generateAsdf = lit Nothing, ..}
+  ResetGeneratingAsdf iid -> do
+    updateInversion iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generateAsdf = lit Nothing, ..}
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es) => Eff es AllInversions

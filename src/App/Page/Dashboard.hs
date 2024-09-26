@@ -9,7 +9,7 @@ import App.Style qualified as Style
 import App.Version
 import App.View.DataRow qualified as View
 import App.View.Layout
-import App.Worker.FitsGenWorker
+import App.Worker.GenWorker
 import Data.Text (pack)
 import Effectful
 import Effectful.Concurrent.STM
@@ -26,7 +26,7 @@ import Web.Hyperbole
 -- import NSO.Types.InstrumentProgram
 
 page
-  :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenInversion :> es)
+  :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenFits :> es)
   => Page es Response
 page = do
   -- handle $ test adtok
@@ -109,14 +109,14 @@ instance HyperView Work where
   type Action Work = WorkAction
 
 
-work :: (Concurrent :> es, Tasks GenInversion :> es) => Work -> WorkAction -> Eff es (View Work ())
+work :: (Concurrent :> es, Tasks GenFits :> es) => Work -> WorkAction -> Eff es (View Work ())
 work _ Refresh = do
   wt <- send TasksWaiting
   wk <- send TasksWorking
   pure $ workView wt wk
 
 
-workView :: [GenInversion] -> [(GenInversion, GenStatus)] -> View Work ()
+workView :: [GenFits] -> [(GenFits, GenFitsStatus)] -> View Work ()
 workView waiting working =
   onLoad Refresh 1000 $ col (gap 10) $ do
     col Style.card $ do
