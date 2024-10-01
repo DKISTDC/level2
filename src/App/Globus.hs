@@ -171,32 +171,33 @@ fileManagerOpenDir origin dir =
     ]
 
 
-data TransferForm = TransferForm
-  { label :: Field Text
+data TransferForm f = TransferForm
+  { label :: Field f Text
   , -- , endpoint :: Field Text
-    path :: Field (Path' Dir TransferForm)
-  , endpoint_id :: Field Text
-  }
-  deriving (Generic, Form)
-
-
-data DownloadFolder = DownloadFolder
-  { folder :: Maybe (Path' Dir DownloadFolder)
+    path :: Field f (Path' Dir TransferForm)
+  , endpoint_id :: Field f Text
   }
   deriving (Generic)
-instance Form DownloadFolder where
+instance Form TransferForm Maybe
+
+
+data DownloadFolder f = DownloadFolder
+  { folder :: Field f (Maybe (Path' Dir DownloadFolder))
+  }
+  deriving (Generic)
+instance Form DownloadFolder Maybe where
   formParse f = do
     DownloadFolder <$> parseMaybe "folder[0]" f
 
 
-data UploadFiles t = UploadFiles
-  { invProfile :: Path' t InvProfile
-  , invResults :: Path' t InvResults
-  , origProfile :: Path' t OrigProfile
+data UploadFiles t f = UploadFiles
+  { invProfile :: Field f (Path' t InvProfile)
+  , invResults :: Field f (Path' t InvResults)
+  , origProfile :: Field f (Path' t OrigProfile)
   -- , timestamps :: Path' t Timestamps
   }
-  deriving (Generic, Show)
-instance Form (UploadFiles Filename) where
+  deriving (Generic)
+instance Form (UploadFiles Filename) Maybe where
   formParse f = do
     fs <- multi "file"
     invProfile <- findFile Scratch.fileInvProfile fs
@@ -242,8 +243,8 @@ initTransfer toRequest = do
 -- but it should move it into scratch correctly...
 initUpload
   :: (Hyperbole :> es, Globus :> es, Scratch :> es, Reader (Token Access) :> es)
-  => TransferForm
-  -> UploadFiles Filename
+  => TransferForm Identity
+  -> UploadFiles Filename Identity
   -> App.Id Proposal
   -> App.Id Inversion
   -> Eff es (App.Id Task)
@@ -256,8 +257,8 @@ initUpload tform up ip ii = do
     TransferRequest
       { data_type = DataType
       , submission_id
-      , label = Just tform.label.value
-      , source_endpoint = Tagged tform.endpoint_id.value
+      , label = Just tform.label
+      , source_endpoint = Tagged tform.endpoint_id
       , destination_endpoint = scratch
       , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile]
       , sync_level = SyncChecksum
@@ -268,7 +269,7 @@ initUpload tform up ip ii = do
     transferItem f =
       TransferItem
         { data_type = DataType
-        , source_path = (source tform.path.value f).filePath
+        , source_path = (source tform.path f).filePath
         , destination_path = (dest f).filePath
         , recursive = False
         }
@@ -280,7 +281,7 @@ initUpload tform up ip ii = do
     source t fn = t </> fn
 
 
-initDownloadL1Inputs :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
+initDownloadL1Inputs :: (Globus :> es, Reader (Token Access) :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (App.Id Task)
 initDownloadL1Inputs tform df ds = do
   initTransfer downloadTransferRequest
  where
@@ -289,9 +290,9 @@ initDownloadL1Inputs tform df ds = do
     TransferRequest
       { data_type = DataType
       , submission_id
-      , label = Just tform.label.value
+      , label = Just tform.label
       , source_endpoint = dkistEndpoint
-      , destination_endpoint = Tagged tform.endpoint_id.value
+      , destination_endpoint = Tagged tform.endpoint_id
       , data_ = map (\d -> datasetTransferItem (destinationPath d) d) ds
       , sync_level = SyncTimestamp
       , store_base_path_info = True
@@ -348,12 +349,12 @@ initScratchDataset d = do
 --         , recursive = False
 --         }
 
-downloadDestinationFolder :: TransferForm -> DownloadFolder -> Path' Dir TransferForm
+downloadDestinationFolder :: TransferForm Identity -> DownloadFolder Identity -> Path' Dir TransferForm
 downloadDestinationFolder tform df =
   -- If they didn't select a folder, use the current folder
   case df.folder of
-    Just f -> tform.path.value </> f
-    Nothing -> tform.path.value
+    Just f -> tform.path </> f
+    Nothing -> tform.path
 
 
 dkistEndpoint :: Globus.Id Collection

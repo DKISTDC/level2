@@ -134,7 +134,11 @@ webServer config auth fits asdf =
   -- let u = routeUrl Proposals :: Url
   -- let fs = Proposals.Filters{inversionStatus = Proposals.Active, isVISP = True, isVBI = False}
   -- redirect $ u{query = Proposals.filtersToQuery fs}
-  router (Proposal p (Inversion i r)) = page $ Inversion.page p i r
+  router (Proposal ip (Inversion i r)) =
+    case r of
+      Inv -> page $ Inversion.page ip i
+      SubmitDownload -> Inversion.submitDownload ip i
+      SubmitUpload -> Inversion.submitUpload ip i
   router (Proposal p PropRoot) = page $ Proposal.page p
   router (Proposal ip (Program iip)) = page $ Program.page ip iip
   router (Dataset d) = page $ Dataset.page d

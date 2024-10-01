@@ -27,17 +27,16 @@ import Web.Hyperbole
 
 page
   :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenFits :> es)
-  => Page es Response
-page = do
+  => Page es '[Work]
+page =
   -- handle $ test adtok
-  handle work
-  load $ do
+  handle work $ load $ do
     login <- loginUrl
     mtok <- send AdminToken
 
     appLayout Dashboard (mainView login mtok)
  where
-  mainView :: Url -> Maybe (Token Access) -> View c ()
+  mainView :: Url -> Maybe (Token Access) -> View (Root '[Work]) ()
   mainView login mtok =
     col (pad 20 . gap 20) $ do
       col id $ do

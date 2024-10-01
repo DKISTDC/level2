@@ -20,7 +20,7 @@ packages:
 source-repository-package
   type: git
   location: https://github.com/seanhess/hyperbole.git
-  tag: 68d6c65e4f7740c1d1ce78ca4758282b1393b6e5
+  tag: ff28b402bf10e8011af9670512e43601d9fdd7f8
 
 source-repository-package
   type: git

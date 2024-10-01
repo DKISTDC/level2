@@ -9,7 +9,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import Network.Globus (Task)
 import Rel8 hiding (select)
-import Web.Hyperbole.Forms (FormField)
+import Web.Hyperbole.Forms (FromHttpApiData)
 
 
 data ProgramStatus
@@ -22,9 +22,8 @@ data ProgramStatus
 
 
 newtype GitCommit = GitCommit Text
-  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord)
+  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord, FromHttpApiData)
   deriving (Generic)
-  deriving anyclass (FormField)
 
 
 data Created = Created {timestamp :: UTCTime}

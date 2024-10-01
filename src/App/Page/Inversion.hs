@@ -6,7 +6,7 @@ import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Error (expectFound)
 import App.Globus as Globus
-import App.Page.Inversions.InvForm (CommitAction (..), TransferAction (..))
+import App.Page.Inversions.InvForm (CommitAction (..), CommitForm (..), TransferAction (..))
 import App.Page.Inversions.InvForm qualified as InvForm
 import App.Route as Route
 import App.Style qualified as Style
@@ -24,24 +24,22 @@ import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
-import Web.Hyperbole.Forms (formFields)
 
 
-page :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Scratch :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> InversionRoute -> Page es Response
-page ip i Inv = pageMain ip i
-page ip i SubmitDownload = pageSubmitDownload ip i
-page ip i SubmitUpload = pageSubmitUpload ip i
-
-
-pageMain :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> Page es Response
-pageMain ip i = do
-  handle $ inversions redirectHome
-  handle generateTransfer
-  handle inversionCommit
-  handle preprocessCommit
-  handle downloadTransfer
-  handle uploadTransfer
-  load $ do
+page
+  :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  => Id Proposal
+  -> Id Inversion
+  -> Page es (InversionStatus : Require InversionStatus)
+page ip i = do
+  handle (inversions redirectHome)
+  $ handle generateTransfer
+  $ handle inversionCommit
+  $ handle preprocessCommit
+  $ handle downloadTransfer
+  $ handle uploadTransfer
+  $ load
+  $ do
     inv <- loadInversion i
     step <- currentStep ip i inv.step
     appLayout Inversions $ do
@@ -64,28 +62,30 @@ pageMain ip i = do
         hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv step
 
 
-pageSubmitUpload :: forall es. (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es) => Id Proposal -> Id Inversion -> Page es Response
-pageSubmitUpload ip ii = do
-  load $ do
-    tfrm <- formFields @TransferForm
-    tup <- formFields @(UploadFiles Filename)
-    it <- requireLogin $ Globus.initUpload tfrm tup ip ii
-    send $ Inversions.SetUploading ii it
+submitUpload
+  :: forall es
+   . (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es)
+  => Id Proposal
+  -> Id Inversion
+  -> Eff es Response
+submitUpload ip ii = do
+  tfrm <- formData @TransferForm
+  tup <- formData @(UploadFiles Filename)
+  it <- requireLogin $ Globus.initUpload tfrm tup ip ii
+  send $ Inversions.SetUploading ii it
 
-    redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
+  redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
 
 
-pageSubmitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id Inversion -> Page es Response
-pageSubmitDownload ip ii = do
-  load $ do
-    tfrm <- formFields @TransferForm
-    tfls <- formFields @DownloadFolder
-    inv <- loadInversion ii
-    ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
-    it <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
-    send $ Inversions.SetDownloading ii it
-
-    redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
+submitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id Inversion -> Eff es Response
+submitDownload ip ii = do
+  tfrm <- formData @TransferForm
+  tfls <- formData @DownloadFolder
+  inv <- loadInversion ii
+  ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
+  it <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
+  send $ Inversions.SetDownloading ii it
+  redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
 
 
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
@@ -107,11 +107,15 @@ redirectHome = do
 -- ----------------------------------------------------------------
 -- INVERSION STATUS -----------------------------------------------
 -- ----------------------------------------------------------------
+--
+type InversionViews = '[DownloadTransfer, UploadTransfer, PreprocessCommit, InversionCommit, GenerateTransfer]
+
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 instance HyperView InversionStatus where
   type Action InversionStatus = InversionAction
+  type Require InversionStatus = InversionViews
 
 
 data InversionAction
@@ -125,14 +129,6 @@ data InversionAction
   | RegenAsdf
   | GoStepInv
   deriving (Show, Read, ViewAction)
-
-
-data PreprocessSoftware = PreprocessSoftware Text
-  deriving (Generic, FormField)
-
-
-data InversionSoftware = InversionSoftware Text
-  deriving (Generic, FormField)
 
 
 inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
@@ -230,6 +226,7 @@ data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Show, Read, ViewId)
 instance HyperView DownloadTransfer where
   type Action DownloadTransfer = TransferAction
+  type Require DownloadTransfer = '[InversionStatus]
 
 
 downloadTransfer
@@ -287,7 +284,7 @@ preprocessCommitLabel = "Preprocess Git Commit"
 
 stepPreprocess :: Inversion -> View InversionStatus ()
 stepPreprocess inv = do
-  hyper (PreprocessCommit inv.proposalId inv.programId inv.inversionId) $ InvForm.commitForm Nothing NotInvalid preprocessCommitLabel
+  hyper (PreprocessCommit inv.proposalId inv.programId inv.inversionId) $ InvForm.commitForm Nothing (CommitForm NotInvalid) preprocessCommitLabel
 
 
 -- ----------------------------------------------------------------
@@ -298,6 +295,7 @@ data InversionCommit = InversionCommit (Id Proposal) (Id Inversion)
   deriving (Show, Read, ViewId)
 instance HyperView InversionCommit where
   type Action InversionCommit = CommitAction
+  type Require InversionCommit = '[InversionStatus]
 
 
 inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
@@ -308,7 +306,7 @@ inversionCommit (InversionCommit ip ii) = action
     vg <- InvForm.validate (InversionCommit ip ii) desireRepo gc inversionCommitLabel $ do
       send $ SetInversion ii gc
 
-    checkInvertReload ip ii $ InvForm.commitForm (Just gc) vg inversionCommitLabel
+    checkInvertReload ip ii $ InvForm.commitForm (Just gc) (CommitForm vg) inversionCommitLabel
 
 
 inversionCommitLabel :: Text
@@ -319,6 +317,7 @@ data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id In
   deriving (Show, Read, ViewId)
 instance HyperView UploadTransfer where
   type Action UploadTransfer = TransferAction
+  type Require UploadTransfer = '[InversionStatus]
 
 
 uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
@@ -334,7 +333,7 @@ uploadTransfer (UploadTransfer ip iip ii ti) = \case
   CheckTransfer -> InvForm.checkTransfer ti
 
 
-checkInvertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View a () -> Eff es (View a ())
+checkInvertReload :: (HyperViewHandled InversionStatus id, Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
 checkInvertReload ip ii vw = do
   inv <- loadInversion ii
   curr <- currentStep ip ii inv.step

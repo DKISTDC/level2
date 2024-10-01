@@ -128,7 +128,7 @@ viewCriteria ip gd = do
 --             text d.datasetId.fromId
 --
 
-viewProgramSummary :: UTCTime -> ProgramFamily -> View c ()
+viewProgramSummary :: (HyperViewHandled ProgramDatasets c) => UTCTime -> ProgramFamily -> View c ()
 viewProgramSummary now pf = do
   let ds = pf.datasets.items
   let p = pf.program

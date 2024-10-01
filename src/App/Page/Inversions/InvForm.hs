@@ -105,36 +105,44 @@ checkValid _ _ _ True = pure ()
 checkValid i gc lbl False = do
   -- inv <- send (Inversions.ById ii) >>= expectFound
   respondEarly i $ do
-    commitForm (Just gc) (Invalid "Git Commit not found in remote repository") lbl
+    commitForm (Just gc) (CommitForm $ Invalid "Git Commit not found in remote repository") lbl
 
 
 loadValid :: (Hyperbole :> es, HyperView id, Action id ~ CommitAction) => Text -> Eff es (View id ())
 loadValid lbl = do
-  gc <- formField @GitCommit
-  pure $ loadingForm gc lbl
+  cf <- formData @CommitForm
+  pure $ loadingForm cf.gitCommit lbl
 
 
 loadingForm :: (HyperView id, Action id ~ CommitAction) => GitCommit -> Text -> View id ()
 loadingForm gc lbl = do
   onLoad (CheckCommitValid gc) 0 $ do
-    el Style.disabled $ commitForm (Just gc) NotInvalid lbl
+    el Style.disabled $ commitForm (Just gc) (CommitForm NotInvalid) lbl
 
 
-fromExistingCommit :: Maybe GitCommit -> Validated GitCommit
-fromExistingCommit Nothing = NotInvalid
-fromExistingCommit (Just _) = Valid
+fromExistingCommit :: Maybe GitCommit -> CommitForm Validated
+fromExistingCommit Nothing = CommitForm NotInvalid
+fromExistingCommit (Just _) = CommitForm Valid
 
 
-commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> Validated GitCommit -> Text -> View id ()
-commitForm gc vg lbl = do
-  let val = validateWith @GitCommit @'[GitCommit] vg
-  form LoadValid val (gap 10) $ do
-    field @GitCommit valStyle $ do
+data CommitForm f = CommitForm
+  { gitCommit :: Field f GitCommit
+  }
+  deriving (Generic)
+instance Form CommitForm Validated
+
+
+commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> CommitForm Validated -> Text -> View id ()
+commitForm gc vf lbl = do
+  let f = formFieldsWith vf
+  -- let val = validateWith @GitCommit @'[GitCommit] vg
+  form @CommitForm LoadValid (gap 10) $ do
+    field f.gitCommit valStyle $ do
       label lbl
       input TextInput (inputValue gc . Style.input)
       el (color Danger) invalidText
     -- validationFeedback vg
-    submit (validationButton vg . grow) "Save Commit"
+    submit (validationButton vf.gitCommit . grow) "Save Commit"
  where
   -- validationFeedback (Invalid _) =
   --   el (color Danger) "Invalid Git Commit"

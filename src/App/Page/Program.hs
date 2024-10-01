@@ -4,7 +4,7 @@ import App.Colors
 import App.Effect.Auth
 import App.Error (expectFound)
 import App.Globus as Globus
-import App.Page.Inversion
+import App.Page.Inversion as Inversion
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -32,18 +32,18 @@ page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es Response
+  -> Page es (ProgramInversions : ProgramDatasets : InversionStatus : InversionViews)
 page ip iip = do
-  handle $ inversions (clearInversion ip iip)
-  handle programInversions
-  handle DatasetsTable.actionSort
-  handle inversionCommit
-  handle preprocessCommit
-  handle downloadTransfer
-  handle generateTransfer
-  handle uploadTransfer
-
-  load $ do
+  handle (inversions (clearInversion ip iip))
+  $ handle programInversions
+  $ handle DatasetsTable.actionSort
+  $ handle Inversion.inversionCommit
+  $ handle Inversion.preprocessCommit
+  $ handle Inversion.downloadTransfer
+  $ handle Inversion.generateTransfer
+  $ handle Inversion.uploadTransfer
+  $ load
+  $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
     ds <- expectFound ds'
     let d = head ds
@@ -103,6 +103,7 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Show, Read, ViewId)
 instance HyperView ProgramInversions where
   type Action ProgramInversions = InvsAction
+  type Require ProgramInversions = InversionStatus : InversionViews
 
 
 data InvsAction

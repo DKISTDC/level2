@@ -20,11 +20,11 @@ import Web.Hyperbole
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
-  -> Page es Response
+  -> Page es '[ProgramDatasets]
 page pid = do
   handle DatasetsTable.actionSort
-
-  load $ do
+  $ load
+  $ do
     ds <- send $ Datasets.Query (ByProposal pid)
     ai <- send Inversions.All
     now <- currentTime
@@ -42,14 +42,14 @@ page pid = do
 -- DatasetsTable.datasetsTable ds
 
 -- each InstrumentProgram MUST have datasets
-viewPrograms :: UTCTime -> [ProgramFamily] -> View c ()
+viewPrograms :: (HyperViewHandled ProgramDatasets c) => UTCTime -> [ProgramFamily] -> View c ()
 viewPrograms _ [] = el_ "Not Found"
 viewPrograms now (p : ps) = do
   let wds = Grouped (p :| ps) :: Grouped Proposal ProgramFamily
   viewProposal now wds
 
 
-viewProposal :: UTCTime -> Grouped Proposal ProgramFamily -> View c ()
+viewProposal :: (HyperViewHandled ProgramDatasets c) => UTCTime -> Grouped Proposal ProgramFamily -> View c ()
 viewProposal now gx = do
   let wd = sample gx
   viewExperimentDescription wd.program.experimentDescription
