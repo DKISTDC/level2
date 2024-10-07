@@ -4,6 +4,7 @@ packages:
   ./types/
   ../telescope.hs/
   ../fits-parse/
+  ../hyperbole/
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz
   -- https://hackage.haskell.org/package/globus-0.1.2/candidate/globus-0.1.2.tar.gz
 
@@ -17,10 +18,10 @@ packages:
 --   location: https://github.com/seanhess/fits-parse.git
 --   tag: a95aae394ec6699af6e34076bb06060150d3192d
 
-source-repository-package
-  type: git
-  location: https://github.com/seanhess/hyperbole.git
-  tag: ff28b402bf10e8011af9670512e43601d9fdd7f8
+-- source-repository-package
+--   type: git
+--   location: https://github.com/seanhess/hyperbole.git
+--   tag: ff28b402bf10e8011af9670512e43601d9fdd7f8
 
 source-repository-package
   type: git

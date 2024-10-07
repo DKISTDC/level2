@@ -18,16 +18,18 @@ import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
+import Web.Hyperbole.Forms (Input)
 
 
 page
-  :: (Hyperbole :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  :: (Hyperbole :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id Inversion
   -> Page es (InversionStatus : Require InversionStatus)
@@ -267,19 +269,24 @@ instance HyperView PreprocessCommit where
   type Action PreprocessCommit = CommitAction
 
 
-preprocessCommit :: (Hyperbole :> es, Inversions :> es) => PreprocessCommit -> CommitAction -> Eff es (View PreprocessCommit ())
-preprocessCommit (PreprocessCommit ip iip ii) = action
- where
-  action LoadValid = InvForm.loadValid preprocessCommitLabel
-  action (CheckCommitValid gc) = do
+preprocessCommit :: (Log :> es, Hyperbole :> es, Inversions :> es) => PreprocessCommit -> CommitAction -> Eff es (View PreprocessCommit ())
+preprocessCommit (PreprocessCommit ip iip ii) = \case
+  LoadValid -> do
+    log Debug "LoadValid"
+    InvForm.loadValid preprocessCommitLabel
+  CheckCommitValid gc -> do
+    log Debug "CheckCommitValid"
     _ <- InvForm.validate (PreprocessCommit ip iip ii) preprocessRepo gc preprocessCommitLabel $ do
+      log Debug "Validated!"
       send $ SetPreprocessed ii gc
     -- We can reload the parent like this!
+    log Debug " - reloading InversionStatus"
     pure $ target (InversionStatus ip iip ii) $ onLoad Reload 0 $ el_ "Loading.."
 
 
-preprocessCommitLabel :: Text
-preprocessCommitLabel = "Preprocess Git Commit"
+preprocessCommitLabel :: View (Input id Validated GitCommit) ()
+preprocessCommitLabel =
+  link "https://github.com/DKISTDC/level2-preprocess" (att "target" "_blank") $ label "Preprocess Git Commit"
 
 
 stepPreprocess :: Inversion -> View InversionStatus ()
@@ -298,19 +305,21 @@ instance HyperView InversionCommit where
   type Require InversionCommit = '[InversionStatus]
 
 
-inversionCommit :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
+inversionCommit :: (Hyperbole :> es, Log :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
 inversionCommit (InversionCommit ip ii) = action
  where
   action LoadValid = InvForm.loadValid inversionCommitLabel
   action (CheckCommitValid gc) = do
+    log Debug "CheckCommitValid"
     vg <- InvForm.validate (InversionCommit ip ii) desireRepo gc inversionCommitLabel $ do
       send $ SetInversion ii gc
 
     checkInvertReload ip ii $ InvForm.commitForm (Just gc) (CommitForm vg) inversionCommitLabel
 
 
-inversionCommitLabel :: Text
-inversionCommitLabel = "DeSIRe Git Commit"
+inversionCommitLabel :: View (Input id Validated GitCommit) ()
+inversionCommitLabel =
+  link "https://github.com/han-uitenbroek/RH" (att "target" "_blank") $ label "DeSIRe Git Commit"
 
 
 data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
@@ -344,7 +353,7 @@ checkInvertReload ip ii vw = do
 
 stepInvert :: InvertStep -> Inversion -> View InversionStatus ()
 stepInvert (InvertStep mc mt) inv = do
-  hyper (InversionCommit inv.proposalId inv.inversionId) $ InvForm.commitForm mc (InvForm.fromExistingCommit mc) "DeSIRe GIt Commit"
+  hyper (InversionCommit inv.proposalId inv.inversionId) $ InvForm.commitForm mc (InvForm.fromExistingCommit mc) inversionCommitLabel
   viewUploadTransfer mt
  where
   viewUploadTransfer (Just it) = do

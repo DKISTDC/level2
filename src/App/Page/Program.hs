@@ -18,6 +18,7 @@ import Data.List (nub)
 import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
+import Effectful.Log (Log)
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
@@ -29,7 +30,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es (ProgramInversions : ProgramDatasets : InversionStatus : InversionViews)
