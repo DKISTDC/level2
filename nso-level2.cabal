@@ -67,6 +67,7 @@ library
       NSO.Data.Spectra
       NSO.Error
       NSO.Image.Asdf
+      NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable
       NSO.Image.DataCube
       NSO.Image.Frame
