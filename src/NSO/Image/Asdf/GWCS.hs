@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module NSO.Image.Asdf.GWCS where
 
@@ -16,7 +17,7 @@ import Telescope.Asdf.NDArray
 
 
 newtype AxisName = AxisName Text
-  deriving newtype (IsString)
+  deriving newtype (IsString, ToAsdf)
 
 
 data AxisType = AxisPixel
@@ -148,10 +149,34 @@ data Dlt a -- Delta (Shifted)
 data Rot a -- Rotated
 
 
+instance (ToAxes '[a]) => ToAxes '[Pix a] where
+  toAxes = toAxes @'[a]
+instance (ToAxes '[a]) => ToAxes '[Dlt a] where
+  toAxes = toAxes @'[a]
+instance (ToAxes '[a]) => ToAxes '[Scl a] where
+  toAxes = toAxes @'[a]
+instance (ToAxes '[a]) => ToAxes '[Rot a] where
+  toAxes = toAxes @'[a]
+instance ToAxes '[X] where
+  toAxes = ["x"]
+instance ToAxes '[Y] where
+  toAxes = ["y"]
+
+
 data Phi
 data Theta
 data Alpha
 data Delta
+
+
+instance ToAxes '[Phi] where
+  toAxes = ["phi"]
+instance ToAxes '[Theta] where
+  toAxes = ["theta"]
+instance ToAxes '[Alpha] where
+  toAxes = ["alpha"]
+instance ToAxes '[Delta] where
+  toAxes = ["delta"]
 
 
 spatial :: Transform [Pix X, Pix Y] [Alpha, Delta]
@@ -159,48 +184,54 @@ spatial = shiftXY |> scaleXY |> rotate |> projection |> celestial
 
 
 rotate :: Transform [Scl X, Scl Y] [Rot X, Rot Y]
-rotate = _ -- affine
+rotate = undefined -- _ -- affine
 
 
 -- must be rotated first
 projection :: Transform [Rot X, Rot Y] [Phi, Theta]
-projection = _ -- pix2sky
+projection = undefined -- _ -- pix2sky
 
 
 celestial :: Transform [Phi, Theta] [Alpha, Delta]
-celestial = _ -- rotatenative2celestial
+celestial = undefined -- _ -- rotatenative2celestial
 
 
 shiftXY :: Transform [Pix X, Pix Y] [Dlt X, Dlt Y]
-shiftXY = shift 6 <&> shift 8 <&> empty
+shiftXY = shift 6 <:> shift 8 <:> empty
 
 
 scaleXY :: Transform [Dlt X, Dlt Y] [Scl X, Scl Y]
-scaleXY = scale 7 <&> scale 8 <&> empty
+scaleXY = scale 7 <:> scale 8 <:> empty
 
 
 empty :: Transform '[] '[]
-empty = Transform Empty
+empty = Transform $ Transformation [] [] (Direct mempty mempty)
 
 
 -- you can't shift anything. It has to NOT be a
 shift :: Double -> Transform (f a) (Dlt a)
-shift d = Transform $ Simple $ Shift d
+shift d = toTransform $ Shift d
 
 
 scale :: Double -> Transform (f a) (Scl a)
-scale d = Transform $ Simple $ Scale d
+scale d = toTransform $ Scale d
 
 
 data Shifted a
 data Scaled a
 
 
-data Transformation
+data Transformation = Transformation
+  { inputs :: [AxisName]
+  , outputs :: [AxisName]
+  , forward :: Forward
+  }
+
+
+data Forward
   = Compose (NonEmpty Transformation)
   | Concat (NonEmpty Transformation)
-  | Simple SimpleTransformation
-  | Empty
+  | Direct {schemaTag :: SchemaTag, fields :: Value}
 
 
 data Transform b c = Transform
@@ -208,23 +239,50 @@ data Transform b c = Transform
   }
 
 
-instance (KnownText b, KnownText c) => ToAsdf (Transform b c) where
-  schema (Transform t) =
-    case t of
-      Simple (Shift s) -> "transform/shift-1.2.0"
-      _ -> mempty
-  toValue (Transform t) =
-    case t of
-      Empty -> Null
-      Simple (Shift s) ->
+toTransform :: forall a bs cs. (ToAsdf a) => a -> Transform bs cs
+toTransform a =
+  Transform
+    $ Transformation
+      []
+      []
+    -- (toAxes @bs)
+    -- (toAxes @cs)
+    $ Direct (schema a) (toValue a)
 
-(|>) :: Transform b c -> Transform c d -> Transform b d
-(Transform s) |> (Transform t) = Transform $
-  case t of
-    -- flatten compose
+
+instance (ToAxes b, ToAxes c) => ToAsdf (Transform b c) where
+  schema (Transform t) = schema t
+  toValue (Transform t) = toValue t
+
+
+instance ToAsdf Transformation where
+  schema t =
+    case t.forward of
+      Compose _ -> "transform/compose-1.2.0"
+      Concat _ -> "transform/concatenate-1.2.0"
+      Direct{schemaTag} -> schemaTag
+
+
+  toValue t =
+    case t.forward of
+      Compose ts -> toValue ts
+      Concat ts -> toValue ts
+      Direct{fields} -> inputFields <> fields
+   where
+    inputFields =
+      Object
+        [ ("inputs", toNode t.inputs)
+        , ("outputs", toNode t.outputs)
+        ]
+
+
+(|>) :: forall b c d. (ToAxes b, ToAxes d) => Transform b c -> Transform c d -> Transform b d
+(Transform s) |> (Transform t) = Transform
+  $ Transformation
+    (toAxes @b)
+    (toAxes @d)
+  $ case t.forward of
     Compose ts -> Compose $ s :| NE.toList ts
-    Empty -> s
-    -- otherwise put it in front of whatever else is there
     _ -> Compose $ s :| [t]
 
 
@@ -245,13 +303,24 @@ instance (KnownText b, KnownText c) => ToAsdf (Transform b c) where
 -- we need to preprend an input...
 -- (<&>) :: Transform a b -> Transform c d -> Transform (a : cs) (b : ds)
 
-(<&>) :: Transform a b -> Transform (c :: [Type]) (d :: [Type]) -> Transform (a : c) (b : d)
-Transform s <&> Transform t = Transform $
-  case t of
-    Concat ts -> Concat $ s :| NE.toList ts
-    Empty -> s
-    _ -> Concat $ s :| [t]
-infixr 8 <&>
+(<:>)
+  :: forall (a :: Type) (b :: Type) (cs :: [Type]) (ds :: [Type])
+   . Transform a b
+  -> Transform cs ds
+  -> Transform (a : cs) (b : ds)
+Transform s <:> Transform t =
+  Transform
+    $ Transformation
+      []
+      []
+    -- (toAxes @(a : cs))
+    -- (toAxes @(b : ds))
+    $ concatTransform t.inputs t.forward
+ where
+  concatTransform [] _ = Concat $ NE.singleton s
+  concatTransform _ (Concat ts) = Concat $ s :| NE.toList ts
+  concatTransform _ _ = Concat $ s :| [t]
+infixr 8 <:>
 
 
 -- transList :: Transformation -> NonEmpty Transformation
@@ -260,21 +329,34 @@ infixr 8 <&>
 --   Concat ts -> ts
 --   Simple t -> NE.singleton (Simple t)
 
-data SimpleTransformation
-  = Scale {factor :: Double}
-  | Shift {offset :: Double}
-  | Identity
-  | Affine {matrix :: NDArrayData, translation :: NDArrayData}
-  | Gnomonic {direction :: Direction}
-  | Rotate3d {direction :: Direction, phi :: Double, psi :: Double, theta :: Double}
-
+-- data SimpleTransformation
+--   = Scale {factor :: Double}
+--   | Shift {offset :: Double}
+--   | Identity
+--   | Affine {matrix :: NDArrayData, translation :: NDArrayData}
+--   | Gnomonic {direction :: Direction}
+--   | Rotate3d {direction :: Direction, phi :: Double, psi :: Double, theta :: Double}
 
 data Direction
   = Pix2Sky
   | Native2Celestial
 
 
-data Shift a b = Shift' Double
+data Shift = Shift Double
+data Scale = Scale Double
+data Affine = Affine {matrix :: NDArrayData, translation :: NDArrayData}
+
+
+instance ToAsdf Shift where
+  schema _ = "transform/shift-1.2.0"
+  toValue (Shift d) =
+    Object [("shift", toNode d)]
+
+
+instance ToAsdf Scale where
+  schema _ = "transform/scale-1.2.0"
+  toValue (Scale d) =
+    Object [("scale", toNode d)]
 
 
 -- the names of the inputs and outputs are completely arbitrary
@@ -299,9 +381,19 @@ data Shift a b = Shift' Double
 
 newtype CompositeFrame = CompositeFrame (NonEmpty CoordinateFrame)
 
+
 -- data ReferenceFrame = ReferenceFrame
 --   { observer :: _
 --   }
+
+class ToAxes (as :: [Type]) where
+  toAxes :: [AxisName]
+
+
+-- instance ToAxes '[] where
+--   toAxes = []
+instance (ToAxes '[a], ToAxes '[b]) => ToAxes [a, b] where
+  toAxes = toAxes @'[a] <> toAxes @'[b]
 
 {-
 
