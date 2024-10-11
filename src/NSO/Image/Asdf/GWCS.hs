@@ -209,11 +209,11 @@ empty = Transform $ Transformation [] [] (Direct mempty mempty)
 
 
 -- you can't shift anything. It has to NOT be a
-shift :: Double -> Transform (f a) (Dlt a)
+shift :: (ToAxes '[f a], ToAxes '[Dlt a]) => Double -> Transform (f a) (Dlt a)
 shift d = toTransform $ Shift d
 
 
-scale :: Double -> Transform (f a) (Scl a)
+scale :: (ToAxes '[f a], ToAxes '[Scl a]) => Double -> Transform (f a) (Scl a)
 scale d = toTransform $ Scale d
 
 
@@ -239,14 +239,12 @@ data Transform b c = Transform
   }
 
 
-toTransform :: forall a bs cs. (ToAsdf a) => a -> Transform bs cs
+toTransform :: forall a b c. (ToAsdf a, ToAxes '[b], ToAxes '[c]) => a -> Transform b c
 toTransform a =
   Transform
     $ Transformation
-      []
-      []
-    -- (toAxes @bs)
-    -- (toAxes @cs)
+      (toAxes @'[b])
+      (toAxes @'[c])
     $ Direct (schema a) (toValue a)
 
 
@@ -305,16 +303,15 @@ instance ToAsdf Transformation where
 
 (<:>)
   :: forall (a :: Type) (b :: Type) (cs :: [Type]) (ds :: [Type])
-   . Transform a b
+   . (ToAxes (a : cs), ToAxes (b : ds))
+  => Transform a b
   -> Transform cs ds
   -> Transform (a : cs) (b : ds)
 Transform s <:> Transform t =
   Transform
     $ Transformation
-      []
-      []
-    -- (toAxes @(a : cs))
-    -- (toAxes @(b : ds))
+      (toAxes @(a : cs))
+      (toAxes @(b : ds))
     $ concatTransform t.inputs t.forward
  where
   concatTransform [] _ = Concat $ NE.singleton s
