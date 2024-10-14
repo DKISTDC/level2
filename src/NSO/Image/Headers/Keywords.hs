@@ -102,7 +102,6 @@ instance (KnownSymbol s) => KnownText s where
   knownText = pack $ symbolVal @s Proxy
 
 
-
 class KnownValue a where
   knownValue :: Value
   default knownValue :: (KnownText a) => Value

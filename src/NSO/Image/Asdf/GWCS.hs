@@ -1,396 +1,118 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DefaultSignatures #-}
 
 module NSO.Image.Asdf.GWCS where
 
-import Control.Arrow
-
--- import Control.Category (Category)
-import Data.List.NonEmpty ((<|))
+import Data.ByteString qualified as BS
 import Data.List.NonEmpty qualified as NE
-import GHC.TypeLits
-import NSO.Image.Headers.Keywords (KnownText (..))
+import Data.Massiv.Array (Array, D, Ix2)
+import Data.Massiv.Array qualified as M
 import NSO.Prelude as Prelude
-import Telescope.Asdf
-import Telescope.Asdf.Core
-import Telescope.Asdf.NDArray
+import Telescope.Asdf as Asdf
+import Telescope.Asdf.Core (Unit (Degrees, Pixel))
+import Telescope.Asdf.GWCS
 
 
-newtype AxisName = AxisName Text
-  deriving newtype (IsString, ToAsdf)
-
-
-data AxisType = AxisPixel
-
-
-data CoordinateFrame = CoordinateFrame
-  { name :: Text
-  , axes :: NonEmpty FrameAxis
-  }
-
-
-data CelestialFrame = CelestialFrame
-  { name :: Text
-  , axes :: NonEmpty FrameAxis
-  -- , referenceFrame ::
-  }
-
-
--- TODO: axis order when serialized
-data FrameAxis = FrameAxis
-  { axisName :: AxisName
-  , axisOrder :: Int
-  , axisType :: AxisType
-  , unit :: Unit
-  }
-
-
--- I'm probably thinking too low level
--- there is a better way
--- we have a number of arguments
--- some sort of monad
--- compose = bind
--- concat = ??? multiple arguments to a function?
--- should make sure all of them are handled
--- like we have inputs A,B,C coming through
--- we need to handle all of them. Can they be combined into one?
--- ASSUME: that the number of inputs = outputs
--- can they be entangled? Yes
--- they aren't independent of each other, but the inputs are the same
-
--- but sometimes they are independent. Like optical depth has nothing to do with the other ones
--- soo.....
--- well obviously you can concatenate them
-
--- that affine transform isn't a concatenation
--- it takes two inputs, does some stuff, produces two outputs
--- concat evaluates them separately
---
---
--- so a step has to produce an output of exactly the same shape as the input
--- but not independently
--- not sure how to enforce that in haskell... fun.
-
--- yeah, they are probably arrows. They have first and second...
-
--- you don't name the output, you connect them
--- class TStep a where
---   inputName :: a -> AxisName
---
---
--- data t |> ts
--- data t <> ts
---
---
---
--- data
-
--- class SimpleTransformation t where
---   inputs :: NonEmpty AxisName
-
--- data Transform = Transform
---   -- these should be the same size? No... not necessarily?
---   { inputs :: NonEmpty AxisName
---   , outputs :: NonEmpty AxisName
---   , transformation :: Transformation
---   }
-
--- instance Semigroup Transform where
---   t1 <> t2 =
---     Transform
---       { inputs = t1.inputs <> t2.inputs
---       , outputs = t1.outputs <> t2.outputs
---       }
---
---
-class KnownAxis a
-
-
--- ok, this is interesting, but I don't actually do any computation
--- I'm just serializing it
---
--- maybe we can figure it out from the types
--- adds types to Transformation
-
--- what about a type-level implementation?
--- and some classes / type functions that can handle it?
---
-
--- data Transformation b c = Transformation
---   { inputs :: NonEmpty AxisName
---   , outputs :: NonEmpty AxisName
---   , -- the serialized information
---     info :: CompoundTransformation
+-- data CoordinateFrame = CoordinateFrame
+--   { name :: Text
+--   , axes :: NonEmpty FrameAxis
 --   }
 --
 --
--- it's really a nonempty list... no?
---
---
+-- data CelestialFrame = CelestialFrame
+--   { name :: Text
+--   , axes :: NonEmpty FrameAxis
+--   -- , referenceFrame ::
+--   }
 
--- pipeline :: Transform ["optical depth", "x", "y"] ["optical depth", "alpha", "delta"]
--- pipeline = keepOpticalDepth <&> celestial
---  where
---   keepOpticalDepth :: Transform "optical depth" "optical depth"
---   keepOpticalDepth = Transform $ Simple Identity
---
---
--- celestial :: Transform ["x", "y"] ["alpha", "delta"]
--- celestial = _
---
-
-data X
-data Y
+data OpticalDepth deriving (Generic, ToAxes)
 
 
-data Pix a -- Pixel
-data Scl a -- Scaled
-data Dlt a -- Delta (Shifted)
-data Rot a -- Rotated
+transformComposite :: Transform (Pix OpticalDepth, Pix X, Pix Y) (Scl OpticalDepth, Alpha, Delta)
+transformComposite = transformOpticalDepth <&> transformSpatial
 
 
-instance (ToAxes '[a]) => ToAxes '[Pix a] where
-  toAxes = toAxes @'[a]
-instance (ToAxes '[a]) => ToAxes '[Dlt a] where
-  toAxes = toAxes @'[a]
-instance (ToAxes '[a]) => ToAxes '[Scl a] where
-  toAxes = toAxes @'[a]
-instance (ToAxes '[a]) => ToAxes '[Rot a] where
-  toAxes = toAxes @'[a]
-instance ToAxes '[X] where
-  toAxes = ["x"]
-instance ToAxes '[Y] where
-  toAxes = ["y"]
+transformOpticalDepth :: Transform (Pix OpticalDepth) (Scl OpticalDepth)
+transformOpticalDepth = scale 10
 
 
-data Phi
-data Theta
-data Alpha
-data Delta
-
-
-instance ToAxes '[Phi] where
-  toAxes = ["phi"]
-instance ToAxes '[Theta] where
-  toAxes = ["theta"]
-instance ToAxes '[Alpha] where
-  toAxes = ["alpha"]
-instance ToAxes '[Delta] where
-  toAxes = ["delta"]
-
-
-spatial :: Transform [Pix X, Pix Y] [Alpha, Delta]
-spatial = shiftXY |> scaleXY |> rotate |> projection |> celestial
-
-
-rotate :: Transform [Scl X, Scl Y] [Rot X, Rot Y]
-rotate = undefined -- _ -- affine
-
-
--- must be rotated first
-projection :: Transform [Rot X, Rot Y] [Phi, Theta]
-projection = undefined -- _ -- pix2sky
-
-
-celestial :: Transform [Phi, Theta] [Alpha, Delta]
-celestial = undefined -- _ -- rotatenative2celestial
-
-
-shiftXY :: Transform [Pix X, Pix Y] [Dlt X, Dlt Y]
-shiftXY = shift 6 <:> shift 8 <:> empty
-
-
-scaleXY :: Transform [Dlt X, Dlt Y] [Scl X, Scl Y]
-scaleXY = scale 7 <:> scale 8 <:> empty
-
-
-empty :: Transform '[] '[]
-empty = Transform $ Transformation [] [] (Direct mempty mempty)
-
-
--- you can't shift anything. It has to NOT be a
-shift :: (ToAxes '[f a], ToAxes '[Dlt a]) => Double -> Transform (f a) (Dlt a)
-shift d = toTransform $ Shift d
-
-
-scale :: (ToAxes '[f a], ToAxes '[Scl a]) => Double -> Transform (f a) (Scl a)
-scale d = toTransform $ Scale d
-
-
-data Shifted a
-data Scaled a
-
-
-data Transformation = Transformation
-  { inputs :: [AxisName]
-  , outputs :: [AxisName]
-  , forward :: Forward
-  }
-
-
-data Forward
-  = Compose (NonEmpty Transformation)
-  | Concat (NonEmpty Transformation)
-  | Direct {schemaTag :: SchemaTag, fields :: Value}
-
-
-data Transform b c = Transform
-  { transformation :: Transformation
-  }
-
-
-toTransform :: forall a b c. (ToAsdf a, ToAxes '[b], ToAxes '[c]) => a -> Transform b c
-toTransform a =
-  Transform
-    $ Transformation
-      (toAxes @'[b])
-      (toAxes @'[c])
-    $ Direct (schema a) (toValue a)
-
-
-instance (ToAxes b, ToAxes c) => ToAsdf (Transform b c) where
-  schema (Transform t) = schema t
-  toValue (Transform t) = toValue t
-
-
-instance ToAsdf Transformation where
-  schema t =
-    case t.forward of
-      Compose _ -> "transform/compose-1.2.0"
-      Concat _ -> "transform/concatenate-1.2.0"
-      Direct{schemaTag} -> schemaTag
-
-
-  toValue t =
-    case t.forward of
-      Compose ts -> toValue ts
-      Concat ts -> toValue ts
-      Direct{fields} -> inputFields <> fields
-   where
-    inputFields =
-      Object
-        [ ("inputs", toNode t.inputs)
-        , ("outputs", toNode t.outputs)
-        ]
-
-
-(|>) :: forall b c d. (ToAxes b, ToAxes d) => Transform b c -> Transform c d -> Transform b d
-(Transform s) |> (Transform t) = Transform
-  $ Transformation
-    (toAxes @b)
-    (toAxes @d)
-  $ case t.forward of
-    Compose ts -> Compose $ s :| NE.toList ts
-    _ -> Compose $ s :| [t]
-
-
--- type family TConcat a (b :: [Type]) where
---   -- TConcat a (b, c, d) = (a, b, c, d)
---   -- TConcat (a, b) (c, d) = (a, b, c, d)
---   -- TConcat (a, b, c) d = (a, b, c, d)
---   -- TConcat a (b, c) = (a, b, c)
---   -- TConcat () b = b
---   -- TConcat a () = a
---   -- TConcat a b = (a, b)
---
---   TConcat a [b, c, d] = [a, b, c, d]
---   TConcat a [b, c] = [a, b, c]
---   TConcat a '[b] = [a, b]
---   TConcat a '[] = '[a]
-
--- we need to preprend an input...
--- (<&>) :: Transform a b -> Transform c d -> Transform (a : cs) (b : ds)
-
-(<:>)
-  :: forall (a :: Type) (b :: Type) (cs :: [Type]) (ds :: [Type])
-   . (ToAxes (a : cs), ToAxes (b : ds))
-  => Transform a b
-  -> Transform cs ds
-  -> Transform (a : cs) (b : ds)
-Transform s <:> Transform t =
-  Transform
-    $ Transformation
-      (toAxes @(a : cs))
-      (toAxes @(b : ds))
-    $ concatTransform t.inputs t.forward
+transformSpatial :: Transform (Pix X, Pix Y) (Alpha, Delta)
+transformSpatial = linearXY |> rotate pcMatrix |> project Pix2Sky |> celestial (Lat 1) (Lon 2) (LonPole 180)
  where
-  concatTransform [] _ = Concat $ NE.singleton s
-  concatTransform _ (Concat ts) = Concat $ s :| NE.toList ts
-  concatTransform _ _ = Concat $ s :| [t]
-infixr 8 <:>
+  pcMatrix :: Array D Ix2 Double
+  pcMatrix = M.delay $ M.fromLists' @M.P M.Seq [[0, 1], [2, 3]]
+
+  linearX :: Transform (Pix X) (Linear X)
+  linearX = linear (Shift 10) (Scale 8)
+
+  linearY :: Transform (Pix Y) (Linear Y)
+  linearY = linear (Shift 9) (Scale 7)
+
+  linearXY :: Transform (Pix X, Pix Y) (Linear X, Linear Y)
+  linearXY = linearX <&> linearY
 
 
--- transList :: Transformation -> NonEmpty Transformation
--- transList = \case
---   Compose ts -> ts
---   Concat ts -> ts
---   Simple t -> NE.singleton (Simple t)
-
--- data SimpleTransformation
---   = Scale {factor :: Double}
---   | Shift {offset :: Double}
---   | Identity
---   | Affine {matrix :: NDArrayData, translation :: NDArrayData}
---   | Gnomonic {direction :: Direction}
---   | Rotate3d {direction :: Direction, phi :: Double, psi :: Double, theta :: Double}
-
-data Direction
-  = Pix2Sky
-  | Native2Celestial
+inputStep :: GWCSStep CoordinateFrame (Pix OpticalDepth, Pix X, Pix Y) (Scl OpticalDepth, Alpha, Delta)
+inputStep = GWCSStep pixelFrame (Just transformComposite)
+ where
+  pixelFrame :: CoordinateFrame
+  pixelFrame =
+    CoordinateFrame
+      { name = "pixel"
+      , axes =
+          NE.fromList
+            [ FrameAxis "optical_depth" 0 (AxisType "PIXEL") Pixel
+            , FrameAxis "spatial along slit" 1 (AxisType "PIXEL") Pixel
+            , FrameAxis "raster scan step number" 2 (AxisType "PIXEL") Pixel
+            ]
+      }
 
 
-data Shift = Shift Double
-data Scale = Scale Double
-data Affine = Affine {matrix :: NDArrayData, translation :: NDArrayData}
+outputStep :: GWCSStep (CompositeFrame CoordinateFrame CelestialFrame) (Scl OpticalDepth, Alpha, Delta) ()
+outputStep = GWCSStep compositeFrame Nothing
+ where
+  compositeFrame =
+    CompositeFrame opticalDepthFrame celestialFrame
+
+  opticalDepthFrame =
+    CoordinateFrame
+      { name = "optical_depth"
+      , axes =
+          NE.fromList
+            [ FrameAxis "optical_depth" 0 (AxisType "optical_depth") Pixel
+            ]
+      }
+
+  celestialFrame =
+    CelestialFrame
+      { name = "icrs"
+      , referenceFrame = ICRSFrame
+      , axes =
+          NE.fromList
+            [ FrameAxis "lon" 1 (AxisType "pos.eq.ra") Degrees
+            , FrameAxis "lat" 2 (AxisType "pos.eq.dec") Degrees
+            ]
+      }
 
 
-instance ToAsdf Shift where
-  schema _ = "transform/shift-1.2.0"
-  toValue (Shift d) =
-    Object [("shift", toNode d)]
+data GWCS
+  = GWCS
+      (GWCSStep CoordinateFrame (Pix OpticalDepth, Pix X, Pix Y) (Scl OpticalDepth, Alpha, Delta))
+      (GWCSStep (CompositeFrame CoordinateFrame CelestialFrame) (Scl OpticalDepth, Alpha, Delta) ())
 
 
-instance ToAsdf Scale where
-  schema _ = "transform/scale-1.2.0"
-  toValue (Scale d) =
-    Object [("scale", toNode d)]
+instance ToAsdf GWCS where
+  schema _ = "tag:stsci.edu:gwcs/wcs-1.2.0"
+  toValue (GWCS inp out) =
+    Object
+      [ ("name", toNode $ String "")
+      , ("steps", toNode $ Array [toNode inp, toNode out])
+      ]
 
 
--- the names of the inputs and outputs are completely arbitrary
-
--- could we use the actual function composition operator?
--- (.|) :: Transform -> Transform -> Transform
--- t1 .| t2 =
---   Transform
---     { inputs = t1.inputs
---     , outputs = t2.outputs
---     , forward = Compose t1 t2
---     }
-
--- could we use the actual & operator?
--- (.&) :: Transform -> NonEmpty Transform -> Transform
--- t1 .& t2 =
---   Transform
---     { inputs = t1.inputs <> t2.inputs
---     , outputs = t1.inputs <> t2.outputs
---     , forward = Concat t1 t2
---     }
-
-newtype CompositeFrame = CompositeFrame (NonEmpty CoordinateFrame)
-
-
--- data ReferenceFrame = ReferenceFrame
---   { observer :: _
---   }
-
-class ToAxes (as :: [Type]) where
-  toAxes :: [AxisName]
-
-
--- instance ToAxes '[] where
---   toAxes = []
-instance (ToAxes '[a], ToAxes '[b]) => ToAxes [a, b] where
-  toAxes = toAxes @'[a] <> toAxes @'[b]
+test :: IO ()
+test = do
+  out <- Asdf.encodeM $ Object $ [("transform", toNode $ GWCS inputStep outputStep)]
+  BS.writeFile "/Users/seanhess/Downloads/l2.asdf" out
 
 {-
 
