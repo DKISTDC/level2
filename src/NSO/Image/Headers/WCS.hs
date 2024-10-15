@@ -46,7 +46,7 @@ class AxisOrder a ax where
 
 -- axisIndex :: Proxy a -> Proxy ax -> Natural
 
-data PCL1 s (alt :: WCSAlt) = PCL1
+data PCXY s (alt :: WCSAlt) = PCXY
   { xx :: PC s alt X X
   , xy :: PC s alt X Y
   , yy :: PC s alt Y Y
@@ -185,19 +185,19 @@ requireCtypeAxis ctype (Header h) = runParser $ do
 
 
 -- can we detect that they are incorrect here?
-requirePCs :: forall alt s es. (Error ParseError :> es, KnownText alt) => Axis X -> Axis Y -> Header -> Eff es (PCL1 s alt)
+requirePCs :: forall alt s es. (Error ParseError :> es, KnownText alt) => Axis X -> Axis Y -> Header -> Eff es (PCXY s alt)
 requirePCs (Axis xn) (Axis yn) l1 = do
   yy <- PC <$> requireKey (pcN yn yn) l1
   yx <- PC <$> requireKey (pcN yn xn) l1
   xx <- PC <$> requireKey (pcN xn xn) l1
   xy <- PC <$> requireKey (pcN xn yn) l1
-  pure PCL1{yy, yx, xx, xy}
+  pure PCXY{yy, yx, xx, xy}
  where
   pcN :: Int -> Int -> Text
   pcN i j = "PC" <> pack (show i) <> "_" <> pack (show j) <> knownText @alt
 
 
-isPCsValid :: PCL1 s alt -> Bool
+isPCsValid :: PCXY s alt -> Bool
 isPCsValid pcs =
   0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 

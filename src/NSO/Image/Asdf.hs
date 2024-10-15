@@ -114,7 +114,7 @@ newtype Fileuris = Fileuris [Path' Filename L2Frame]
 
 
 instance ToAsdf Fileuris where
-  anchor = Just $ Anchor "fileuris"
+  anchor _ = Just $ Anchor "fileuris"
   toValue (Fileuris ps) =
     Array $ fmap pathNode ps
    where
@@ -226,8 +226,8 @@ instance (KnownText ref) => ToAsdf (WCSTodo ref) where
   -- wcs: !<tag:stsci.edu:gwcs/wcs-1.1.0>
   --   name: ''
   --   steps:
-  anchor = Just $ Anchor $ knownText @ref
-  schema = "tag:stsci.edu:gwcs/wcs-1.1.0"
+  anchor _ = Just $ Anchor $ knownText @ref
+  schema _ = "tag:stsci.edu:gwcs/wcs-1.1.0"
   toValue _ =
     Object
       [ ("name", toNode $ String "")
@@ -344,7 +344,7 @@ data FileManager = FileManager
   }
   deriving (Generic)
 instance ToAsdf FileManager where
-  schema = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
+  schema _ = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
 
 
 fileManager :: forall info. (HDUOrder info) => Axes Row -> FileManager
