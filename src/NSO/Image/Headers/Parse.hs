@@ -28,5 +28,5 @@ requireKey :: (Error ParseError :> es, FromKeyword a) => Text -> Header -> Eff e
 requireKey k h = runParser $ parseKeyword k h
 
 
-runParseError :: (Error err :> es) => (ParseError -> err) -> Eff (Error ParseError : es) a -> Eff es a
+runParseError :: (Error err :> es, Show err) => (ParseError -> err) -> Eff (Error ParseError : es) a -> Eff es a
 runParseError f = runErrorNoCallStackWith @ParseError (throwError . f)

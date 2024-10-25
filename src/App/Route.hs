@@ -19,23 +19,31 @@ data AppRoute
   | Redirect
   | Logout
   | Dev DevRoute
-  deriving (Show, Generic, Eq, Route)
+  deriving (Show, Generic, Eq)
+instance Route AppRoute where
+  baseRoute = Just Dashboard
 
 
 data ProposalRoute
   = PropRoot
   | Program (Id InstrumentProgram)
   | Inversion (Id Inversion) InversionRoute
-  deriving (Show, Generic, Eq, Route)
+  deriving (Show, Generic, Eq)
+instance Route ProposalRoute where
+  baseRoute = Just PropRoot
 
 
 data InversionRoute
   = Inv
   | SubmitDownload
   | SubmitUpload
-  deriving (Show, Generic, Eq, Route)
+  deriving (Show, Generic, Eq)
+instance Route InversionRoute where
+  baseRoute = Just Inv
 
 
 data DevRoute
   = DevAuth
-  deriving (Show, Generic, Eq, Route)
+  deriving (Show, Generic, Eq)
+instance Route DevRoute where
+  baseRoute = Just DevAuth

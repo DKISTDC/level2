@@ -12,6 +12,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
+import Telescope.Asdf.GWCS (ToAxes (..))
 import Telescope.Data.Parser (parseFail)
 import Telescope.Fits as Fits hiding (Axis)
 import Telescope.Fits.Header as Fits
@@ -32,8 +33,8 @@ newtype Axis a = Axis Int
   deriving (Show, Eq)
 
 
-data X
-data Y
+data X deriving (Generic, ToAxes)
+data Y deriving (Generic, ToAxes)
 data Wav
 
 
@@ -199,6 +200,7 @@ requirePCs (Axis xn) (Axis yn) l1 = do
 
 isPCsValid :: PCXY s alt -> Bool
 isPCsValid pcs =
+  -- the pcs never line up exactly. Should be a matrix with values for each thing
   0 `notElem` [pcs.xx.value, pcs.xy.value, pcs.yy.value, pcs.yx.value]
 
 

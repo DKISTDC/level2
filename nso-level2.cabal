@@ -112,14 +112,14 @@ library
     , casing
     , containers
     , data-diverse
-    , effectful ==2.3.0.0
+    , effectful >=2.3 && <3
     , exceptions
     , filepath
     , globus >=0.1.2
     , hasql
     , http-api-data
     , http-types
-    , hyperbole >=0.4
+    , hyperbole ==0.4.1
     , lens
     , massiv
     , megaparsec
@@ -172,14 +172,14 @@ executable level2
     , casing
     , containers
     , data-diverse
-    , effectful ==2.3.0.0
+    , effectful >=2.3 && <3
     , exceptions
     , filepath
     , globus >=0.1.2
     , hasql
     , http-api-data
     , http-types
-    , hyperbole >=0.4
+    , hyperbole ==0.4.1
     , lens
     , massiv
     , megaparsec
@@ -241,14 +241,14 @@ test-suite spec
     , casing
     , containers
     , data-diverse
-    , effectful ==2.3.0.0
+    , effectful >=2.3 && <3
     , exceptions
     , filepath
     , globus >=0.1.2
     , hasql
     , http-api-data
     , http-types
-    , hyperbole >=0.4
+    , hyperbole ==0.4.1
     , lens
     , massiv
     , megaparsec

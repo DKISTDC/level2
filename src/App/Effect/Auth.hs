@@ -15,7 +15,6 @@ import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Web.Hyperbole
 import Web.Hyperbole.Effect (Request (..))
-import Web.Hyperbole.Route (Route (..))
 import Web.View as WebView
 
 
@@ -134,7 +133,7 @@ newtype RedirectPath = RedirectPath [Segment]
 
 
 instance Route RedirectPath where
-  defRoute = RedirectPath []
+  baseRoute = Just (RedirectPath [])
   routePath (RedirectPath ss) = ss
   matchRoute ss = Just $ RedirectPath ss
 

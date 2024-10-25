@@ -4,14 +4,14 @@ module NSO.Image.Asdf where
 
 import Data.ByteString (ByteString)
 import Data.List.NonEmpty qualified as NE
-import Data.Text (pack)
 import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
-import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
+import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
 import NSO.Image.Headers.Keywords (KnownText (..))
+import NSO.Image.Headers.WCS (WCSHeader (..))
 import NSO.Image.Primary
 import NSO.Image.Profile
 import NSO.Image.Quantity hiding (quantities)
@@ -93,8 +93,8 @@ data Document = Document
 data InversionTree = InversionTree
   { fileuris :: Fileuris
   , meta :: InversionTreeMeta
-  , quantities :: HDUSection QuantityWcs (Quantities (DataTree QuantityMeta))
-  , profiles :: HDUSection ProfileWcs (Profiles ProfileTree)
+  , quantities :: HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
+  , profiles :: HDUSection ProfileGWCS (Profiles ProfileTree)
   }
   deriving (Generic, ToAsdf)
 
@@ -125,15 +125,15 @@ newtype AxisLabel = AxisLabel Text
   deriving newtype (ToAsdf, IsString)
 
 
-data HDUSection (ref :: Symbol) hdus = HDUSection
+data HDUSection gwcs hdus = HDUSection
   { axes :: [AxisLabel]
   , shape :: Axes Row
-  , wcs :: WCSTodo ref
+  , wcs :: gwcs
   , hdus :: hdus
   }
 
 
-instance (ToAsdf hdus, KnownText ref) => ToAsdf (HDUSection ref hdus) where
+instance (ToAsdf hdus, ToAsdf gwcs) => ToAsdf (HDUSection gwcs hdus) where
   toValue section =
     mconcat
       -- merge the fields from both
@@ -148,27 +148,29 @@ instance (ToAsdf hdus, KnownText ref) => ToAsdf (HDUSection ref hdus) where
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection QuantityWcs (Quantities (DataTree QuantityMeta))
+quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
 quantitiesSection frames =
-  HDUSection
-    { axes = ["frameY", "slitX", "opticalDepth"]
-    , shape = shape.axes
-    , wcs = WCSTodo
-    , hdus =
-        Quantities
-          { opticalDepth = quantity (.opticalDepth)
-          , temperature = quantity (.temperature)
-          , electronPressure = quantity (.electronPressure)
-          , microTurbulence = quantity (.microTurbulence)
-          , magStrength = quantity (.magStrength)
-          , velocity = quantity (.velocity)
-          , magInclination = quantity (.magInclination)
-          , magAzimuth = quantity (.magAzimuth)
-          , geoHeight = quantity (.geoHeight)
-          , gasPressure = quantity (.gasPressure)
-          , density = quantity (.density)
-          }
-    }
+  let refFrame = head frames
+      wcs = refFrame.quantities.opticalDepth.wcs :: WCSHeader QuantityAxes
+   in HDUSection
+        { axes = ["frameY", "slitX", "opticalDepth"]
+        , shape = shape.axes
+        , wcs = quantityGWCS wcs
+        , hdus =
+            Quantities
+              { opticalDepth = quantity (.opticalDepth)
+              , temperature = quantity (.temperature)
+              , electronPressure = quantity (.electronPressure)
+              , microTurbulence = quantity (.microTurbulence)
+              , magStrength = quantity (.magStrength)
+              , velocity = quantity (.velocity)
+              , magInclination = quantity (.magInclination)
+              , magAzimuth = quantity (.magAzimuth)
+              , geoHeight = quantity (.geoHeight)
+              , gasPressure = quantity (.gasPressure)
+              , density = quantity (.density)
+              }
+        }
  where
   quantity
     :: forall info ext btype unit
@@ -186,7 +188,7 @@ data DataTree meta info = DataTree
   { unit :: Unit
   , data_ :: FileManager
   , meta :: meta info
-  , wcs :: Ref QuantityWcs
+  , wcs :: Ref QuantityGWCS
   }
   deriving (Generic)
 instance (ToAsdf (meta info)) => ToAsdf (DataTree meta info) where
@@ -208,7 +210,7 @@ quantityTree
   -> DataTree QuantityMeta info
 quantityTree shape heads =
   DataTree
-    { unit = Unit (knownText @unit)
+    { unit = Pixel
     , wcs = Ref
     , data_ = fileManager @info shape.axes
     , meta = QuantityMeta{headers = HeaderTable heads}
@@ -221,35 +223,34 @@ data QuantityMeta info = QuantityMeta
   deriving (Generic, ToAsdf)
 
 
-data WCSTodo ref = WCSTodo
-instance (KnownText ref) => ToAsdf (WCSTodo ref) where
-  -- wcs: !<tag:stsci.edu:gwcs/wcs-1.1.0>
-  --   name: ''
-  --   steps:
-  anchor _ = Just $ Anchor $ knownText @ref
-  schema _ = "tag:stsci.edu:gwcs/wcs-1.1.0"
-  toValue _ =
-    Object
-      [ ("name", toNode $ String "")
-      , ("steps", toNode $ Array [])
-      ]
+-- instance (KnownText ref) => ToAsdf (WCSTodo ref) where
+--   -- wcs: !<tag:stsci.edu:gwcs/wcs-1.1.0>
+--   --   name: ''
+--   --   steps:
+--   anchor _ = Just $ Anchor $ knownText @ref
+--   schema _ = "tag:stsci.edu:gwcs/wcs-1.1.0"
+--   toValue _ =
+--     Object
+--       [ ("name", toNode $ String "")
+--       , ("steps", toNode $ Array [])
+--       ]
+--
 
-
-data Ref (ref :: Symbol) = Ref
-instance (KnownSymbol ref) => ToAsdf (Ref ref) where
+data Ref ref = Ref
+instance (KnownText ref) => ToAsdf (Ref ref) where
   toValue _ =
     Alias $ Anchor $ knownText @ref
-instance (KnownSymbol ref) => KnownText (Ref ref) where
-  knownText = pack $ symbolVal @ref Proxy
+instance (KnownText ref) => KnownText (Ref ref) where
+  knownText = knownText @ref
 
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection ProfileWcs (Profiles ProfileTree)
+profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection ProfileGWCS (Profiles ProfileTree)
 profilesSection frames =
   let shape = (head frames).shape
    in HDUSection
-        { wcs = WCSTodo
+        { wcs = ProfileGWCS ()
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape.axes
         , hdus = profilesTree shape frames
@@ -267,15 +268,11 @@ profilesTree shape frames =
         }
 
 
-type ProfileWcs = "profileWcs"
-type QuantityWcs = "quantityWcs"
-
-
 data ProfileTree info = ProfileTree
   { unit :: Unit
   , data_ :: FileManager
   , meta :: ProfileTreeMeta info
-  , wcs :: Ref ProfileWcs
+  , wcs :: Ref ProfileGWCS
   }
   deriving (Generic)
 instance (ToHeader info) => ToAsdf (ProfileTree info) where

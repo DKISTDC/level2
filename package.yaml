@@ -55,11 +55,11 @@ dependencies:
   - random
   - modern-uri
   - lens
-  - hyperbole >= 0.4
+  - hyperbole == 0.4.1
   - hasql
   - exceptions
   - binary
-  - effectful == 2.3.0.0
+  - effectful >= 2.3 && <3
   - data-diverse >= 4.7
   - data-diverse
   - containers

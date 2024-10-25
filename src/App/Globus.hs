@@ -60,7 +60,6 @@ import Network.HTTP.Types (QueryItem)
 import Web.FormUrlEncoded (parseMaybe)
 import Web.Hyperbole
 import Web.Hyperbole.Effect (Host (..), Request (..))
-import Web.Hyperbole.Forms
 import Web.View as WebView
 
 

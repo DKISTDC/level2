@@ -6,7 +6,6 @@ module NSO.Image.Quantity where
 import Control.Exception (Exception)
 import Data.ByteString (ByteString)
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
-import Data.Maybe (isJust)
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
@@ -210,8 +209,15 @@ wcsHeader slice l1 = runParseError InvalidWCS $ do
   pure $ WCSHeader{common = wc, axes = wm, commonA = wca, axesA = wa}
  where
   isWcsValid :: QuantityAxes alt -> Bool
-  isWcsValid axs =
-    isJust axs.dummyY.pcs && isJust axs.slitX.pcs && isJust axs.depth.pcs
+  isWcsValid axs = fromMaybe False $ do
+    pcx <- axs.slitX.pcs
+    pcy <- axs.dummyY.pcs
+    pure $ isPCsValid $ toPCXY pcx pcy
+
+
+toPCXY :: QuantityPCs alt X -> QuantityPCs alt Y -> PCXY QuantityAxes alt
+toPCXY pcx pcy =
+  PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
 
 
 quantityHeaders :: Quantities Quantity -> Quantities QuantityHeader
@@ -314,11 +320,11 @@ wcsAxes s h = do
  where
   pcsY p = do
     guard (isPCsValid p)
-    pure QuantityPCs{dummyY = p.yy, slitX = p.yx, depth = PC 0}
+    pure $ QuantityPCs{dummyY = p.yy, slitX = p.yx, depth = PC 0}
 
   pcsX p = do
     guard (isPCsValid p)
-    pure QuantityPCs{dummyY = p.xy, slitX = p.xx, depth = PC 0}
+    pure $ QuantityPCs{dummyY = p.xy, slitX = p.xx, depth = PC 0}
 
 
 wcsDepth :: (Monad m) => m (QuantityAxis alt n)

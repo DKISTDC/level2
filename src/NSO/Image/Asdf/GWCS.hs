@@ -2,43 +2,39 @@
 
 module NSO.Image.Asdf.GWCS where
 
-import Data.ByteString qualified as BS
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2)
 import Data.Massiv.Array qualified as M
-import NSO.Image.Headers.Types (Key (..), WCSAlt (..))
-import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..))
+import NSO.Image.Headers.Keywords (KnownText (..))
+import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), WCSAlt (..))
+import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), X, Y)
+import NSO.Image.Quantity
 import NSO.Prelude as Prelude
 import Telescope.Asdf as Asdf
-import Telescope.Asdf.Core (Unit (..))
+import Telescope.Asdf.Core (Unit (Pixel))
+import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS
 
 
--- data CoordinateFrame = CoordinateFrame
---   { name :: Text
---   , axes :: NonEmpty FrameAxis
---   }
---
---
--- data CelestialFrame = CelestialFrame
---   { name :: Text
---   , axes :: NonEmpty FrameAxis
---   -- , referenceFrame ::
---   }
+transformQuantity
+  :: WCSCommon
+  -> QuantityAxes 'WCSMain
+  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, Alpha, Delta)
+transformQuantity common axes =
+  transformOpticalDepth axes.depth.keys <&> transformSpatial common axes.slitX.keys axes.dummyY.keys pcs
+ where
+  pcs :: PCXY QuantityAxes 'WCSMain
+  pcs = fromMaybe identityPCs $ do
+    pcx <- axes.slitX.pcs
+    pcy <- axes.dummyY.pcs
+    pure $ PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
 
-data OpticalDepth deriving (Generic, ToAxes)
-
-
-transformComposite
-  :: WCSAxisKeywords s 'WCSMain OpticalDepth
-  -> WCSAxisKeywords s 'WCSMain X
-  -> WCSAxisKeywords s 'WCSMain Y
-  -> PCXY s 'WCSMain
-  -> Transform (Pix OpticalDepth, Pix X, Pix Y) (Linear OpticalDepth, Alpha, Delta)
-transformComposite wcsOD wcsX wcsY pcs = transformOpticalDepth wcsOD <&> transformSpatial wcsX wcsY pcs
+  identityPCs :: PCXY QuantityAxes 'WCSMain
+  identityPCs =
+    PCXY{xx = PC 1, xy = PC 0, yx = PC 0, yy = PC 1}
 
 
-transformOpticalDepth :: WCSAxisKeywords s 'WCSMain OpticalDepth -> Transform (Pix OpticalDepth) (Linear OpticalDepth)
+transformOpticalDepth :: WCSAxisKeywords s 'WCSMain Depth -> Transform (Pix Depth) (Linear Depth)
 transformOpticalDepth wcsOD =
   linear (wcsShift wcsOD) (Scale $ factor1digit wcsOD.cdelt.ktype)
  where
@@ -47,11 +43,12 @@ transformOpticalDepth wcsOD =
 
 
 transformSpatial
-  :: WCSAxisKeywords s 'WCSMain X
+  :: WCSCommon
+  -> WCSAxisKeywords s 'WCSMain X
   -> WCSAxisKeywords s 'WCSMain Y
   -> PCXY s 'WCSMain
   -> Transform (Pix X, Pix Y) (Alpha, Delta)
-transformSpatial wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky |> sky
+transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky |> sky
  where
   pcMatrix :: Array D Ix2 Double
   pcMatrix =
@@ -66,7 +63,12 @@ transformSpatial wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky 
   linearXY = wcsLinear wcsX <&> wcsLinear wcsY
 
   sky :: Transform (Phi, Theta) (Alpha, Delta)
-  sky = celestial (Lat $ realToFrac wcsX.crval.ktype) (Lon $ realToFrac wcsY.crval.ktype) (LonPole 180)
+  sky = celestial (Lat $ realToFrac $ arcsecondsToDegrees wcsX.crval.ktype) (Lon $ realToFrac $ arcsecondsToDegrees wcsY.crval.ktype) lonPole
+
+  lonPole :: LonPole
+  lonPole =
+    let (Key (Degrees d)) = common.lonpole
+     in LonPole (realToFrac d)
 
 
 wcsLinear :: (ToAxes a) => WCSAxisKeywords s alt x -> Transform (Pix a) (Linear a)
@@ -76,7 +78,11 @@ wcsLinear wcs =
 
 wcsScale :: WCSAxisKeywords s alt x -> Scale
 wcsScale wcs =
-  Scale (realToFrac wcs.cdelt.ktype)
+  Scale (realToFrac $ arcsecondsToDegrees wcs.cdelt.ktype)
+
+
+arcsecondsToDegrees :: Float -> Float
+arcsecondsToDegrees f = f / 3600
 
 
 wcsShift :: WCSAxisKeywords s alt x -> Shift
@@ -84,80 +90,84 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-inputStep :: GWCSStep CoordinateFrame
-inputStep = GWCSStep pixelFrame (Just (transformComposite wcsOD wcsX wcsY pcs).transformation)
+quantityGWCS :: WCSHeader QuantityAxes -> QuantityGWCS
+quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
-  pixelFrame :: CoordinateFrame
-  pixelFrame =
-    CoordinateFrame
-      { name = "pixel"
-      , axes =
-          NE.fromList
-            [ FrameAxis 0 "optical_depth" (AxisType "PIXEL") Pixel
-            , FrameAxis 1 "spatial along slit" (AxisType "PIXEL") Pixel
-            , FrameAxis 2 "raster scan step number" (AxisType "PIXEL") Pixel
-            ]
-      }
+  inputStep :: WCSCommon -> QuantityAxes 'WCSMain -> GWCSStep CoordinateFrame
+  inputStep common axes = GWCSStep pixelFrame (Just (transformQuantity common axes).transformation)
+   where
+    pixelFrame :: CoordinateFrame
+    pixelFrame =
+      CoordinateFrame
+        { name = "pixel"
+        , axes =
+            NE.fromList
+              [ FrameAxis 0 "optical_depth" (AxisType "PIXEL") Pixel
+              , FrameAxis 1 "spatial along slit" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "raster scan step number" (AxisType "PIXEL") Pixel
+              ]
+        }
 
-  pcs :: PCXY s 'WCSMain
-  pcs = PCXY{xx = PC 1, xy = PC 0, yy = PC 1, yx = PC 0}
+  outputStep :: GWCSStep (CompositeFrame CoordinateFrame CelestialFrame)
+  outputStep = GWCSStep compositeFrame Nothing
+   where
+    compositeFrame =
+      CompositeFrame opticalDepthFrame celestialFrame
 
-  wcsX :: WCSAxisKeywords s 'WCSMain X
-  wcsX = WCSAxisKeywords{ctype = Key "", cunit = Key "", crpix = Key 28.571428, crval = Key (-0.11305589), cdelt = Key 4.15055000e-04}
+    opticalDepthFrame =
+      CoordinateFrame
+        { name = "optical_depth"
+        , axes =
+            NE.fromList
+              [ FrameAxis 0 "optical_depth" "optical_depth" Pixel
+              ]
+        }
 
-  wcsY :: WCSAxisKeywords s 'WCSMain Y
-  wcsY = WCSAxisKeywords{ctype = Key "", cunit = Key "", crpix = Key 14.520178, crval = Key (-0.13333601), cdelt = Key 5.92935694e-05}
-
-  wcsOD :: WCSAxisKeywords s 'WCSMain OpticalDepth
-  wcsOD = WCSAxisKeywords{ctype = Key "", cunit = Key "", crpix = Key 12, crval = Key 0, cdelt = Key 0.1}
-
-
-outputStep :: GWCSStep (CompositeFrame CoordinateFrame CelestialFrame)
-outputStep = GWCSStep compositeFrame Nothing
- where
-  compositeFrame =
-    CompositeFrame opticalDepthFrame celestialFrame
-
-  opticalDepthFrame =
-    CoordinateFrame
-      { name = "optical_depth"
-      , axes =
-          NE.fromList
-            [ FrameAxis 0 "optical_depth" "optical_depth" (Unit "optical_depth")
-            ]
-      }
-
-  celestialFrame =
-    CelestialFrame
-      { name = "icrs"
-      , referenceFrame = ICRSFrame
-      , axes =
-          NE.fromList
-            [ FrameAxis 1 "lon" (AxisType "pos.eq.ra") Degrees
-            , FrameAxis 2 "lat" (AxisType "pos.eq.dec") Degrees
-            ]
-      }
+    celestialFrame =
+      CelestialFrame
+        { name = "icrs"
+        , referenceFrame = ICRSFrame
+        , axes =
+            NE.fromList
+              [ FrameAxis 1 "lon" (AxisType "pos.eq.ra") Unit.Degrees
+              , FrameAxis 2 "lat" (AxisType "pos.eq.dec") Unit.Degrees
+              ]
+        }
 
 
-data GWCS
-  = GWCS
-      (GWCSStep CoordinateFrame)
-      (GWCSStep (CompositeFrame CoordinateFrame CelestialFrame))
+newtype QuantityGWCS
+  = QuantityGWCS
+      (GWCS CoordinateFrame (CompositeFrame CoordinateFrame CelestialFrame))
+instance KnownText QuantityGWCS where
+  knownText = "quantityGWCS"
 
 
-instance ToAsdf GWCS where
+instance ToAsdf QuantityGWCS where
+  schema (QuantityGWCS gwcs) = schema gwcs
+  anchor _ = Just $ Anchor $ knownText @QuantityGWCS
+  toValue (QuantityGWCS gwcs) = toValue gwcs
+
+
+newtype ProfileGWCS = ProfileGWCS ()
+
+
+instance KnownText ProfileGWCS where
+  knownText = "profileGWCS"
+
+
+instance ToAsdf ProfileGWCS where
   schema _ = "tag:stsci.edu:gwcs/wcs-1.2.0"
-  toValue (GWCS inp out) =
+  anchor _ = Just $ Anchor $ knownText @ProfileGWCS
+  toValue _ =
     Object
       [ ("name", toNode $ String "")
-      , ("steps", toNode $ Array [toNode inp, toNode out])
+      , ("steps", toNode $ Array [])
       ]
 
-
-test :: IO ()
-test = do
-  out <- Asdf.encodeM $ Object [("wcs", toNode $ GWCS inputStep outputStep)]
-  BS.writeFile "/Users/seanhess/Downloads/l2.asdf" out
+-- test :: IO ()
+-- test = do
+--   out <- Asdf.encodeM $ Object [("wcs", toNode $ GWCS inputStep outputStep)]
+--   BS.writeFile "/Users/seanhess/Downloads/l2.asdf" out
 
 {-
 

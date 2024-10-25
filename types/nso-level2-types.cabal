@@ -55,17 +55,17 @@ library
   ghc-options: -Wall
   build-depends:
       aeson
-    , base >=4.16.4.0
+    , base >=4.16 && <5
     , bytestring
     , containers
     , data-diverse
-    , effectful
+    , effectful >=2.4 && <3
     , exceptions
     , filepath
     , globus
     , hasql
     , http-api-data
-    , hyperbole
+    , hyperbole ==0.4.1
     , lens
     , modern-uri
     , random

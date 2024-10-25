@@ -66,6 +66,7 @@ data GlobusConfig
 data GlobusDevConfig = GlobusDevConfig
   { dkist :: Path' Dir DKIST
   }
+  deriving (Show)
 
 
 initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es) => Eff es Config

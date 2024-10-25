@@ -7,10 +7,11 @@ import Data.Text qualified as T
 import GHC.TypeLits
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
+import Telescope.Asdf.GWCS (ToAxes (..))
 import Telescope.Fits.Header
 
 
-data Depth
+data Depth deriving (Generic, ToAxes)
 data SlitX
 data FrameY
 data Stokes

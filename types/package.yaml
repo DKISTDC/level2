@@ -32,7 +32,7 @@ default-extensions:
   - StrictData
 
 dependencies:
-  - base >=4.16.4.0
+  - base >=4.16 && <5
   - time
   - text
   - tagged
@@ -45,9 +45,9 @@ dependencies:
   - random
   - modern-uri
   - lens
-  - hyperbole
+  - hyperbole == 0.4.1
   - exceptions
-  - effectful
+  - effectful >= 2.4 && <3
   - http-api-data
   - data-diverse
   - data-diverse

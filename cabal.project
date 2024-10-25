@@ -5,6 +5,7 @@ packages:
   ../telescope.hs/
   ../fits-parse/
   ../hyperbole/
+  ../globus.hs/
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz
   -- https://hackage.haskell.org/package/globus-0.1.2/candidate/globus-0.1.2.tar.gz
 
@@ -31,4 +32,4 @@ source-repository-package
 -- source-repository-package
 --   type: git
 --   location: https://github.com/dkistdc/telescope.hs
---   tag: 071c0bc80214179a10a4805d3ca46d1540e642a5
+--   tag: 071c0bc80214179a10a4805d3ca46d1540e642a5c
