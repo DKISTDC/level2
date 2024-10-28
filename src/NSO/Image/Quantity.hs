@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Image.Quantity where
 
@@ -21,6 +22,9 @@ import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
+import Telescope.Data.Axes (AxisOrder (..))
+import Telescope.Data.KnownText
+import Telescope.Data.WCS (WCSAlt (..))
 import Telescope.Fits as Fits
 import Telescope.Fits.Types (Axes (..), HeaderRecord (..))
 
@@ -268,11 +272,11 @@ data QuantityAxes alt = QuantityAxes
   , dummyY :: QuantityAxis alt Y
   }
   deriving (Generic, Show)
-instance AxisOrder QuantityAxes Y where
+instance AxisOrder (HDUAxis QuantityAxes Y) where
   axisN = 3
-instance AxisOrder QuantityAxes X where
+instance AxisOrder (HDUAxis QuantityAxes X) where
   axisN = 2
-instance AxisOrder QuantityAxes Depth where
+instance AxisOrder (HDUAxis QuantityAxes Depth) where
   axisN = 1
 instance (KnownText alt) => ToHeader (QuantityAxes alt) where
   toHeader (QuantityAxes d x y) = mconcat [toHeader d, toHeader x, toHeader y]
@@ -283,8 +287,8 @@ data QuantityAxis alt ax = QuantityAxis
   , pcs :: Maybe (QuantityPCs alt ax)
   }
   deriving (Generic, Show)
-instance (KnownText alt, AxisOrder QuantityAxes ax) => ToHeader (QuantityAxis alt ax) where
-  toHeader (QuantityAxis keys pcs) = toHeader keys <> toHeader pcs
+instance (KnownText alt, AxisOrder (HDUAxis QuantityAxes ax)) => ToHeader (QuantityAxis alt ax) where
+  toHeader (QuantityAxis keys pcs) = toHeader (toWCSAxis @(HDUAxis QuantityAxes ax) keys) <> toHeader pcs
 
 
 data QuantityPCs alt ax = QuantityPCs
@@ -293,7 +297,7 @@ data QuantityPCs alt ax = QuantityPCs
   , dummyY :: PC QuantityAxes alt ax Y
   }
   deriving (Generic, Show)
-instance (KnownText alt, AxisOrder QuantityAxes ax) => ToHeader (QuantityPCs alt ax) where
+instance (KnownText alt, AxisOrder (HDUAxis QuantityAxes ax)) => ToHeader (QuantityPCs alt ax) where
   toHeader pcs =
     Header
       [ Keyword $ keywordRecord pcs.depth

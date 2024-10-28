@@ -22,8 +22,10 @@ import NSO.Types.Common
 import NSO.Types.Wavelength
 import Skeletest
 import Skeletest.Predicate qualified as P
+import Telescope.Data.Axes hiding (Axis)
+import Telescope.Data.WCS
 import Telescope.Fits as Fits hiding (Axis)
-import Telescope.Fits.Header (HeaderRecord (..), KeywordRecord (..), LogicalConstant (..))
+import Telescope.Fits.Header (HeaderRecord (..), KeywordRecord (..))
 
 
 spec :: Spec
@@ -78,13 +80,13 @@ specHeader = describe "Header Keywords" $ do
 
     it "should include pcs headers" $ do
       let hx = toHeader $ QuantityPCs @WCSMain @X (PC 1) (PC 2) (PC 3)
-      axisN @QuantityAxes @X `shouldBe` 2
+      axisN @(HDUAxis QuantityAxes X) `shouldBe` 2
       lookupKeyword "PC2_1" hx `shouldSatisfy` P.just P.anything
       lookupKeyword "PC2_2" hx `shouldSatisfy` P.just P.anything
       lookupKeyword "PC2_3" hx `shouldSatisfy` P.just P.anything
 
       let hya = toHeader $ QuantityPCs @A @Y (PC 1) (PC 2) (PC 3)
-      axisN @QuantityAxes @Y `shouldBe` 3
+      axisN @(HDUAxis QuantityAxes Y) `shouldBe` 3
       lookupKeyword "PC3_1A" hya `shouldSatisfy` P.just P.anything
       lookupKeyword "PC3_2A" hya `shouldSatisfy` P.just P.anything
       lookupKeyword "PC3_3A" hya `shouldSatisfy` P.just P.anything

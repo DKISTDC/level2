@@ -13,7 +13,10 @@ import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
 import Telescope.Asdf.GWCS (ToAxes (..))
+import Telescope.Data.Axes (AxisOrder (..))
+import Telescope.Data.KnownText
 import Telescope.Data.Parser (parseFail)
+import Telescope.Data.WCS (CType (..), CUnit (..), WCSAlt (..), WCSAxis (..))
 import Telescope.Fits as Fits hiding (Axis)
 import Telescope.Fits.Header as Fits
 import Telescope.Fits.Header.Class (GToHeader (..))
@@ -38,13 +41,6 @@ data Y deriving (Generic, ToAxes)
 data Wav
 
 
-type family AxisNumber a ax :: Natural
-
-
-class AxisOrder a ax where
-  axisN :: Natural
-
-
 -- axisIndex :: Proxy a -> Proxy ax -> Natural
 
 data PCXY s (alt :: WCSAlt) = PCXY
@@ -53,6 +49,9 @@ data PCXY s (alt :: WCSAlt) = PCXY
   , yy :: PC s alt Y Y
   , yx :: PC s alt Y X
   }
+
+
+data HDUAxis s axis
 
 
 -- WCS --------------------------------------------------------------
@@ -87,19 +86,24 @@ data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
   , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n"
   }
   deriving (Generic, Show)
-instance (AxisOrder s ax, KnownText alt) => ToHeader (WCSAxisKeywords s alt ax) where
-  toHeader =
-    modHeader . gToHeader . from
-   where
-    modHeader (Header recs) =
-      Header $ fmap modKey recs
-    modKey = \case
-      Keyword (KeywordRecord key val cmt) ->
-        Keyword $ KeywordRecord (addA $ addN key) val cmt
-      rec -> rec
 
-    addN k = k <> pack (show (axisN @s @ax))
-    addA k = k <> knownText @alt
+
+toWCSAxis :: forall axis s (alt :: WCSAlt) ax. WCSAxisKeywords s alt ax -> WCSAxis alt axis
+toWCSAxis keys =
+  WCSAxis
+    { ctype = CType keys.ctype.ktype
+    , cunit = CUnit keys.cunit.ktype
+    , crpix = keys.crpix.ktype
+    , crval = keys.crval.ktype
+    , cdelt = keys.cdelt.ktype
+    }
+
+
+fromWCSAxis :: WCSAxis alt ax -> WCSAxisKeywords s alt ax
+fromWCSAxis wcs =
+  let CType ctype = wcs.ctype
+      CUnit cunit = wcs.cunit
+   in WCSAxisKeywords{ctype = Key ctype, cunit = Key cunit, crpix = Key wcs.crpix, crval = Key wcs.crval, cdelt = Key wcs.cdelt}
 
 
 -- data WCSAxis (alt :: WCSAlt) axes (n :: Nat) = WCSAxis
@@ -117,8 +121,8 @@ data PC s (alt :: WCSAlt) ai aj = PC {value :: Float}
 instance KeywordInfo (PC s alt ai aj) where
   keytype = "PCi_j"
   description = "Linear transformation matrix used with the coordinate system"
-instance (KnownText alt, AxisOrder s ai, AxisOrder s aj) => IsKeyword (PC s alt ai aj) where
-  keyword = "PC" <> pack (show (axisN @s @ai)) <> "_" <> pack (show (axisN @s @aj)) <> knownText @alt
+instance (KnownText alt, AxisOrder (HDUAxis s ai), AxisOrder (HDUAxis s aj)) => IsKeyword (PC s alt ai aj) where
+  keyword = "PC" <> pack (show (axisN @(HDUAxis s ai))) <> "_" <> pack (show (axisN @(HDUAxis s aj))) <> knownText @alt
 instance ToKeyword (PC s alt ai aj) where
   toKeywordValue (PC n) = Float n
 

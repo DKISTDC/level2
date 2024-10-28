@@ -8,6 +8,7 @@ import GHC.TypeLits
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
 import Telescope.Asdf.GWCS (ToAxes (..))
+import Telescope.Data.KnownText
 import Telescope.Fits.Header
 
 
@@ -273,17 +274,6 @@ instance KnownValue Tesla
 instance KnownValue Deg
 instance KnownValue Km
 instance KnownValue Kg_m3
-
-
-data WCSAlt
-  = WCSMain
-  | A
-
-
-instance KnownText WCSMain where
-  knownText = ""
-instance KnownText A where
-  knownText = "A"
 
 
 -- | Headers in inv_res_pre (Profile Fit) that describe the subsection of the canonical data we use

@@ -10,7 +10,6 @@ import Effectful.Error.Static
 import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
-import NSO.Image.Headers.Keywords (KnownText (..))
 import NSO.Image.Headers.WCS (WCSHeader (..))
 import NSO.Image.Primary
 import NSO.Image.Profile
@@ -25,6 +24,7 @@ import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Asdf.NDArray (DataType (..))
 import Telescope.Data.Axes (Axes, Row)
+import Telescope.Data.KnownText
 import Telescope.Fits (ToHeader (..))
 
 
@@ -150,8 +150,8 @@ instance (ToAsdf hdus, ToAsdf gwcs) => ToAsdf (HDUSection gwcs hdus) where
 
 quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
 quantitiesSection frames =
-  let refFrame = head frames
-      wcs = refFrame.quantities.opticalDepth.wcs :: WCSHeader QuantityAxes
+  -- choose a single frame from which to calculate the GWCS
+  let wcs = (head frames).quantities.opticalDepth.wcs :: WCSHeader QuantityAxes
    in HDUSection
         { axes = ["frameY", "slitX", "opticalDepth"]
         , shape = shape.axes

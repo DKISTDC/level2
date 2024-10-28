@@ -9,6 +9,7 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
+import Telescope.Data.KnownText
 import Telescope.Fits.Header (KeywordRecord (..), LogicalConstant (..), ToKeyword (..), Value (..))
 
 
@@ -92,14 +93,6 @@ class GTypeName f where
 
 instance (Datatype d) => GTypeName (D1 d f) where
   gtypeName = datatypeName
-
-
-class KnownText a where
-  knownText :: Text
-
-
-instance (KnownSymbol s) => KnownText s where
-  knownText = pack $ symbolVal @s Proxy
 
 
 class KnownValue a where

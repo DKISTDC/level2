@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Image.Profile where
 
@@ -20,6 +21,9 @@ import NSO.Image.Headers.WCS
 import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
+import Telescope.Data.Axes (AxisOrder (..))
+import Telescope.Data.KnownText
+import Telescope.Data.WCS
 import Telescope.Fits as Fits
 import Telescope.Fits.Types (HeaderRecord (..))
 
@@ -194,13 +198,13 @@ data ProfileAxes alt = ProfileAxes
   , stokes :: ProfileAxis alt Stokes
   }
   deriving (Generic)
-instance AxisOrder ProfileAxes Y where
+instance AxisOrder (HDUAxis ProfileAxes Y) where
   axisN = 4
-instance AxisOrder ProfileAxes X where
+instance AxisOrder (HDUAxis ProfileAxes X) where
   axisN = 3
-instance AxisOrder ProfileAxes Wav where
+instance AxisOrder (HDUAxis ProfileAxes Wav) where
   axisN = 2
-instance AxisOrder ProfileAxes Stokes where
+instance AxisOrder (HDUAxis ProfileAxes Stokes) where
   axisN = 1
 instance (KnownText alt) => ToHeader (ProfileAxes alt) where
   toHeader (ProfileAxes y x w s) =
@@ -212,8 +216,8 @@ data ProfileAxis alt ax = ProfileAxis
   , pcs :: Maybe (ProfilePCs alt ax)
   }
   deriving (Generic)
-instance (KnownText alt, AxisOrder ProfileAxes ax) => ToHeader (ProfileAxis alt ax) where
-  toHeader pa = toHeader pa.keys <> toHeader pa.pcs
+instance (KnownText alt, AxisOrder (HDUAxis ProfileAxes ax)) => ToHeader (ProfileAxis alt ax) where
+  toHeader pa = toHeader (toWCSAxis @(HDUAxis ProfileAxes ax) pa.keys) <> toHeader pa.pcs
 
 
 data ProfilePCs alt ax = ProfilePCs
@@ -223,7 +227,7 @@ data ProfilePCs alt ax = ProfilePCs
   , stokes :: PC ProfileAxes alt ax Stokes
   }
   deriving (Generic)
-instance (KnownText alt, AxisOrder ProfileAxes ax) => ToHeader (ProfilePCs alt ax) where
+instance (KnownText alt, AxisOrder (HDUAxis ProfileAxes ax)) => ToHeader (ProfilePCs alt ax) where
   toHeader pcs =
     Header
       [ Keyword $ keywordRecord pcs.dummyY

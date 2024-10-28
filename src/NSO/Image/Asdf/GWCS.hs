@@ -5,15 +5,16 @@ module NSO.Image.Asdf.GWCS where
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2)
 import Data.Massiv.Array qualified as M
-import NSO.Image.Headers.Keywords (KnownText (..))
-import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), WCSAlt (..))
-import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), X, Y)
+import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..))
+import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), X, Y, toWCSAxis)
 import NSO.Image.Quantity
 import NSO.Prelude as Prelude
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (Pixel))
 import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS
+import Telescope.Data.KnownText
+import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
 
 transformQuantity
@@ -21,7 +22,7 @@ transformQuantity
   -> QuantityAxes 'WCSMain
   -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, Alpha, Delta)
 transformQuantity common axes =
-  transformOpticalDepth axes.depth.keys <&> transformSpatial common axes.slitX.keys axes.dummyY.keys pcs
+  transformOpticalDepth (toWCSAxis axes.depth.keys) <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
  where
   pcs :: PCXY QuantityAxes 'WCSMain
   pcs = fromMaybe identityPCs $ do
@@ -34,51 +35,69 @@ transformQuantity common axes =
     PCXY{xx = PC 1, xy = PC 0, yx = PC 0, yy = PC 1}
 
 
-transformOpticalDepth :: WCSAxisKeywords s 'WCSMain Depth -> Transform (Pix Depth) (Linear Depth)
+transformOpticalDepth :: WCSAxis 'WCSMain Depth -> Transform (Pix Depth) (Linear Depth)
 transformOpticalDepth wcsOD =
-  linear (wcsShift wcsOD) (Scale $ factor1digit wcsOD.cdelt.ktype)
+  linear (wcsIntercept wcsOD) (Scale $ factor1digit wcsOD.cdelt)
  where
-  factor1digit :: Float -> Double
+  factor1digit :: Float -> Float
   factor1digit d = fromIntegral (round @Float @Integer (d * 10)) / 10
 
 
 transformSpatial
   :: WCSCommon
-  -> WCSAxisKeywords s 'WCSMain X
-  -> WCSAxisKeywords s 'WCSMain Y
+  -> WCSAxis 'WCSMain X
+  -> WCSAxis 'WCSMain Y
   -> PCXY s 'WCSMain
   -> Transform (Pix X, Pix Y) (Alpha, Delta)
 transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky |> sky
  where
-  pcMatrix :: Array D Ix2 Double
+  pcMatrix :: Array D Ix2 Float
   pcMatrix =
     M.delay $
       M.fromLists' @M.P
         M.Seq
-        [ [realToFrac pcs.xx.value, realToFrac pcs.xy.value]
-        , [realToFrac pcs.yx.value, realToFrac pcs.yy.value]
+        [ [pcs.xx.value, pcs.xy.value]
+        , [pcs.yx.value, pcs.yy.value]
         ]
 
   linearXY :: Transform (Pix X, Pix Y) (Linear X, Linear Y)
-  linearXY = wcsLinear wcsX <&> wcsLinear wcsY
+  linearXY = spatialLinear (wcsToDegrees wcsX) <&> spatialLinear (wcsToDegrees wcsY)
 
   sky :: Transform (Phi, Theta) (Alpha, Delta)
-  sky = celestial (Lat $ realToFrac $ arcsecondsToDegrees wcsX.crval.ktype) (Lon $ realToFrac $ arcsecondsToDegrees wcsY.crval.ktype) lonPole
+  sky = celestial (Lat $ arcsecondsToDegrees wcsX.crval) (Lon $ arcsecondsToDegrees wcsY.crval) lonPole
 
   lonPole :: LonPole
   lonPole =
     let (Key (Degrees d)) = common.lonpole
-     in LonPole (realToFrac d)
+     in LonPole d
+
+  -- we don't use wcsLinear, because it includes the crval, which is already taken into account in the sky transform
+  spatialLinear :: forall a alt x. (ToAxes a) => WCSAxis alt x -> Transform (Pix a) (Linear a)
+  spatialLinear wcs = linear (spatialIntercept wcs) (Scale wcs.cdelt)
+
+  spatialIntercept :: WCSAxis alt axis -> Intercept
+  spatialIntercept w =
+    -- crpix is 1-indexed, need to switch to zero
+    -- don't use crval, it's already incorporated into the sky transform
+    Intercept $ negate (w.cdelt * (w.crpix - 1))
 
 
-wcsLinear :: (ToAxes a) => WCSAxisKeywords s alt x -> Transform (Pix a) (Linear a)
-wcsLinear wcs =
-  linear (wcsShift wcs) (wcsScale wcs)
+-- -- linear (wcsShift wcs) (wcsScale wcs)
+-- linear (Shift (realToFrac wcs.crpix.ktype)) (wcsScale wcs)
 
+-- wcsScale :: WCSAxisKeywords s alt x -> Scale
+-- wcsScale wcs =
+--   Scale (realToFrac $ arcsecondsToDegrees wcs.cdelt.ktype)
 
-wcsScale :: WCSAxisKeywords s alt x -> Scale
-wcsScale wcs =
-  Scale (realToFrac $ arcsecondsToDegrees wcs.cdelt.ktype)
+wcsToDegrees :: WCSAxis alt axis -> WCSAxis alt axis
+wcsToDegrees WCSAxis{ctype, cunit, crpix, crval, cdelt} =
+  WCSAxis
+    { ctype
+    , cunit
+    , crpix
+    , crval = arcsecondsToDegrees crval
+    , cdelt = arcsecondsToDegrees cdelt
+    }
 
 
 arcsecondsToDegrees :: Float -> Float
