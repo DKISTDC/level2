@@ -250,7 +250,7 @@ profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection ProfileGWCS (Profile
 profilesSection frames =
   let shape = (head frames).shape
    in HDUSection
-        { wcs = ProfileGWCS ()
+        { wcs = quantityGWCS _
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape.axes
         , hdus = profilesTree shape frames

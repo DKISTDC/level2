@@ -5,10 +5,12 @@ module NSO.Image.Asdf.GWCS where
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2)
 import Data.Massiv.Array qualified as M
-import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..))
+import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Stokes)
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), X, Y, toWCSAxis)
+import NSO.Image.Profile
 import NSO.Image.Quantity
 import NSO.Prelude as Prelude
+import NSO.Types.Wavelength
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (Pixel))
 import Telescope.Asdf.Core qualified as Unit
@@ -16,6 +18,30 @@ import Telescope.Asdf.GWCS
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
+
+transformProfile
+  :: WCSCommon
+  -> ProfileAxes 'WCSMain
+  -> Transform (Pix Stokes, Pix Wavelength, Pix X, Pix Y) (Identity Stokes, Linear Wavelength, Alpha, Delta)
+transformProfile common axes =
+  transformIdentity
+    <&> transformWavelength
+    <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
+ where
+  transformWavelength :: Transform (Pix Wavelength) (Linear Wavelength)
+  transformWavelength = _
+
+  transformIdentity :: Transform (Pix a) (Identity a)
+  transformIdentity = _
+
+  pcs :: PCXY ProfileAxes 'WCSMain
+  pcs = fromMaybe identityPCXY $ do
+    pcx <- axes.slitX.pcs
+    pcy <- axes.dummyY.pcs
+    pure $ PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
+
+
+-- Quantity ---------------------------------------------------
 
 transformQuantity
   :: WCSCommon
@@ -25,14 +51,15 @@ transformQuantity common axes =
   transformOpticalDepth (toWCSAxis axes.depth.keys) <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
  where
   pcs :: PCXY QuantityAxes 'WCSMain
-  pcs = fromMaybe identityPCs $ do
+  pcs = fromMaybe identityPCXY $ do
     pcx <- axes.slitX.pcs
     pcy <- axes.dummyY.pcs
     pure $ PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
 
-  identityPCs :: PCXY QuantityAxes 'WCSMain
-  identityPCs =
-    PCXY{xx = PC 1, xy = PC 0, yx = PC 0, yy = PC 1}
+
+identityPCXY :: PCXY s 'WCSMain
+identityPCXY =
+  PCXY{xx = PC 1, xy = PC 0, yx = PC 0, yy = PC 1}
 
 
 transformOpticalDepth :: WCSAxis 'WCSMain Depth -> Transform (Pix Depth) (Linear Depth)
@@ -127,11 +154,11 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame CoordinateFrame CelestialFrame)
+  outputStep :: GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame opticalDepthFrame celestialFrame
+      CompositeFrame (opticalDepthFrame, celestialFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -142,21 +169,23 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
               ]
         }
 
-    celestialFrame =
-      CelestialFrame
-        { name = "icrs"
-        , referenceFrame = ICRSFrame
-        , axes =
-            NE.fromList
-              [ FrameAxis 1 "lon" (AxisType "pos.eq.ra") Unit.Degrees
-              , FrameAxis 2 "lat" (AxisType "pos.eq.dec") Unit.Degrees
-              ]
-        }
+
+celestialFrame :: CelestialFrame
+celestialFrame =
+  CelestialFrame
+    { name = "icrs"
+    , referenceFrame = ICRSFrame
+    , axes =
+        NE.fromList
+          [ FrameAxis 1 "lon" (AxisType "pos.eq.ra") Unit.Degrees
+          , FrameAxis 2 "lat" (AxisType "pos.eq.dec") Unit.Degrees
+          ]
+    }
 
 
 newtype QuantityGWCS
   = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame CoordinateFrame CelestialFrame))
+      (GWCS CoordinateFrame (CompositeFrame (CoordinateFrame, CelestialFrame)))
 instance KnownText QuantityGWCS where
   knownText = "quantityGWCS"
 
@@ -167,7 +196,47 @@ instance ToAsdf QuantityGWCS where
   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
-newtype ProfileGWCS = ProfileGWCS ()
+profileGWCS :: WCSHeader ProfileAxes -> ProfileGWCS
+profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+ where
+  inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
+  inputStep common axes = GWCSStep pixelFrame (Just (transformProfile common axes).transformation)
+   where
+    pixelFrame :: CoordinateFrame
+    pixelFrame =
+      CoordinateFrame
+        { name = "pixel"
+        , axes =
+            NE.fromList
+              [ FrameAxis 0 "polarization state" (AxisType "PIXEL") Pixel
+              , FrameAxis 1 "dispersion axis" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "spatial along slit" (AxisType "PIXEL") Pixel
+              , FrameAxis 3 "raster scan step number" (AxisType "PIXEL") Pixel
+              ]
+        }
+
+  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame))
+  outputStep = GWCSStep compositeFrame Nothing
+   where
+    compositeFrame =
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame)
+
+    stokesFrame =
+      StokesFrame
+        { name = "polarization state"
+        , axisOrder = 0
+        }
+
+    spectralFrame =
+      SpectralFrame
+        { name = "wavelength"
+        , axisOrder = 1
+        }
+
+
+newtype ProfileGWCS
+  = ProfileGWCS
+      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame)))
 
 
 instance KnownText ProfileGWCS where
@@ -175,13 +244,9 @@ instance KnownText ProfileGWCS where
 
 
 instance ToAsdf ProfileGWCS where
-  schema _ = "tag:stsci.edu:gwcs/wcs-1.2.0"
+  schema (ProfileGWCS gwcs) = schema gwcs
   anchor _ = Just $ Anchor $ knownText @ProfileGWCS
-  toValue _ =
-    Object
-      [ ("name", toNode $ String "")
-      , ("steps", toNode $ Array [])
-      ]
+  toValue (ProfileGWCS gwcs) = toValue gwcs
 
 -- test :: IO ()
 -- test = do
