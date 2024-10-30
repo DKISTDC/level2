@@ -15,7 +15,7 @@ import Telescope.Fits.Header
 data Depth deriving (Generic, ToAxes)
 data SlitX
 data FrameY
-data Stokes
+data Stokes deriving (Generic, ToAxes)
 data WavIds
 instance KnownText Depth where
   knownText = "OpticalDepth"

@@ -249,8 +249,9 @@ instance (KnownText ref) => KnownText (Ref ref) where
 profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection ProfileGWCS (Profiles ProfileTree)
 profilesSection frames =
   let shape = (head frames).shape
+      wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
    in HDUSection
-        { wcs = quantityGWCS _
+        { wcs = profileGWCS wcs
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , shape = shape.axes
         , hdus = profilesTree shape frames

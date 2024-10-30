@@ -6,15 +6,14 @@ import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Stokes)
-import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), X, Y, toWCSAxis)
+import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Profile
 import NSO.Image.Quantity
 import NSO.Prelude as Prelude
-import NSO.Types.Wavelength
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (Pixel))
 import Telescope.Asdf.Core qualified as Unit
-import Telescope.Asdf.GWCS
+import Telescope.Asdf.GWCS as GWCS
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
@@ -22,17 +21,15 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 transformProfile
   :: WCSCommon
   -> ProfileAxes 'WCSMain
-  -> Transform (Pix Stokes, Pix Wavelength, Pix X, Pix Y) (Identity Stokes, Linear Wavelength, Alpha, Delta)
+  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix Stokes, Linear Wav, Alpha, Delta)
 transformProfile common axes =
-  transformIdentity
-    <&> transformWavelength
-    <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
+  transformIdentity <&> transformWav <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
  where
-  transformWavelength :: Transform (Pix Wavelength) (Linear Wavelength)
-  transformWavelength = _
+  transformWav :: Transform (Pix Wav) (Linear Wav)
+  transformWav = wcsLinear $ wcsToNanometers (toWCSAxis axes.wavelength.keys)
 
-  transformIdentity :: Transform (Pix a) (Identity a)
-  transformIdentity = _
+  transformIdentity :: (ToAxes (Pix a)) => Transform (Pix a) (Pix a)
+  transformIdentity = GWCS.identity
 
   pcs :: PCXY ProfileAxes 'WCSMain
   pcs = fromMaybe identityPCXY $ do
@@ -131,6 +128,19 @@ arcsecondsToDegrees :: Float -> Float
 arcsecondsToDegrees f = f / 3600
 
 
+wcsToNanometers :: WCSAxis alt Wav -> WCSAxis alt Wav
+wcsToNanometers WCSAxis{ctype, cunit, crpix, crval, cdelt} =
+  WCSAxis
+    { ctype
+    , cunit
+    , crpix
+    , crval = toNanometers crval
+    , cdelt = toNanometers cdelt
+    }
+ where
+  toNanometers n = n / 10 ^ (9 :: Int)
+
+
 wcsShift :: WCSAxisKeywords s alt x -> Shift
 wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
@@ -148,9 +158,9 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
         { name = "pixel"
         , axes =
             NE.fromList
-              [ FrameAxis 0 "optical_depth" (AxisType "PIXEL") Pixel
-              , FrameAxis 1 "spatial along slit" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "raster scan step number" (AxisType "PIXEL") Pixel
+              [ FrameAxis 0 "opticalDepth" (AxisType "PIXEL") Pixel
+              , FrameAxis 1 "slitX" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "frameY" (AxisType "PIXEL") Pixel
               ]
         }
 
@@ -158,7 +168,7 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -170,15 +180,15 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
         }
 
 
-celestialFrame :: CelestialFrame
-celestialFrame =
+celestialFrame :: Int -> CelestialFrame
+celestialFrame n =
   CelestialFrame
     { name = "icrs"
     , referenceFrame = ICRSFrame
     , axes =
         NE.fromList
-          [ FrameAxis 1 "lon" (AxisType "pos.eq.ra") Unit.Degrees
-          , FrameAxis 2 "lat" (AxisType "pos.eq.dec") Unit.Degrees
+          [ FrameAxis n "lon" (AxisType "pos.eq.ra") Unit.Degrees
+          , FrameAxis (n + 1) "lat" (AxisType "pos.eq.dec") Unit.Degrees
           ]
     }
 
@@ -208,10 +218,10 @@ profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
         { name = "pixel"
         , axes =
             NE.fromList
-              [ FrameAxis 0 "polarization state" (AxisType "PIXEL") Pixel
-              , FrameAxis 1 "dispersion axis" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "spatial along slit" (AxisType "PIXEL") Pixel
-              , FrameAxis 3 "raster scan step number" (AxisType "PIXEL") Pixel
+              [ FrameAxis 0 "stokes" (AxisType "PIXEL") Pixel
+              , FrameAxis 1 "wavelength" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "slitX" (AxisType "PIXEL") Pixel
+              , FrameAxis 3 "frameY" (AxisType "PIXEL") Pixel
               ]
         }
 
@@ -219,7 +229,7 @@ profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame)
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2)
 
     stokesFrame =
       StokesFrame

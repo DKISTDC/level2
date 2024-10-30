@@ -38,7 +38,7 @@ newtype Axis a = Axis Int
 
 data X deriving (Generic, ToAxes)
 data Y deriving (Generic, ToAxes)
-data Wav
+data Wav deriving (Generic, ToAxes)
 
 
 -- axisIndex :: Proxy a -> Proxy ax -> Natural
