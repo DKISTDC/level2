@@ -54,7 +54,7 @@ dependencies:
   - containers
   - bytestring
   - aeson
-  - globus
+  - globus >= 0.1.3
   - telescope
   - scientific
 
