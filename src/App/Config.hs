@@ -76,15 +76,19 @@ initConfig = do
   (services, servicesIsMock) <- initServices
   globus <- initGlobus
   scratch <- initScratch
-  auth <- initAuth
+  auth <- initAuth globus
   pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth}
 
 
-initAuth :: (Environment :> es) => Eff es AuthInfo
-initAuth = do
-  let admins = [UserEmail "shess@nso.edu"]
-  adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
-  pure $ AuthInfo{admins, adminToken}
+initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
+initAuth = \case
+  GlobusLive _ -> do
+    adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
+    pure $ AuthInfo{admins, adminToken}
+  GlobusDev _ -> do
+    pure $ AuthInfo{admins, adminToken = Just "BOOP!"}
+ where
+  admins = [UserEmail "shess@nso.edu"]
 
 
 type IsMock = Bool

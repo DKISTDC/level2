@@ -35,7 +35,8 @@ manageMinions = do
   -- forM_ [0 .. 10 :: Int] $ \n -> do
   --   writeChan fits $ FitsGenWorker.Task (Id (pack $ show n))
 
-  threadDelay (10 * 1000 * 1000)
+  -- 5 second delay
+  threadDelay (5 * 1000 * 1000)
 
 
 generateFits :: [Inversion] -> [GenFits]
