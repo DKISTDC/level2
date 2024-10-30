@@ -6,7 +6,6 @@ import Data.Text (pack, unpack)
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics
-import GHC.TypeLits
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
@@ -19,7 +18,6 @@ import Telescope.Data.Parser (parseFail)
 import Telescope.Data.WCS (CType (..), CUnit (..), WCSAlt (..), WCSAxis (..))
 import Telescope.Fits as Fits hiding (Axis)
 import Telescope.Fits.Header as Fits
-import Telescope.Fits.Header.Class (GToHeader (..))
 import Text.Read (readMaybe)
 
 
