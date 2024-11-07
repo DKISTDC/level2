@@ -32,16 +32,9 @@ page
   :: (Hyperbole :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id Inversion
-  -> Page es (InversionStatus : Require InversionStatus)
+  -> Page es (InversionStatus, GenerateTransfer, InversionCommit, PreprocessCommit, DownloadTransfer, UploadTransfer)
 page ip i = do
-  handle (inversions redirectHome)
-  $ handle generateTransfer
-  $ handle inversionCommit
-  $ handle preprocessCommit
-  $ handle downloadTransfer
-  $ handle uploadTransfer
-  $ load
-  $ do
+  handle (inversions redirectHome, generateTransfer, inversionCommit, preprocessCommit, downloadTransfer, uploadTransfer) $ do
     inv <- loadInversion i
     step <- currentStep ip i inv.step
     appLayout Inversions $ do
@@ -109,7 +102,7 @@ redirectHome = do
 -- ----------------------------------------------------------------
 -- INVERSION STATUS -----------------------------------------------
 -- ----------------------------------------------------------------
---
+
 type InversionViews = '[DownloadTransfer, UploadTransfer, PreprocessCommit, InversionCommit, GenerateTransfer]
 
 

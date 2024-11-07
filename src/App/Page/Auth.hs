@@ -12,11 +12,9 @@ import Web.Hyperbole
 
 
 -- show the page, then handle the login second
-login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Page es '[AuthRed]
+login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Page es AuthRed
 login = do
-  handle authRed
-  $ load
-  $ do
+  handle authRed $ do
     code <- Tagged <$> reqParam "code"
 
     pure $ col (pad 20 . gap 10) $ do
@@ -27,9 +25,9 @@ login = do
           el (width 200 . color Primary) Icons.spinner
 
 
-logout :: (Hyperbole :> es, Auth :> es) => Page es '[]
+logout :: (Hyperbole :> es, Auth :> es) => Page es ()
 logout = do
-  load $ do
+  handle () $ do
     clearAccessToken
     u <- redirectTo
     redirect u

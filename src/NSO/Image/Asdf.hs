@@ -23,7 +23,7 @@ import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Asdf.NDArray (DataType (..))
-import Telescope.Data.Axes (Axes, Row)
+import Telescope.Data.Axes (Axes, Major (Row))
 import Telescope.Data.KnownText
 import Telescope.Fits (ToHeader (..))
 

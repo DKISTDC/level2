@@ -16,9 +16,9 @@ import NSO.Types.Common
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Inversions :> es, Auth :> es) => Page es '[]
+page :: (Hyperbole :> es, Inversions :> es, Auth :> es) => Page es ()
 page = do
-  load $ do
+  handle () $ do
     AllInversions ivs <- send Inversions.All
     let sorted = sortOn sortInv ivs
     appLayout Inversions $ do

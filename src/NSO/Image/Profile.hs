@@ -25,7 +25,7 @@ import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.KnownText
 import Telescope.Data.WCS
 import Telescope.Fits as Fits
-import Telescope.Fits.Types (HeaderRecord (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
 -- BUG: PC self_self is wrong

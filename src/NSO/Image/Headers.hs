@@ -21,7 +21,7 @@ import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
-import Telescope.Fits.Types (HeaderRecord (..), KeywordRecord (..), getKeywords)
+import Telescope.Fits.Header as Fits
 
 
 headerSpecVersion :: Text

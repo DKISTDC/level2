@@ -20,11 +20,9 @@ import Web.Hyperbole
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
-  -> Page es '[ProgramDatasets]
+  -> Page es ProgramDatasets
 page pid = do
-  handle DatasetsTable.actionSort
-  $ load
-  $ do
+  handle DatasetsTable.actionSort $ do
     ds <- send $ Datasets.Query (ByProposal pid)
     ai <- send Inversions.All
     now <- currentTime

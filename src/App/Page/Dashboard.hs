@@ -27,10 +27,9 @@ import Web.Hyperbole
 
 page
   :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenFits :> es)
-  => Page es '[Work]
+  => Page es Work
 page =
-  -- handle $ test adtok
-  handle work $ load $ do
+  handle work $ do
     login <- loginUrl
     mtok <- send AdminToken
 

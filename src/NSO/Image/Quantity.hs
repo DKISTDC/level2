@@ -22,11 +22,11 @@ import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
-import Telescope.Data.Axes (AxisOrder (..))
+import Telescope.Data.Axes (Axes (..), AxisOrder (..))
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..))
 import Telescope.Fits as Fits
-import Telescope.Fits.Types (Axes (..), HeaderRecord (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
 type OpticalDepth =

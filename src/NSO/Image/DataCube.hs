@@ -7,7 +7,7 @@ import Data.Massiv.Array as M hiding (mapM)
 import GHC.TypeLits (natVal)
 import NSO.Prelude
 import Telescope.Data.Array (AxesIndex (..))
-import Telescope.Data.Axes (Axes, Row)
+import Telescope.Data.Axes (Axes, Major (Row))
 
 
 -- Results ------------------------------------------------------------------------------

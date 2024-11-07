@@ -59,7 +59,7 @@ import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
 import Web.FormUrlEncoded (parseMaybe)
 import Web.Hyperbole
-import Web.Hyperbole.Effect (Host (..), Request (..))
+import Web.Hyperbole.Effect.Server (Host (..), Request (..))
 import Web.View as WebView
 
 

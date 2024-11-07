@@ -14,7 +14,7 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Web.Hyperbole
-import Web.Hyperbole.Effect (Request (..))
+import Web.Hyperbole.Effect.Server (Request (..))
 import Web.View as WebView
 
 

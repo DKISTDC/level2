@@ -27,12 +27,9 @@ import Web.Hyperbole as H
 
 page
   :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
-  => Page es '[PView]
+  => Page es PView
 page = do
-  handle proposals
-  -- pageAction handleIPRow
-  $ load
-  $ do
+  handle proposals $ do
     fs <- filtersFromQuery
 
     exs <- Programs.loadAllProposals

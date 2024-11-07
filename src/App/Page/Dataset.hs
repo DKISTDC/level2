@@ -15,8 +15,8 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Page es '[]
-page di = load $ do
+page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Page es ()
+page di = handle () $ do
   ds <- send $ Datasets.Query (ById di)
 
   let sorted = sortOn (Down . (.scanDate)) ds

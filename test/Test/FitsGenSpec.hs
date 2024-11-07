@@ -25,7 +25,7 @@ import Skeletest.Predicate qualified as P
 import Telescope.Data.Axes hiding (Axis)
 import Telescope.Data.WCS
 import Telescope.Fits as Fits hiding (Axis)
-import Telescope.Fits.Header (HeaderRecord (..), KeywordRecord (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..))
 
 
 spec :: Spec

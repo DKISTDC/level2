@@ -141,7 +141,7 @@ wcsToNanometers WCSAxis{ctype, cunit, crpix, crval, cdelt} =
   toNanometers n = n / 10 ^ (9 :: Int)
 
 
-wcsShift :: WCSAxisKeywords s alt x -> Shift
+wcsShift :: WCSAxisKeywords s alt a -> Shift a
 wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 

@@ -33,18 +33,9 @@ page
   :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es (ProgramInversions : ProgramDatasets : InversionStatus : InversionViews)
+  -> Page es (ProgramInversions, ProgramDatasets, InversionStatus, DownloadTransfer, UploadTransfer, PreprocessCommit, InversionCommit, GenerateTransfer)
 page ip iip = do
-  handle (inversions (clearInversion ip iip))
-  $ handle programInversions
-  $ handle DatasetsTable.actionSort
-  $ handle Inversion.inversionCommit
-  $ handle Inversion.preprocessCommit
-  $ handle Inversion.downloadTransfer
-  $ handle Inversion.generateTransfer
-  $ handle Inversion.uploadTransfer
-  $ load
-  $ do
+  handle (programInversions, DatasetsTable.actionSort, inversions (clearInversion ip iip), Inversion.downloadTransfer, Inversion.uploadTransfer, Inversion.preprocessCommit, Inversion.inversionCommit, Inversion.generateTransfer) $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
     ds <- expectFound ds'
     let d = head ds
