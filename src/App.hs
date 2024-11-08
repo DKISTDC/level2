@@ -75,7 +75,7 @@ main = do
   startWebServer config auth fits asdf =
     runLogger "Server" $ do
       log Debug $ "Starting on :" <> show config.app.port
-      log Debug "Develop using https://localhost/"
+      log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
       liftIO $
         Warp.run config.app.port $
           addHeaders [("app-version", cs appVersion)] $

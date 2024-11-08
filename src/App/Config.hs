@@ -33,7 +33,6 @@ import Effectful.Log
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
 import NSO.Types.Common
-import Text.Read (readMaybe)
 import Web.Hyperbole
 
 
@@ -144,18 +143,17 @@ initDb = do
 
 initApp :: (Environment :> es, Fail :> es) => Eff es App
 initApp = do
-  port <- readEnv "APP_PORT"
+  let port = 3033 -- readEnv "APP_PORT" -- hard coded, since nginx is hard coded
   domain <- Tagged . cs <$> getEnv "APP_DOMAIN"
   pure $ App{port, domain}
 
 
-readEnv :: (Environment :> es, Fail :> es) => (Read a) => String -> Eff es a
-readEnv e = do
-  env <- getEnv e
-  case readMaybe env of
-    Nothing -> fail $ "Could not read env: " <> env
-    Just a -> pure a
-
+-- readEnv :: (Environment :> es, Fail :> es) => (Read a) => String -> Eff es a
+-- readEnv e = do
+--   env <- getEnv e
+--   case readMaybe env of
+--     Nothing -> fail $ "Could not read env: " <> env
+--     Just a -> pure a
 
 document :: BL.ByteString -> BL.ByteString
 document cnt =

@@ -8,7 +8,6 @@ import Data.Aeson hiding (Result)
 import Data.Aeson.Types (Parser, parseEither)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Char (toLower)
-import Data.Kind (Type)
 import Data.List qualified as L
 import Data.String (fromString)
 import Data.String.Interpolate (i)
