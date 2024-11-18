@@ -20,6 +20,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import NSO.Types.Status
 import Text.Read (readMaybe)
 import Web.HttpApiData
 import Web.Hyperbole as H
@@ -126,9 +127,9 @@ proposals _ (Filter fs) = do
   redirect u{query = filtersToQuery fs}
 
 
-viewProposals :: UTCTime -> Filters -> [Proposal] -> View PView ()
+viewProposals :: UTCTime -> Filters -> [ProposalPrograms] -> View PView ()
 viewProposals now fs exs = do
-  let sorted = sortOn (Down . (.proposalId)) exs
+  let sorted = sortOn (\p -> Down p.proposal.proposalId) exs
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
     row (big aside . gap 5) $ do
       viewFilters fs
@@ -140,14 +141,15 @@ viewProposals now fs exs = do
   big = media (MinWidth 1000)
   small = media (MaxWidth 1000)
 
-  viewProposal :: Proposal -> View PView ()
+  viewProposal :: ProposalPrograms -> View PView ()
   viewProposal e = do
     let shown = filter applyFilters $ G.toList e.programs
     proposalPrograms e shown
 
-  proposalPrograms :: Proposal -> [InstrumentProgram] -> View PView ()
+  proposalPrograms :: ProposalPrograms -> [InstrumentProgramStatus] -> View PView ()
   proposalPrograms _ [] = none
-  proposalPrograms p ips = do
+  proposalPrograms pp ipss = do
+    let p = pp.proposal
     col (Style.card . gap 15 . pad 15) $ do
       row id $ do
         el bold $ do
@@ -166,30 +168,30 @@ viewProposals now fs exs = do
         --   el_ $ text $ showDate ds1.startTime
         el truncate $ text p.description
 
-        tableInstrumentPrograms now ips
+        tableInstrumentPrograms now ipss
 
-        let ignored = length p.programs - length ips
+        let ignored = length pp.programs - length ipss
         when (ignored > 0) $ do
           route (Route.Proposal p.proposalId PropRoot) (fontSize 14 . color Black) $ do
             text $ cs (show ignored)
             text "Hidden Instrument Programs"
 
-  applyFilters :: InstrumentProgram -> Bool
+  applyFilters :: InstrumentProgramStatus -> Bool
   applyFilters ip = checkInstrument ip && checkInvertible fs.inversionStatus ip.status
 
-  checkInstrument :: InstrumentProgram -> Bool
+  checkInstrument :: InstrumentProgramStatus -> Bool
   checkInstrument ip =
-    case ip.instrument of
+    case ip.program.instrument of
       VBI -> fs.isVBI
       VISP -> fs.isVISP
 
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
   checkInvertible Any _ = True
   checkInvertible Qualified StatusQualified = True
-  checkInvertible Active (StatusInversion (StepPublished _)) = False
+  checkInvertible Active (StatusInversion (StepPublish (StepPublished _))) = False
   checkInvertible Active (StatusInversion _) = True
   checkInvertible Active (StatusError _) = True
-  checkInvertible Complete (StatusInversion (StepPublished _)) = True
+  checkInvertible Complete (StatusInversion (StepPublish (StepPublished _))) = True
   checkInvertible _ _ = False
 
 
@@ -226,7 +228,7 @@ viewFilters fs = do
   off = Gray
 
 
-tableInstrumentPrograms :: UTCTime -> [InstrumentProgram] -> View PView ()
+tableInstrumentPrograms :: UTCTime -> [InstrumentProgramStatus] -> View PView ()
 tableInstrumentPrograms now ips = do
   let sorted = ips
   col id $ do
@@ -264,10 +266,11 @@ tableInstrumentPrograms now ips = do
 --   action psm Collapse =
 --     pure $ rowInstrumentProgram Expand psm
 
-rowInstrumentProgram :: UTCTime -> InstrumentProgram -> View c ()
+rowInstrumentProgram :: UTCTime -> InstrumentProgramStatus -> View c ()
 rowInstrumentProgram now psm = do
+  let p = psm.program
   -- liveButton onClick id $ do
-  route (Route.Proposal psm.proposalId $ Program psm.programId) id $ do
+  route (Route.Proposal p.proposalId $ Program p.programId) id $ do
     viewProgramRow now psm
 
 -- viewInstrumentProgram :: ProgramSummary -> View IPRow ()

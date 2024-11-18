@@ -26,12 +26,12 @@ page = do
         col Style.card $ do
           el (Style.cardHeader Info) "Active"
           col section $ do
-            viewInversions (filter isActive sorted)
+            viewInversions (filter (Inversions.isActive . inversionStep) sorted)
 
         el (fontSize 24 . bold) "Completed"
         col Style.card $ do
           col section $ do
-            viewInversions (filter (not . isActive) sorted)
+            viewInversions (filter (Inversions.isComplete . inversionStep) sorted)
  where
   section = gap 10 . pad 10
   sortInv i = (i.proposalId, i.updated)

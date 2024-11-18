@@ -61,6 +61,9 @@ library
       Flow.Node
       NSO.Data.Datasets
       NSO.Data.Inversions
+      NSO.Data.Inversions.Commit
+      NSO.Data.Inversions.Effect
+      NSO.Data.Inversions.Update
       NSO.Data.Programs
       NSO.Data.Qualify
       NSO.Data.Scan

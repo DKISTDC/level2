@@ -41,27 +41,23 @@ manageMinions = do
 
 generateFits :: [Inversion] -> [GenFits]
 generateFits ivs = do
-  map genTask $ filter (\i -> isFitsGenStep i.step && isNothing i.invError) ivs
+  map genTask $ filter (\i -> isFitsGenStep i.generate && isNothing i.invError) ivs
  where
   genTask inv = GenFits inv.proposalId inv.inversionId
 
-
-isFitsGenStep :: InversionStep -> Bool
-isFitsGenStep = \case
-  StepInverted _ -> True
-  StepGenerating _ -> True
-  StepGenTransfer _ -> True
-  _ -> False
+  isFitsGenStep :: StepGenerate -> Bool
+  isFitsGenStep = \case
+    StepGenerateTransfer _ -> True
+    _ -> False
 
 
 generateAsdf :: [Inversion] -> [GenAsdf]
 generateAsdf ivs = do
-  map genTask $ filter (\i -> isAsdfGenStep i.step && isNothing i.invError) ivs
+  map genTask $ filter (\i -> isAsdfGenStep i.generate && isNothing i.invError) ivs
  where
   genTask inv = GenAsdf inv.proposalId inv.inversionId
 
-
-isAsdfGenStep :: InversionStep -> Bool
-isAsdfGenStep = \case
-  StepGeneratedFits _ -> True
-  _ -> False
+  isAsdfGenStep :: StepGenerate -> Bool
+  isAsdfGenStep = \case
+    StepGeneratedFits _ -> True
+    _ -> False

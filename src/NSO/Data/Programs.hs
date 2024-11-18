@@ -3,6 +3,8 @@
 module NSO.Data.Programs
   ( InstrumentProgram (..)
   , ProgramFamily (..)
+  , ProgramStatus (..)
+  , InstrumentProgramStatus (..)
   , programStatus
   , programInversions
   , instrumentProgram
@@ -15,6 +17,7 @@ module NSO.Data.Programs
 
 import Data.Either (lefts, rights)
 import Data.Grouped as G
+import Data.List (zipWith4)
 import Data.List.NonEmpty qualified as NE
 import Data.Ord (Down (..))
 import Effectful
@@ -25,10 +28,59 @@ import NSO.Data.Qualify
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import NSO.Types.Status
 
 
--- import NSO.Data.Provenance hiding (Inverted, Queued)
--- import NSO.Data.Qualify
+loadAll :: (Datasets :> es, Inversions :> es) => Eff es [InstrumentProgramStatus]
+loadAll = do
+  ds <- send $ Datasets.Query Latest
+  ai <- send Inversions.All
+  pure $ fmap (.program) $ fromDatasets ai ds
+
+
+loadAllProposals :: (Datasets :> es, Inversions :> es) => Eff es [ProposalPrograms]
+loadAllProposals = toProposals <$> loadAll
+
+
+fromDatasets :: AllInversions -> [Dataset] -> [ProgramFamily]
+fromDatasets ai ds =
+  let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
+      pvs = fmap (programInversions ai) gds :: [[Inversion]]
+      ips = zipWith instrumentProgramStatus gds pvs
+   in zipWith3 ProgramFamily ips gds pvs
+
+
+-- | All inversions for the given program
+programInversions :: AllInversions -> Grouped InstrumentProgram Dataset -> [Inversion]
+programInversions (AllInversions ivs) gd =
+  let d = sample gd
+   in filter (\i -> i.programId == d.instrumentProgramId) ivs
+
+
+toProposals :: [InstrumentProgramStatus] -> [ProposalPrograms]
+toProposals ips =
+  map toProposal $ grouped (\ip -> ip.program.proposalId) ips
+
+
+toProposal :: Grouped Proposal InstrumentProgramStatus -> ProposalPrograms
+toProposal g =
+  let ip = sample g
+      prop =
+        Proposal
+          { proposalId = ip.program.proposalId
+          , description = ip.program.experimentDescription
+          , startTime = ip.program.startTime
+          }
+   in ProposalPrograms{proposal = prop, programs = Grouped g.items}
+
+
+instrumentProgramStatus :: Grouped InstrumentProgram Dataset -> [Inversion] -> InstrumentProgramStatus
+instrumentProgramStatus gd invs =
+  InstrumentProgramStatus
+    { program = instrumentProgram gd
+    , status = programStatus gd invs
+    }
+
 
 programStatus :: Grouped InstrumentProgram Dataset -> [Inversion] -> ProgramStatus
 programStatus gd [] =
@@ -42,54 +94,13 @@ programStatus _ (i : is) = do
     let i' = head is'
      in case i'.invError of
           Just e -> StatusError e
-          Nothing -> StatusInversion i.step
+          Nothing -> StatusInversion (inversionStep i')
 
 
-loadAll :: (Datasets :> es, Inversions :> es) => Eff es [InstrumentProgram]
-loadAll = do
-  ds <- send $ Datasets.Query Latest
-  ai <- send Inversions.All
-  pure $ fmap (.program) $ fromDatasets ai ds
+-- status gd ivs =
 
-
-loadAllProposals :: (Datasets :> es, Inversions :> es) => Eff es [Proposal]
-loadAllProposals = toProposals <$> loadAll
-
-
-fromDatasets :: AllInversions -> [Dataset] -> [ProgramFamily]
-fromDatasets ai ds =
-  let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
-      pvs = fmap (programInversions ai) gds :: [[Inversion]]
-      ips = zipWith instrumentProgram gds pvs
-   in zipWith3 ProgramFamily ips gds pvs
-
-
--- | All inversions for the given program
-programInversions :: AllInversions -> Grouped InstrumentProgram Dataset -> [Inversion]
-programInversions (AllInversions ivs) gd =
-  let d = sample gd
-   in filter (\i -> i.programId == d.instrumentProgramId) ivs
-
-
-toProposals :: [InstrumentProgram] -> [Proposal]
-toProposals ips =
-  map toProposal $ grouped (.proposalId) ips
-
-
-toProposal :: Grouped Proposal InstrumentProgram -> Proposal
-toProposal g =
-  let ip = sample g
-   in Proposal
-        { proposalId = ip.proposalId
-        , description = ip.experimentDescription
-        , startTime = ip.startTime
-        , programs = Grouped g.items
-        }
-
-
--- No, it *might* have inversions, it might not
-instrumentProgram :: Grouped InstrumentProgram Dataset -> [Inversion] -> InstrumentProgram
-instrumentProgram gd ivs =
+instrumentProgram :: Grouped InstrumentProgram Dataset -> InstrumentProgram
+instrumentProgram gd =
   let d = sample gd
       ls = NE.toList $ fmap identifyLine gd.items
    in InstrumentProgram
@@ -103,8 +114,8 @@ instrumentProgram gd ivs =
         , onDisk = qualifyOnDisk gd
         , spectralLines = rights ls
         , otherWavelengths = lefts ls
-        , status = programStatus gd $ sortOn (Down . (.updated)) ivs
         , embargo = d.embargo
+        , qualified = isQualified gd
         }
  where
   midWave :: Dataset -> Wavelength Nm
@@ -115,7 +126,7 @@ instrumentProgram gd ivs =
 
 
 data ProgramFamily = ProgramFamily
-  { program :: InstrumentProgram
+  { program :: InstrumentProgramStatus
   , datasets :: Grouped InstrumentProgram Dataset
   , inversions :: [Inversion]
   }

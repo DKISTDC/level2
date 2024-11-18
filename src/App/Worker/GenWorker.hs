@@ -10,7 +10,6 @@ import App.Worker.Generate as Gen
 import Control.Monad (zipWithM)
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
-import Data.Diverse.Many
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Concurrent
@@ -94,14 +93,14 @@ fitsTask t = do
     inv <- loadInversion t.inversionId
     d <- requireCanonicalDataset inv.programId
 
-    taskId <- startTransferIfNeeded d inv.step
+    taskId <- startTransferIfNeeded d inv
     log Debug $ dump "Task" taskId
-    send $ Inversions.SetGenerating t.inversionId taskId
+    Inversions.setGenerating t.inversionId taskId
     send $ TaskSetStatus t $ GenFitsStatus GenTransferring 0 0
 
     log Debug " - waiting..."
     untilM_ delay (isTransferComplete taskId)
-    send $ Inversions.SetGenTransferred t.inversionId
+    Inversions.setGenTransferred t.inversionId
 
     log Debug " - done, getting frames..."
     let u = Scratch.inversionUploads $ Scratch.blanca t.proposalId t.inversionId
@@ -124,7 +123,7 @@ fitsTask t = do
     metas <- CPU.parallelize $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
 
     log Debug $ dump "DONE: " (length metas)
-    send $ SetGeneratedFits t.inversionId
+    Inversions.setGeneratedFits t.inversionId
 
 
 -- | Generate a single frame
@@ -169,16 +168,13 @@ workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
 --   output <- Asdf.encodeL2 tree
 --   Scratch.writeFile path output
 
-startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> InversionStep -> Eff es (Id Globus.Task)
-startTransferIfNeeded d = \case
-  StepGenTransfer info -> do
-    let t = grab @Transfer info
-    pure t.taskId
-  StepGenerating info -> do
-    let g = grab @Transfer info
-    pure g.taskId
-  _ ->
-    Globus.initScratchDataset d
+startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> Inversion -> Eff es (Id Globus.Task)
+startTransferIfNeeded d inv =
+  case inv.generate of
+    StepGenerateNone -> Globus.initScratchDataset d
+    StepGenerateTransfer taskId -> pure taskId
+    StepGeneratedFits gen -> pure gen.transfer
+    StepGenerated gen -> pure gen.transfer
 
 
 isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error GenerateError :> es) => Id Globus.Task -> Eff es Bool
@@ -260,7 +256,7 @@ asdfTask t = do
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let datasetIds = fmap Id $ maybe [] (.datasets) (findDownloaded inv.step)
+    let datasetIds = downloadedDatasetIds inv
     let tree = asdfDocument inv.inversionId datasetIds now $ NE.sort metas
     let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
@@ -268,7 +264,7 @@ asdfTask t = do
 
     log Debug " - Generated ASDF"
     log Debug " - done"
-    send $ SetGeneratedAsdf t.inversionId
+    Inversions.setGeneratedAsdf t.inversionId
 
   requireMetas slice wpo wpf l1fits = do
     metas <- loadMetas slice wpo wpf l1fits
@@ -288,7 +284,7 @@ asdfTask t = do
 failed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()
 failed iid err = do
   log Err $ dump "GenerateError" err
-  send $ Inversions.SetError iid (cs $ show err)
+  Inversions.setError iid (cs $ show err)
 
 
 onCaughtError :: IOError -> Eff (Error GenerateError : es) a

@@ -17,10 +17,10 @@ import Data.Grouped
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import NSO.Data.Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
-import NSO.Types.Inversion
 import Web.Hyperbole
 
 
@@ -31,9 +31,10 @@ viewExperimentDescription t = do
     mapM_ (el_ . text) ps
 
 
-viewProgramRow :: UTCTime -> InstrumentProgram -> View c ()
-viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
-  statusTag ip.status
+viewProgramRow :: UTCTime -> InstrumentProgramStatus -> View c ()
+viewProgramRow now ips = row (gap 10 . textAlign Center) $ do
+  let ip = ips.program
+  statusTag ips.status
 
   -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
@@ -65,8 +66,9 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
 
   statusTag StatusInvalid = el (tagCell . color (light Secondary)) $ text "-"
   statusTag StatusQualified = el (stat Primary) $ text "Qualified"
-  statusTag (StatusInversion (StepPublished _)) = el (stat Success) $ text "Complete"
-  statusTag (StatusInversion step) = el (stat Info) $ text $ inversionStatusLabel step
+  statusTag (StatusInversion step)
+    | Inversions.isComplete step = el (stat Success) $ text "Complete"
+    | otherwise = el (stat Info) $ text $ inversionStatusLabel step
   statusTag (StatusError _) = el (stat Danger) $ text "Error"
 
   stat c = tagCell . Style.tag c
@@ -75,11 +77,11 @@ viewProgramRow now ip = row (gap 10 . textAlign Center) $ do
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
 -- statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
 
-viewCriteria :: InstrumentProgram -> Grouped InstrumentProgram Dataset -> View c ()
+viewCriteria :: InstrumentProgramStatus -> Grouped InstrumentProgram Dataset -> View c ()
 viewCriteria ip gd = do
   col (pad 8) $ do
-    case ip.instrument of
-      VISP -> vispCriteria gd ip.spectralLines
+    case ip.program.instrument of
+      VISP -> vispCriteria gd ip.program.spectralLines
       VBI -> vbiCriteria
  where
   vispCriteria :: Grouped InstrumentProgram Dataset -> [SpectralLine] -> View c ()
@@ -131,22 +133,23 @@ viewCriteria ip gd = do
 viewProgramSummary :: (HyperViewHandled ProgramDatasets c) => UTCTime -> ProgramFamily -> View c ()
 viewProgramSummary now pf = do
   let ds = pf.datasets.items
-  let p = pf.program
+  let p = pf.program :: InstrumentProgramStatus
   col Style.card $ do
-    route (Proposal p.proposalId $ Program p.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> pf.program.programId.fromId
+    route (Proposal p.program.proposalId $ Program p.program.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> p.program.programId.fromId
     col (gap 15 . pad 15) $ do
       viewProgramDetails p now (NE.filter (.latest) ds)
-      hyper (ProgramDatasets pf.program.programId) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
+      hyper (ProgramDatasets p.program.programId) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
 
 
-viewProgramDetails :: InstrumentProgram -> UTCTime -> [Dataset] -> View c ()
+viewProgramDetails :: InstrumentProgramStatus -> UTCTime -> [Dataset] -> View c ()
 viewProgramDetails _ _ [] = none
-viewProgramDetails p now (d : ds) = do
+viewProgramDetails ips now (d : ds) = do
+  let p = ips.program :: InstrumentProgram
   let gd = Grouped (d :| ds)
 
   row (textAlign Center) $ do
-    route (Proposal p.proposalId $ Program p.programId) id $ viewProgramRow now p
+    route (Proposal p.proposalId $ Program p.programId) id $ viewProgramRow now ips
 
   View.hr (color Gray)
 
-  viewCriteria p gd
+  viewCriteria ips gd
