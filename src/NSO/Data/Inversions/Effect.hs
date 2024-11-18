@@ -234,8 +234,9 @@ stepInvert row = do
   inverted = do
     complete <- row.inverted
     commit <- row.inversionSoftware
+    transfer <- row.uploadTaskId
     _ <- row.uploaded
-    pure $ Inverted{complete, commit}
+    pure $ Inverted{transfer, complete, commit}
 
   inverting :: Maybe Inverting
   inverting = do

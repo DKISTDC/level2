@@ -64,40 +64,41 @@ data StepDownload
   = StepDownloadNone
   | StepDownloading Downloading
   | StepDownloaded Downloaded
-  deriving (Eq)
+  deriving (Eq, Ord)
 data Downloading = Downloading {transfer :: Id Task, datasets :: [Id Dataset]}
-  deriving (Eq)
+  deriving (Eq, Ord)
 data Downloaded = Downloaded {complete :: UTCTime, datasets :: [Id Dataset]}
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 
 data StepInvert
   = StepInvertNone
-  | StepInverted Inverted
   | StepInverting Inverting
-  deriving (Eq)
-data Inverted = Inverted {commit :: GitCommit, complete :: UTCTime}
-  deriving (Eq)
+  | StepInverted Inverted
+  deriving (Eq, Ord)
+data Inverted = Inverted {transfer :: Id Task, commit :: GitCommit, complete :: UTCTime}
+  deriving (Eq, Ord)
 data Inverting = Inverting {transfer :: Maybe (Id Task), commit :: Maybe GitCommit}
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 
 data StepGenerate
   = StepGenerateNone
+  | StepGenerateError Text
   | StepGenerateTransfer (Id Task)
   | StepGeneratedFits GeneratedFits
   | StepGenerated Generated
-  deriving (Eq)
+  deriving (Eq, Ord)
 data Generated = Generated {generatedFits :: UTCTime, generatedAsdf :: UTCTime, transfer :: Id Task}
-  deriving (Eq)
+  deriving (Eq, Ord)
 data GeneratedFits = GeneratedFits {generatedFits :: UTCTime, transfer :: Id Task}
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 
 data StepPublish
   = StepPublishNone
   | StepPublished UTCTime
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 
 data InversionStep
@@ -106,4 +107,4 @@ data InversionStep
   | StepInvert StepInvert
   | StepGenerate StepGenerate
   | StepPublish StepPublish
-  deriving (Eq)
+  deriving (Eq, Ord)

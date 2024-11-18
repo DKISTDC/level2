@@ -6,11 +6,12 @@ module NSO.Data.Inversions
   , isActive
   , isComplete
   , inversionStep
+  , inverting
   , downloadedDatasetIds
   ) where
 
 import NSO.Data.Inversions.Commit
-import NSO.Data.Inversions.Effect
+import NSO.Data.Inversions.Effect hiding (inversions)
 import NSO.Data.Inversions.Update
 import NSO.Prelude
 import NSO.Types.Common
@@ -55,6 +56,7 @@ inversionStep inv
   isGenerating = do
     case inv.generate of
       StepGenerateNone -> True
+      StepGenerateError _ -> True
       StepGenerateTransfer _ -> True
       StepGeneratedFits _ -> True
       StepGenerated _ -> False
@@ -66,3 +68,10 @@ downloadedDatasetIds inv =
     StepDownloadNone -> []
     StepDownloading dwn -> dwn.datasets
     StepDownloaded dwn -> dwn.datasets
+
+
+inverting :: StepInvert -> Inverting
+inverting = \case
+  StepInverting inv -> inv
+  StepInverted inv -> Inverting (Just inv.transfer) (Just inv.commit)
+  _ -> Inverting Nothing Nothing

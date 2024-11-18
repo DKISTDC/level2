@@ -8,6 +8,7 @@ module NSO.Data.Programs
   , programStatus
   , programInversions
   , instrumentProgram
+  , instrumentProgramStatus
   , toProposal
   , toProposals
   , fromDatasets
@@ -17,9 +18,7 @@ module NSO.Data.Programs
 
 import Data.Either (lefts, rights)
 import Data.Grouped as G
-import Data.List (zipWith4)
 import Data.List.NonEmpty qualified as NE
-import Data.Ord (Down (..))
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets

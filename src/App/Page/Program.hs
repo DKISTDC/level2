@@ -33,19 +33,18 @@ page
   :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es (ProgramInversions, ProgramDatasets, InversionStatus, DownloadTransfer, UploadTransfer, PreprocessCommit, InversionCommit, GenerateTransfer)
+  -> Page es (ProgramInversions, ProgramDatasets, InversionStatus, DownloadTransfer, UploadTransfer, InversionCommit, GenerateTransfer)
 page ip iip = do
-  handle (programInversions, DatasetsTable.actionSort, inversions (clearInversion ip iip), Inversion.downloadTransfer, Inversion.uploadTransfer, Inversion.preprocessCommit, Inversion.inversionCommit, Inversion.generateTransfer) $ do
+  handle (programInversions, DatasetsTable.actionSort, inversions (clearInversion ip iip), Inversion.downloadTransfer, Inversion.uploadTransfer, Inversion.inversionCommit, Inversion.generateTransfer) $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
     ds <- expectFound ds'
     let d = head ds
 
     dse <- send $ Datasets.Query (ByProposal ip)
     invs <- latestInversions iip
-    steps <- mapM inversionStep invs
     now <- currentTime
     let gds = Grouped ds :: Grouped InstrumentProgram Dataset
-    let p = instrumentProgram gds invs
+    let p = instrumentProgramStatus gds invs
 
     appLayout Route.Proposals $ do
       col (Style.page . gap 30) $ do
@@ -58,7 +57,7 @@ page ip iip = do
 
         viewExperimentDescription d.experimentDescription
 
-        hyper (ProgramInversions ip iip) $ viewProgramInversions invs steps
+        hyper (ProgramInversions ip iip) $ viewProgramInversions invs
 
         viewProgramSummary now $ ProgramFamily p gds invs
  where
@@ -87,10 +86,6 @@ latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
   sortLatest = sortOn (Down . (.updated))
 
 
-inversionStep :: (Globus :> es, Tasks GenFits :> es) => Inversion -> Eff es CurrentStep
-inversionStep inv = currentStep inv.proposalId inv.inversionId inv.step
-
-
 data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Show, Read, ViewId)
 instance HyperView ProgramInversions where
@@ -113,31 +108,30 @@ programInversions (ProgramInversions ip iip) = \case
     refreshInversions iip
 
 
-viewProgramInversions :: [Inversion] -> [CurrentStep] -> View ProgramInversions ()
-viewProgramInversions (inv : is) (step : ss) = do
-  hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv step
+viewProgramInversions :: [Inversion] -> View ProgramInversions ()
+viewProgramInversions (inv : is) = do
+  hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv
   col (gap 10 . pad 10) $ do
-    zipWithM_ viewOldInversion is ss
+    mapM_ viewOldInversion is
     row id $ do
       button CreateInversion Style.link "Start Over With New Inversion"
-viewProgramInversions _ _ = do
+viewProgramInversions _ = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
 
 
-viewOldInversion :: Inversion -> CurrentStep -> View c ()
-viewOldInversion inv _ = row (gap 4) $ do
+viewOldInversion :: Inversion -> View c ()
+viewOldInversion inv = row (gap 4) $ do
   el_ "•"
   link (routeUrl $ Route.Inversion inv.inversionId Route.Inv) Style.link $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
-  el_ $ text $ inversionStatusLabel inv.step
+  el_ $ text $ inversionStatusLabel (inversionStep inv)
 
 
 refreshInversions :: (Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
 refreshInversions iip = do
   invs <- latestInversions iip
-  steps <- mapM inversionStep invs
-  pure $ viewProgramInversions invs steps
+  pure $ viewProgramInversions invs
 
 
 clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())

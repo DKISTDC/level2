@@ -171,10 +171,13 @@ workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
 startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> Inversion -> Eff es (Id Globus.Task)
 startTransferIfNeeded d inv =
   case inv.generate of
-    StepGenerateNone -> Globus.initScratchDataset d
+    StepGenerateNone -> start
+    StepGenerateError _ -> start
     StepGenerateTransfer taskId -> pure taskId
     StepGeneratedFits gen -> pure gen.transfer
     StepGenerated gen -> pure gen.transfer
+ where
+  start = Globus.initScratchDataset d
 
 
 isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error GenerateError :> es) => Id Globus.Task -> Eff es Bool

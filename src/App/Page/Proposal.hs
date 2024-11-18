@@ -49,8 +49,8 @@ viewPrograms now (p : ps) = do
 
 viewProposal :: (HyperViewHandled ProgramDatasets c) => UTCTime -> Grouped Proposal ProgramFamily -> View c ()
 viewProposal now gx = do
-  let wd = sample gx
-  viewExperimentDescription wd.program.experimentDescription
+  let pf = sample gx
+  viewExperimentDescription pf.program.program.experimentDescription
   el Style.subheader $ do
     text "Instrument Programs"
   mapM_ (viewProgramSummary now) gx

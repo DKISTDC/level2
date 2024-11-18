@@ -14,30 +14,28 @@ import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Layout
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..), GenFitsStep (..))
-import Data.Diverse.Many
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log hiding (Info)
 import Effectful.Tasks
+import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
-import NSO.Types.Status
 import Web.Hyperbole
 import Web.Hyperbole.Forms (Input)
 
 
 page
-  :: (Hyperbole :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  :: (Hyperbole :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, Time :> es)
   => Id Proposal
   -> Id Inversion
-  -> Page es (InversionStatus, GenerateTransfer, InversionCommit, PreprocessCommit, DownloadTransfer, UploadTransfer)
-page ip i = do
-  handle (inversions redirectHome, generateTransfer, inversionCommit, preprocessCommit, downloadTransfer, uploadTransfer) $ do
+  -> Page es (InversionStatus, GenerateTransfer, InversionCommit, DownloadTransfer, UploadTransfer)
+page _ i = do
+  handle (inversions redirectHome, generateTransfer, inversionCommit, downloadTransfer, uploadTransfer) $ do
     inv <- loadInversion i
-    step <- currentStep ip i inv.step
     appLayout Inversions $ do
       col Style.page $ do
         col (gap 5) $ do
@@ -55,7 +53,7 @@ page ip i = do
             route (Route.Proposal inv.proposalId PropRoot) Style.link $ do
               text inv.proposalId.fromId
 
-        hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv step
+        hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv
 
 
 submitUpload
@@ -99,7 +97,7 @@ redirectHome = do
 -- INVERSION STATUS -----------------------------------------------
 -- ----------------------------------------------------------------
 
-type InversionViews = '[DownloadTransfer, UploadTransfer, PreprocessCommit, InversionCommit, GenerateTransfer]
+type InversionViews = '[DownloadTransfer, UploadTransfer, InversionCommit, GenerateTransfer]
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
@@ -118,11 +116,10 @@ data InversionAction
   | RegenError
   | RegenFits
   | RegenAsdf
-  | GoStepInv
   deriving (Show, Read, ViewAction)
 
 
-inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
+inversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es) => Eff es (View InversionStatus ()) -> InversionStatus -> InversionAction -> Eff es (View InversionStatus ())
 inversions onCancel (InversionStatus ip iip ii) = \case
   Cancel -> do
     send $ Inversions.Remove ii
@@ -149,20 +146,10 @@ inversions onCancel (InversionStatus ip iip ii) = \case
   RegenAsdf -> do
     Inversions.resetGeneratingAsdf ii
     refresh
-  GoStepInv -> do
-    inv <- loadInversion ii
-    let mi = findInverted inv.step
-    case mi of
-      Nothing -> do
-        step <- currentStep ip ii inv.step
-        pure $ viewInversion inv step
-      Just i ->
-        pure $ viewInversion inv (Inverting (InvertStep (Just i.inversionSoftware) Nothing))
  where
   refresh = do
     inv <- loadInversion ii
-    step <- currentStep ip ii inv.step
-    pure $ viewInversion inv step
+    pure $ viewInversion inv
 
 
 viewInversionContainer :: InversionStep -> View InversionStatus () -> View InversionStatus ()
@@ -174,21 +161,29 @@ viewInversionContainer step cnt =
       cnt
  where
   headerColor (StepPublish (StepPublished _)) = Success
-  headerColor (StepGenerate (GenConvError _)) = Danger
+  headerColor (StepGenerate (StepGenerateError _)) = Danger
   headerColor _ = Info
 
 
-viewInversion :: Inversion -> InversionStep -> View InversionStatus ()
-viewInversion inv step = do
+viewInversion :: Inversion -> View InversionStatus ()
+viewInversion inv = do
+  let step = inversionStep inv
   col (gap 10) $ do
     viewInversionContainer step $ do
       el bold "Download"
       viewDownload inv inv.download
 
       el bold "Invert"
-      viewInvert inv inv.invert
+      viewInvert inv (inverting inv.invert)
+
+      el bold "Generate"
+
+      el bold "Publish"
+      viewPublish
+
+      stepDone
  where
-  stepPublish = do
+  viewPublish = do
     button Publish (Style.btn Primary . grow) "Mark as Published"
     row (gap 10) $ do
       viewFiles
@@ -215,19 +210,22 @@ instance HyperView DownloadTransfer where
 
 
 downloadTransfer
-  :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => DownloadTransfer -> TransferAction -> Eff es (View DownloadTransfer ())
+  :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es)
+  => DownloadTransfer
+  -> TransferAction
+  -> Eff es (View DownloadTransfer ())
 downloadTransfer (DownloadTransfer ip iip ii ti) = \case
   TaskFailed -> do
-    inv <- loadInversion ii
+    -- inv <- loadInversion ii
     pure $ do
       col (gap 10) $ do
         InvForm.viewTransferFailed ti
-        hyper (InversionStatus ip iip ii) $ stepDownload inv Select
+  -- hyper (InversionStatus ip iip ii) $ stepDownload inv Select
   TaskSucceeded -> do
     -- need to get the datasets used???
     ds <- send $ Datasets.Query $ Datasets.ByProgram iip
     Inversions.setDownloaded ii (map (.datasetId) ds)
-    pure $ hyper (InversionStatus ip iip ii) $ onLoad Reload 0 none
+    pure $ target (InversionStatus ip iip ii) $ onLoad Reload 0 none
   CheckTransfer -> InvForm.checkTransfer ti
 
 
@@ -237,48 +235,13 @@ viewDownload _ StepDownloadNone = do
   row (gap 10) $ do
     button Download (Style.btn Primary . grow) "Choose Folder"
     button Cancel (Style.btnOutline Secondary) "Cancel"
-viewDownload inv (StepDownloading it) = do
-  hyper (DownloadTransfer inv.proposalId inv.programId inv.inversionId it) InvForm.viewLoadTransfer
-viewDownload _ StepDownloaded = do
+viewDownload inv (StepDownloading dwn) = do
+  hyper (DownloadTransfer inv.proposalId inv.programId inv.inversionId dwn.transfer) InvForm.viewLoadTransfer
+viewDownload _ (StepDownloaded _) = do
   el_ "Complete"
   row (gap 10) $ do
     button Download (Style.btn Primary . grow) "Choose Folder"
     button Cancel (Style.btnOutline Secondary) "Cancel"
-
-
--- ----------------------------------------------------------------
--- STEP PREPROCESS
--- ----------------------------------------------------------------
-
-data PreprocessCommit = PreprocessCommit (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
-instance HyperView PreprocessCommit where
-  type Action PreprocessCommit = CommitAction
-
-
-preprocessCommit :: (Log :> es, Hyperbole :> es, Inversions :> es) => PreprocessCommit -> CommitAction -> Eff es (View PreprocessCommit ())
-preprocessCommit (PreprocessCommit ip iip ii) = \case
-  LoadValid -> do
-    log Debug "LoadValid"
-    InvForm.loadValid preprocessCommitLabel
-  CheckCommitValid gc -> do
-    log Debug "CheckCommitValid"
-    _ <- InvForm.validate (PreprocessCommit ip iip ii) preprocessRepo gc preprocessCommitLabel $ do
-      log Debug "Validated!"
-      send $ SetPreprocessed ii gc
-    -- We can reload the parent like this!
-    log Debug " - reloading InversionStatus"
-    pure $ target (InversionStatus ip iip ii) $ onLoad Reload 0 $ el_ "Loading.."
-
-
-preprocessCommitLabel :: View (Input id Validated GitCommit) ()
-preprocessCommitLabel =
-  link "https://github.com/DKISTDC/level2-preprocess" (att "target" "_blank") $ label "Preprocess Git Commit"
-
-
-stepPreprocess :: Inversion -> View InversionStatus ()
-stepPreprocess inv = do
-  hyper (PreprocessCommit inv.proposalId inv.programId inv.inversionId) $ InvForm.commitForm Nothing (CommitForm NotInvalid) preprocessCommitLabel
 
 
 -- ----------------------------------------------------------------
@@ -292,16 +255,20 @@ instance HyperView InversionCommit where
   type Require InversionCommit = '[InversionStatus]
 
 
-inversionCommit :: (Hyperbole :> es, Log :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => InversionCommit -> CommitAction -> Eff es (View InversionCommit ())
+inversionCommit
+  :: (Hyperbole :> es, Log :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es, Time :> es)
+  => InversionCommit
+  -> CommitAction
+  -> Eff es (View InversionCommit ())
 inversionCommit (InversionCommit ip ii) = action
  where
   action LoadValid = InvForm.loadValid inversionCommitLabel
   action (CheckCommitValid gc) = do
     log Debug "CheckCommitValid"
     vg <- InvForm.validate (InversionCommit ip ii) desireRepo gc inversionCommitLabel $ do
-      send $ SetInversion ii gc
+      Inversions.setInverted ii gc
 
-    invertReload ip ii $ InvForm.commitForm (Just gc) (CommitForm vg) inversionCommitLabel
+    pure $ InvForm.commitForm (Just gc) (CommitForm vg) inversionCommitLabel
 
 
 inversionCommitLabel :: View (Input id Validated GitCommit) ()
@@ -316,24 +283,25 @@ instance HyperView UploadTransfer where
   type Require UploadTransfer = '[InversionStatus]
 
 
-uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
+uploadTransfer :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es) => UploadTransfer -> TransferAction -> Eff es (View UploadTransfer ())
 uploadTransfer (UploadTransfer ip iip ii ti) = \case
   TaskFailed -> do
     pure $ do
       col (gap 10) $ do
         InvForm.viewTransferFailed ti
-        hyper (InversionStatus ip iip ii) $ uploadSelect (Invalid "Upload Task Failed")
+        target (InversionStatus ip iip ii) $ do
+          uploadSelect (Invalid "Upload Task Failed")
   TaskSucceeded -> do
     Inversions.setUploaded ii
-    invertReload ip ii $ hyper (InversionStatus ip iip ii) $ uploadSelect Valid
+    pure $ target (InversionStatus ip iip ii) $ do
+      uploadSelect Valid
   CheckTransfer -> InvForm.checkTransfer ti
 
 
-invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
-invertReload ip ii vw = do
-  inv <- loadInversion ii
-  target (InversionStatus inv.proposalId inv.inversionId) $ onLoad Reload 0 none
-
+-- invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
+-- invertReload ip ii vw = do
+--   inv <- loadInversion ii
+--   pure $ target (InversionStatus inv.proposalId inv.inversionId) $ onLoad Reload 0 none
 
 -- -- | Check to see if we are have all the inversion fields filled out and need to reload
 -- checkInvertReload :: (HyperViewHandled InversionStatus id, Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
@@ -346,7 +314,8 @@ invertReload ip ii vw = do
 viewInvert :: Inversion -> Inverting -> View InversionStatus ()
 viewInvert inv (Inverting mt mc) = do
   hyper (InversionCommit inv.proposalId inv.inversionId) $ InvForm.commitForm mc (InvForm.fromExistingCommit mc) inversionCommitLabel
-  viewUploadTransfer mt
+  do
+    viewUploadTransfer mt
  where
   viewUploadTransfer (Just it) = do
     hyper (UploadTransfer inv.proposalId inv.programId inv.inversionId it) InvForm.viewLoadTransfer
@@ -425,7 +394,6 @@ stepGenerate inv = \case
     el bold "Generate Error!"
     el_ $ text $ cs e
     button RegenError (Style.btn Primary) "Restart"
-    button GoStepInv (Style.btnOutline Secondary) "Go Back to Inversion"
 
 
 viewGenerateDownload :: View GenerateTransfer () -> View GenerateTransfer ()
@@ -548,10 +516,9 @@ invProgress :: InversionStep -> View InversionStatus ()
 invProgress curr = do
   row (gap 10) $ do
     prgDown curr "1" "DOWNLOAD"
-    prgStep Preprocessing "2" "PREPROCESS"
-    prgInv curr "3" "INVERT"
-    prgGen curr "4" "GENERATE"
-    prgStep Publishing "5" "PUBLISH"
+    prgInv curr "2" "INVERT"
+    prgGen curr "3" "GENERATE"
+    prgStep (StepPublish StepPublishNone) "4" "PUBLISH"
  where
   stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
   stat clr icn lbl = col (color clr . gap 4) $ do
@@ -564,31 +531,33 @@ invProgress curr = do
   prgDown (StepDownload StepDownloadNone) icn lbl = do
     stat Info icn lbl
     line Gray
-  prgDown (Downloading _) icn lbl = do
+  prgDown (StepDownload (StepDownloading _)) icn lbl = do
     stat Info icn lbl
     line Info
   prgDown _ _ lbl = do
     stat Success Icons.check lbl
     line Success
 
-  prgInv (StepInvert (StepInverting mt mc)) icn lbl = do
+  prgInv (StepInvert (StepInverting inv)) icn lbl = do
     stat Info icn lbl
     line $
-      if isJust mc || isJust mt
+      if isJust inv.commit || isJust inv.transfer
         then Info
         else Gray
   prgInv _ icn lbl = do
-    let clr = statColor (Inverting mempty)
-    stat clr (statIcon (Inverting mempty) icn) lbl
-    line clr
+    -- let clr = statColor (StepInverting mempty)
+    -- stat clr (statIcon (StepInverting mempty) icn) lbl
+    -- line clr
+    none
 
   prgGen (StepGenerate _) icn lbl = do
     stat Info icn lbl
     line Info
   prgGen _ icn lbl = do
-    let clr = statColor (Generating GenWaitStart)
-    stat clr (statIcon (Generating GenWaitStart) icn) lbl
-    line clr
+    -- let clr = statColor (Generating GenWaitStart)
+    -- stat clr (statIcon (Generating GenWaitStart) icn) lbl
+    -- line clr
+    none
 
   prgStep s icn lbl = do
     stat (statColor s) (statIcon s icn) lbl
