@@ -172,9 +172,10 @@ startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Ac
 startTransferIfNeeded d inv =
   case inv.generate of
     StepGenerateNone -> start
+    StepGenerateWaiting -> start
     StepGenerateError _ -> start
-    StepGenerateTransfer taskId -> pure taskId
-    StepGeneratedFits gen -> pure gen.transfer
+    StepGeneratingFits taskId -> pure taskId
+    StepGeneratingAsdf gen -> pure gen.transfer
     StepGenerated gen -> pure gen.transfer
  where
   start = Globus.initScratchDataset d

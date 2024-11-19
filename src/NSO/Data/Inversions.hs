@@ -56,9 +56,10 @@ inversionStep inv
   isGenerating = do
     case inv.generate of
       StepGenerateNone -> True
+      StepGenerateWaiting -> True
       StepGenerateError _ -> True
-      StepGenerateTransfer _ -> True
-      StepGeneratedFits _ -> True
+      StepGeneratingFits _ -> True
+      StepGeneratingAsdf _ -> True
       StepGenerated _ -> False
 
 

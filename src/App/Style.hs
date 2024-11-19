@@ -37,7 +37,7 @@ tag c =
     . bg (light c)
 
 
-tagOutline :: ToColor c => c -> Mod
+tagOutline :: (ToColor c) => c -> Mod
 tagOutline c =
   color c
     . borderColor c
@@ -83,3 +83,8 @@ input = pad 8 . border 1
 
 disabled :: Mod
 disabled = opacity 0.5 . att "inert" ""
+
+-- disabled :: Mod
+-- disabled = noClick . opacity 0.5
+--  where
+--   noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"

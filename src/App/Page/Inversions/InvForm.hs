@@ -94,9 +94,10 @@ data CommitAction
   deriving (Show, Read, ViewAction)
 
 
-validate :: (Show id, Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> View (Input id Validated GitCommit) () -> Eff es () -> Eff es (Validated GitCommit)
+validate :: (Log :> es, Show id, Hyperbole :> es, Inversions :> es, HyperView id, Action id ~ CommitAction) => id -> GitRepo -> GitCommit -> View (Input id Validated GitCommit) () -> Eff es () -> Eff es (Validated GitCommit)
 validate i repo gc lbl onValid = do
   isValid <- send $ ValidateGitCommit repo gc
+  log Debug $ dump "validate" (isValid, gc)
   checkValid i gc lbl isValid
   onValid
   pure Valid
@@ -107,7 +108,7 @@ checkValid _ _ _ True = pure ()
 checkValid i gc lbl False = do
   -- inv <- send (Inversions.ById ii) >>= expectFound
   respondEarly i $ do
-    commitForm (Just gc) (CommitForm $ Invalid "Git Commit not found in remote repository") lbl
+    commitForm (Just gc) (CommitForm $ Invalid "Git Commit not found in remote repository")
 
 
 loadValid :: (Hyperbole :> es, Log :> es, HyperView id, Action id ~ CommitAction) => View (Input id Validated GitCommit) () -> Eff es (View id ())
@@ -119,7 +120,7 @@ loadValid lbl = do
 loadingForm :: (HyperView id, Action id ~ CommitAction) => GitCommit -> View (Input id Validated GitCommit) () -> View id ()
 loadingForm gc lbl = do
   onLoad (CheckCommitValid gc) 0 $ do
-    el Style.disabled $ commitForm (Just gc) (CommitForm NotInvalid) lbl
+    el Style.disabled $ commitForm (Just gc) (CommitForm NotInvalid)
 
 
 fromExistingCommit :: Maybe GitCommit -> CommitForm Validated
@@ -134,18 +135,22 @@ data CommitForm f = CommitForm
 instance Form CommitForm Validated
 
 
-commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> CommitForm Validated -> View (Input id Validated GitCommit) () -> View id ()
-commitForm gc vf lbl = do
-  let f = formFieldsWith vf
-  -- let val = validateWith @GitCommit @'[GitCommit] vg
-  form @CommitForm LoadValid (gap 10) $ do
-    field f.gitCommit valStyle $ do
-      lbl
-      input TextInput (inputValue gc . Style.input)
-      el (color Danger) invalidText
-    -- validationFeedback vg
-    submit (validationButton vf.gitCommit . grow) "Save Commit"
+commitForm :: (HyperView id, Action id ~ CommitAction) => Maybe GitCommit -> CommitForm Validated -> View id ()
+commitForm gc vf = do
+  search (CheckCommitValid . GitCommit) 500 (valStyle vf.gitCommit . inputValue gc . Style.input . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
+  invalidMessage
  where
+  -- let f = formFieldsWith vf
+  -- let val = validateWith @GitCommit @'[GitCommit] vg
+  -- form @CommitForm LoadValid (gap 10 . flexRow) $ do
+  --   submit (validationButton vf.gitCommit) "Save"
+  --   field f.gitCommit valStyle $ do
+  --     lbl
+  --     input TextInput (inputValue gc . Style.input . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
+  --     el (color Danger) invalidText
+
+  -- validationFeedback vg
+
   -- validationFeedback (Invalid _) =
   --   el (color Danger) "Invalid Git Commit"
   -- validationFeedback _ = none
@@ -153,7 +158,12 @@ commitForm gc vf lbl = do
   inputValue Nothing = id
   inputValue (Just (GitCommit c)) = value c
 
-  valStyle v = color (valColor v)
+  valStyle v = color (valColor v) . grow
+
+  invalidMessage =
+    case vf.gitCommit of
+      Invalid msg -> el (color Danger) (text msg)
+      _ -> none
 
   valColor (Invalid _) = Danger
   valColor Valid = Success

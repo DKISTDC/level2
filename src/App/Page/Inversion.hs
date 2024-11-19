@@ -14,7 +14,7 @@ import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Layout
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..), GenFitsStep (..))
-import Data.Maybe (isJust)
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log hiding (Info)
@@ -156,8 +156,7 @@ viewInversionContainer :: InversionStep -> View InversionStatus () -> View Inver
 viewInversionContainer step cnt =
   col (Style.card . gap 15) $ do
     el (Style.cardHeader (headerColor step)) "Inversion"
-    col (gap 15 . pad 15) $ do
-      invProgress step
+    col (gap 0 . pad 15) $ do
       cnt
  where
   headerColor (StepPublish (StepPublished _)) = Success
@@ -168,35 +167,95 @@ viewInversionContainer step cnt =
 viewInversion :: Inversion -> View InversionStatus ()
 viewInversion inv = do
   let step = inversionStep inv
+  traceM $ show step
   col (gap 10) $ do
     viewInversionContainer step $ do
-      el bold "Download"
-      viewDownload inv inv.download
+      downloadStep step $ do
+        viewDownload inv inv.download
 
-      el bold "Invert"
-      viewInvert inv (inverting inv.invert)
+      -- how do you tell it which step we are on?
+      -- viewStep step "Invert" $ do
+      invertStep step $ do
+        viewInvert inv inv.invert
 
-      el bold "Generate"
+      generateStep step $ do
+        viewGenerate inv inv.generate
 
-      el bold "Publish"
-      viewPublish
+      publishStep step $ do
+        viewPublish inv inv.publish
 
-      stepDone
+
+-- stepDone = do
+--   el_ "Inversion Complete"
+--   viewFiles
+
+viewStep :: Step -> Int -> Text -> View c () -> View c ()
+viewStep step num stepName = viewStep' step num stepName (stepLine step)
+
+
+viewStep' :: Step -> Int -> Text -> View c () -> View c () -> View c ()
+viewStep' step num stepName line cnt =
+  row (gap 10 . stepEnabled) $ do
+    col id $ do
+      stepCircle step num
+      line
+    col (gap 10 . grow . pad (TRBL 0 0 40 0)) $ do
+      el (bold . color (stepColor step) . fontSize 22) (text stepName)
+      cnt
  where
-  viewPublish = do
-    button Publish (Style.btn Primary . grow) "Mark as Published"
-    row (gap 10) $ do
-      viewFiles
-      button RegenFits (Style.btnOutline Danger) "Regen Fits"
-      button RegenAsdf (Style.btnOutline Danger) "Regen Asdf"
+  stepEnabled =
+    case step of
+      StepNext -> Style.disabled
+      _ -> id
 
-  stepDone = do
-    el_ "Inversion Complete"
-    viewFiles
 
-  viewFiles =
-    link (Globus.fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Secondary . grow . att "target" "_blank") "View Generated Files"
+stepLine :: Step -> View c ()
+stepLine = \case
+  StepActive -> line Info
+  StepNext -> line Secondary
+  StepComplete -> line Success
+  StepError -> line Danger
+ where
+  line clr = el (grow . border (TRBL 0 2 0 0) . width 18 . borderColor clr) ""
 
+
+stepCircle :: Step -> Int -> View c ()
+stepCircle step num =
+  el (circle . bg (stepColor step)) stepIcon
+ where
+  circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
+  stepIcon =
+    case step of
+      StepComplete -> Icons.check
+      StepError -> "!"
+      _ -> text $ cs $ show num
+
+
+stepColor :: Step -> AppColor
+stepColor = \case
+  StepActive -> Info
+  StepNext -> Secondary
+  StepComplete -> Success
+  StepError -> Danger
+
+
+-- stepHeader :: AppColor -> View c () -> Text -> View c ()
+-- stepHeader clr icon lbl = do
+--   row (gap 10 . color clr) $ do
+--     el (circle . bg clr) icon
+--     col id $ do
+--       space
+--       el (bold) (text lbl)
+--       space
+
+-- stat :: AppColor -> View c () -> Text -> View c ()
+-- stat clr icn lbl =
+--   col (color clr . gap 4) $ do
+--     row id $ do
+--       space
+--       el (circle . bg clr) icn
+--       space
+--     el (fontSize 12 . textAlign Center) (text lbl)
 
 -- ----------------------------------------------------------------
 -- STEP DOWNLOAD
@@ -229,20 +288,30 @@ downloadTransfer (DownloadTransfer ip iip ii ti) = \case
   CheckTransfer -> InvForm.checkTransfer ti
 
 
+downloadStep :: InversionStep -> View c () -> View c ()
+downloadStep current content =
+  case current of
+    StepDownload StepDownloadNone -> step StepActive "Download"
+    StepDownload (StepDownloading _) -> step StepActive "Downloading"
+    _ -> step StepComplete "Downloaded"
+ where
+  step s title = viewStep s 1 title content
+
+
 viewDownload :: Inversion -> StepDownload -> View InversionStatus ()
 viewDownload _ StepDownloadNone = do
   el_ "Please select a destination folder for the instrument program's datasets. You will be redirected to Globus."
   row (gap 10) $ do
     button Download (Style.btn Primary . grow) "Choose Folder"
-    button Cancel (Style.btnOutline Secondary) "Cancel"
+-- button Cancel (Style.btnOutline Secondary) "Cancel"
 viewDownload inv (StepDownloading dwn) = do
   hyper (DownloadTransfer inv.proposalId inv.programId inv.inversionId dwn.transfer) InvForm.viewLoadTransfer
 viewDownload _ (StepDownloaded _) = do
-  el_ "Complete"
   row (gap 10) $ do
-    button Download (Style.btn Primary . grow) "Choose Folder"
-    button Cancel (Style.btnOutline Secondary) "Cancel"
+    button Download (Style.btnOutline Secondary . grow) "Download again"
 
+
+-- button Cancel (Style.btnOutline Secondary) "Cancel"
 
 -- ----------------------------------------------------------------
 -- STEP INVERT
@@ -265,15 +334,16 @@ inversionCommit (InversionCommit ip ii) = action
   action LoadValid = InvForm.loadValid inversionCommitLabel
   action (CheckCommitValid gc) = do
     log Debug "CheckCommitValid"
-    vg <- InvForm.validate (InversionCommit ip ii) desireRepo gc inversionCommitLabel $ do
+    vg <- InvForm.validate (InversionCommit ip ii) vispInversionRepo gc inversionCommitLabel $ do
       Inversions.setInverted ii gc
 
-    pure $ InvForm.commitForm (Just gc) (CommitForm vg) inversionCommitLabel
+    pure $ do
+      InvForm.commitForm (Just gc) (CommitForm vg)
 
 
-inversionCommitLabel :: View (Input id Validated GitCommit) ()
+inversionCommitLabel :: View c ()
 inversionCommitLabel =
-  link "https://github.com/han-uitenbroek/RH" (att "target" "_blank") $ label "DeSIRe Git Commit"
+  link "https://github.com/DKISTDC/ViSP-Inversion" (att "target" "_blank" . Style.link) $ text "ViSP-Inversion Git Commit"
 
 
 data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
@@ -311,11 +381,39 @@ uploadTransfer (UploadTransfer ip iip ii ti) = \case
 --     StepGenerate _ -> hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ onLoad Reload 0 none
 --     _ -> vw
 
-viewInvert :: Inversion -> Inverting -> View InversionStatus ()
-viewInvert inv (Inverting mt mc) = do
-  hyper (InversionCommit inv.proposalId inv.inversionId) $ InvForm.commitForm mc (InvForm.fromExistingCommit mc) inversionCommitLabel
-  do
+data Step
+  = StepActive
+  | StepNext
+  | StepComplete
+  | StepError
+
+
+invertStep :: InversionStep -> View c () -> View c ()
+invertStep current content =
+  case current of
+    StepDownload _ -> step StepNext "Invert"
+    StepInvert StepInvertNone -> step StepActive "Invert"
+    StepInvert (StepInverting _) -> step StepActive "Inverting"
+    _ -> step StepComplete "Inverted"
+ where
+  step s t = viewStep s 2 t content
+
+
+viewInvert :: Inversion -> StepInvert -> View InversionStatus ()
+viewInvert inv = \case
+  StepInvertNone -> none
+  StepInverting (Inverting mt mc) -> do
+    inversionCommitLabel
+    hyper (InversionCommit inv.proposalId inv.inversionId) $ do
+      InvForm.commitForm mc (InvForm.fromExistingCommit mc)
     viewUploadTransfer mt
+  StepInverted inverted -> do
+    let mc = Just inverted.commit
+    -- let mt = Just inverted.transfer
+    inversionCommitLabel
+    hyper (InversionCommit inv.proposalId inv.inversionId) $ InvForm.commitForm mc (InvForm.fromExistingCommit mc)
+    el bold "Upload Inversion Results"
+    button Upload (Style.btnOutline Success . grow) "Select New Files"
  where
   viewUploadTransfer (Just it) = do
     hyper (UploadTransfer inv.proposalId inv.programId inv.inversionId it) InvForm.viewLoadTransfer
@@ -355,6 +453,17 @@ instance HyperView GenerateTransfer where
   type Action GenerateTransfer = TransferAction
 
 
+generateStep :: InversionStep -> View c () -> View c ()
+generateStep current content =
+  case current of
+    StepDownload _ -> step StepNext "Generate"
+    StepInvert _ -> step StepNext "Generate"
+    StepGenerate _ -> step StepActive "Generating"
+    StepPublish _ -> step StepComplete "Generated"
+ where
+  step s t = viewStep s 3 t content
+
+
 generateTransfer :: (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => GenerateTransfer -> TransferAction -> Eff es (View GenerateTransfer ())
 generateTransfer (GenerateTransfer ip iip ii ti) = \case
   TaskFailed -> do
@@ -373,28 +482,45 @@ generateTransfer (GenerateTransfer ip iip ii ti) = \case
     pure $ viewGenerateDownload vw
 
 
-stepGenerate :: Inversion -> GenerateStep -> View InversionStatus ()
-stepGenerate inv = \case
-  GenWaitStart -> do
+viewGenerate :: Inversion -> StepGenerate -> View InversionStatus ()
+viewGenerate inv = \case
+  StepGenerateNone -> do
+    none
+  StepGenerateWaiting -> do
     onLoad Reload 1000 $ do
       el bold "Generate"
       el_ "Waiting for job to start"
       el (height 45) Icons.spinner
-  GenTransfering taskId -> do
-    hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
-      viewGenerateDownload InvForm.viewLoadTransfer
-  GenConvert s -> do
-    viewGenerateWait s
-  GenAsdf -> do
-    onLoad Reload 1000 $ do
-      col (gap 5) $ do
-        el bold "Generate Asdf"
-        el_ "Generating..."
-  GenConvError e -> do
-    el bold "Generate Error!"
+  StepGenerateError e -> do
+    el bold "Error!"
     el_ $ text $ cs e
     button RegenError (Style.btn Primary) "Restart"
+  StepGeneratingFits taskId -> do
+    el_ "Generating Fits"
+    hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
+      viewGenerateDownload InvForm.viewLoadTransfer
+  StepGeneratingAsdf _ -> do
+    el_ "Generating Asdf"
+  StepGenerated _ -> do
+    viewGeneratedFiles inv
+    row (gap 10) $ do
+      button RegenFits (Style.btnOutline Secondary) "Regen Fits"
+      button RegenAsdf (Style.btnOutline Secondary) "Regen Asdf"
 
+
+viewGeneratedFiles :: Inversion -> View c ()
+viewGeneratedFiles inv =
+  link (Globus.fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
+
+
+-- GenWaitStart -> do
+-- GenConvert s -> do
+--   viewGenerateWait s
+-- GenAsdf -> do
+--   onLoad Reload 1000 $ do
+--     col (gap 5) $ do
+--       el bold "Generate Asdf"
+--       el_ "Generating..."
 
 viewGenerateDownload :: View GenerateTransfer () -> View GenerateTransfer ()
 viewGenerateDownload vw = col (gap 5) $ do
@@ -426,14 +552,34 @@ viewGenerateWait s =
       el_ "Transferring L1 Files"
 
 
-data GenerateStep
-  = GenWaitStart
-  | GenTransfering (Id Task)
-  | GenConvert GenFitsStatus
-  | GenConvError Text
-  | GenAsdf
-  deriving (Eq, Show, Ord)
+-- data GenerateStep
+--   = GenWaitStart
+--   | GenTransfering (Id Task)
+--   | GenConvert GenFitsStatus
+--   | GenConvError Text
+--   | GenAsdf
+--   deriving (Eq, Show, Ord)
 
+-- ----------------------------------------------------------------
+-- STEP PUBLISH
+-- ----------------------------------------------------------------
+
+publishStep :: InversionStep -> View c () -> View c ()
+publishStep current content =
+  case current of
+    StepPublish (StepPublished _) -> step StepComplete "Published"
+    StepPublish _ -> step StepActive "Publishing"
+    _ -> step StepNext "Publish"
+ where
+  step s t = viewStep' s 4 t none content
+
+
+viewPublish :: Inversion -> StepPublish -> View InversionStatus ()
+viewPublish inv = \case
+  StepPublishNone -> none
+  StepPublishing -> do
+    button Publish (Style.btn Primary . grow) "Mark as Published"
+  StepPublished _ -> none
 
 -- ----------------------------------------------------------------
 -- CURRENT STEP / PROGRESS
@@ -512,72 +658,80 @@ data GenerateStep
 --       Just e -> pure $ Generating $ GenConvError e
 --       Nothing -> act
 
-invProgress :: InversionStep -> View InversionStatus ()
-invProgress curr = do
-  row (gap 10) $ do
-    prgDown curr "1" "DOWNLOAD"
-    prgInv curr "2" "INVERT"
-    prgGen curr "3" "GENERATE"
-    prgStep (StepPublish StepPublishNone) "4" "PUBLISH"
- where
-  stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
-  stat clr icn lbl = col (color clr . gap 4) $ do
-    row id $ do
-      space
-      el (circle . bg clr) icn
-      space
-    el (fontSize 12 . textAlign Center) (text lbl)
-
-  prgDown (StepDownload StepDownloadNone) icn lbl = do
-    stat Info icn lbl
-    line Gray
-  prgDown (StepDownload (StepDownloading _)) icn lbl = do
-    stat Info icn lbl
-    line Info
-  prgDown _ _ lbl = do
-    stat Success Icons.check lbl
-    line Success
-
-  prgInv (StepInvert (StepInverting inv)) icn lbl = do
-    stat Info icn lbl
-    line $
-      if isJust inv.commit || isJust inv.transfer
-        then Info
-        else Gray
-  prgInv _ icn lbl = do
-    -- let clr = statColor (StepInverting mempty)
-    -- stat clr (statIcon (StepInverting mempty) icn) lbl
-    -- line clr
-    none
-
-  prgGen (StepGenerate _) icn lbl = do
-    stat Info icn lbl
-    line Info
-  prgGen _ icn lbl = do
-    -- let clr = statColor (Generating GenWaitStart)
-    -- stat clr (statIcon (Generating GenWaitStart) icn) lbl
-    -- line clr
-    none
-
-  prgStep s icn lbl = do
-    stat (statColor s) (statIcon s icn) lbl
-    line (lineColor s)
-
-  statIcon s icon
-    | s < curr = Icons.check
-    | otherwise = icon
-
-  statColor s
-    | s == curr = Info
-    | s < curr = Success
-    | otherwise = Gray
-
-  line clr = col grow $ do
-    el (border (TRBL 0 0 2 0) . height 20 . borderColor clr) ""
-
-  lineColor s
-    | s == curr = Gray
-    | s < curr = Success
-    | otherwise = Gray
-
-  circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34
+-- invProgress :: InversionStep -> View InversionStatus ()
+-- invProgress curr = do
+--   row (gap 10) $ do
+--     prgDown curr "1" "DOWNLOAD"
+--     prgInv curr "2" "INVERT"
+--     prgGen curr "3" "GENERATE"
+--     prgStep (StepPublish StepPublishNone) "4" "PUBLISH"
+--  where
+--   stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
+--   stat clr icn lbl = col (color clr . gap 4) $ do
+--     row id $ do
+--       space
+--       el (circle . bg clr) icn
+--       space
+--     el (fontSize 12 . textAlign Center) (text lbl)
+--
+--   prgDown (StepDownload StepDownloadNone) icn lbl = do
+--     stat Info icn lbl
+--     line Gray
+--   prgDown (StepDownload (StepDownloading _)) icn lbl = do
+--     stat Info icn lbl
+--     line Info
+--   prgDown _ _ lbl = do
+--     stat Success Icons.check lbl
+--     line Success
+--
+--   prgInv (StepInvert (StepInverting inv)) icn lbl = do
+--     stat Info icn lbl
+--     line $
+--       if isJust inv.commit || isJust inv.transfer
+--         then Info
+--         else Gray
+--   prgInv _ icn lbl = do
+--     -- let clr = statColor (StepInverting mempty)
+--     -- stat clr (statIcon (StepInverting mempty) icn) lbl
+--     -- line clr
+--     none
+--
+--   prgGen (StepGenerate _) icn lbl = do
+--     stat Info icn lbl
+--     line Info
+--   prgGen _ icn lbl = do
+--     -- let clr = statColor (Generating GenWaitStart)
+--     -- stat clr (statIcon (Generating GenWaitStart) icn) lbl
+--     -- line clr
+--     none
+--
+--   prgStep s icn lbl = do
+--     stat (statColor s) (statIcon s icn) lbl
+--     line (lineColor s)
+--
+--   statIcon s icon
+--     | s < curr = Icons.check
+--     | otherwise = icon
+--
+--   statColor s
+--     | s == curr = Info
+--     | s < curr = Success
+--     | otherwise = Gray
+--
+--   stat :: AppColor -> View InversionStatus () -> Text -> View InversionStatus ()
+--   stat clr icn lbl = col (color clr . gap 4) $ do
+--     row id $ do
+--       space
+--       el (circle . bg clr) icn
+--       space
+--     el (fontSize 12 . textAlign Center) (text lbl)
+--
+--   line clr = col grow $ do
+--     el (border (TRBL 0 0 2 0) . height 20 . borderColor clr) ""
+--
+--   lineColor s
+--     | s == curr = Gray
+--     | s < curr = Success
+--     | otherwise = Gray
+--
+--   circle = rounded 50 . pad 5 . color White . textAlign Center . width 34 . height 34

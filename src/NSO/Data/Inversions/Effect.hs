@@ -252,14 +252,20 @@ stepInvert row = do
 stepGenerate :: InversionRow Identity -> StepGenerate
 stepGenerate row = do
   fromMaybe StepGenerateNone $
-    (StepGenerated <$> generated)
-      <|> (StepGeneratedFits <$> generatedFits)
-      <|> (StepGenerateTransfer <$> row.generateTaskId)
+    (StepGenerateError <$> generateError)
+      <|> (StepGenerated <$> generated)
+      <|> (StepGeneratingAsdf <$> generatingAsdf)
+      <|> (StepGeneratingFits <$> generatingFits)
+      <|> generateWaiting
  where
-  generatedFits = do
+  generateError = row.invError
+
+  generatingAsdf = do
     fits <- row.generatedFits
     transfer <- row.generateTaskId
     pure $ GeneratedFits{generatedFits = fits, transfer}
+
+  generatingFits = row.generateTaskId
 
   generated = do
     fits <- row.generatedFits
@@ -267,7 +273,18 @@ stepGenerate row = do
     transfer <- row.generateTaskId
     pure $ Generated{generatedFits = fits, generatedAsdf = asdf, transfer}
 
+  generateWaiting = do
+    _ <- row.inverted
+    pure StepGenerateWaiting
+
 
 stepPublish :: InversionRow Identity -> StepPublish
 stepPublish row =
-  fromMaybe StepPublishNone (StepPublished <$> row.published)
+  fromMaybe StepPublishNone $
+    (StepPublished <$> row.published)
+      <|> (StepPublishing <$ publishing)
+ where
+  publishing = do
+    _ <- row.generatedAsdf
+    _ <- row.generatedFits
+    pure ()

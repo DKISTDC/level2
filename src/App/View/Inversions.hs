@@ -15,7 +15,6 @@ inversionStatusTag i =
 
 inversionStatusLabel :: InversionStep -> Text
 inversionStatusLabel = \case
-  StepCreated -> "Downloading"
   StepDownload _ -> "Downloading"
   StepInvert _ -> "Inverting"
   StepGenerate _ -> "Generating"

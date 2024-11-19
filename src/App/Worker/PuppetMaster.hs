@@ -47,7 +47,7 @@ generateFits ivs = do
 
   isFitsGenStep :: StepGenerate -> Bool
   isFitsGenStep = \case
-    StepGenerateTransfer _ -> True
+    StepGeneratingFits _ -> True
     _ -> False
 
 
@@ -59,5 +59,5 @@ generateAsdf ivs = do
 
   isAsdfGenStep :: StepGenerate -> Bool
   isAsdfGenStep = \case
-    StepGeneratedFits _ -> True
+    StepGeneratingAsdf _ -> True
     _ -> False
