@@ -23,22 +23,6 @@ data Inversions :: Effect where
   Create :: Id Proposal -> Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
   Update :: Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Inversions m ()
-  -- SetDownloaded :: Id Inversion -> [Id Dataset] -> Inversions m ()
-  -- SetDownloading :: Id Inversion -> Id Task -> Inversions m ()
-  -- SetPreprocessed :: Id Inversion -> GitCommit -> Inversions m ()
-  -- SetUploading :: Id Inversion -> Id Task -> Inversions m ()
-  -- SetUploaded :: Id Inversion -> Inversions m ()
-  -- SetInversion :: Id Inversion -> GitCommit -> Inversions m ()
-  -- SetGeneratedFits :: Id Inversion -> Inversions m ()
-  -- SetGeneratedAsdf :: Id Inversion -> Inversions m ()
-  -- ClearError :: Id Inversion -> Inversions m ()
-  -- ResetGenerating :: Id Inversion -> Inversions m ()
-  -- ResetGeneratingAsdf :: Id Inversion -> Inversions m ()
-  -- SetGenerating :: Id Inversion -> Id Task -> Inversions m ()
-  -- SetGenTransferred :: Id Inversion -> Inversions m ()
-  -- SetPublished :: Id Inversion -> Inversions m ()
-  -- SetError :: Id Inversion -> Text -> Inversions m ()
-
   -- maybe doesn't belong on Inversions?
   ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
 type instance DispatchOf Inversions = 'Dynamic
@@ -256,6 +240,7 @@ stepGenerate row = do
       <|> (StepGenerated <$> generated)
       <|> (StepGeneratingAsdf <$> generatingAsdf)
       <|> (StepGeneratingFits <$> generatingFits)
+      <|> (StepGenerateTransferring <$> generateTransfer)
       <|> generateWaiting
  where
   generateError = row.invError
@@ -265,7 +250,10 @@ stepGenerate row = do
     transfer <- row.generateTaskId
     pure $ GeneratedFits{generatedFits = fits, transfer}
 
-  generatingFits = row.generateTaskId
+  generatingFits = do
+    transferred <- row.generateTaskCompleted
+    transfer <- row.generateTaskId
+    pure $ GenTransferred{transferred, transfer}
 
   generated = do
     fits <- row.generatedFits
@@ -276,6 +264,8 @@ stepGenerate row = do
   generateWaiting = do
     _ <- row.inverted
     pure StepGenerateWaiting
+
+  generateTransfer = row.generateTaskId
 
 
 stepPublish :: InversionRow Identity -> StepPublish

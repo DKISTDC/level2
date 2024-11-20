@@ -35,6 +35,7 @@ library
       App.Page.Dataset
       App.Page.Inversion
       App.Page.Inversions
+      App.Page.Inversions.CommitForm
       App.Page.Inversions.InvForm
       App.Page.Program
       App.Page.Proposal
@@ -50,6 +51,7 @@ library
       App.View.Icons
       App.View.Inversions
       App.View.Layout
+      App.View.LiveInput
       App.View.ProposalDetails
       App.Worker.CPU
       App.Worker.Generate

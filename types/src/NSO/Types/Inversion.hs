@@ -86,13 +86,16 @@ data StepGenerate
   = StepGenerateNone
   | StepGenerateWaiting
   | StepGenerateError Text
-  | StepGeneratingFits (Id Task)
+  | StepGenerateTransferring (Id Task)
+  | StepGeneratingFits GenTransferred
   | StepGeneratingAsdf GeneratedFits
   | StepGenerated Generated
   deriving (Eq, Ord, Show)
 data Generated = Generated {generatedFits :: UTCTime, generatedAsdf :: UTCTime, transfer :: Id Task}
   deriving (Eq, Ord, Show)
 data GeneratedFits = GeneratedFits {generatedFits :: UTCTime, transfer :: Id Task}
+  deriving (Eq, Ord, Show)
+data GenTransferred = GenTransferred {transfer :: Id Task, transferred :: UTCTime}
   deriving (Eq, Ord, Show)
 
 

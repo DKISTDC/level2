@@ -32,11 +32,10 @@ page =
   handle work $ do
     login <- loginUrl
     mtok <- send AdminToken
-
-    appLayout Dashboard (mainView login mtok)
+    appLayout Dashboard (mainView $ AdminLogin mtok login)
  where
-  mainView :: Url -> Maybe (Token Access) -> View (Root '[Work]) ()
-  mainView login mtok =
+  mainView :: AdminLogin -> View (Root '[Work]) ()
+  mainView admin =
     col (pad 20 . gap 20) $ do
       col id $ do
         el (fontSize 24 . bold) "Level 2"
@@ -45,12 +44,18 @@ page =
       col id $ do
         el (bold . fontSize 18) "Admin"
         row id $ do
-          case mtok of
-            Nothing -> link login (Style.btnOutline Danger) "Needs Globus Login"
+          case admin.token of
+            Nothing -> link admin.loginUrl (Style.btnOutline Danger) "Needs Globus Login"
             Just _ -> el (color Success) "System Access Token Saved!"
 
       -- hyper Test testView
       hyper Work $ workView [] []
+
+
+data AdminLogin = AdminLogin
+  { token :: Maybe (Token Access)
+  , loginUrl :: Url
+  }
 
 
 data Test = Test

@@ -95,7 +95,8 @@ fitsTask t = do
 
     taskId <- startTransferIfNeeded d inv
     log Debug $ dump "Task" taskId
-    Inversions.setGenerating t.inversionId taskId
+    Inversions.setGenTransferring t.inversionId taskId
+
     send $ TaskSetStatus t $ GenFitsStatus GenTransferring 0 0
 
     log Debug " - waiting..."
@@ -174,7 +175,8 @@ startTransferIfNeeded d inv =
     StepGenerateNone -> start
     StepGenerateWaiting -> start
     StepGenerateError _ -> start
-    StepGeneratingFits taskId -> pure taskId
+    StepGenerateTransferring taskId -> pure taskId
+    StepGeneratingFits gen -> pure gen.transfer
     StepGeneratingAsdf gen -> pure gen.transfer
     StepGenerated gen -> pure gen.transfer
  where

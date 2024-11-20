@@ -81,10 +81,10 @@ input :: Mod
 input = pad 8 . border 1
 
 
-disabled :: Mod
-disabled = opacity 0.5 . att "inert" ""
-
 -- disabled :: Mod
--- disabled = noClick . opacity 0.5
---  where
---   noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"
+-- disabled = opacity 0.5 . att "inert" ""
+
+disabled :: Mod
+disabled = noClick . opacity 0.5
+ where
+  noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"

@@ -4,6 +4,7 @@ module NSO.Data.Inversions.Update where
 
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Log
 import Effectful.Rel8 hiding (Update)
 import Effectful.Time
 import NSO.Data.Inversions.Effect
@@ -54,8 +55,8 @@ setGeneratedAsdf iid = do
   send $ Update iid $ \InversionRow{..} -> InversionRow{generatedAsdf = lit (Just now), ..}
 
 
-setGenerating :: (Inversions :> es) => Id Inversion -> Id Task -> Eff es ()
-setGenerating iid tid = do
+setGenTransferring :: (Log :> es, Inversions :> es) => Id Inversion -> Id Task -> Eff es ()
+setGenTransferring iid tid = do
   send $ Update iid $ \r -> r{generateTaskId = lit (Just tid)}
 
 

@@ -24,29 +24,21 @@ manageMinions = do
   let gas = generateAsdf ivs
   send $ TasksAdd gas
 
-  -- (_, _) <- atomically $ do
-  --   wt <- taskChanWaiting fits
-  --   wk <- taskChanWorking fits
-  --   pure (wt, wk)
-
-  -- logTrace "WORK" (Set.size wk)
-  -- logTrace "WAIT" (Set.size wt)
-
-  -- forM_ [0 .. 10 :: Int] $ \n -> do
-  --   writeChan fits $ FitsGenWorker.Task (Id (pack $ show n))
-
   -- 5 second delay
   threadDelay (5 * 1000 * 1000)
 
 
 generateFits :: [Inversion] -> [GenFits]
 generateFits ivs = do
-  map genTask $ filter (\i -> isFitsGenStep i.generate && isNothing i.invError) ivs
+  map genTask $ filter (\i -> needsFitsGen i.generate && isNothing i.invError) ivs
  where
   genTask inv = GenFits inv.proposalId inv.inversionId
 
-  isFitsGenStep :: StepGenerate -> Bool
-  isFitsGenStep = \case
+  -- wait, what if it is already running?
+  needsFitsGen :: StepGenerate -> Bool
+  needsFitsGen = \case
+    StepGenerateNone -> False -- these aren't on this step at all
+    StepGenerateWaiting -> True
     StepGeneratingFits _ -> True
     _ -> False
 

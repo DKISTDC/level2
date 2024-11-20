@@ -4,6 +4,7 @@ import App.Colors
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import NSO.Prelude
 import Web.View
+import Web.View.Style
 
 
 showDate :: UTCTime -> Text
@@ -16,6 +17,12 @@ showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
 
 code :: Text -> View c ()
 code = pre (fontSize 14)
+
+
+systemError :: Text -> View c ()
+systemError = tag "code" (fontSize 14 . wrap) . text
+ where
+  wrap = addClass $ cls "wrap" & prop @Text "word-wrap" "break-word"
 
 
 hr :: Mod -> View c ()

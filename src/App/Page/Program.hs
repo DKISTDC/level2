@@ -17,6 +17,7 @@ import Data.Grouped as G
 import Data.List (nub)
 import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
+import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log (Log)
 import Effectful.Tasks
@@ -30,12 +31,12 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, IOE :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es (ProgramInversions, ProgramDatasets, InversionStatus, DownloadTransfer, UploadTransfer, InversionCommit, GenerateTransfer)
+  -> Page es (ProgramInversions, ProgramDatasets)
 page ip iip = do
-  handle (programInversions, DatasetsTable.actionSort, inversions (clearInversion ip iip), Inversion.downloadTransfer, Inversion.uploadTransfer, Inversion.inversionCommit, Inversion.generateTransfer) $ do
+  handle (programInversions, DatasetsTable.actionSort) $ do
     ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
     ds <- expectFound ds'
     let d = head ds
@@ -90,27 +91,28 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Show, Read, ViewId)
 instance HyperView ProgramInversions where
   type Action ProgramInversions = InvsAction
-  type Require ProgramInversions = InversionStatus : InversionViews
+  type Require ProgramInversions = '[]
 
 
 data InvsAction
   = CreateInversion
-  | ReloadAll
   deriving (Show, Read, ViewAction)
 
 
 programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
 programInversions (ProgramInversions ip iip) = \case
   CreateInversion -> do
-    _ <- send $ Inversions.Create ip iip
-    refreshInversions iip
-  ReloadAll -> do
-    refreshInversions iip
+    inv <- send $ Inversions.Create ip iip
+    redirect $ inversionUrl ip inv.inversionId
+
+
+inversionUrl :: Id Proposal -> Id Inversion -> Url
+inversionUrl ip ii = routeUrl $ Route.Proposal ip $ Route.Inversion ii Route.Inv
 
 
 viewProgramInversions :: [Inversion] -> View ProgramInversions ()
 viewProgramInversions (inv : is) = do
-  hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv
+  viewCurrentInversion inv
   col (gap 10 . pad 10) $ do
     mapM_ viewOldInversion is
     row id $ do
@@ -119,10 +121,27 @@ viewProgramInversions _ = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
 
 
+viewCurrentInversion :: Inversion -> View c ()
+viewCurrentInversion inv = do
+  let step = inversionStep inv
+  viewInversionContainer step $ do
+    col (gap 10) $ do
+      case step of
+        StepDownload _ -> currentStep StepActive 1 "Downloading"
+        StepInvert _ -> currentStep StepActive 2 "Inverting"
+        StepGenerate _ -> currentStep StepActive 3 "Generating"
+        StepPublish (StepPublished _) -> currentStep StepComplete 4 "Complete"
+        StepPublish _ -> currentStep StepActive 4 "Publishing"
+ where
+  currentStep :: Step -> Int -> Text -> View c ()
+  currentStep s n stepName = viewStep' s n stepName none $ do
+    link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
+
+
 viewOldInversion :: Inversion -> View c ()
 viewOldInversion inv = row (gap 4) $ do
   el_ "•"
-  link (routeUrl $ Route.Inversion inv.inversionId Route.Inv) Style.link $ do
+  link (inversionUrl inv.proposalId inv.inversionId) Style.link $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
   el_ $ text $ inversionStatusLabel (inversionStep inv)
@@ -133,9 +152,8 @@ refreshInversions iip = do
   invs <- latestInversions iip
   pure $ viewProgramInversions invs
 
-
-clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())
-clearInversion ip iip = pure $ do
-  target (ProgramInversions ip iip) $ onLoad ReloadAll 0 emptyButtonSpace
- where
-  emptyButtonSpace = el (height 44) none
+-- clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())
+-- clearInversion ip iip = pure $ do
+--   target (ProgramInversions ip iip) $ onLoad ReloadAll 0 emptyButtonSpace
+--  where
+--   emptyButtonSpace = el (height 44) none
