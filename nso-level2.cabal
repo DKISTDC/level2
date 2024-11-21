@@ -36,7 +36,7 @@ library
       App.Page.Inversion
       App.Page.Inversions
       App.Page.Inversions.CommitForm
-      App.Page.Inversions.InvForm
+      App.Page.Inversions.Transfer
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
@@ -65,6 +65,7 @@ library
       NSO.Data.Inversions
       NSO.Data.Inversions.Commit
       NSO.Data.Inversions.Effect
+      NSO.Data.Inversions.Step
       NSO.Data.Inversions.Update
       NSO.Data.Programs
       NSO.Data.Qualify
@@ -88,7 +89,6 @@ library
       NSO.Image.Quantity
       NSO.Level2
       NSO.Metadata
-      NSO.Steps
   other-modules:
       Paths_nso_level2
   autogen-modules:

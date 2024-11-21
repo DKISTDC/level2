@@ -150,31 +150,14 @@ viewProposals now fs exs = do
   proposalPrograms _ [] = none
   proposalPrograms pp ipss = do
     let p = pp.proposal
-    col (Style.card . gap 15 . pad 15) $ do
-      row id $ do
-        el bold $ do
-          text "Proposal "
-          route (Route.Proposal p.proposalId PropRoot) Style.link $ do
-            text p.proposalId.fromId
-        space
-        el_ $ do
-          text $ showDate p.startTime
+    proposalCard pp.proposal $ do
+      tableInstrumentPrograms now ipss
 
-      View.hr (color Gray)
-
-      col (gap 10) $ do
-        -- row (gap 5) $ do
-        --   el bold "Start Time:"
-        --   el_ $ text $ showDate ds1.startTime
-        el truncate $ text p.description
-
-        tableInstrumentPrograms now ipss
-
-        let ignored = length pp.programs - length ipss
-        when (ignored > 0) $ do
-          route (Route.Proposal p.proposalId PropRoot) (fontSize 14 . color Black) $ do
-            text $ cs (show ignored)
-            text "Hidden Instrument Programs"
+      let ignored = length pp.programs - length ipss
+      when (ignored > 0) $ do
+        route (Route.Proposal p.proposalId PropRoot) (fontSize 14 . color Black) $ do
+          text $ cs (show ignored)
+          text "Hidden Instrument Programs"
 
   applyFilters :: InstrumentProgramStatus -> Bool
   applyFilters ip = checkInstrument ip && checkInvertible fs.inversionStatus ip.status
@@ -193,6 +176,28 @@ viewProposals now fs exs = do
   checkInvertible Active (StatusError _) = True
   checkInvertible Complete (StatusInversion (StepPublish (StepPublished _))) = True
   checkInvertible _ _ = False
+
+
+proposalCard :: Proposal -> View c () -> View c ()
+proposalCard p content = do
+  col (Style.card . gap 15 . pad 15) $ do
+    row id $ do
+      el bold $ do
+        text "Proposal "
+        route (Route.Proposal p.proposalId PropRoot) Style.link $ do
+          text p.proposalId.fromId
+      space
+      el_ $ do
+        text $ showDate p.startTime
+
+    View.hr (color Gray)
+
+    col (gap 10) $ do
+      -- row (gap 5) $ do
+      --   el bold "Start Time:"
+      --   el_ $ text $ showDate ds1.startTime
+      el truncate $ text p.description
+      content
 
 
 -- applyFilter :: Filter -> (InstrumentProgram -> Bool) -> (InstrumentProgram -> Bool)

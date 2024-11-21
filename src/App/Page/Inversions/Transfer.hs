@@ -1,4 +1,4 @@
-module App.Page.Inversions.InvForm where
+module App.Page.Inversions.Transfer where
 
 import App.Colors
 import App.Effect.Auth
@@ -48,13 +48,14 @@ viewTransfer it task =
 
 viewPollTransfer :: (HyperView id, Action id ~ TransferAction) => Id Task -> Task -> View id ()
 viewPollTransfer it task = do
-  onLoad CheckTransfer 5000 $ do
+  onLoad CheckTransfer 1000 $ do
     viewTransferProgress it task
 
 
 viewTransferProgress :: Id Task -> Task -> View c ()
 viewTransferProgress it task = do
-  row id $ do
+  row (gap 5) $ do
+    el (width 20) Icons.spinnerCircle
     el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
     space
     activityLink it

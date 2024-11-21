@@ -20,7 +20,10 @@ code = pre (fontSize 14)
 
 
 systemError :: Text -> View c ()
-systemError = tag "code" (fontSize 14 . wrap) . text
+systemError e = do
+  col (gap 5 . grow . borderColor Danger . border 1 . bg (HexColor "#fdd9d7") . rounded 5) $ do
+    el (bold . color White . bg Danger . pad (XY 8 5)) "Error!"
+    tag "code" (fontSize 14 . wrap . pad 10) . text $ e
  where
   wrap = addClass $ cls "wrap" & prop @Text "word-wrap" "break-word"
 

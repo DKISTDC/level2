@@ -60,6 +60,8 @@ hex (Normal Gray) = "#D2D2D3"
 hex (Darker Gray) = "#9999B5"
 
 
+-- hex (Lighter Danger) = "#fdd9d7"
+
 light :: AppColor -> Weight
 light = Lighter
 

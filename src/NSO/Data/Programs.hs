@@ -28,6 +28,7 @@ import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import NSO.Types.Status
+import NSO.Types.Status (ProposalPrograms)
 
 
 loadAll :: (Datasets :> es, Inversions :> es) => Eff es [InstrumentProgramStatus]

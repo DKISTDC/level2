@@ -12,12 +12,11 @@ import App.View.Common as View (hr)
 import App.View.DataRow (dataCell, tagCell)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.Icons as Icons
-import App.View.Inversions (inversionStatusLabel)
+import App.View.Inversions (inversionStepTag)
 import Data.Grouped
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import NSO.Data.Datasets
-import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
@@ -64,13 +63,14 @@ viewProgramRow now ips = row (gap 10 . textAlign Center) $ do
   dataTag :: Mod
   dataTag = pad (XY 6 1)
 
-  statusTag StatusInvalid = el (tagCell . color (light Secondary)) $ text "-"
-  statusTag StatusQualified = el (stat Primary) $ text "Qualified"
-  statusTag (StatusInversion step)
-    | Inversions.isComplete step = el (stat Success) $ text "Complete"
-    | otherwise = el (stat Info) $ text $ inversionStatusLabel step
-  statusTag (StatusError _) = el (stat Danger) $ text "Error"
 
+statusTag :: ProgramStatus -> View c ()
+statusTag = \case
+  StatusInvalid -> el (tagCell . color (light Secondary)) $ text "-"
+  StatusQualified -> el (stat Primary) $ text "Qualified"
+  StatusInversion step -> inversionStepTag step
+  StatusError _ -> el (stat Danger) $ text "Error"
+ where
   stat c = tagCell . Style.tag c
 
 

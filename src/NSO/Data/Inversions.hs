@@ -52,11 +52,13 @@ inversionStep inv
       StepInverting _ -> True
       StepInverted _ -> False
 
+  -- Only applies if other steps have failed
   isGenerating :: Bool
   isGenerating = do
     case inv.generate of
       StepGenerateNone -> True
       StepGenerateWaiting -> True
+      StepGenerateTransferring _ -> True
       StepGenerateError _ -> True
       StepGeneratingFits _ -> True
       StepGeneratingAsdf _ -> True

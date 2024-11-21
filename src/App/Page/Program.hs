@@ -4,12 +4,12 @@ import App.Colors
 import App.Effect.Auth
 import App.Error (expectFound)
 import App.Globus as Globus
-import App.Page.Inversion as Inversion
+import App.Page.Inversion qualified as Inversion
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DatasetsTable as DatasetsTable
-import App.View.Inversions (inversionStatusLabel)
+import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
 import App.Worker.GenWorker
@@ -124,18 +124,37 @@ viewProgramInversions _ = do
 viewCurrentInversion :: Inversion -> View c ()
 viewCurrentInversion inv = do
   let step = inversionStep inv
-  viewInversionContainer step $ do
-    col (gap 10) $ do
-      case step of
-        StepDownload _ -> currentStep StepActive 1 "Downloading"
-        StepInvert _ -> currentStep StepActive 2 "Inverting"
-        StepGenerate _ -> currentStep StepActive 3 "Generating"
-        StepPublish (StepPublished _) -> currentStep StepComplete 4 "Complete"
-        StepPublish _ -> currentStep StepActive 4 "Publishing"
+  Inversion.viewInversionContainer step $ do
+    Inversion.downloadStep step $ do
+      viewDownload step
+
+    Inversion.invertStep step $ do
+      viewInvert step
+
+    Inversion.generateStep step $ do
+      viewGenerate step
+
+    Inversion.publishStep step $ do
+      viewPublish step
  where
-  currentStep :: Step -> Int -> Text -> View c ()
-  currentStep s n stepName = viewStep' s n stepName none $ do
-    link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
+  viewDownload = \case
+    StepDownload _ -> continueButton
+    _ -> none
+
+  viewInvert = \case
+    StepInvert _ -> continueButton
+    _ -> none
+
+  viewGenerate = \case
+    StepGenerate _ -> continueButton
+    _ -> none
+
+  viewPublish = \case
+    StepPublish _ -> continueButton
+    _ -> none
+
+  continueButton =
+    link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "Continue Inversion"
 
 
 viewOldInversion :: Inversion -> View c ()
@@ -144,7 +163,7 @@ viewOldInversion inv = row (gap 4) $ do
   link (inversionUrl inv.proposalId inv.inversionId) Style.link $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
-  el_ $ text $ inversionStatusLabel (inversionStep inv)
+  el_ $ text $ inversionStepLabel (inversionStep inv)
 
 
 refreshInversions :: (Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
