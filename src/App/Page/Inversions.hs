@@ -91,7 +91,8 @@ viewProgram g = do
   let inv = sample g
   let sorted = sortOn (Down . (.updated)) $ NE.toList g.items :: [Inversion]
   col (gap 10) $ do
-    el Style.italic $ text inv.programId.fromId
+    route (Route.Proposal inv.proposalId $ Route.Program inv.programId) Style.link $ do
+      text inv.programId.fromId
     col id $ do
       dataRows sorted rowInversion
 
