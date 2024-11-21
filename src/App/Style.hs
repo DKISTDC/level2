@@ -77,6 +77,13 @@ underline =
       & prop @Text "text-decoration" "underline"
 
 
+italic :: Mod
+italic =
+  addClass $
+    cls "italic"
+      & prop @Text "font-style" "italic"
+
+
 input :: Mod
 input = pad 8 . border 1
 

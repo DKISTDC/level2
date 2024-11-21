@@ -11,6 +11,8 @@ import App.View.DataRow qualified as View
 import App.View.Inversions (inversionStepTag)
 import App.View.Layout
 import Data.Foldable (maximumBy)
+import Data.Grouped
+import Data.List.NonEmpty qualified as NE
 import Data.Ord (Down (..))
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -39,15 +41,10 @@ page = do
         -- el (fontSize 24 . bold) "Completed"
         viewProposals allPropInvs
  where
-  -- el (fontSize 24 . bold) "Completed"
-  -- viewProposals cmpl
-
-  -- section = gap 10 . pad 10
-  -- activeInvs = Inversions.isActive . inversionStep
-  -- completeInvs = Inversions.isComplete . inversionStep
   mostRecentlyUpdated :: ProposalInversions -> Down UTCTime
   mostRecentlyUpdated p =
-    Down $ maximum $ fmap (.updated) p.inversions
+    let allInvs = mconcat $ fmap (NE.toList . (.items)) p.programInversions :: [Inversion]
+     in Down $ maximum $ fmap (.updated) allInvs
 
   groupProposals :: [ProposalPrograms] -> [Inversion] -> [ProposalInversions]
   groupProposals props invs =
@@ -56,17 +53,23 @@ page = do
     proposalInversions :: ProposalPrograms -> ProposalInversions
     proposalInversions p =
       let inversions = filter (\inv -> p.proposal.proposalId == inv.proposalId) invs :: [Inversion]
-       in ProposalInversions{inversions, proposal = p.proposal}
+       in ProposalInversions
+            { programInversions = groupPrograms inversions
+            , proposal = p.proposal
+            }
+
+    groupPrograms :: [Inversion] -> [Grouped InstrumentProgram Inversion]
+    groupPrograms = grouped (.programId)
 
     hasInversions p =
-      case p.inversions of
+      case p.programInversions of
         [] -> False
         _ -> True
 
 
 data ProposalInversions = ProposalInversions
   { proposal :: Proposal
-  , inversions :: [Inversion]
+  , programInversions :: [Grouped InstrumentProgram Inversion]
   }
 
 
@@ -78,8 +81,17 @@ viewProposals pis = do
 
 viewProposal :: ProposalInversions -> View id ()
 viewProposal p = do
-  let sorted = sortOn (Down . (.updated)) p.inversions
+  -- what's the instrument program id though?
   Proposals.proposalCard p.proposal $ do
+    mapM_ viewProgram p.programInversions
+
+
+viewProgram :: Grouped InstrumentProgram Inversion -> View id ()
+viewProgram g = do
+  let inv = sample g
+  let sorted = sortOn (Down . (.updated)) $ NE.toList g.items :: [Inversion]
+  col (gap 10) $ do
+    el Style.italic $ text inv.programId.fromId
     col id $ do
       dataRows sorted rowInversion
 
@@ -87,11 +99,12 @@ viewProposal p = do
 rowInversion :: Inversion -> View id ()
 rowInversion inv = do
   route (Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv) id $ do
-    row (gap 10 . textAlign Center) $ do
+    row (gap 10) $ do
       inversionStepTag (inversionStep inv)
       el dataCell $ text $ cs $ showDate inv.updated
+      -- el (width 150) $ text $ cs inv.programId.fromId
       space
-      el (Style.link . width 150) $ text $ cs inv.inversionId.fromId
+      el (Style.link . width 100) $ text $ cs inv.inversionId.fromId
 
 -- viewByProposal :: Proposal -> [Inversion] -> View id ()
 -- viewByProposal _ [] = none
