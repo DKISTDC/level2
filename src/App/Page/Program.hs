@@ -150,7 +150,8 @@ viewCurrentInversion inv = do
     _ -> none
 
   viewPublish = \case
-    StepPublish _ -> continueButton
+    StepPublish _ ->
+      link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
     _ -> none
 
   continueButton =
