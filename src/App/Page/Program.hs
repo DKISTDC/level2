@@ -43,7 +43,6 @@ page ip iip = do
 
     dse <- send $ Datasets.Query (ByProposal ip)
     invs <- latestInversions iip
-    log Debug $ dump "Inversions" $ fmap (\i -> (i.inversionId, i.updated)) invs
     now <- currentTime
     let gds = Grouped ds :: Grouped InstrumentProgram Dataset
     let p = instrumentProgramStatus gds invs

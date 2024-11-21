@@ -1,16 +1,13 @@
 module App.Page.Inversions where
 
-import App.Colors
 import App.Effect.Auth
 import App.Page.Proposals qualified as Proposals
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate)
 import App.View.DataRow (dataCell, dataRows)
-import App.View.DataRow qualified as View
 import App.View.Inversions (inversionStepTag)
 import App.View.Layout
-import Data.Foldable (maximumBy)
 import Data.Grouped
 import Data.List.NonEmpty qualified as NE
 import Data.Ord (Down (..))
