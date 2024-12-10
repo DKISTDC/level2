@@ -337,7 +337,7 @@ wcsDepth = do
       crval = Key 0
       cdelt = Key 0.1
       cunit = Key ""
-      ctype = Key "TAU--LOG"
+      ctype = Key "LOGTAU"
   let keys = WCSAxisKeywords{..}
   let pcs = QuantityPCs{dummyY = PC 0, slitX = PC 0, depth = PC 1.0}
   pure $ QuantityAxis{keys, pcs = Just pcs}
