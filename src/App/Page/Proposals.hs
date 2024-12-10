@@ -167,6 +167,7 @@ viewProposals now fs exs = do
     case ip.program.instrument of
       VBI -> fs.isVBI
       VISP -> fs.isVISP
+      CRYO_NIRSP -> False
 
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
   checkInvertible Any _ = True

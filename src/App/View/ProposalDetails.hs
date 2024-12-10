@@ -83,6 +83,7 @@ viewCriteria ip gd = do
     case ip.program.instrument of
       VISP -> vispCriteria gd ip.program.spectralLines
       VBI -> vbiCriteria
+      CRYO_NIRSP -> cryoCriteria
  where
   vispCriteria :: Grouped InstrumentProgram Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
@@ -97,6 +98,10 @@ viewCriteria ip gd = do
 
   vbiCriteria = do
     el bold "VBI Criteria"
+    criteria "Not Supported" False
+
+  cryoCriteria = do
+    el bold "CRYO NIRSP Criteria"
     criteria "Not Supported" False
 
   criteriaRowHeight :: Length

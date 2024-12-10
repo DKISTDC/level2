@@ -38,6 +38,7 @@ qualify g = do
   case (sample g).instrument of
     VISP -> qualifyVISP g
     VBI -> qualifyVBI g
+    CRYO_NIRSP -> qualifyCryoNIRSP g
 
 
 qualifyVISP :: Grouped InstrumentProgram Dataset -> Either String ()
@@ -57,6 +58,10 @@ qualifyVISP g = do
 
 qualifyVBI :: Grouped InstrumentProgram Dataset -> Either String ()
 qualifyVBI _ = Left "VBI Not supported"
+
+
+qualifyCryoNIRSP :: Grouped InstrumentProgram Dataset -> Either String ()
+qualifyCryoNIRSP _ = Left "CRYO_NIRSP Not supported"
 
 
 qualifyStokes :: Grouped InstrumentProgram Dataset -> Bool

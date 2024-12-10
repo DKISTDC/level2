@@ -10,7 +10,6 @@ import NSO.Data.Datasets
 import NSO.Error
 import NSO.Metadata
 import NSO.Prelude
-import Text.Read (readMaybe)
 
 
 -- scanDatasets :: (Time :> es, GraphQL :> es, Rel8 :> es, Error RequestError :> es) => Eff es [Dataset]
@@ -83,7 +82,7 @@ syncResult old d = fromMaybe New $ do
 
 toDataset :: UTCTime -> [ExperimentDescription] -> DatasetInventory -> Either String Dataset
 toDataset scanDate exs d = do
-  ins <- parseRead "Instrument" d.instrumentName
+  ins <- parseInstrument d.instrumentName
   exd <- parseExperiment d.primaryExperimentId
   emb <- parseEmbargo
   pure $
@@ -122,6 +121,10 @@ toDataset scanDate exs d = do
       Nothing -> Left "Experiment Description"
       (Just e) -> pure e.experimentDescription
 
+  parseInstrument :: Text -> Either String Instrument
+  parseInstrument input =
+    maybe (Left [i|Invalid Instrument: #{input}|]) Right $ instrumentFromName $ cs input
+
   parseEmbargo :: Either String (Maybe UTCTime)
   parseEmbargo =
     if d.isEmbargoed
@@ -134,9 +137,9 @@ toDataset scanDate exs d = do
   required n Nothing = Left ("Missing Required: " <> n)
   required _ (Just v) = pure v
 
-  parseRead :: (Read a) => Text -> Text -> Either String a
-  parseRead expect input =
-    maybe (Left [i|Invalid #{expect}: #{input}|]) Right $ readMaybe $ cs input
+  -- parseRead :: (Read a) => Text -> Text -> Either String a
+  -- parseRead expect input =
+  --   maybe (Left [i|Invalid #{expect}: #{input}|]) Right $ instrumentFromName $ cs input
 
   boundingBoxNaN bb =
     if isCoordNaN bb.lowerLeft || isCoordNaN bb.upperRight

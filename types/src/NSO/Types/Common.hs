@@ -13,6 +13,7 @@ import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation,
 import System.FilePath qualified as FP
 import Telescope.Asdf
 import Telescope.Fits
+import Text.Read (readMaybe)
 import Web.HttpApiData
 import Web.Hyperbole (Route)
 
@@ -84,8 +85,14 @@ instance Semigroup StokesParameters where
 data Instrument
   = VBI
   | VISP
+  | CRYO_NIRSP
   deriving (Show, Ord, Eq, Read, Generic)
   deriving (DBType) via ReadShow Instrument
+
+
+instrumentFromName :: Text -> Maybe Instrument
+instrumentFromName "CRYO-NIRSP" = pure CRYO_NIRSP
+instrumentFromName t = readMaybe . cs $ t
 
 
 newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
