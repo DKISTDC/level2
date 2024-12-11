@@ -62,7 +62,7 @@ main = do
 
       concurrently_
         (startWebServer config auth fits asdf)
-        (runWorkers config auth fits asdf startWorkers)
+        (runWorkers config auth fits asdf (startWorkers config))
 
       pure ()
  where
@@ -81,18 +81,18 @@ main = do
           addHeaders [("app-version", cs appVersion)] $
             webServer config auth fits asdf
 
-  startGen = do
+  startGen cfg = do
     runLogger "FitsGen" $
       waitForGlobusAccess $ do
         mapConcurrently_
           id
-          [startWorker Gen.fitsTask, startWorker Gen.asdfTask]
+          [startWorker (Gen.fitsTask cfg.numWorkers), startWorker Gen.asdfTask]
 
-  startWorkers =
+  startWorkers cfg =
     mapConcurrently_
       id
       [ startPuppetMaster
-      , startGen
+      , startGen cfg
       ]
 
   runInit =

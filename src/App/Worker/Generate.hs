@@ -110,7 +110,7 @@ canonicalL1Frames fdir slice = do
   allL1Frames :: Path' Dir Dataset -> Eff es [L1Frame]
   allL1Frames dir = do
     fs <- send $ Scratch.ListDirectory dir
-    pure $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
+    pure $ L.sort $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
 
   -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
   isL1IntensityFile :: Path' Filename Dataset -> Bool
