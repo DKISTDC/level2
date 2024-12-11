@@ -24,6 +24,7 @@ spec = do
     describe "transpose" $ do
       it "should swap two dimensions" $ do
         M.size (transposeMajor sampleRC).array `shouldBe` Sz (3 :. 2)
+        toLists (computeAs P (transposeMajor sampleRC).array) `shouldBe` [[0, 1], [1, 2], [2, 3]]
 
       it "should swap three dimensions" $ do
         M.size (transposeMajor sampleDRC).array `shouldBe` Sz (2 :> 1 :. 3)

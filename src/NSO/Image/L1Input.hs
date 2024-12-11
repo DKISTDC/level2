@@ -18,7 +18,11 @@ data L1Frame = L1Frame
   , wavelength :: Wavelength Nm
   , stokes :: Stokes
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+
+instance Ord L1Frame where
+  f1 <= f2 = f1.timestamp <= f2.timestamp
 
 
 newtype DateBegTimestamp = DateBegTimestamp {time :: UTCTime}

@@ -105,5 +105,6 @@ tests:
     dependencies:
       - nso-level2
       - web-view
+      - Diff >= 0.5 && <1.0
       - skeletest
 

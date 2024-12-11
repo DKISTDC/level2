@@ -215,6 +215,7 @@ test-suite spec
       Test.AsdfSpec
       Test.DataCubeSpec
       Test.FitsGenSpec
+      Test.FrameSpec
       Test.ParseSpec
       Test.QualifySpec
       Paths_nso_level2
@@ -239,7 +240,8 @@ test-suite spec
   build-tool-depends:
       skeletest:skeletest-preprocessor
   build-depends:
-      aeson
+      Diff >=0.5 && <1.0
+    , aeson
     , base >=4.16.4.0
     , binary
     , bytestring
