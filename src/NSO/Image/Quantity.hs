@@ -6,6 +6,7 @@ module NSO.Image.Quantity where
 
 import Control.Exception (Exception)
 import Data.ByteString (ByteString)
+import Data.Fixed (mod')
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
@@ -234,9 +235,9 @@ quantityHDUs qs = runPureEff $ do
   temperature <- dataHDU @Temperature qs.temperature
   electronPressure <- dataHDU @ElectronPressure $ convertData dyneCmToNm qs.electronPressure
   microTurbulence <- dataHDU @Microturbulence $ convertData cmsToKms qs.microTurbulence
-  magStrength <- dataHDU @MagStrength qs.magStrength
+  magStrength <- dataHDU @MagStrength $ convertData gaussToTesla qs.magStrength
   magInclination <- dataHDU @MagInclination qs.magInclination
-  magAzimuth <- dataHDU @MagAzimuth qs.magAzimuth
+  magAzimuth <- dataHDU @MagAzimuth $ convertData forcePositive360 qs.magAzimuth
   geoHeight <- dataHDU @GeoHeight qs.geoHeight
   gasPressure <- dataHDU @GasPressure $ convertData dyneCmToNm qs.gasPressure
   density <- dataHDU @Density $ convertData gcmToKgm qs.density
@@ -250,12 +251,6 @@ quantityHDUs qs = runPureEff $ do
       , image = DataCube $ M.map f da.array
       }
 
-  cmsToKms = (/ 100000)
-
-  gcmToKgm = (* 1000)
-
-  dyneCmToNm = (/ 10)
-
   dataHDU
     :: forall info es
      . (ToHeader info)
@@ -264,6 +259,26 @@ quantityHDUs qs = runPureEff $ do
   dataHDU q = do
     let darr = encodeDataArray q.image.array
     pure $ QuantityHDU $ ImageHDU{header = toHeader q.header, dataArray = addDummyAxis darr}
+
+
+cmsToKms :: Float -> Float
+cmsToKms = (/ 100000)
+
+
+gcmToKgm :: Float -> Float
+gcmToKgm = (* 1000)
+
+
+dyneCmToNm :: Float -> Float
+dyneCmToNm = (/ 10)
+
+
+gaussToTesla :: Float -> Float
+gaussToTesla = (/ 10000)
+
+
+forcePositive360 :: Float -> Float
+forcePositive360 deg = deg `mod'` 360
 
 
 data QuantityAxes alt = QuantityAxes
@@ -335,7 +350,7 @@ wcsDepth :: (Monad m) => m (QuantityAxis alt n)
 wcsDepth = do
   let crpix = Key 12
       crval = Key 0
-      cdelt = Key 0.1
+      cdelt = Key (-0.1)
       cunit = Key ""
       ctype = Key "LOGTAU"
   let keys = WCSAxisKeywords{..}

@@ -94,7 +94,7 @@ data InversionTree = InversionTree
   { fileuris :: Fileuris
   , meta :: InversionTreeMeta
   , quantities :: HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
-  , profiles :: HDUSection ProfileGWCS (Profiles ProfileTree)
+  , profiles :: ProfileSection
   }
   deriving (Generic, ToAsdf)
 
@@ -140,6 +140,25 @@ instance (ToAsdf hdus, ToAsdf gwcs) => ToAsdf (HDUSection gwcs hdus) where
       [ Object
           [ ("axes", toNode section.axes)
           , ("shape", toNode section.shape)
+          , ("wcs", toNode section.wcs)
+          ]
+      , toValue section.hdus
+      ]
+
+
+data ProfileSection = ProfileSection
+  { axes :: [AxisLabel]
+  , wcs :: ProfileGWCS
+  , hdus :: Profiles ProfileTree
+  }
+
+
+instance ToAsdf ProfileSection where
+  toValue section =
+    mconcat
+      -- merge the fields from both
+      [ Object
+          [ ("axes", toNode section.axes)
           , ("wcs", toNode section.wcs)
           ]
       , toValue section.hdus
@@ -246,26 +265,25 @@ instance (KnownText ref) => KnownText (Ref ref) where
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: NonEmpty FrameProfilesMeta -> HDUSection ProfileGWCS (Profiles ProfileTree)
+profilesSection :: NonEmpty FrameProfilesMeta -> ProfileSection
 profilesSection frames =
-  let shape = (head frames).shape
-      wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
-   in HDUSection
+  let wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
+   in ProfileSection
         { wcs = profileGWCS wcs
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
-        , shape = shape.axes
-        , hdus = profilesTree shape frames
+        , hdus = profilesTree frames
         }
 
 
-profilesTree :: Shape Profile -> NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree shape frames =
-  let ps = fmap (.profiles) frames
+profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+profilesTree frames =
+  let frame = head frames
+      ps = fmap (.profiles) frames
    in Profiles
-        { orig630 = profileTree shape $ fmap (.orig630) ps
-        , orig854 = profileTree shape $ fmap (.orig854) ps
-        , fit630 = profileTree shape $ fmap (.fit630) ps
-        , fit854 = profileTree shape $ fmap (.fit854) ps
+        { orig630 = profileTree frame.shape630 $ fmap (.orig630) ps
+        , orig854 = profileTree frame.shape854 $ fmap (.orig854) ps
+        , fit630 = profileTree frame.shape630 $ fmap (.fit630) ps
+        , fit854 = profileTree frame.shape854 $ fmap (.fit854) ps
         }
 
 

@@ -63,7 +63,8 @@ data FrameQuantitiesMeta = FrameQuantitiesMeta
 
 
 data FrameProfilesMeta = FrameProfilesMeta
-  { shape :: Shape Profile
+  { shape630 :: Shape Profile
+  , shape854 :: Shape Profile
   , profiles :: Profiles ProfileHeader
   }
   deriving (Generic)
@@ -145,21 +146,26 @@ frameMetaFromL2Fits path slice wpo wpf l1 fits = runParser $ do
   qshape <- parseHeader @(Shape Quantity) qh
   quants <- parseQuantities
 
-  ph <- headerFor @Orig630
-  pshape <- parseHeader @(Shape Profile) ph
+  p630 <- headerFor @Orig630
+  shape630 <- parseHeader @(Shape Profile) p630
+
+  p854 <- headerFor @Orig854
+  shape854 <- parseHeader @(Shape Profile) p854
+
   profs <- parseProfiles
   pure $
     L2FrameMeta
       { path
       , primary
       , quantities = FrameQuantitiesMeta{quantities = quants, shape = qshape}
-      , profiles = FrameProfilesMeta{profiles = profs, shape = pshape}
+      , profiles = FrameProfilesMeta{profiles = profs, shape630, shape854}
       }
  where
   headerFor :: forall a es. (HDUOrder a, Parser :> es) => Eff es Header
   headerFor =
     let HDUIndex index = hduIndex @a
-     in case fits.extensions !? index of
+        extIndex = index - 1
+     in case fits.extensions !? extIndex of
           Nothing -> parseFail $ "Missing HDU at " ++ show index
           Just (Image img) -> pure img.header
           Just _ -> parseFail $ "Expected ImageHDU at " ++ show index
@@ -224,7 +230,8 @@ frameMeta frame path =
   profilesMeta ps =
     FrameProfilesMeta
       { profiles = profileHeaders ps
-      , shape = Shape $ addDummyY $ dataCubeAxes ps.orig630.image
+      , shape630 = Shape $ addDummyY $ dataCubeAxes ps.orig630.image
+      , shape854 = Shape $ addDummyY $ dataCubeAxes ps.orig854.image
       }
 
   addDummyY :: Axes Row -> Axes Row
@@ -283,10 +290,10 @@ instance HDUOrder GasPressure where
 instance HDUOrder Density where
   hduIndex = 11
 instance HDUOrder Orig630 where
-  hduIndex = 11
-instance HDUOrder Orig854 where
   hduIndex = 12
-instance HDUOrder Fit630 where
+instance HDUOrder Orig854 where
   hduIndex = 13
-instance HDUOrder Fit854 where
+instance HDUOrder Fit630 where
   hduIndex = 14
+instance HDUOrder Fit854 where
+  hduIndex = 15
