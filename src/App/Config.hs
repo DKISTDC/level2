@@ -33,6 +33,7 @@ import Effectful.Log
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
 import NSO.Types.Common
+import Text.Read (readMaybe)
 import Web.Hyperbole
 
 
@@ -44,6 +45,7 @@ data Config = Config
   , scratch :: Scratch.Config
   , auth :: AuthInfo
   , db :: Rel8.Connection
+  , numWorkers :: Int
   }
 
 
@@ -76,7 +78,8 @@ initConfig = do
   globus <- initGlobus
   scratch <- initScratch
   auth <- initAuth globus
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth}
+  numWorkers <- readEnv "NUM_WORKERS"
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers}
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
@@ -148,12 +151,13 @@ initApp = do
   pure $ App{port, domain}
 
 
--- readEnv :: (Environment :> es, Fail :> es) => (Read a) => String -> Eff es a
--- readEnv e = do
---   env <- getEnv e
---   case readMaybe env of
---     Nothing -> fail $ "Could not read env: " <> env
---     Just a -> pure a
+readEnv :: (Environment :> es, Fail :> es) => (Read a) => String -> Eff es a
+readEnv e = do
+  env <- getEnv e
+  case readMaybe env of
+    Nothing -> fail $ "Could not read env: " <> env
+    Just a -> pure a
+
 
 document :: BL.ByteString -> BL.ByteString
 document cnt =

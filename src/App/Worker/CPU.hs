@@ -19,9 +19,14 @@ parallelize :: (Concurrent :> es, Log :> es, Traversable t) => t (Eff es a) -> E
 parallelize effs = do
   cpus <- availableWorkerCPUs
   let numThreads = min 16 cpus
-  log Debug $ "Parallelize: " <> show numThreads
-  pooledMapConcurrentlyN numThreads id effs
+  parallelizeN numThreads effs
 
 
 parallelize_ :: (Concurrent :> es, Log :> es, Traversable t) => t (Eff es a) -> Eff es ()
 parallelize_ effs = void $ parallelize effs
+
+
+parallelizeN :: (Concurrent :> es, Log :> es, Traversable t) => Int -> t (Eff es a) -> Eff es (t a)
+parallelizeN numThreads effs = do
+  log Debug $ "Parallelize: " <> show numThreads
+  pooledMapConcurrentlyN numThreads id effs

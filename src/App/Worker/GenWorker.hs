@@ -78,9 +78,10 @@ fitsTask
      , GenRandom :> es
      , IOE :> es
      )
-  => GenFits
+  => Int
+  -> GenFits
   -> Eff es ()
-fitsTask t = do
+fitsTask numWorkers t = do
   res <- runErrorNoCallStack $ catch workWithError onCaughtError
   either (failed t.inversionId) pure res
  where
@@ -121,7 +122,7 @@ fitsTask t = do
     send $ TaskSetStatus t $ GenFitsStatus{step = GenCreating, complete = 0, total = NE.length gfs}
 
     -- Generate them in parallel with N = available CPUs
-    metas <- CPU.parallelize $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
+    metas <- CPU.parallelizeN numWorkers $ fmap (workFrame t slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
 
     log Debug $ dump "DONE: " (length metas)
     Inversions.setGeneratedFits t.inversionId
