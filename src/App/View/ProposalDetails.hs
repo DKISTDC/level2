@@ -8,6 +8,7 @@ module App.View.ProposalDetails
 import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
+import App.View.Common (showTimestamp)
 import App.View.Common as View (hr)
 import App.View.DataRow (dataCell, tagCell)
 import App.View.DatasetsTable as DatasetsTable
@@ -31,8 +32,8 @@ viewExperimentDescription t = do
 
 
 viewProgramRow :: UTCTime -> InstrumentProgramStatus -> View c ()
-viewProgramRow now ips = row (gap 10 . textAlign Center) $ do
-  let ip = ips.program
+viewProgramRow now ips = row (gap 10 . textAlign Center . grow) $ do
+  let ip = ips.program :: InstrumentProgram
   statusTag ips.status
 
   -- el dataCell $ text $ showDate ip.startTime
@@ -41,12 +42,20 @@ viewProgramRow now ips = row (gap 10 . textAlign Center) $ do
   -- not worth showing Stokes in the row. They seem to be present for all VISP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
+  code (cell . color Secondary) $ text $ cs $ showTimestamp ip.startTime
+
   row (dataCell . gap 5 . fontSize 14) $ do
     maybe none embargoTag ip.embargo
     if ip.onDisk then diskTag else none
     mapM_ lineTag ip.spectralLines
     mapM_ midTag $ sortOn id ip.otherWavelengths
+
+  space
+
+  code (cell . color Secondary) $ text ips.program.programId.fromId
  where
+  cell = dataCell . fontSize 14 . pad 2
+
   lineTag :: SpectralLine -> View c ()
   lineTag s = tag "pre" (dataTag . Style.tagOutline (light Secondary)) $ text $ cs $ show s
 
@@ -58,10 +67,12 @@ viewProgramRow now ips = row (gap 10 . textAlign Center) $ do
       else none
 
   midTag mid =
-    tag "pre" (pad 2 . color (light Secondary)) $ text $ cs (show (round mid :: Integer) <> "nm")
+    code (pad 2 . color (light Secondary)) $ text $ cs (show (round mid :: Integer) <> "nm")
 
   dataTag :: Mod
   dataTag = pad (XY 6 1)
+
+  code = tag "pre"
 
 
 statusTag :: ProgramStatus -> View c ()
@@ -153,7 +164,8 @@ viewProgramDetails ips now (d : ds) = do
   let gd = Grouped (d :| ds)
 
   row (textAlign Center) $ do
-    route (Proposal p.proposalId $ Program p.programId) id $ viewProgramRow now ips
+    route (Proposal p.proposalId $ Program p.programId) grow $ do
+      viewProgramRow now ips
 
   View.hr (color Gray)
 
