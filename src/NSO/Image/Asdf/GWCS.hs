@@ -5,6 +5,7 @@ module NSO.Image.Asdf.GWCS where
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2)
 import Data.Massiv.Array qualified as M
+import NSO.Image.Headers (Observation (..), Telescope (..))
 import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Stokes)
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Profile
@@ -164,11 +165,11 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame))
+  outputStep :: GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 helioprojectiveFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -180,22 +181,53 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
         }
 
 
-celestialFrame :: Int -> CelestialFrame
-celestialFrame n =
+helioprojectiveFrame :: Observation -> Telescope -> HelioprojectiveFrame
+helioprojectiveFrame obs tel =
+  HelioprojectiveFrame
+    { coordinates = _
+    , obstime = _
+    , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
+    }
+
+
+celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame HelioprojectiveFrame
+celestialFrame n helioFrame =
   CelestialFrame
-    { name = "icrs"
-    , referenceFrame = ICRSFrame
+    { name = "helioprojective"
+    , referenceFrame = helioFrame
     , axes =
         NE.fromList
-          [ FrameAxis n "lon" (AxisType "pos.eq.ra") Unit.Degrees
-          , FrameAxis (n + 1) "lat" (AxisType "pos.eq.dec") Unit.Degrees
+          [ FrameAxis n "helioprojective longitude" (AxisType "pos.helioprojective.lon") Unit.Degrees
+          , FrameAxis (n + 1) "helioprojective latitude" (AxisType "pos.helioprojective.lat") Unit.Degrees
           ]
     }
 
 
+--
+-- reference_frame: !<tag:sunpy.org:sunpy/coordinates/frames/helioprojective-1.0.0>
+--   frame_attributes:
+--     observer: !<tag:sunpy.org:sunpy/coordinates/frames/heliographic_stonyhurst-1.1.0>
+--       data: !<tag:astropy.org:astropy/coordinates/representation-1.1.0>
+--         components:
+--           x: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 m,
+--             value: 151718470759.01736}
+--           y: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 m,
+--             value: 936374.8961084613}
+--           z: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 m,
+--             value: -1238552794.1080718}
+--         type: CartesianRepresentation
+--       frame_attributes:
+--         obstime: !time/time-1.1.0 2022-06-02T21:47:26.641
+--         rsun: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 km,
+--           value: 695700.0}
+--     obstime: !time/time-1.1.0 2022-06-02T21:47:26.641
+--     rsun: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 km,
+--       value: 695700.0}
+-- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
+
 newtype QuantityGWCS
   = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame (CoordinateFrame, CelestialFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame)))
 instance KnownText QuantityGWCS where
   knownText = "quantityGWCS"
 
@@ -225,11 +257,11 @@ profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame))
+  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2)
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 helioprojectiveFrame)
 
     stokesFrame =
       StokesFrame
@@ -246,7 +278,7 @@ profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
 
 newtype ProfileGWCS
   = ProfileGWCS
-      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame)))
 
 
 instance KnownText ProfileGWCS where

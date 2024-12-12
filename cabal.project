@@ -2,7 +2,7 @@ tests: True
 packages:
   .
   ./types/
-  -- ../telescope.hs/
+  ../telescope.hs/
   -- ../web-view/
   -- ../hyperbole/
   -- ../fits-parse/
