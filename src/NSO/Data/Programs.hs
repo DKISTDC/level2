@@ -46,7 +46,9 @@ fromDatasets ai ds =
   let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
       pvs = fmap (programInversions ai) gds :: [[Inversion]]
       ips = zipWith instrumentProgramStatus gds pvs
-   in zipWith3 ProgramFamily ips gds pvs
+   in sortOn startTime $ zipWith3 ProgramFamily ips gds pvs
+ where
+  startTime pf = pf.program.program.startTime
 
 
 -- | All inversions for the given program
