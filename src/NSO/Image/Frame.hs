@@ -5,13 +5,12 @@ module NSO.Image.Frame where
 import Data.ByteString qualified as BS
 import Data.List ((!?))
 import Data.Massiv.Array ()
-import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Image.DataCube (dataCubeAxes)
 import NSO.Image.Headers
-import NSO.Image.Headers.Types (DateTime (..), Depth, Key (..), SliceXY, SlitX)
+import NSO.Image.Headers.Types (Depth, Key (..), SliceXY, SlitX)
 import NSO.Image.Primary
 import NSO.Image.Profile as Profile
 import NSO.Image.Quantity as Quantity
@@ -101,14 +100,8 @@ data L2FrameInputs = L2FrameInputs
   }
 
 
-filenameL2Frame :: Id Inversion -> DateTime -> Path' Filename L2Frame
-filenameL2Frame ii (DateTime dt) = Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
- where
-  toUnderscore :: Char -> Char
-  toUnderscore '.' = '_'
-  toUnderscore ':' = '_'
-  toUnderscore '-' = '_'
-  toUnderscore c = c
+filenameL2Frame :: Id Inversion -> UTCTime -> Path' Filename L2Frame
+filenameL2Frame ii dt = Path $ cs $ frameFilename dt ii
 
 
 generateL2Frame
@@ -119,12 +112,12 @@ generateL2Frame
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2FrameInputs
-  -> Eff es (L2Frame, DateTime)
+  -> Eff es (L2Frame, UTCTime)
 generateL2Frame now i slice wpo wpf gf = do
   ph <- primaryHeader i gf.l1Frame.header
   qs <- quantities slice now gf.l1Frame.header gf.quantities
   ps <- profiles slice now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
-  let dateBeg = ph.observation.dateBeg.ktype
+  let DateTime dateBeg = ph.observation.dateBeg.ktype
   let frame = L2Frame{primary = ph, quantities = qs, profiles = ps}
   pure (frame, dateBeg)
 

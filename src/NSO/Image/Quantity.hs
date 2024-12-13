@@ -8,8 +8,6 @@ import Control.Exception (Exception)
 import Data.ByteString (ByteString)
 import Data.Fixed (mod')
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
-import Data.Text (pack)
-import Data.Time.Format.ISO8601 (iso8601Show)
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics
@@ -168,7 +166,7 @@ data DataCommon = DataCommon
   , bscale :: BScale
   , datamin :: Key Float "The minimum data value"
   , datamax :: Key Float "The maximum data value"
-  , date :: Key DateTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
+  , date :: Key UTCTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
   deriving (Generic, HeaderDoc, ToHeader, FromHeader)
 
@@ -383,7 +381,7 @@ addDummyAxis DataArray{bitpix, axes, rawData} =
 
 dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as -> m DataCommon
 dataCommon now res = do
-  let date = Key . DateTime . pack . iso8601Show $ now
+  let date = Key now
       datamax = Key $ maximum res.array
       datamin = Key $ minimum res.array
   pure $

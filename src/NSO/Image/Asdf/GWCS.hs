@@ -6,12 +6,14 @@ import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Headers (Observation (..), Telescope (..))
-import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Stokes)
+import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Meters (..), Stokes)
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
+import NSO.Image.Primary (PrimaryHeader (..))
 import NSO.Image.Profile
 import NSO.Image.Quantity
 import NSO.Prelude as Prelude
-import Telescope.Asdf as Asdf
+import NSO.Types.Common (DateTime (..))
+import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
 import Telescope.Asdf.Core (Unit (Pixel))
 import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS as GWCS
@@ -147,8 +149,8 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-quantityGWCS :: WCSHeader QuantityAxes -> QuantityGWCS
-quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+quantityGWCS :: PrimaryHeader -> WCSHeader QuantityAxes -> QuantityGWCS
+quantityGWCS primary wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
   inputStep :: WCSCommon -> QuantityAxes 'WCSMain -> GWCSStep CoordinateFrame
   inputStep common axes = GWCSStep pixelFrame (Just (transformQuantity common axes).transformation)
@@ -169,7 +171,7 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 helioprojectiveFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame primary))
 
     opticalDepthFrame =
       CoordinateFrame
@@ -181,13 +183,16 @@ quantityGWCS wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputSte
         }
 
 
-helioprojectiveFrame :: Observation -> Telescope -> HelioprojectiveFrame
-helioprojectiveFrame obs tel =
+helioprojectiveFrame :: PrimaryHeader -> HelioprojectiveFrame
+helioprojectiveFrame primary =
   HelioprojectiveFrame
-    { coordinates = _
-    , obstime = _
+    { coordinates = Cartesian3D (coord primary.telescope.obsgeoX) (coord primary.telescope.obsgeoY) (coord primary.telescope.obsgeoZ)
+    , obstime = primary.observation.dateAvg.ktype.utc
     , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
     }
+ where
+  coord :: Key Meters desc -> Unit.Quantity
+  coord (Key (Meters m)) = Unit.Quantity Unit.Meters $ toValue m
 
 
 celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame HelioprojectiveFrame
@@ -197,8 +202,8 @@ celestialFrame n helioFrame =
     , referenceFrame = helioFrame
     , axes =
         NE.fromList
-          [ FrameAxis n "helioprojective longitude" (AxisType "pos.helioprojective.lon") Unit.Degrees
-          , FrameAxis (n + 1) "helioprojective latitude" (AxisType "pos.helioprojective.lat") Unit.Degrees
+          [ FrameAxis n "helioprojective longitude" (AxisType "pos.helioprojective.lon") Unit.Arcseconds
+          , FrameAxis (n + 1) "helioprojective latitude" (AxisType "pos.helioprojective.lat") Unit.Arcseconds
           ]
     }
 
@@ -238,8 +243,8 @@ instance ToAsdf QuantityGWCS where
   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
-profileGWCS :: WCSHeader ProfileAxes -> ProfileGWCS
-profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+profileGWCS :: PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS
+profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
   inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
   inputStep common axes = GWCSStep pixelFrame (Just (transformProfile common axes).transformation)
@@ -261,7 +266,7 @@ profileGWCS wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 helioprojectiveFrame)
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 (helioprojectiveFrame primary))
 
     stokesFrame =
       StokesFrame

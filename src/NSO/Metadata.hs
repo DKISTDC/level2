@@ -56,14 +56,6 @@ mockRequest _ r = do
     op -> fail $ "GraphQL Request not mocked: " <> cs op
 
 
-newtype DateTime = DateTime {utc :: UTCTime}
-  deriving (Show, Eq, Generic)
-  deriving newtype (ISO8601, FormatTime)
-
-
-instance FromJSON DateTime where
-  parseJSON = withText "UTC" $ \s -> do
-    iso8601ParseM $ unpack s <> "Z"
 
 
 data DatasetInventory = DatasetInventory

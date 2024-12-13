@@ -5,10 +5,11 @@ module NSO.Image.Headers.Keywords where
 
 import Data.Text (pack)
 import Data.Text qualified as T
+import Data.Time.Format.ISO8601 (iso8601Show)
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Prelude
-import NSO.Types.Common (Id (..))
+import NSO.Types.Common (DateTime (..), Id (..))
 import Telescope.Data.KnownText
 import Telescope.Fits.Header (KeywordRecord (..), LogicalConstant (..), ToKeyword (..), Value (..))
 
@@ -80,6 +81,16 @@ instance KeyType Float where
   typeName = "Float"
   typeComment = ""
   typeValue = Float
+instance KeyType UTCTime where
+  typeName = "UTCTime"
+  typeComment = ""
+  typeValue utc = String $ cs $ iso8601Show utc
+instance KeyType DateTime where
+  typeName = "DateTime"
+  typeComment = ""
+  typeValue (DateTime utc) = typeValue utc
+
+
 instance KeyType (Id a) where
   typeName = "Identifier"
   typeComment = ""

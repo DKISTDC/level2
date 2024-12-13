@@ -195,14 +195,6 @@ instance (KnownValue c) => FromKeyword (Constant c) where
   parseKeywordValue _ = pure Constant
 
 
-newtype DateTime = DateTime {timestamp :: Text}
-  deriving (Generic, Show)
-  deriving newtype (ToKeyword, FromKeyword)
-instance KeyType DateTime where
-  typeValue (DateTime s) = String s
-  typeComment = ""
-
-
 newtype Url = Url Text
   deriving (Generic)
   deriving newtype (ToKeyword, FromKeyword)

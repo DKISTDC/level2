@@ -8,7 +8,6 @@ import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
 import NSO.Image.Asdf (L2Asdf, filenameL2Asdf)
 import NSO.Image.Frame (L2Frame, filenameL2Frame)
-import NSO.Image.Headers.Types (DateTime (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -110,7 +109,7 @@ outputL2Dir ip ii =
   generated </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
-outputL2Frame :: Id Proposal -> Id Inversion -> DateTime -> Path L2Frame
+outputL2Frame :: Id Proposal -> Id Inversion -> UTCTime -> Path L2Frame
 outputL2Frame ip ii dt =
   filePath (outputL2Dir ip ii) $ filenameL2Frame ii dt
 

@@ -7,6 +7,7 @@ import App.Version (appVersion)
 import Data.List qualified as L
 import Data.Text (pack)
 import Data.Text qualified as T
+import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.UUID qualified as UUID
 import Effectful
 import Effectful.Error.Static
@@ -18,7 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
-import NSO.Types.Common (Id (..))
+import NSO.Types.Common (DateTime, Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Header as Fits
@@ -297,7 +298,7 @@ telescopeHeader l1 = do
   telscan <- fmap Telscan <$> lookupKey "TELSCAN" l1
   ttblangl <- Key . Degrees <$> requireKey "TTBLANGL" l1
   ttbltrck <- Ttbltrck <$> requireKey "TTBLTRCK" l1
-  dateref <- Key . DateTime <$> requireKey "DATEREF" l1
+  dateref <- Key <$> requireKey "DATEREF" l1
   obsgeoX <- Key . Meters <$> requireKey "OBSGEO-X" l1
   obsgeoY <- Key . Meters <$> requireKey "OBSGEO-Y" l1
   obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" l1
@@ -317,22 +318,24 @@ telescopeHeader l1 = do
 --   -- dataskew = Key 0
 --   pure $ StatisticsHeader{..}
 
--- VISP_2023_10_16T23_55_59_513_00589600_I_ADDMM_L1.fits
--- = INSTRUMENT DATETIME DATASET L1
--- => DATETIME FRAMEID L2
 -- 2023_10_16T23_55_59_513_00589600_inv_290834_L2.fits
-frameFilename :: DateTime -> Id Inversion -> Text
-frameFilename (DateTime start) iv =
-  addExtension $
-    T.toUpper $
-      T.intercalate
-        "_"
-        [ T.replace "." "_" iv.fromId
-        , start
-        , "L2"
-        ]
+frameFilename :: UTCTime -> Id Inversion -> Text
+frameFilename start iv =
+  addExtension . T.toUpper . T.map toUnderscore $
+    T.intercalate
+      "_"
+      [ iv.fromId
+      , T.dropWhileEnd (== 'Z') $ cs $ iso8601Show start
+      , "L2"
+      ]
  where
   addExtension f = f <> ".fits"
+
+  toUnderscore :: Char -> Char
+  toUnderscore '.' = '_'
+  toUnderscore ':' = '_'
+  toUnderscore '-' = '_'
+  toUnderscore c = c
 
 
 writeHeader :: Eff '[Writer Header] () -> Header

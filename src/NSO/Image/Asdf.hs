@@ -38,13 +38,15 @@ asdfDocument inversionId datasetIds now metas =
   -- they need to be sorted!
   frames = NE.sort metas
 
+  frame = head frames
+
   inversionTree :: InversionTree
   inversionTree =
     InversionTree
       { fileuris
       , meta = inversionTreeMeta $ fmap (.primary) frames
-      , quantities = quantitiesSection $ fmap (.quantities) frames
-      , profiles = profilesSection $ fmap (.profiles) frames
+      , quantities = quantitiesSection frame.primary $ fmap (.quantities) frames
+      , profiles = profilesSection frame.primary $ fmap (.profiles) frames
       }
 
   inversionTreeMeta :: NonEmpty PrimaryHeader -> InversionTreeMeta
@@ -167,14 +169,14 @@ instance ToAsdf ProfileSection where
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: NonEmpty FrameQuantitiesMeta -> HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
-quantitiesSection frames =
+quantitiesSection :: PrimaryHeader -> NonEmpty FrameQuantitiesMeta -> HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
+quantitiesSection primary frames =
   -- choose a single frame from which to calculate the GWCS
   let wcs = (head frames).quantities.opticalDepth.wcs :: WCSHeader QuantityAxes
    in HDUSection
         { axes = ["frameY", "slitX", "opticalDepth"]
         , shape = shape.axes
-        , wcs = quantityGWCS wcs
+        , wcs = quantityGWCS primary wcs
         , hdus =
             Quantities
               { opticalDepth = quantity (.opticalDepth)
@@ -265,11 +267,11 @@ instance (KnownText ref) => KnownText (Ref ref) where
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: NonEmpty FrameProfilesMeta -> ProfileSection
-profilesSection frames =
+profilesSection :: PrimaryHeader -> NonEmpty FrameProfilesMeta -> ProfileSection
+profilesSection primary frames =
   let wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
    in ProfileSection
-        { wcs = profileGWCS wcs
+        { wcs = profileGWCS primary wcs
         , axes = ["frameY", "slitX", "wavelength", "stokes"]
         , hdus = profilesTree frames
         }
