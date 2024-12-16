@@ -2,12 +2,9 @@
 
 module NSO.Metadata where
 
-import Data.Aeson (FromJSON (..), withText)
+import Data.Aeson (FromJSON (..))
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
-import Data.Text (unpack)
-import Data.Time.Format (FormatTime)
-import Data.Time.Format.ISO8601
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.GraphQL
@@ -54,8 +51,6 @@ mockRequest _ r = do
     "DatasetInventories" -> L.readFile "deps/datasets.json"
     "ExperimentDescriptions" -> L.readFile "deps/experiments.json"
     op -> fail $ "GraphQL Request not mocked: " <> cs op
-
-
 
 
 data DatasetInventory = DatasetInventory
