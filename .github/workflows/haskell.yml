@@ -37,6 +37,11 @@ jobs:
     #       ${{ runner.os }}-build-
     #       ${{ runner.os }}-
 
+    - name: Install Libraries
+      run: |
+        apt-get -y install  libpq-dev
+        cabal update
+        cabal build --only-dependencies --enable-tests --enable-benchmarks
     - name: Install dependencies
       run: |
         cabal update
