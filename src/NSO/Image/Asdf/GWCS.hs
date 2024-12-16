@@ -187,7 +187,7 @@ helioprojectiveFrame :: PrimaryHeader -> HelioprojectiveFrame
 helioprojectiveFrame primary =
   HelioprojectiveFrame
     { coordinates = Cartesian3D (coord primary.telescope.obsgeoX) (coord primary.telescope.obsgeoY) (coord primary.telescope.obsgeoZ)
-    , obstime = primary.observation.dateAvg.ktype.utc
+    , obstime = primary.observation.dateBeg.ktype.utc
     , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
     }
  where
