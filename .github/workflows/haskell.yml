@@ -39,9 +39,9 @@ jobs:
 
     - name: Install Libraries
       run: |
-        apt-get -y install  libpq-dev
-        cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks
+        apt-get update
+        apt-get install libpq5=14.12
+        apt-get install libpq-dev
     - name: Install dependencies
       run: |
         cabal update
