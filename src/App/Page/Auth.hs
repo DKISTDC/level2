@@ -16,7 +16,7 @@ import Web.Hyperbole
 -- show the page, then handle the login second
 login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Eff es (Page '[AuthRed])
 login = do
-  authCode <- Tagged <$> reqParam "code"
+  authCode <- Tagged <$> param "code"
   pure $ col (pad 20 . gap 10) $ do
     el bold "Login"
     hyper AuthRed $ do
@@ -48,8 +48,8 @@ instance (Globus :> es, Auth :> es, Log :> es) => HyperView AuthRed es where
     deriving (Show, Read, ViewAction)
 
 
-  update (LazyAuth code) = do
-    u <- send $ AuthWithCode code
+  update (LazyAuth authCode) = do
+    u <- send $ AuthWithCode authCode
     saveAccessToken u.transfer
 
     uri <- redirectTo

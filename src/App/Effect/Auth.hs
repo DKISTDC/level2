@@ -101,15 +101,15 @@ loginUrl = do
 
 getAccessToken :: (Hyperbole :> es, Auth :> es) => Eff es (Maybe (Token Access))
 getAccessToken = do
-  fmap Tagged <$> session "globus"
+  fmap Tagged <$> lookupSessionKey "globus"
 
 
 saveAccessToken :: (Hyperbole :> es) => Token Access -> Eff es ()
-saveAccessToken (Tagged acc) = setSession "globus" acc
+saveAccessToken (Tagged acc) = setSessionKey "globus" acc
 
 
 clearAccessToken :: (Hyperbole :> es) => Eff es ()
-clearAccessToken = clearSession "globus"
+clearAccessToken = deleteSessionKey "globus"
 
 
 waitForAccess :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
@@ -147,10 +147,10 @@ currentUrl = do
 saveCurrentUrl :: (Hyperbole :> es) => Eff es ()
 saveCurrentUrl = do
   u <- currentUrl
-  setSession "current-url" (renderUrl u)
+  setSessionKey "current-url" (renderUrl u)
 
 
 getLastUrl :: (Hyperbole :> es) => Eff es (Maybe Url)
 getLastUrl = do
-  u <- session "current-url"
+  u <- lookupSessionKey "current-url"
   pure $ url <$> u

@@ -89,7 +89,7 @@ runGlobusDev dkistDir = interpret $ \_ -> \case
 
 globusDevAuth :: (Hyperbole :> es) => Eff es Response
 globusDevAuth = do
-  red <- url <$> reqParam @Text "redirect"
+  red <- url <$> param @Text "redirect"
   redirect $ red{query = [("code", Just "dev_auth")]}
 
 

@@ -10,7 +10,7 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import Network.Globus (Task)
 import Rel8 (Column, DBType, Rel8able, Result)
-import Web.HttpApiData (FromHttpApiData)
+import Web.Hyperbole (FromParam)
 
 
 data Inversion = Inversion
@@ -56,7 +56,7 @@ deriving stock instance (f ~ Result) => Eq (InversionRow f)
 
 
 newtype GitCommit = GitCommit Text
-  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord, FromHttpApiData)
+  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord, FromParam)
   deriving (Generic)
 
 

@@ -57,9 +57,9 @@ import NSO.Types.InstrumentProgram (Proposal)
 import Network.Globus.Auth (TokenItem, UserEmail (..), UserInfo, UserInfoResponse (..), UserProfile, scopeToken)
 import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
-import Web.FormUrlEncoded (parseMaybe)
 import Web.Hyperbole
 import Web.Hyperbole.Effect.Server (Host (..), Request (..))
+import Web.Hyperbole.View.Forms (formLookupParam)
 import Web.View as WebView
 
 
@@ -71,11 +71,11 @@ authUrl red = do
   convertUrl :: Uri a -> WebView.Url
   convertUrl u =
     let Query ps = u.params
-     in Url{scheme = scheme u.scheme, domain = u.domain, path = u.path, query = map query ps}
+     in Url{scheme = scheme u.scheme, domain = u.domain, path = u.path, query = map queryBs ps}
   scheme Https = "https://"
   scheme Http = "http://"
-  query :: (Text, Maybe Text) -> QueryItem
-  query (t, mt) = (cs t, cs <$> mt)
+  queryBs :: (Text, Maybe Text) -> QueryItem
+  queryBs (t, mt) = (cs t, cs <$> mt)
 
 
 accessTokens :: (Globus :> es) => Uri Redirect -> Token Exchange -> Eff es (NonEmpty TokenItem)
@@ -186,7 +186,7 @@ data DownloadFolder f = DownloadFolder
   deriving (Generic)
 instance Form DownloadFolder Maybe where
   formParse f = do
-    DownloadFolder <$> parseMaybe "folder[0]" f
+    DownloadFolder <$> formLookupParam "folder[0]" f
 
 
 data UploadFiles t f = UploadFiles
@@ -208,10 +208,10 @@ instance Form (UploadFiles Filename) Maybe where
     sub :: Text -> Int -> Text
     sub t n = t <> "[" <> cs (show n) <> "]"
     multi t = do
-      sub0 <- parseMaybe (sub t 0) f
-      sub1 <- parseMaybe (sub t 1) f
-      sub2 <- parseMaybe (sub t 2) f
-      sub3 <- parseMaybe (sub t 3) f
+      sub0 <- formLookupParam (sub t 0) f
+      sub1 <- formLookupParam (sub t 1) f
+      sub2 <- formLookupParam (sub t 2) f
+      sub3 <- formLookupParam (sub t 3) f
       pure $ catMaybes [sub0, sub1, sub2, sub3]
 
     findFile :: Path' Filename a -> [FilePath] -> Either Text (Path' Filename a)

@@ -54,7 +54,7 @@ viewScan msr = do
 
     maybe (pure ()) viewScanResults msr
  where
-  loading = el (pad 100 . grow . onRequest flexRow) $ do
+  loading = el (hide . pad 100 . grow . onRequest flexRow) $ do
     space
     el (width 200 . color (light Primary)) Icons.spinner
     space

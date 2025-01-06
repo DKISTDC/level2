@@ -19,8 +19,7 @@ import Telescope.Asdf
 import Telescope.Data.Parser (expected)
 import Telescope.Fits as Telescope
 import Text.Read (readMaybe)
-import Web.HttpApiData
-import Web.Hyperbole (Route)
+import Web.Hyperbole (FromParam (..), Route)
 
 
 newtype Id a = Id {fromId :: Text}
@@ -105,10 +104,10 @@ newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
 type Path = Path' File
 
 
-instance FromHttpApiData (Path' t a) where
-  parseQueryParam t = do
-    f <- parseQueryParam t
-    pure $ Path f
+instance FromParam (Path' t a) where
+  parseParam t = do
+    f <- parseParam @Text t
+    pure $ Path (cs f)
 
 
 (</>) :: Path' x a -> Path' y b -> Path' z c

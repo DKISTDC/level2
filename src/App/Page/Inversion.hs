@@ -375,9 +375,10 @@ uploadSelect val = do
   col (gap 5 . file val) $ do
     el id "Upload Inversion Results"
     instructions val
-    li id "inv_res_pre.fits"
-    li id "per_ori.fits"
-    li id "inv_res_mod.fits"
+    ul id $ do
+      li id "inv_res_pre.fits"
+      li id "per_ori.fits"
+      li id "inv_res_mod.fits"
     -- li id "timestamps.tsv"
     case val of
       Valid -> button Upload (Style.btnOutline Success . grow) "Select New Files"
@@ -385,8 +386,6 @@ uploadSelect val = do
  where
   file Valid = color Success
   file _ = color Black
-
-  li = tag "li"
 
   instructions Valid = none
   instructions _ = el_ "Please select the following files for upload. You will be redirected to Globus"

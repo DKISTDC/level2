@@ -10,10 +10,8 @@ import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
-import Data.ByteString (ByteString)
 import Data.Grouped as G
 import Data.Ord (Down (..))
-import Data.Text qualified as T
 import Effectful
 import Effectful.Log
 import Effectful.Time
@@ -26,13 +24,15 @@ import NSO.Types.Status
 import Text.Read (readMaybe)
 import Web.HttpApiData
 import Web.Hyperbole as H
+import Web.Hyperbole.Data.QueryData (DefaultParam (..))
 
 
 page
   :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
   => Eff es (Page '[PView])
 page = do
-  fs <- filtersFromQuery
+  fs <- query
+  log Debug (dump "Filters" fs)
 
   exs <- Programs.loadAllProposals
   now <- currentTime
@@ -40,17 +40,20 @@ page = do
   appLayout Proposals $ do
     hyper PView $ do
       viewProposals now fs exs
- where
-  filtersFromQuery = do
-    q <- reqParams
-    let isVBI = hasParam "vbi" q
-    let isVISP = lookupParam "visp" q /= Just "false"
-    let status = fromMaybe Any $ parseInvStatus q
-    pure $ Filters{isVBI, isVISP, inversionStatus = status}
 
-  parseInvStatus q = do
-    t <- lookupParam "status" q
-    readMaybe (cs $ T.toTitle t)
+
+newtype ShowVISP = ShowVISP {value :: Bool}
+  deriving newtype (ToParam, FromParam, Eq, Read, Show)
+instance DefaultParam ShowVISP where
+  defaultParam = ShowVISP True
+
+
+data Filters = Filters
+  { status :: InversionFilter
+  , visp :: ShowVISP
+  , vbi :: Bool
+  }
+  deriving (Show, Read, Generic, ToQuery, FromQuery)
 
 
 loading :: View c ()
@@ -60,23 +63,6 @@ loading = el_ "loading..."
 -----------------------------------------------------
 -- Query URL
 -----------------------------------------------------
-
-filtersToQuery :: Filters -> [(ByteString, Maybe ByteString)]
-filtersToQuery fs = catMaybes [anyStatus fs.inversionStatus, visp fs.isVISP, vbi fs.isVBI]
- where
-  anyStatus Any = Nothing
-  anyStatus f = Just ("status", Just $ cs $ show f)
-
-  visp b =
-    if b
-      then Nothing
-      else Just ("visp", Just "false")
-
-  vbi b =
-    if b
-      then Just ("vbi", Just "true")
-      else Nothing
-
 
 -----------------------------------------------------
 -- Proposals --------------------------------------
@@ -92,17 +78,10 @@ instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView PView es wh
 
 
   update (Filter fs) = do
-    -- TODO: need a way to set the url WITHOUT reloading
-    let u = pathUrl $ routePath Proposals
-    redirect u{query = filtersToQuery fs}
-
-
-data Filters = Filters
-  { inversionStatus :: InversionFilter
-  , isVISP :: Bool
-  , isVBI :: Bool
-  }
-  deriving (Show, Read)
+    setQuery fs
+    exs <- Programs.loadAllProposals
+    now <- currentTime
+    pure $ viewProposals now fs exs
 
 
 data InversionFilter
@@ -110,7 +89,9 @@ data InversionFilter
   | Qualified
   | Active
   | Complete
-  deriving (Show, Read, Eq)
+  deriving (Show, Read, Eq, ToParam, FromParam)
+instance DefaultParam InversionFilter where
+  defaultParam = Any
 
 
 instance FromHttpApiData InversionFilter where
@@ -153,13 +134,13 @@ viewProposals now fs exs = do
           text "Hidden Instrument Programs"
 
   applyFilters :: InstrumentProgramStatus -> Bool
-  applyFilters ip = checkInstrument ip && checkInvertible fs.inversionStatus ip.status
+  applyFilters ip = checkInstrument ip && checkInvertible fs.status ip.status
 
   checkInstrument :: InstrumentProgramStatus -> Bool
   checkInstrument ip =
     case ip.program.instrument of
-      VBI -> fs.isVBI
-      VISP -> fs.isVISP
+      VBI -> fs.vbi
+      VISP -> fs.visp.value
       CRYO_NIRSP -> False
 
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
@@ -203,8 +184,8 @@ viewFilters fs = do
   el (item . bold) "Instrument"
 
   row (gap 5) $ do
-    toggle (Filter fs{isVISP = not fs.isVISP}) fs.isVISP id "VISP"
-    toggle (Filter fs{isVBI = not fs.isVBI}) fs.isVBI id "VBI"
+    toggle (Filter fs{visp = ShowVISP $ not fs.visp.value}) fs.visp.value id "VISP"
+    toggle (Filter fs{vbi = not fs.vbi}) fs.vbi id "VBI"
 
   -- dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
   --   option Nothing id ""
@@ -212,7 +193,7 @@ viewFilters fs = do
   --   option (Just VBI) id "VBI"
 
   el (item . bold) "Status"
-  dropdown (\i -> Filter $ fs{inversionStatus = i}) (== fs.inversionStatus) (item . pad 5) $ do
+  dropdown (\i -> Filter $ setStatus i fs) (== fs.status) (item . pad 5) $ do
     option Any "Any"
     option Qualified "Qualified"
     option Active "Active"
@@ -220,6 +201,8 @@ viewFilters fs = do
  where
   toggle action sel f =
     button action (f . item . pad (XY 10 5) . Style.btn (if sel then on else off))
+
+  setStatus s Filters{visp, vbi} = Filters{status = s, visp, vbi}
 
   item = pad (XY 0 5)
 
