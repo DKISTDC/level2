@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Auth where
 
 import App.Colors
@@ -12,25 +14,22 @@ import Web.Hyperbole
 
 
 -- show the page, then handle the login second
-login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Page es AuthRed
+login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Eff es (Page '[AuthRed])
 login = do
-  handle authRed $ do
-    code <- Tagged <$> reqParam "code"
-
-    pure $ col (pad 20 . gap 10) $ do
-      el bold "Login"
-      hyper AuthRed $ do
-        onLoad (LazyAuth code) 0 $ do
-          el_ "Authenticating..."
-          el (width 200 . color Primary) Icons.spinner
+  authCode <- Tagged <$> reqParam "code"
+  pure $ col (pad 20 . gap 10) $ do
+    el bold "Login"
+    hyper AuthRed $ do
+      col (gap 10 . onLoad (LazyAuth authCode) 0) $ do
+        el_ "Authenticating..."
+        el (width 200 . color Primary) Icons.spinner
 
 
-logout :: (Hyperbole :> es, Auth :> es) => Page es ()
+logout :: (Hyperbole :> es, Auth :> es) => Eff es (Page '[])
 logout = do
-  handle () $ do
-    clearAccessToken
-    u <- redirectTo
-    redirect u
+  clearAccessToken
+  u <- redirectTo
+  redirect u
 
 
 redirectTo :: (Hyperbole :> es) => Eff es Url
@@ -43,19 +42,15 @@ data AuthRed = AuthRed
   deriving (Show, Read, ViewId)
 
 
-data GoRed
-  = LazyAuth (Token Exchange)
-  deriving (Show, Read, ViewAction)
+instance (Globus :> es, Auth :> es, Log :> es) => HyperView AuthRed es where
+  data Action AuthRed
+    = LazyAuth (Token Exchange)
+    deriving (Show, Read, ViewAction)
 
 
-instance HyperView AuthRed where
-  type Action AuthRed = GoRed
+  update (LazyAuth code) = do
+    u <- send $ AuthWithCode code
+    saveAccessToken u.transfer
 
-
-authRed :: (Hyperbole :> es, Globus :> es, Auth :> es, Log :> es) => AuthRed -> GoRed -> Eff es (View AuthRed ())
-authRed _ (LazyAuth code) = do
-  u <- send $ AuthWithCode code
-  saveAccessToken u.transfer
-
-  uri <- redirectTo
-  redirect uri
+    uri <- redirectTo
+    redirect uri

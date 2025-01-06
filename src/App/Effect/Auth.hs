@@ -39,9 +39,9 @@ runAuth
 runAuth dom r auth = interpret $ \_ -> \case
   LoginUrl -> do
     Globus.authUrl $ redirectUri dom r
-  AuthWithCode code -> do
+  AuthWithCode authCode -> do
     let red = redirectUri dom r
-    ts <- Globus.accessTokens red code
+    ts <- Globus.accessTokens red authCode
     log Debug $ dump "TS" ts
 
     u <- Globus.userInfo ts

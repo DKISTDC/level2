@@ -30,6 +30,6 @@ inversionStepTagColor = \case
 
 inversionStepTag :: InversionStep -> View c ()
 inversionStepTag step =
-  el (textAlign Center . stat (inversionStepTagColor step)) (text $ inversionStepLabel step)
+  el (textAlign AlignCenter . stat (inversionStepTagColor step)) (text $ inversionStepLabel step)
  where
   stat c = tagCell . Style.tag c

@@ -44,7 +44,7 @@ dependencies:
   - random
   - modern-uri
   - lens
-  - hyperbole == 0.4.1
+  - hyperbole >= 0.4.2
   - exceptions
   - effectful >= 2.4 && <3
   - http-api-data

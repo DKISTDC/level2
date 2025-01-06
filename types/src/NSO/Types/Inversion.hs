@@ -10,7 +10,7 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import Network.Globus (Task)
 import Rel8 (Column, DBType, Rel8able, Result)
-import Web.Hyperbole.Forms (FromHttpApiData)
+import Web.HttpApiData (FromHttpApiData)
 
 
 data Inversion = Inversion

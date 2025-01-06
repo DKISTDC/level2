@@ -15,10 +15,6 @@ showTimestamp :: UTCTime -> Text
 showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
 
 
-code :: Text -> View c ()
-code = pre (fontSize 14)
-
-
 systemError :: Text -> View c ()
 systemError e = do
   col (gap 5 . grow . borderColor Danger . border 1 . bg (HexColor "#fdd9d7") . rounded 5) $ do
@@ -28,7 +24,7 @@ systemError e = do
   wrap = addClass $ cls "wrap" & prop @Text "word-wrap" "break-word"
 
 
-hr :: Mod -> View c ()
+hr :: Mod c -> View c ()
 hr f = tag "hr" f none
 
 

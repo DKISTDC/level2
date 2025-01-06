@@ -1,9 +1,11 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.View.DatasetsTable where
 
 -- import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
-import App.View.Common (code, showDate, showTimestamp)
+import App.View.Common (showDate, showTimestamp)
 import App.View.DataRow qualified as View
 import App.View.Icons as Icons
 import Data.Ord (Down (..))
@@ -30,22 +32,24 @@ data SortField
   | Stokes
   | WaveMin
   | WaveMax
-  deriving (Show, Read, ViewAction)
+  deriving (Show, Read)
 
 
-instance HyperView ProgramDatasets where
-  type Action ProgramDatasets = SortField
+instance (Datasets :> es) => HyperView ProgramDatasets es where
+  data Action ProgramDatasets
+    = SortBy SortField
+    deriving (Show, Read, ViewAction)
 
 
-actionSort :: (Datasets :> es) => ProgramDatasets -> SortField -> Eff es (View ProgramDatasets ())
-actionSort (ProgramDatasets i) s = do
-  ds <- send $ Query (ByProgram i)
-  pure $ datasetsTable s ds
+  update (SortBy srt) = do
+    ProgramDatasets i <- viewId
+    ds <- send $ Query (ByProgram i)
+    pure $ datasetsTable srt ds
 
 
 datasetsTable :: SortField -> [Dataset] -> View ProgramDatasets ()
-datasetsTable s ds = do
-  let sorted = sortField s ds
+datasetsTable srt ds = do
+  let sorted = sortField srt ds
 
   -- is there a way to do alternating rows here?
   table View.table sorted $ do
@@ -82,7 +86,7 @@ datasetsTable s ds = do
 
   sortBtn :: SortField -> Text -> View ProgramDatasets ()
   sortBtn st t =
-    button st Style.link (text t)
+    button (SortBy st) Style.link (text t)
 
   hd = View.hd
   cell = View.cell
@@ -112,7 +116,7 @@ radiusBoundingBox Nothing = none
 radiusBoundingBox (Just b) = row (gap 5) $ do
   space
   forM_ (boundingPoints b) $ \c ->
-    code . cs $ showFFloat (Just 0) (boxRadius c) ""
+    code (Style.code) . cs $ showFFloat (Just 0) (boxRadius c) ""
   space
 
 -- rowHeight :: PxRem

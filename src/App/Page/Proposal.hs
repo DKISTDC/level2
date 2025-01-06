@@ -20,21 +20,20 @@ import Web.Hyperbole
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
-  -> Page es ProgramDatasets
+  -> Eff es (Page '[ProgramDatasets])
 page pid = do
-  handle DatasetsTable.actionSort $ do
-    ds <- send $ Datasets.Query (ByProposal pid)
-    ai <- send Inversions.All
-    now <- currentTime
-    let pwds = Programs.fromDatasets ai ds
+  ds <- send $ Datasets.Query (ByProposal pid)
+  ai <- send Inversions.All
+  now <- currentTime
+  let pwds = Programs.fromDatasets ai ds
 
-    appLayout Proposals $ do
-      col Style.page $ do
-        el Style.header $ do
-          text "Proposal - "
-          text pid.fromId
+  appLayout Proposals $ do
+    col Style.page $ do
+      el Style.header $ do
+        text "Proposal - "
+        text pid.fromId
 
-        viewPrograms now pwds
+      viewPrograms now pwds
 
 
 -- DatasetsTable.datasetsTable ds

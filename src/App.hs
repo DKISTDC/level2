@@ -128,22 +128,22 @@ webServer config auth fits asdf =
     document
     (runApp . routeRequest $ router)
  where
-  router Dashboard = page Dashboard.page
-  router Proposals = page Proposals.page
-  router Inversions = page Inversions.page
+  router Dashboard = runPage Dashboard.page
+  router Proposals = runPage Proposals.page
+  router Inversions = runPage Inversions.page
   router (Proposal ip (Inversion i r)) =
     case r of
-      Inv -> page $ Inversion.page ip i
+      Inv -> runPage $ Inversion.page ip i
       SubmitDownload -> Inversion.submitDownload ip i
       SubmitUpload -> Inversion.submitUpload ip i
-  router (Proposal p PropRoot) = page $ Proposal.page p
-  router (Proposal ip (Program iip)) = page $ Program.page ip iip
-  router (Dataset d) = page $ Dataset.page d
-  router Scan = page Scan.page
+  router (Proposal p PropRoot) = runPage $ Proposal.page p
+  router (Proposal ip (Program iip)) = runPage $ Program.page ip iip
+  router (Dataset d) = runPage $ Dataset.page d
+  router Scan = runPage Scan.page
   router Experiments = do
     redirect (pathUrl . routePath $ Proposals)
-  router Logout = page Auth.logout
-  router Redirect = page Auth.login
+  router Logout = runPage Auth.logout
+  router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
   runApp :: (IOE :> es) => Eff (Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a

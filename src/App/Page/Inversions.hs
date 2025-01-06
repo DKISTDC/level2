@@ -23,20 +23,19 @@ import NSO.Types.Status
 import Web.Hyperbole
 
 
-page :: (Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es) => Page es ()
+page :: (Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es) => Eff es (Page '[])
 page = do
-  handle () $ do
-    AllInversions ivs <- send Inversions.All
-    props <- Programs.loadAllProposals
-    -- let actv = groupProposals props $ filter activeInvs ivs
-    -- let cmpl = groupProposals props $ filter completeInvs ivs
-    let allPropInvs = groupProposals props ivs
+  AllInversions ivs <- send Inversions.All
+  props <- Programs.loadAllProposals
+  -- let actv = groupProposals props $ filter activeInvs ivs
+  -- let cmpl = groupProposals props $ filter completeInvs ivs
+  let allPropInvs = groupProposals props ivs
 
-    -- let sorted = sortOn sortInv ivs
-    appLayout Inversions $ do
-      col Style.page $ do
-        -- el (fontSize 24 . bold) "Completed"
-        viewProposals allPropInvs
+  -- let sorted = sortOn sortInv ivs
+  appLayout Inversions $ do
+    col Style.page $ do
+      -- el (fontSize 24 . bold) "Completed"
+      viewProposals allPropInvs
  where
   mostRecentlyUpdated :: ProposalInversions -> Down UTCTime
   mostRecentlyUpdated p =

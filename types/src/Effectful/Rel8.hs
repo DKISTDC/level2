@@ -35,7 +35,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Hasql.Connection (Connection, ConnectionError, Settings)
 import Hasql.Connection qualified as Connection
-import Hasql.Session (QueryError)
+import Hasql.Session (SessionError (..))
 import Hasql.Session qualified as Session
 import Hasql.Statement as Hasql
 import NSO.Prelude
@@ -93,6 +93,6 @@ run_ stmt = send $ RunQuery $ Rel8.run_ stmt
 -- runQueryN stmt = send $ RunQueryN stmt
 
 data Rel8Error
-  = Rel8ErrQuery QueryError
+  = Rel8ErrQuery SessionError
   | Rel8ErrConn ConnectionError
   deriving (Show, Exception)

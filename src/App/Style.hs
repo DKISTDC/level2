@@ -6,55 +6,59 @@ import Web.View
 import Web.View.Style
 
 
-link :: Mod
+link :: Mod c
 link = color Primary . hover (color (light Primary) . underline)
 
 
-page :: Mod
+page :: Mod c
 page = pad 20 . gap 25
 
 
-header :: Mod
+header :: Mod c
 header = fontSize 24 . bold
 
 
-subheader :: Mod
+code :: Mod c
+code = fontSize 14
+
+
+subheader :: Mod c
 subheader = fontSize 18 . bold
 
 
-card :: Mod
+card :: Mod c
 card = bg White . rounded 4 . truncate
 
 
-cardHeader :: (Contrast c, ToColor c) => c -> Mod
+cardHeader :: (Contrast clr, ToColor clr) => clr -> Mod ctx
 cardHeader c =
-  bg c . color (contrast c) . textAlign Center . pad 10
+  bg c . color (contrast c) . textAlign AlignCenter . pad 10
 
 
-tag :: AppColor -> Mod
+tag :: AppColor -> Mod c
 tag c =
   color (contrast c)
     . bg (light c)
 
 
-tagOutline :: (ToColor c) => c -> Mod
+tagOutline :: (ToColor clr) => clr -> Mod ctx
 tagOutline c =
   color c
     . borderColor c
     . border 2
 
 
-btn :: AppColor -> Mod
+btn :: AppColor -> Mod c
 btn c =
   btnBase
     . color (contrast c)
     . bg c
     . hover (bg (light c))
-    . shadow
+    . shadow ()
     . rounded 3
 
 
-btnOutline :: AppColor -> Mod
+btnOutline :: AppColor -> Mod c
 btnOutline c =
   btnBase
     . border 2
@@ -63,35 +67,28 @@ btnOutline c =
     . hover (borderColor (light c) . color (light c))
 
 
-btnBase :: Mod
+btnBase :: Mod c
 btnBase =
   pad (XY 15 10)
     . rounded 3
-    . shadow
+    . shadow ()
 
 
-underline :: Mod
-underline =
-  addClass $
-    cls "under"
-      & prop @Text "text-decoration" "underline"
-
-
-italic :: Mod
+italic :: Mod c
 italic =
   addClass $
     cls "italic"
       & prop @Text "font-style" "italic"
 
 
-input :: Mod
+input :: Mod c
 input = pad 8 . border 1
 
 
--- disabled :: Mod
+-- disabled :: Mod c
 -- disabled = opacity 0.5 . att "inert" ""
 
-disabled :: Mod
+disabled :: Mod c
 disabled = noClick . opacity 0.5
  where
   noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"

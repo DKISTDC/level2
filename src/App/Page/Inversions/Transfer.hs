@@ -26,39 +26,38 @@ data TransferAction
 
 
 -- I want it to reload itself and call these when necessary
-checkTransfer :: (HyperView id, Action id ~ TransferAction, Hyperbole :> es, Globus :> es, Auth :> es) => Id Task -> Eff es (View id ())
-checkTransfer it = do
+checkTransfer :: (ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
+checkTransfer toAction it = do
   task <- requireLogin $ Globus.transferStatus it
-  pure $ viewTransfer it task
+  pure $ viewTransfer toAction it task
 
 
-viewLoadTransfer :: (HyperView id, Action id ~ TransferAction) => View id ()
-viewLoadTransfer = do
-  onLoad CheckTransfer 0 $ el (height 45) Icons.spinner
+viewLoadTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> View id ()
+viewLoadTransfer toAction = do
+  el (height 45 . onLoad (toAction CheckTransfer) 0) Icons.spinner
 
 
-viewTransfer :: (HyperView id, Action id ~ TransferAction) => Id Task -> Task -> View id ()
-viewTransfer it task =
+viewTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
+viewTransfer toAction it task =
   case task.status of
-    Succeeded -> onLoad TaskSucceeded 0 none
-    Failed -> onLoad TaskFailed 0 none
+    Succeeded -> el (onLoad (toAction TaskSucceeded) 0) none
+    Failed -> el (onLoad (toAction TaskFailed) 0) none
     _ ->
-      viewPollTransfer it task
+      viewPollTransfer toAction it task
 
 
-viewPollTransfer :: (HyperView id, Action id ~ TransferAction) => Id Task -> Task -> View id ()
-viewPollTransfer it task = do
-  onLoad CheckTransfer 1000 $ do
+viewPollTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
+viewPollTransfer toAction it task = do
+  row (gap 5 . onLoad (toAction CheckTransfer) 1000) $ do
     viewTransferProgress it task
 
 
 viewTransferProgress :: Id Task -> Task -> View c ()
 viewTransferProgress it task = do
-  row (gap 5) $ do
-    el (width 20) Icons.spinnerCircle
-    el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
-    space
-    activityLink it
+  el (width 20) Icons.spinnerCircle
+  el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
+  space
+  activityLink it
   View.progress (taskPercentComplete task)
  where
   rate :: String

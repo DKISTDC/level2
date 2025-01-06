@@ -39,7 +39,7 @@ default-extensions:
 dependencies:
   - base >=4.16.4.0
   - nso-level2-types
-  - web-view >= 0.5.0
+  - web-view >= 0.6.1
   - warp == 3.3.31
   - wai-extra
   - http-types
@@ -55,7 +55,7 @@ dependencies:
   - random
   - modern-uri
   - lens
-  - hyperbole == 0.4.1
+  - hyperbole >= 0.4.2
   - hasql
   - exceptions
   - binary

@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Dashboard where
 
 import App.Colors as Colors
@@ -27,12 +29,11 @@ import Web.Hyperbole
 
 page
   :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenFits :> es)
-  => Page es Work
-page =
-  handle work $ do
-    login <- loginUrl
-    mtok <- send AdminToken
-    appLayout Dashboard (mainView $ AdminLogin mtok login)
+  => Eff es (Page '[Work])
+page = do
+  login <- loginUrl
+  mtok <- send AdminToken
+  appLayout Dashboard (mainView $ AdminLogin mtok login)
  where
   mainView :: AdminLogin -> View (Root '[Work]) ()
   mainView admin =
@@ -58,19 +59,15 @@ data AdminLogin = AdminLogin
   }
 
 
-data Test = Test
-  deriving (Show, Read, ViewId)
-
-
-data TestAction
-  = DownloadL1
-  | ScanL1
-  deriving (Show, Read, ViewAction)
-
-
-instance HyperView Test where
-  type Action Test = TestAction
-
+-- data Test = Test
+--   deriving (Show, Read, ViewId)
+--
+--
+-- instance HyperView Test es where
+--   data Action Test
+--     = DownloadL1
+--     | ScanL1
+--     deriving (Show, Read, ViewAction)
 
 -- -- "~/Data/pid_2_95/AOPPO"
 -- test :: (Log :> es, FileSystem :> es, Concurrent :> es, Datasets :> es, Globus :> es, Reader (GlobusEndpoint App) :> es) => TMVar (Token Access) -> Test -> TestAction -> Eff es (View Test ())
@@ -104,24 +101,20 @@ data Work = Work
   deriving (Show, Read, ViewId)
 
 
-data WorkAction = Refresh
-  deriving (Show, Read, ViewAction)
+instance (Concurrent :> es, Tasks GenFits :> es) => HyperView Work es where
+  data Action Work = Refresh
+    deriving (Show, Read, ViewAction)
 
 
-instance HyperView Work where
-  type Action Work = WorkAction
-
-
-work :: (Concurrent :> es, Tasks GenFits :> es) => Work -> WorkAction -> Eff es (View Work ())
-work _ Refresh = do
-  wt <- send TasksWaiting
-  wk <- send TasksWorking
-  pure $ workView wt wk
+  update Refresh = do
+    wt <- send TasksWaiting
+    wk <- send TasksWorking
+    pure $ workView wt wk
 
 
 workView :: [GenFits] -> [(GenFits, GenFitsStatus)] -> View Work ()
 workView waiting working =
-  onLoad Refresh 1000 $ col (gap 10) $ do
+  col (gap 10 . onLoad Refresh 1000) $ do
     col Style.card $ do
       el (Style.cardHeader Colors.Info) $ do
         el (bold . fontSize 18) "Fits Working"

@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Inversions.CommitForm where
 
 import App.Colors
@@ -17,37 +19,31 @@ import Web.Hyperbole
 
 data InversionCommit = InversionCommit (Id Proposal) (Id Inversion)
   deriving (Show, Read, ViewId)
-instance HyperView InversionCommit where
+
+
+instance (Log :> es, IOE :> es, Inversions :> es, Globus :> es, Time :> es) => HyperView InversionCommit es where
   -- type Require InversionCommit = '[InversionStatus]
-  type Action InversionCommit = CommitAction
+  data Action InversionCommit
+    = SaveCommit GitCommit
+    deriving (Show, Read, ViewAction)
 
 
-data CommitAction
-  = SaveCommit GitCommit
-  deriving (Show, Read, ViewAction)
-
-
-inversionCommit
-  :: (Hyperbole :> es, Log :> es, IOE :> es, Inversions :> es, Globus :> es, Time :> es)
-  => InversionCommit
-  -> CommitAction
-  -> Eff es (View InversionCommit ())
-inversionCommit (InversionCommit ip ii) = \case
-  SaveCommit gc -> do
+  update (SaveCommit gc) = do
+    InversionCommit ip ii <- viewId
     log Debug $ dump "SaveCommit" gc
 
-    guardIsValid (InversionCommit ip ii) gc
+    guardIsValid (InversionCommit ip ii)
     Inversions.setInverted ii gc
 
     pure $ commitForm (Just gc) (CommitForm Valid)
- where
-  guardIsValid i gc = do
-    isValid <- send $ ValidateGitCommit vispInversionRepo gc
-    log Debug $ dump "isValid" isValid
-    if isValid
-      then pure ()
-      else respondEarly i $ do
-        commitForm (Just gc) (CommitForm $ Invalid "Git Commit not found in remote repository")
+   where
+    guardIsValid i = do
+      isValid <- send $ ValidateGitCommit vispInversionRepo gc
+      log Debug $ dump "isValid" isValid
+      if isValid
+        then pure ()
+        else respondEarly i $ do
+          commitForm (Just gc) (CommitForm $ Invalid "Git Commit not found in remote repository")
 
 
 -- loadingForm :: (HyperView id, Action id ~ CommitAction) => GitCommit -> View id ()
@@ -105,6 +101,6 @@ commitForm gc vf = do
   valColor _ = Black
 
 
-validationButton :: Validated GitCommit -> Mod
+validationButton :: Validated GitCommit -> Mod c
 validationButton Valid = Style.btnOutline Success
 validationButton _ = Style.btn Primary

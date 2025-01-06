@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Program where
 
 import App.Colors
@@ -34,33 +36,32 @@ page
   :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, IOE :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es (ProgramInversions, ProgramDatasets)
+  -> Eff es (Page '[ProgramInversions, ProgramDatasets])
 page ip iip = do
-  handle (programInversions, DatasetsTable.actionSort) $ do
-    ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
-    ds <- expectFound ds'
-    let d = head ds
+  ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
+  ds <- expectFound ds'
+  let d = head ds
 
-    dse <- send $ Datasets.Query (ByProposal ip)
-    invs <- latestInversions iip
-    now <- currentTime
-    let gds = Grouped ds :: Grouped InstrumentProgram Dataset
-    let p = instrumentProgramStatus gds invs
+  dse <- send $ Datasets.Query (ByProposal ip)
+  invs <- latestInversions iip
+  now <- currentTime
+  let gds = Grouped ds :: Grouped InstrumentProgram Dataset
+  let p = instrumentProgramStatus gds invs
 
-    appLayout Route.Proposals $ do
-      col (Style.page . gap 30) $ do
-        col (gap 5) $ do
-          el Style.header $ do
-            text "Instrument Program - "
-            text iip.fromId
+  appLayout Route.Proposals $ do
+    col (Style.page . gap 30) $ do
+      col (gap 5) $ do
+        el Style.header $ do
+          text "Instrument Program - "
+          text iip.fromId
 
-          experimentLink d (numOtherIps dse)
+        experimentLink d (numOtherIps dse)
 
-        viewExperimentDescription d.experimentDescription
+      viewExperimentDescription d.experimentDescription
 
-        hyper (ProgramInversions ip iip) $ viewProgramInversions invs
+      hyper (ProgramInversions ip iip) $ viewProgramInversions invs
 
-        viewProgramSummary now $ ProgramFamily p gds invs
+      viewProgramSummary now $ ProgramFamily p gds invs
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
@@ -89,21 +90,18 @@ latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
 
 data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Show, Read, ViewId)
-instance HyperView ProgramInversions where
-  type Action ProgramInversions = InvsAction
+instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
+  data Action ProgramInversions
+    = CreateInversion
+    deriving (Show, Read, ViewAction)
   type Require ProgramInversions = '[]
 
 
-data InvsAction
-  = CreateInversion
-  deriving (Show, Read, ViewAction)
-
-
-programInversions :: (Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => ProgramInversions -> InvsAction -> Eff es (View ProgramInversions ())
-programInversions (ProgramInversions ip iip) = \case
-  CreateInversion -> do
-    inv <- send $ Inversions.Create ip iip
-    redirect $ inversionUrl ip inv.inversionId
+  update = \case
+    CreateInversion -> do
+      ProgramInversions ip iip <- viewId
+      inv <- send $ Inversions.Create ip iip
+      redirect $ inversionUrl ip inv.inversionId
 
 
 inversionUrl :: Id Proposal -> Id Inversion -> Url

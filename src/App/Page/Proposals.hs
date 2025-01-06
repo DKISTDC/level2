@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Proposals where
 
 import App.Colors
@@ -28,17 +30,16 @@ import Web.Hyperbole as H
 
 page
   :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
-  => Page es PView
+  => Eff es (Page '[PView])
 page = do
-  handle proposals $ do
-    fs <- filtersFromQuery
+  fs <- filtersFromQuery
 
-    exs <- Programs.loadAllProposals
-    now <- currentTime
+  exs <- Programs.loadAllProposals
+  now <- currentTime
 
-    appLayout Proposals $ do
-      hyper PView $ do
-        viewProposals now fs exs
+  appLayout Proposals $ do
+    hyper PView $ do
+      viewProposals now fs exs
  where
   filtersFromQuery = do
     q <- reqParams
@@ -85,12 +86,15 @@ data PView = PView
   deriving (Show, Read, ViewId)
 
 
-data PEvent = Filter Filters
-  deriving (Show, Read, ViewAction)
+instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView PView es where
+  data Action PView = Filter Filters
+    deriving (Show, Read, ViewAction)
 
 
-instance HyperView PView where
-  type Action PView = PEvent
+  update (Filter fs) = do
+    -- TODO: need a way to set the url WITHOUT reloading
+    let u = pathUrl $ routePath Proposals
+    redirect u{query = filtersToQuery fs}
 
 
 data Filters = Filters
@@ -116,17 +120,6 @@ instance FromHttpApiData InversionFilter where
       Just a -> pure a
 
 
-proposals
-  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es)
-  => PView
-  -> PEvent
-  -> Eff es (View PView ())
-proposals _ (Filter fs) = do
-  -- TODO: need a way to set the url WITHOUT reloading
-  let u = pathUrl $ routePath Proposals
-  redirect u{query = filtersToQuery fs}
-
-
 viewProposals :: UTCTime -> Filters -> [ProposalPrograms] -> View PView ()
 viewProposals now fs exs = do
   let sorted = sortOn (\p -> Down p.proposal.proposalId) exs
@@ -134,7 +127,7 @@ viewProposals now fs exs = do
     row (big aside . gap 5) $ do
       viewFilters fs
 
-    col (gap 40 . grow . collapse) $ do
+    col (gap 40 . grow) $ do
       forM_ sorted viewProposal
  where
   aside = width 250 . flexCol

@@ -1,18 +1,18 @@
 module App.View.LiveInput where
 
+import App.Style qualified as Style
+import App.View.Icons qualified as Icons
 import NSO.Prelude
 import Web.Hyperbole
-import App.View.Icons qualified as Icons
-import App.Style qualified as Style
 import Web.View.Style (addClass, cls, prop)
 
 
-liveInput :: (HyperView id) => (Text -> Action id) -> Mod -> View id ()
+liveInput :: (ViewAction (Action id)) => (Text -> Action id) -> Mod id -> View id ()
 liveInput toAction f = do
   row relative $ do
     search toAction 250 (f . Style.input . onLoading Style.disabled)
     row (absolute . right . noClick) $ do
-      onRequest loader none
+      el (hide . onRequest flexRow) loader
  where
   relative = addClass $ cls "pos-rel" & prop @Text "position" "relative"
   absolute = addClass $ cls "pos-abs" & prop @Text "position" "absolute"
@@ -26,6 +26,6 @@ liveInput toAction f = do
         & prop @PxRem "bottom" 5
 
 
-onLoading :: Mod -> Mod
+onLoading :: Mod c -> Mod c
 onLoading l = do
   parent "hyp-loading" l

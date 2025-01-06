@@ -31,8 +31,8 @@ viewExperimentDescription t = do
     mapM_ (el_ . text) ps
 
 
-viewProgramRow :: UTCTime -> InstrumentProgramStatus -> View c ()
-viewProgramRow now ips = row (gap 10 . textAlign Center . grow) $ do
+viewProgramRow :: forall c. UTCTime -> InstrumentProgramStatus -> View c ()
+viewProgramRow now ips = row (gap 10 . textAlign AlignCenter . grow) $ do
   let ip = ips.program :: InstrumentProgram
   statusTag ips.status
 
@@ -42,7 +42,7 @@ viewProgramRow now ips = row (gap 10 . textAlign Center . grow) $ do
   -- not worth showing Stokes in the row. They seem to be present for all VISP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
-  code (cell . color Secondary) $ text $ cs $ showTimestamp ip.startTime
+  code (cell . color Secondary) $ cs $ showTimestamp ip.startTime
 
   row (dataCell . gap 5 . fontSize 14) $ do
     maybe none embargoTag ip.embargo
@@ -52,7 +52,7 @@ viewProgramRow now ips = row (gap 10 . textAlign Center . grow) $ do
 
   space
 
-  code (cell . color Secondary) $ text ips.program.programId.fromId
+  code (cell . color Secondary) ips.program.programId.fromId
  where
   cell = dataCell . fontSize 14 . pad 2
 
@@ -67,12 +67,10 @@ viewProgramRow now ips = row (gap 10 . textAlign Center . grow) $ do
       else none
 
   midTag mid =
-    code (pad 2 . color (light Secondary)) $ text $ cs (show (round mid :: Integer) <> "nm")
+    code (pad 2 . color (light Secondary)) $ cs (show (round mid :: Integer) <> "nm")
 
-  dataTag :: Mod
+  dataTag :: Mod c
   dataTag = pad (XY 6 1)
-
-  code = tag "pre"
 
 
 statusTag :: ProgramStatus -> View c ()
@@ -163,7 +161,7 @@ viewProgramDetails ips now (d : ds) = do
   let p = ips.program :: InstrumentProgram
   let gd = Grouped (d :| ds)
 
-  row (textAlign Center) $ do
+  row (textAlign AlignCenter) $ do
     route (Proposal p.proposalId $ Program p.programId) grow $ do
       viewProgramRow now ips
 

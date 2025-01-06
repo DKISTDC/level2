@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Scan where
 
 import App.Colors
@@ -23,41 +25,36 @@ import Web.Hyperbole
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Eff es (Page '[ScanView])
+page = do
+  appLayout Scan $ do
+    hyper ScanView $ viewScan Nothing
+
+
 data ScanView = ScanView
   deriving (Show, Read, ViewId)
 
 
-data PageEvent
-  = RunScan
-  deriving (Show, Read, ViewAction)
+instance (Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => HyperView ScanView es where
+  data Action ScanView
+    = RunScan
+    deriving (Show, Read, ViewAction)
 
 
-instance HyperView ScanView where
-  type Action ScanView = PageEvent
-
-
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Page es ScanView
-page = do
-  handle pageEvent $ do
-    appLayout Scan $ do
-      hyper ScanView $ viewScan Nothing
-
-
-pageEvent :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => ScanView -> PageEvent -> Eff es (View ScanView ())
-pageEvent _ RunScan = do
-  ds <- syncDatasets
-  pure $ viewScan (Just ds)
+  update RunScan = do
+    ds <- syncDatasets
+    pure $ viewScan (Just ds)
 
 
 viewScan :: Maybe SyncResults -> View ScanView ()
-viewScan msr =
-  onRequest loading $ do
-    col Style.page $ do
-      button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary) "Run Scan"
+viewScan msr = do
+  loading
+  col (Style.page . onRequest hide) $ do
+    button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary) "Run Scan"
 
-      maybe (pure ()) viewScanResults msr
+    maybe (pure ()) viewScanResults msr
  where
-  loading = row (pad 100 . grow) $ do
+  loading = el (pad 100 . grow . onRequest flexRow) $ do
     space
     el (width 200 . color (light Primary)) Icons.spinner
     space

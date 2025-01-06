@@ -15,8 +15,8 @@ import NSO.Prelude
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Page es ()
-page di = handle () $ do
+page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Eff es (Page '[])
+page di = do
   ds <- send $ Datasets.Query (ById di)
 
   let sorted = sortOn (Down . (.scanDate)) ds
@@ -72,12 +72,8 @@ dataField nm cnt =
 
 boundingBox :: Maybe BoundingBox -> View c ()
 boundingBox Nothing = none
-boundingBox (Just b) = code $ cs $ show b
+boundingBox (Just b) = code Style.code $ cs $ show b
 
 
 json :: (ToJSON a) => a -> View c ()
-json a = code $ cs $ encode a
-
-
-code :: Text -> View c ()
-code = pre (fontSize 14)
+json a = code Style.code $ cs $ encode a
