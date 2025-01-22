@@ -393,7 +393,6 @@ uploadSelect val = do
 -- STEP GENERATE
 -- ----------------------------------------------------------------
 
--- we don't have the task here.... have to load anc check
 data Generate = Generate (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 
@@ -407,7 +406,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
     deriving (Show, Read, ViewAction)
 
 
-  type Require Generate = '[GenerateTransfer]
+  type Require Generate = '[GenerateTransfer, InversionStatus]
 
 
   update action = do
@@ -417,21 +416,29 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
         refresh
       RegenError -> do
         Inversions.clearError ii
-        refresh
+        refreshInversion
       RegenFits -> do
         Inversions.resetGenerating ii
-        refresh
+        refreshInversion
       RegenAsdf -> do
         Inversions.resetGeneratingAsdf ii
-        refresh
+        refreshInversion
    where
     refresh = do
       Generate ip _ ii <- viewId
-      status <- send $ TaskGetStatus $ GenFits ip ii
       inv <- loadInversion ii
-      mtok <- send AdminToken
-      login <- send LoginUrl
-      pure $ viewGenerate inv (AdminLogin mtok login) status inv.generate
+      case inv.generate of
+        StepGenerated _ -> refreshInversion
+        step -> do
+          status <- send $ TaskGetStatus $ GenFits ip ii
+          mtok <- send AdminToken
+          login <- send LoginUrl
+          pure $ do
+            viewGenerate inv (AdminLogin mtok login) status step
+
+    refreshInversion = do
+      Generate ip iip ii <- viewId
+      pure $ target (InversionStatus ip iip ii) $ el (onLoad Reload 0) "RELOAD?"
 
 
 generateStep :: InversionStep -> View c () -> View c ()
@@ -538,15 +545,6 @@ viewGeneratedFiles inv =
   link (Globus.fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
 
 
--- GenWaitStart -> do
--- GenConvert s -> do
---   viewGenerateWait s
--- GenAsdf -> do
---   onLoad Reload 1000 $ do
---     col (gap 5) $ do
---       el bold "Generate Asdf"
---       el_ "Generating..."
-
 -- ----------------------------------------------------------------
 -- STEP PUBLISH
 -- ----------------------------------------------------------------
@@ -576,7 +574,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
 
 
   update action = do
-    Publish propId progId invId <- viewId
+    Publish propId _ invId <- viewId
     case action of
       StartSoftPublish -> do
         requireLogin $ do
@@ -589,10 +587,14 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
           button StartSoftPublish (Style.btn Primary . grow) "Restart Transfer"
       PublishTransfer _ TaskSucceeded -> do
         Inversions.setPublished invId
-        pure $ target (InversionStatus propId progId invId) $ do
-          el (onLoad Reload 0) none
+        refreshInversion
       PublishTransfer taskId CheckTransfer -> do
         Transfer.checkTransfer (PublishTransfer taskId) taskId
+   where
+    refreshInversion = do
+      Publish propId progId invId <- viewId
+      pure $ target (InversionStatus propId progId invId) $ do
+        el (onLoad Reload 0) none
 
 
 viewPublish :: Inversion -> StepPublish -> View Publish ()
