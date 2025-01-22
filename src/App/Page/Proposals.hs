@@ -107,7 +107,7 @@ viewProposals now fs exs = do
     row (big aside . gap 5) $ do
       viewFilters fs
 
-    col (gap 40 . grow) $ do
+    col (gap 40 . grow . minWidth 0) $ do
       forM_ sorted viewProposal
  where
   aside = width 250 . flexCol
@@ -167,43 +167,30 @@ proposalCard p content = do
     View.hr (color Gray)
 
     col (gap 10) $ do
-      -- row (gap 5) $ do
-      --   el bold "Start Time:"
-      --   el_ $ text $ showDate ds1.startTime
       el truncate $ text p.description
       content
 
 
--- applyFilter :: Filter -> (InstrumentProgram -> Bool) -> (InstrumentProgram -> Bool)
--- applyFilter Invertible f ip = f ip && Qualify.isQualified ip
--- applyFilter (IsInstrument i) f ip = f ip && ip.instrument == i
-
 viewFilters :: Filters -> View PView ()
-viewFilters fs = do
-  el (item . bold) "Instrument"
+viewFilters fs =
+  col (gap 10) $ do
+    el bold "Instrument"
 
-  row (gap 5) $ do
-    toggle (Filter fs{visp = ShowVISP $ not fs.visp.value}) fs.visp.value id "VISP"
-    toggle (Filter fs{vbi = not fs.vbi}) fs.vbi id "VBI"
+    row (gap 5) $ do
+      toggle (Filter fs{visp = ShowVISP $ not fs.visp.value}) fs.visp.value id "VISP"
+      toggle (Filter fs{vbi = not fs.vbi}) fs.vbi id "VBI"
 
-  -- dropdown (\i -> Filter $ fs{isInstrument = i}) (== fs.isInstrument) $ do
-  --   option Nothing id ""
-  --   option (Just VISP) id "VISP"
-  --   option (Just VBI) id "VBI"
-
-  el (item . bold) "Status"
-  dropdown (\i -> Filter $ setStatus i fs) (== fs.status) (item . pad 5) $ do
-    option Any "Any"
-    option Qualified "Qualified"
-    option Active "Active"
-    option Complete "Complete"
+    el bold "Status"
+    dropdown (\i -> Filter $ setStatus i fs) (== fs.status) (pad 5) $ do
+      option Any "Any"
+      option Qualified "Qualified"
+      option Active "Active"
+      option Complete "Complete"
  where
   toggle action sel f =
-    button action (f . item . pad (XY 10 5) . Style.btn (if sel then on else off))
+    button action (f . Style.btn (if sel then on else off))
 
   setStatus s Filters{visp, vbi} = Filters{status = s, visp, vbi}
-
-  item = pad (XY 0 5)
 
   on = Primary
   off = Gray
@@ -221,50 +208,8 @@ tableInstrumentPrograms now ips = do
 -- IPRow
 -----------------------------------------------------
 
--- newtype IPRow = IPRow (Id InstrumentProgram)
---   deriving newtype (Show, Read, Param)
---
--- data IPEvent
---   = Expand
---   | Collapse
---   deriving (Show, Read, Param)
---
--- instance LiveView IPRow IPEvent
---
--- handleIPRow :: (Page :> es, Rel8 :> es) => IPRow -> IPEvent -> Eff es (View IPRow ())
--- handleIPRow (IPRow i) a = do
---   dss <- queryProgram i
---   ps <- loadProvenance i
---   case dss of
---     [] -> pure $ el_ "Mising Datasets!"
---     (d : ds) -> do
---       let ip = instrumentProgram (d :| ds)
---       let psm = programSummary ip ps
---       action psm a
---  where
---   action psm Expand =
---     pure $ viewInstrumentProgram psm.program
---   action psm Collapse =
---     pure $ rowInstrumentProgram Expand psm
-
 rowInstrumentProgram :: UTCTime -> InstrumentProgramStatus -> View c ()
 rowInstrumentProgram now psm = do
   let p = psm.program
-  -- liveButton onClick id $ do
   route (Route.Proposal p.proposalId $ Program p.programId) id $ do
     viewProgramRow now psm
-
--- viewInstrumentProgram :: ProgramSummary -> View IPRow ()
--- viewInstrumentProgram psm = do
---   let ds = NE.toList psm.programm.datasets
---   el (transition 500 (Height (viewHeight ds)) . truncate) $ do
---     rowInstrumentProgram Collapse psm
---
---     InstrumentProgramSummary.viewCriteria psm
---
---     DatasetsTable.datasetsTable ds
---  where
---   viewHeight ds =
---     dataRowHeight
---       + ((PxRem (length ds) + 1) * DatasetsTable.rowHeight)
---       + InstrumentProgramSummary.summaryHeight
