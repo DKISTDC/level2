@@ -39,7 +39,7 @@ default-extensions:
 dependencies:
   - base >=4.16.4.0
   - nso-level2-types
-  - web-view >= 0.6.1
+  - web-view >= 0.7
   - warp == 3.3.31
   - wai-extra
   - http-types

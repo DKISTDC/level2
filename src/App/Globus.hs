@@ -34,6 +34,8 @@ module App.Globus
   , OrigProfile
   , UserEmail (..)
   , dkistEndpoint
+  , scratchCollection
+  , initTransfer
   ) where
 
 import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch)
@@ -58,7 +60,8 @@ import Network.Globus.Auth (TokenItem, UserEmail (..), UserInfo, UserInfoRespons
 import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Types (QueryItem)
 import Web.Hyperbole
-import Web.Hyperbole.Effect.Server (Host (..), Request (..))
+import Web.Hyperbole.Data.QueryData (Param (..))
+import Web.Hyperbole.Effect.Server (Host (..))
 import Web.Hyperbole.View.Forms (formLookupParam)
 import Web.View as WebView
 
@@ -205,8 +208,8 @@ instance Form (UploadFiles Filename) Maybe where
     -- timestamps <- findFile Scratch.fileTimestamps fs
     pure UploadFiles{invResults, invProfile, origProfile}
    where
-    sub :: Text -> Int -> Text
-    sub t n = t <> "[" <> cs (show n) <> "]"
+    sub :: Text -> Int -> Param
+    sub t n = Param $ t <> "[" <> cs (show n) <> "]"
     multi t = do
       sub0 <- formLookupParam (sub t 0) f
       sub1 <- formLookupParam (sub t 1) f
@@ -302,7 +305,7 @@ initDownloadL1Inputs tform df ds = do
       downloadDestinationFolder tform df </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-initScratchDataset :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
+initScratchDataset :: (IOE :> es, Log :> es, Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
 initScratchDataset d = do
   scratch <- scratchCollection
   initTransfer (transfer scratch)
@@ -379,6 +382,6 @@ scratchCollection = do
   pure $ Tagged c
 
 
-data GlobusAuthError
+data GlobusError
   = MissingScope Scope (NonEmpty TokenItem)
   deriving (Exception, Show)

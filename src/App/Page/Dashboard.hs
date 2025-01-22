@@ -47,7 +47,8 @@ page = do
         row id $ do
           case admin.token of
             Nothing -> link admin.loginUrl (Style.btnOutline Danger) "Needs Globus Login"
-            Just _ -> el (color Success) "System Access Token Saved!"
+            Just _ -> do
+              el (color Success) "System Access Token Saved!"
 
       -- hyper Test testView
       hyper Work $ workView [] []

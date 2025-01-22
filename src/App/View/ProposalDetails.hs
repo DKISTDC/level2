@@ -22,6 +22,7 @@ import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
 import Web.Hyperbole
+import Web.Hyperbole.HyperView (HyperViewHandled)
 
 
 viewExperimentDescription :: Text -> View c ()

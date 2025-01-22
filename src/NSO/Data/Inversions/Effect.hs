@@ -129,6 +129,7 @@ runDataInversions = interpret $ \_ -> \case
         , generateTaskId = Nothing
         , generateTaskCompleted = Nothing
         , published = Nothing
+        , publishTaskId = Nothing
         }
 
 
@@ -156,6 +157,7 @@ inversions =
           , generateTaskId = "generate_task_id"
           , generateTaskCompleted = "generate_task_completed"
           , published = "publish"
+          , publishTaskId = "publish_task_id"
           }
     }
 

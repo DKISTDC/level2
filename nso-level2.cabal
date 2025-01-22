@@ -26,6 +26,7 @@ library
       App.Config
       App.Dev.Globus
       App.Effect.Auth
+      App.Effect.Publish
       App.Effect.Scratch
       App.Error
       App.Globus
@@ -144,7 +145,7 @@ library
     , uuid
     , wai-extra
     , warp ==3.3.31
-    , web-view >=0.6.1
+    , web-view >=0.7
   default-language: GHC2021
 
 executable level2
@@ -205,7 +206,7 @@ executable level2
     , uuid
     , wai-extra
     , warp ==3.3.31
-    , web-view >=0.6.1
+    , web-view >=0.7
   default-language: GHC2021
 
 test-suite spec

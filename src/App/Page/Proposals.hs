@@ -24,7 +24,6 @@ import NSO.Types.Status
 import Text.Read (readMaybe)
 import Web.HttpApiData
 import Web.Hyperbole as H
-import Web.Hyperbole.Data.QueryData (DefaultParam (..))
 
 
 page

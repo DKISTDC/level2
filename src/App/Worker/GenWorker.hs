@@ -73,6 +73,7 @@ fitsTask
      , Time :> es
      , Scratch :> es
      , Log :> es
+     , IOE :> es
      , Concurrent :> es
      , Tasks GenFits :> es
      , GenRandom :> es
@@ -170,7 +171,7 @@ workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
 --   output <- Asdf.encodeL2 tree
 --   Scratch.writeFile path output
 
-startTransferIfNeeded :: (Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> Inversion -> Eff es (Id Globus.Task)
+startTransferIfNeeded :: (IOE :> es, Log :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Datasets :> es, Globus :> es) => Dataset -> Inversion -> Eff es (Id Globus.Task)
 startTransferIfNeeded d inv =
   case inv.generate of
     StepGenerateNone -> start

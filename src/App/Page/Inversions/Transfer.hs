@@ -48,16 +48,17 @@ viewTransfer toAction it task =
 
 viewPollTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
 viewPollTransfer toAction it task = do
-  row (gap 5 . onLoad (toAction CheckTransfer) 1000) $ do
+  col (onLoad (toAction CheckTransfer) 1000) $ do
     viewTransferProgress it task
 
 
 viewTransferProgress :: Id Task -> Task -> View c ()
 viewTransferProgress it task = do
-  el (width 20) Icons.spinnerCircle
-  el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
-  space
-  activityLink it
+  row (gap 5) $ do
+    el (width 20) Icons.spinnerCircle
+    el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
+    space
+    activityLink it
   View.progress (taskPercentComplete task)
  where
   rate :: String

@@ -66,6 +66,11 @@ setGenTransferred iid = do
   send $ Update iid $ \r -> r{generateTaskCompleted = lit (Just now)}
 
 
+setPublishing :: (Inversions :> es, Time :> es) => Id Inversion -> Id Task -> Eff es ()
+setPublishing iid task = do
+  send $ Update iid $ \r -> r{publishTaskId = lit (Just task)}
+
+
 setPublished :: (Inversions :> es, Time :> es) => Id Inversion -> Eff es ()
 setPublished iid = do
   now <- currentTime
@@ -85,9 +90,10 @@ clearError iid = do
 resetGenerating :: (Inversions :> es) => Id Inversion -> Eff es ()
 resetGenerating iid = do
   -- updateInversion iid $ \r -> r{generateTaskId = lit Nothing, generateL1FrameDir = lit Nothing, generateTaskCompleted = lit Nothing, invError = lit Nothing}
-  send $ Update iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generatedFits = lit Nothing, generatedAsdf = lit Nothing, ..}
+  send $ Update iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generatedFits = lit Nothing, generatedAsdf = lit Nothing, published = lit Nothing, ..}
 
 
 resetGeneratingAsdf :: (Inversions :> es) => Id Inversion -> Eff es ()
 resetGeneratingAsdf iid = do
-  send $ Update iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generatedAsdf = lit Nothing, ..}
+  send $ Update iid $ \InversionRow{..} ->
+    InversionRow{invError = lit Nothing, generatedAsdf = lit Nothing, published = lit Nothing, ..}

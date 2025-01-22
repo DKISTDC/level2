@@ -171,7 +171,7 @@ webServer config auth fits asdf =
   runGraphQL' False = runGraphQL
 
 
-runGlobus' :: (IOE :> es, Scratch :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
+runGlobus' :: (Log :> es, IOE :> es, Scratch :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusDev (GlobusDevConfig dkist)) = runGlobusDev dkist
 runGlobus' (GlobusLive g) = runGlobus g
 

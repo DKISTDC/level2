@@ -14,7 +14,6 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Web.Hyperbole
-import Web.Hyperbole.Effect.Server (Request (..))
 import Web.View as WebView
 
 
@@ -24,6 +23,17 @@ data Auth :: Effect where
   AuthWithCode :: Token Exchange -> Auth m UserLoginInfo
   AdminToken :: Auth m (Maybe (Token Access))
   AdminTokenWait :: Auth m (Token Access)
+
+
+data GlobusAuth = GlobusAuth
+  { token :: Maybe (Token Access)
+  , currentUrl :: Maybe Url
+  }
+  deriving (Generic, Show, Read, FromParam, ToParam)
+instance Session GlobusAuth where
+  cookiePath = Just []
+instance DefaultParam GlobusAuth where
+  defaultParam = GlobusAuth mempty mempty
 
 
 type instance DispatchOf Auth = 'Dynamic
@@ -101,15 +111,18 @@ loginUrl = do
 
 getAccessToken :: (Hyperbole :> es, Auth :> es) => Eff es (Maybe (Token Access))
 getAccessToken = do
-  fmap Tagged <$> lookupSessionKey "globus"
+  auth <- session @GlobusAuth
+  pure auth.token
 
 
 saveAccessToken :: (Hyperbole :> es) => Token Access -> Eff es ()
-saveAccessToken (Tagged acc) = setSessionKey "globus" acc
+saveAccessToken token = do
+  _ <- modifySession $ \auth -> auth{token = Just token}
+  pure ()
 
 
 clearAccessToken :: (Hyperbole :> es) => Eff es ()
-clearAccessToken = deleteSessionKey "globus"
+clearAccessToken = deleteSession @GlobusAuth
 
 
 waitForAccess :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
@@ -147,10 +160,11 @@ currentUrl = do
 saveCurrentUrl :: (Hyperbole :> es) => Eff es ()
 saveCurrentUrl = do
   u <- currentUrl
-  setSessionKey "current-url" (renderUrl u)
+  _ <- modifySession $ \auth -> auth{currentUrl = Just u}
+  pure ()
 
 
 getLastUrl :: (Hyperbole :> es) => Eff es (Maybe Url)
 getLastUrl = do
-  u <- lookupSessionKey "current-url"
-  pure $ url <$> u
+  auth <- session @GlobusAuth
+  pure auth.currentUrl

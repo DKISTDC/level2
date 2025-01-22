@@ -83,9 +83,9 @@ stepPublish :: InversionRow Identity -> StepPublish
 stepPublish row =
   fromMaybe StepPublishNone $
     (StepPublished <$> row.published)
-      <|> (StepPublishing <$ publishing)
+      <|> (StepPublishing <$> publishing)
  where
   publishing = do
     _ <- row.generatedAsdf
     _ <- row.generatedFits
-    pure ()
+    pure row.publishTaskId

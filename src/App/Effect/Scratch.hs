@@ -6,6 +6,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
+import Effectful.Log
 import NSO.Image.Asdf (L2Asdf, filenameL2Asdf)
 import NSO.Image.Frame (L2Frame, filenameL2Frame)
 import NSO.Prelude
@@ -29,13 +30,15 @@ data Scratch :: Effect where
   ReadFile :: Path a -> Scratch es ByteString
   WriteFile :: Path a -> ByteString -> Scratch es ()
   CopyFile :: Path a -> Path a -> Scratch es ()
+  PathExists :: Path a -> Scratch es Bool
+  DirExists :: Path a -> Scratch es Bool
   CreateDirectoryLink :: Path' Dir a -> Path' Dir b -> Scratch es ()
   Globus :: Scratch es (Id Collection)
 type instance DispatchOf Scratch = 'Dynamic
 
 
 runScratch
-  :: (FileSystem :> es)
+  :: (FileSystem :> es, Log :> es)
   => Config
   -> Eff (Scratch : es) a
   -> Eff es a
@@ -48,14 +51,19 @@ runScratch cfg = interpret $ \_ -> \case
   WriteFile f cnt -> do
     FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
     FS.writeFile (mounted f) cnt
-  CopyFile (Path src) dest -> do
+  CopyFile src dest -> do
     FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
-    FS.copyFile src (mounted dest)
-  CreateDirectoryLink (Path src) dest -> do
+    FS.copyFile (mounted src) (mounted dest)
+  CreateDirectoryLink src dest -> do
     FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
-    exists <- FS.doesPathExist (mounted dest)
-    unless exists $
-      FS.createDirectoryLink src (mounted dest)
+    exists <- FS.doesDirectoryExist (mounted dest)
+    when exists $ do
+      FS.removeDirectoryLink (mounted dest)
+    FS.createDirectoryLink (mounted src) (mounted dest)
+  PathExists src -> do
+    FS.doesPathExist (mounted src)
+  DirExists src -> do
+    FS.doesDirectoryExist (mounted src)
   Globus -> pure $ Id cfg.collection.unTagged
  where
   mounted :: Path' x a -> FilePath
@@ -76,6 +84,10 @@ copyFile s d = send $ CopyFile s d
 
 listDirectory :: (Scratch :> es) => Path' Dir a -> Eff es [Path' Filename a]
 listDirectory = send . ListDirectory
+
+
+pathExists :: (Scratch :> es) => Path a -> Eff es Bool
+pathExists s = send $ PathExists s
 
 
 symLink :: (Scratch :> es) => Path' Dir a -> Path' Dir a -> Eff es ()

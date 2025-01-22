@@ -4,6 +4,7 @@ module App.Page.Inversion where
 
 import App.Colors
 import App.Effect.Auth
+import App.Effect.Publish qualified as Publish
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Error (expectFound)
@@ -31,10 +32,10 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, Time :> es, IOE :> es)
+  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, Time :> es)
   => Id Proposal
   -> Id Inversion
-  -> Eff es (Page '[InversionStatus, Generate, GenerateTransfer, InversionCommit, DownloadTransfer, UploadTransfer])
+  -> Eff es (Page '[InversionStatus, Generate, GenerateTransfer, InversionCommit, DownloadTransfer, UploadTransfer, Publish])
 page ip i = do
   inv <- loadInversion i
   mtok <- send AdminToken
@@ -101,18 +102,17 @@ redirectHome = do
 -- INVERSION STATUS -----------------------------------------------
 -- ----------------------------------------------------------------
 
-type InversionViews = '[DownloadTransfer, UploadTransfer, InversionCommit, Generate, GenerateTransfer]
+type InversionViews = '[DownloadTransfer, UploadTransfer, InversionCommit, Generate, GenerateTransfer, Publish]
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es) => HyperView InversionStatus es where
+instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Download
     | Upload
-    | Publish
     | Reload
     deriving (Show, Read, ViewAction)
   type Require InversionStatus = InversionViews
@@ -129,9 +129,6 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time 
         r <- request
         requireLogin $ do
           redirect $ Globus.fileManagerSelectUrl (Files 4) (Route.Proposal ip $ Route.Inversion ii SubmitUpload) ("Transfer Inversion Results " <> ii.fromId) r
-      Publish -> do
-        Inversions.setPublished ii
-        refresh
       Reload -> do
         refresh
    where
@@ -172,7 +169,8 @@ viewInversion inv admin status = do
           viewGenerate inv admin status inv.generate
 
       publishStep step $ do
-        viewPublish inv inv.publish
+        hyper (Publish inv.proposalId inv.programId inv.inversionId) $
+          viewPublish inv inv.publish
 
 
 viewStep :: Step -> Int -> Text -> View c () -> View c ()
@@ -563,9 +561,55 @@ publishStep current content =
   step s t = viewStep' s 4 t none content
 
 
-viewPublish :: Inversion -> StepPublish -> View InversionStatus ()
-viewPublish _ = \case
+data Publish = Publish (Id Proposal) (Id InstrumentProgram) (Id Inversion)
+  deriving (Show, Read, ViewId)
+
+
+instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es) => HyperView Publish es where
+  type Require Publish = '[InversionStatus]
+
+
+  data Action Publish
+    = StartSoftPublish
+    | PublishTransfer (Id Task) TransferAction
+    deriving (Show, Read, ViewAction)
+
+
+  update action = do
+    Publish propId progId invId <- viewId
+    case action of
+      StartSoftPublish -> do
+        requireLogin $ do
+          taskId <- Publish.transferSoftPublish propId invId
+          Inversions.setPublishing invId taskId
+          pure $ viewPublishing taskId
+      PublishTransfer taskId TaskFailed -> do
+        pure $ do
+          Transfer.viewTransferFailed taskId
+          button StartSoftPublish (Style.btn Primary . grow) "Restart Transfer"
+      PublishTransfer _ TaskSucceeded -> do
+        Inversions.setPublished invId
+        pure $ target (InversionStatus propId progId invId) $ do
+          el (onLoad Reload 0) none
+      PublishTransfer taskId CheckTransfer -> do
+        Transfer.checkTransfer (PublishTransfer taskId) taskId
+
+
+viewPublish :: Inversion -> StepPublish -> View Publish ()
+viewPublish inv = \case
   StepPublishNone -> none
-  StepPublishing -> do
-    button Publish (Style.btn Primary . grow) "TODO: Mark as Published"
-  StepPublished _ -> el_ "TODO: Link to files in portal"
+  StepPublishing Nothing -> do
+    button StartSoftPublish (Style.btn Primary . grow) "Soft Publish"
+  StepPublishing (Just taskId) -> viewPublishing taskId
+  StepPublished _ -> viewPublished inv.proposalId inv.inversionId
+
+
+viewPublishing :: Id Task -> View Publish ()
+viewPublishing taskId = do
+  el_ "Publishing..."
+  Transfer.viewLoadTransfer (PublishTransfer taskId)
+
+
+viewPublished :: Id Proposal -> Id Inversion -> View Publish ()
+viewPublished propId invId = do
+  link (Publish.fileManagerOpenPublish $ Publish.publishedDir propId invId) (Style.btnOutline Success . grow . att "target" "_blank") "View Published Files"

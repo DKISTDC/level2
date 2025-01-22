@@ -15,6 +15,7 @@ import NSO.Data.Programs as Programs
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
+import Web.Hyperbole.HyperView (HyperViewHandled)
 
 
 page

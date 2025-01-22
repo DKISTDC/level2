@@ -46,6 +46,7 @@ data InversionRow f = InversionRow
   , generateTaskId :: Column f (Maybe (Id Task))
   , generateTaskCompleted :: Column f (Maybe UTCTime)
   , published :: Column f (Maybe UTCTime)
+  , publishTaskId :: Column f (Maybe (Id Task))
   , invError :: Column f (Maybe Text)
   }
   deriving (Generic, Rel8able)
@@ -101,7 +102,7 @@ data GenTransferred = GenTransferred {transfer :: Id Task, transferred :: UTCTim
 
 data StepPublish
   = StepPublishNone
-  | StepPublishing
+  | StepPublishing (Maybe (Id Task))
   | StepPublished UTCTime
   deriving (Eq, Ord, Show)
 
