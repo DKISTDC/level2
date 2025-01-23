@@ -2,9 +2,11 @@
 
 module NSO.Metadata where
 
-import Data.Aeson (FromJSON (..))
+import Data.Aeson (FromJSON (..), Value, fromJSON)
+import Data.Aeson qualified as A
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
+import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.GraphQL
@@ -14,9 +16,17 @@ import NSO.Types.Dataset
 
 
 data Metadata :: Effect where
-  AllDatasets :: Metadata m [DatasetInventory]
+  AllDatasets :: Metadata m [ParsedDataset]
   AllExperiments :: Metadata m [ExperimentDescription]
 type instance DispatchOf Metadata = 'Dynamic
+
+
+data ParsedDataset = ParsedDataset Value (A.Result DatasetInventory)
+
+
+instance FromJSON ParsedDataset where
+  parseJSON val = do
+    pure $ ParsedDataset val (fromJSON @DatasetInventory val)
 
 
 runMetadata
@@ -35,7 +45,10 @@ newtype DatasetInventories = DatasetInventories
   {isEmbargoed :: Maybe Bool}
   deriving (Show, Eq, Generic)
 instance Query DatasetInventories where
-  type Result DatasetInventories = DatasetInventory
+  type Result DatasetInventories = ParsedDataset
+  query _ =
+    let fields = genQueryFields @DatasetInventory Proxy :: String
+     in [i| query DatasetInventories { datasetInventories { #{fields} }}|]
 
 
 data ExperimentDescriptions = ExperimentDescriptions
@@ -112,7 +125,7 @@ data DatasetInventory = DatasetInventory
   , aoLocked :: Int
   , -- , polarimetricAccuracy :: Distribution
     lightLevel :: Distribution
-  , friedParameter :: Distribution
+  , friedParameter :: Maybe Distribution
   }
   deriving (Generic, Show, Eq, FromJSON)
 

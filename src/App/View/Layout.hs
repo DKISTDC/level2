@@ -29,7 +29,7 @@ layout login rc tok content = do
       -- nav Dashboard "Dashboard"
       item Proposals "Proposals"
       item Inversions "Inversions"
-      item Scan "Scan"
+      item (Datasets DatasetRoot) "Datasets"
       space
       loginLink tok
     -- WebView.link login center "Login"

@@ -31,7 +31,6 @@ page
   => Eff es (Page '[PView])
 page = do
   fs <- query
-  log Debug (dump "Filters" fs)
 
   exs <- Programs.loadAllProposals
   now <- currentTime
@@ -51,6 +50,7 @@ data Filters = Filters
   { status :: InversionFilter
   , visp :: ShowVISP
   , vbi :: Bool
+  , cryo :: Bool
   }
   deriving (Show, Read, Generic, ToQuery, FromQuery)
 
@@ -128,9 +128,9 @@ viewProposals now fs exs = do
 
       let ignored = length pp.programs - length ipss
       when (ignored > 0) $ do
-        route (Route.Proposal p.proposalId PropRoot) (fontSize 14 . color Black) $ do
+        route (Route.Proposal p.proposalId PropRoot) (fontSize 14 . color Black . gap 5) $ do
           text $ cs (show ignored)
-          text "Hidden Instrument Programs"
+          text " Hidden Instrument Programs"
 
   applyFilters :: InstrumentProgramStatus -> Bool
   applyFilters ip = checkInstrument ip && checkInvertible fs.status ip.status
@@ -179,6 +179,7 @@ viewFilters fs =
     row (gap 5) $ do
       toggle (Filter fs{visp = ShowVISP $ not fs.visp.value}) fs.visp.value id "VISP"
       toggle (Filter fs{vbi = not fs.vbi}) fs.vbi id "VBI"
+      toggle (Filter fs{cryo = not fs.cryo}) fs.cryo id "Cryo-NIRSP"
 
     el bold "Status"
     dropdown (\i -> Filter $ setStatus i fs) (== fs.status) (pad 5) $ do
@@ -190,7 +191,7 @@ viewFilters fs =
   toggle action sel f =
     button action (f . Style.btn (if sel then on else off))
 
-  setStatus s Filters{visp, vbi} = Filters{status = s, visp, vbi}
+  setStatus s Filters{visp, vbi, cryo} = Filters{status = s, visp, vbi, cryo}
 
   on = Primary
   off = Gray

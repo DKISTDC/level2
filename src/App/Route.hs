@@ -10,12 +10,11 @@ import Web.Hyperbole
 
 data AppRoute
   = Dashboard
-  | Scan
   | Proposals
   | Experiments
   | Inversions
   | Proposal (Id Proposal) ProposalRoute
-  | Dataset (Id Dataset)
+  | Datasets DatasetRoute
   | Redirect
   | Logout
   | Dev DevRoute
@@ -40,6 +39,18 @@ data InversionRoute
   deriving (Show, Generic, Eq)
 instance Route InversionRoute where
   baseRoute = Just Inv
+
+
+data DatasetRoute
+  = DatasetRoot
+  | Dataset (Id Dataset)
+  deriving (Show, Generic, Eq)
+instance Route DatasetRoute where
+  matchRoute [] = Just DatasetRoot
+  matchRoute [d] = Just (Dataset $ Id d)
+  matchRoute _ = Nothing
+  routePath DatasetRoot = []
+  routePath (Dataset d) = [d.fromId]
 
 
 data DevRoute

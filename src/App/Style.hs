@@ -92,3 +92,4 @@ disabled :: Mod c
 disabled = noClick . opacity 0.5
  where
   noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"
+

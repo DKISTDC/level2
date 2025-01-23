@@ -17,7 +17,6 @@ type Dataset = Dataset' Identity
 data Dataset' f = Dataset'
   { datasetId :: Column f (Id Dataset)
   , scanDate :: Column f UTCTime
-  , latest :: Column f Bool
   , observingProgramId :: Column f (Id ObservingProgram)
   , instrument :: Column f Instrument
   , instrumentProgramId :: Column f (Id InstrumentProgram)
@@ -39,7 +38,7 @@ data Dataset' f = Dataset'
   , aoLocked :: Column f Int16
   , lightLevel :: Column f Distribution
   , polarimetricAccuracy :: Column f Distribution
-  , friedParameter :: Column f Distribution
+  , friedParameter :: Column f (Maybe Distribution)
   , embargo :: Column f (Maybe UTCTime)
   }
   deriving (Generic, Rel8able)

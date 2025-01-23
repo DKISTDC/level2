@@ -152,8 +152,8 @@ viewProgramSummary now pf = do
   col Style.card $ do
     route (Proposal p.program.proposalId $ Program p.program.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> p.program.programId.fromId
     col (gap 15 . pad 15) $ do
-      viewProgramDetails p now (NE.filter (.latest) ds)
-      hyper (ProgramDatasets p.program.programId) $ DatasetsTable.datasetsTable ByLatest (NE.toList ds)
+      viewProgramDetails p now (NE.toList ds)
+      hyper (ProgramDatasets p.program.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)
 
 
 viewProgramDetails :: InstrumentProgramStatus -> UTCTime -> [Dataset] -> View c ()

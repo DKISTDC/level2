@@ -34,6 +34,7 @@ library
       App.Page.Auth
       App.Page.Dashboard
       App.Page.Dataset
+      App.Page.Datasets
       App.Page.Inversion
       App.Page.Inversions
       App.Page.Inversions.CommitForm
@@ -41,7 +42,6 @@ library
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
-      App.Page.Scan
       App.Route
       App.Style
       App.Types

@@ -8,12 +8,12 @@ import App.Globus as Globus
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
+import App.Page.Datasets qualified as Datasets
 import App.Page.Inversion qualified as Inversion
 import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
-import App.Page.Scan qualified as Scan
 import App.Route
 import App.Version
 import App.Worker.GenWorker as Gen
@@ -138,8 +138,8 @@ webServer config auth fits asdf =
       SubmitUpload -> Inversion.submitUpload ip i
   router (Proposal p PropRoot) = runPage $ Proposal.page p
   router (Proposal ip (Program iip)) = runPage $ Program.page ip iip
-  router (Dataset d) = runPage $ Dataset.page d
-  router Scan = runPage Scan.page
+  router (Datasets DatasetRoot) = runPage Datasets.page
+  router (Datasets (Dataset d)) = runPage $ Dataset.page d
   router Experiments = do
     redirect (pathUrl . routePath $ Proposals)
   router Logout = runPage Auth.logout

@@ -1,5 +1,7 @@
 module NSO.Data.Scan where
 
+import Data.Aeson as Aeson (Result (..), Value)
+import Data.Bifunctor (bimap)
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
@@ -30,16 +32,33 @@ data SyncResults = SyncResults
   { new :: [Dataset]
   , updated :: [Dataset]
   , unchanged :: [Dataset]
+  , errors :: [ScanError]
   }
 
 
-scanDatasetInventory :: (Metadata :> es, Time :> es, Error DataError :> es) => Eff es [Dataset]
+data ScanResult = ScanResult
+  { datasets :: [Dataset]
+  , errors :: [ScanError]
+  }
+
+
+data ScanError = ScanError String Value
+
+
+scanDatasetInventory :: (Metadata :> es, Time :> es, Error DataError :> es) => Eff es ScanResult
 scanDatasetInventory = do
   now <- currentTime
   ads <- send AllDatasets
   exs <- send AllExperiments
-  let res = mapM (toDataset now exs) ads
-  either (throwError . ValidationError) pure res
+  let parsed = fmap (toDataset now exs) ads
+  let datasets = mapMaybe success parsed
+  let errors = mapMaybe scanError parsed
+  pure $ ScanResult{datasets, errors}
+ where
+  success (Left _) = Nothing
+  success (Right d) = Just d
+  scanError (Left err) = Just err
+  scanError (Right _) = Nothing
 
 
 syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es, Error DataError :> es) => Eff es SyncResults
@@ -47,27 +66,26 @@ syncDatasets = do
   scan <- scanDatasetInventory
   old <- indexed <$> send (Query Latest)
 
-  let res = syncResults old scan
+  let sync = syncResults old scan
 
   -- Insert any new datasets
-  send $ Create res.new
+  send $ Create sync.new
 
   -- Update any old datasets
-  send $ Modify SetOld $ map (.datasetId) res.updated
-  send $ Create res.updated
+  mapM_ (send . Save) sync.updated
 
   -- Ignore any unchanged
-  pure res
+  pure sync
 
 
-syncResults :: Map (Id Dataset) Dataset -> [Dataset] -> SyncResults
+syncResults :: Map (Id Dataset) Dataset -> ScanResult -> SyncResults
 syncResults old scan =
-  let srs = map (syncResult old) scan
-      res = zip srs scan
+  let srs = map (syncResult old) scan.datasets
+      res = zip srs scan.datasets
       new = results New res
       updated = results Updated res
       unchanged = results Unchanged res
-   in SyncResults{new, updated, unchanged}
+   in SyncResults{new, updated, unchanged, errors = scan.errors}
  where
   results r = map snd . filter ((== r) . fst)
 
@@ -80,41 +98,44 @@ syncResult old d = fromMaybe New $ do
     else pure Updated
 
 
-toDataset :: UTCTime -> [ExperimentDescription] -> DatasetInventory -> Either String Dataset
-toDataset scanDate exs d = do
-  ins <- parseInstrument d.instrumentName
-  exd <- parseExperiment d.primaryExperimentId
-  emb <- parseEmbargo
-  pure $
-    Dataset'
-      { datasetId = Id d.datasetId
-      , scanDate = scanDate
-      , latest = True
-      , observingProgramId = Id d.observingProgramExecutionId
-      , instrumentProgramId = Id d.instrumentProgramExecutionId
-      , boundingBox = boundingBoxNaN d.boundingBox
-      , instrument = ins
-      , stokesParameters = d.stokesParameters
-      , createDate = d.createDate.utc
-      , updateDate = d.updateDate.utc
-      , wavelengthMin = Wavelength d.wavelengthMin
-      , wavelengthMax = Wavelength d.wavelengthMax
-      , startTime = d.startTime.utc
-      , endTime = d.endTime.utc
-      , frameCount = fromIntegral d.frameCount
-      , primaryExperimentId = Id d.primaryExperimentId
-      , primaryProposalId = Id d.primaryProposalId
-      , experimentDescription = exd
-      , exposureTime = realToFrac d.exposureTime
-      , health = d.health
-      , gosStatus = d.gosStatus
-      , aoLocked = fromIntegral d.aoLocked
-      , friedParameter = d.friedParameter
-      , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
-      , lightLevel = d.lightLevel
-      , embargo = emb
-      }
+toDataset :: UTCTime -> [ExperimentDescription] -> ParsedDataset -> Either ScanError Dataset
+toDataset _ _ (ParsedDataset val (Error err)) = Left $ ScanError err val
+toDataset scanDate exs (ParsedDataset val (Success d)) = do
+  bimap (\err -> ScanError err val) id parseDataset
  where
+  parseDataset = do
+    ins <- parseInstrument d.instrumentName
+    exd <- parseExperiment d.primaryExperimentId
+    emb <- parseEmbargo
+    pure $
+      Dataset'
+        { datasetId = Id d.datasetId
+        , scanDate = scanDate
+        , observingProgramId = Id d.observingProgramExecutionId
+        , instrumentProgramId = Id d.instrumentProgramExecutionId
+        , boundingBox = boundingBoxNaN d.boundingBox
+        , instrument = ins
+        , stokesParameters = d.stokesParameters
+        , createDate = d.createDate.utc
+        , updateDate = d.updateDate.utc
+        , wavelengthMin = Wavelength d.wavelengthMin
+        , wavelengthMax = Wavelength d.wavelengthMax
+        , startTime = d.startTime.utc
+        , endTime = d.endTime.utc
+        , frameCount = fromIntegral d.frameCount
+        , primaryExperimentId = Id d.primaryExperimentId
+        , primaryProposalId = Id d.primaryProposalId
+        , experimentDescription = exd
+        , exposureTime = realToFrac d.exposureTime
+        , health = d.health
+        , gosStatus = d.gosStatus
+        , aoLocked = fromIntegral d.aoLocked
+        , friedParameter = d.friedParameter
+        , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
+        , lightLevel = d.lightLevel
+        , embargo = emb
+        }
+
   parseExperiment :: Text -> Either String Text
   parseExperiment eid =
     case L.find (\e -> e.experimentId == eid) exs of

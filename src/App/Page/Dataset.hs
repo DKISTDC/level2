@@ -5,7 +5,7 @@ import App.Effect.Auth
 import App.Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
-import App.View.DatasetsTable (datasetLatest, radiusBoundingBox)
+import App.View.DatasetsTable (radiusBoundingBox)
 import App.View.Layout
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
@@ -35,7 +35,6 @@ viewDataset d =
   col Style.card $ do
     el (Style.cardHeader Secondary . bold) "Dataset Details"
     col (gap 10 . pad 10) $ do
-      dataField "Latest" $ datasetLatest d.latest
       dataField "Scan Date" $ text $ showTimestamp d.scanDate
       dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
       dataField "Instrument" $ text $ cs $ show d.instrument

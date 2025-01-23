@@ -1,0 +1,167 @@
+{-# LANGUAGE UndecidableInstances #-}
+
+module App.Page.Datasets where
+
+import App.Colors
+import App.Effect.Auth
+import App.Route
+import App.Route qualified as Route
+import App.Style qualified as Style
+import App.View.Common
+import App.View.DataRow (dataRows)
+import App.View.Icons as Icons
+import App.View.Layout
+import Data.Aeson qualified as A
+import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
+import Effectful.Time
+import NSO.Data.Datasets
+import NSO.Data.Scan
+import NSO.Error
+import NSO.Metadata (Metadata)
+import NSO.Prelude
+import Numeric (showFFloat)
+import Web.Hyperbole
+import Web.View.Style (addClass, cls, prop)
+
+
+-- import NSO.Data.Dataset
+-- import NSO.Data.Types
+
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Eff es (Page '[AllDatasets])
+page = do
+  ds <- send $ Query Latest
+  appLayout (Datasets DatasetRoot) $ do
+    hyper AllDatasets $ viewAllDatasets (Left ds)
+
+
+data AllDatasets = AllDatasets
+  deriving (Show, Read, ViewId)
+
+
+instance (Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => HyperView AllDatasets es where
+  data Action AllDatasets
+    = RunScan
+    deriving (Show, Read, ViewAction)
+
+
+  update RunScan = do
+    sync <- syncDatasets
+    pure $ viewAllDatasets (Right sync)
+
+
+viewDeleted :: [Id Dataset] -> View AllDatasets ()
+viewDeleted ds = do
+  col Style.page $ do
+    col (gap 5) $ do
+      el bold "Deleted Old Datasets:"
+      forM_ ds $ \d -> do
+        el_ (text d.fromId)
+
+
+viewAllDatasets :: Either [Dataset] SyncResults -> View AllDatasets ()
+viewAllDatasets res = do
+  loading
+  col (Style.page . onRequest hide) $ do
+    col (gap 10) $ do
+      button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary) "Run Scan"
+
+    case res of
+      Left ds -> viewExistingDatasets ds
+      Right sync -> viewScanResults sync
+ where
+  loading = el (hide . pad 100 . grow . onRequest flexRow) $ do
+    space
+    el (width 200 . color (light Primary)) Icons.spinner
+    space
+
+
+viewExistingDatasets :: [Dataset] -> View AllDatasets ()
+viewExistingDatasets ds = do
+  col section $ do
+    el (bold . fontSize 24) "Datasets"
+    datasetsTable ds
+
+
+viewScanResults :: SyncResults -> View AllDatasets ()
+viewScanResults sr = do
+  col section $ do
+    el (bold . fontSize 24) "Errors"
+    errorsTable sr.errors
+
+  col section $ do
+    el (bold . fontSize 24) "Updated"
+    datasetsTable sr.updated
+
+  col section $ do
+    el (bold . fontSize 24) "New"
+    datasetsTable sr.new
+
+  col section $ do
+    el (bold . fontSize 24) "Unchanged"
+    datasetsTable sr.unchanged
+
+
+errorsTable :: [ScanError] -> View AllDatasets ()
+errorsTable errs = do
+  col (gap 10) $ do
+    mapM_ errorRow errs
+ where
+  errorRow (ScanError err val) = do
+    el (color Danger) $ text (cs err)
+    code (bg (light Light) . fontSize 12 . wrap . pad 4) $ cs $ A.encode val
+  wrap =
+    addClass $
+      cls "wrap"
+        & prop @Text "word-wrap" "break-word"
+        & prop @Text "white-space" "normal"
+
+
+-----------------------------------------------------
+-- Datasets (Debug)
+-----------------------------------------------------
+
+datasetsTable :: [Dataset] -> View AllDatasets ()
+datasetsTable [] = none
+datasetsTable ds = do
+  let sorted = sortOn (\d -> (d.primaryProposalId, d.instrumentProgramId, d.datasetId)) ds :: [Dataset]
+  col (gap 0) $ do
+    dataRows sorted datasetRow
+ where
+  -- table View.table sorted $ do
+  --   --    -- tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
+  --   tcol (hd "Id") $ \d -> View.cell $
+
+  --    tcol (hd "Instrument") $ \d -> cell . cs . show $ d.instrument
+  --    tcol (hd "Stokes") $ \d -> cell . cs . show $ d.stokesParameters
+  --    tcol (hd "Create Date") $ \d -> cell . showTimestamp $ d.createDate
+  --    tcol (hd "Wave Min") $ \d -> cell . cs $ showFFloat (Just 1) d.wavelengthMin ""
+  --    tcol (hd "Wave Max") $ \d -> cell . cs $ showFFloat (Just 1) d.wavelengthMax ""
+  --    -- tcol (hd "Start Time") $ \d -> cell . showTimestamp $ d.startTime
+  --    -- tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
+  --    -- tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
+  --    tcol (hd "Frame Count") $ \d -> cell . cs . show $ d.frameCount
+  -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
+  -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
+  -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
+  -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
+
+  -- tcol (hd "Bounding Box") $ \d -> cell . cs . show $ d.boundingBox
+  -- tcol (hd "On Disk") $ \d -> cell . cs $ maybe "" (show . isOnDisk (dayOfYear d.startTime)) d.boundingBox
+
+  datasetRow :: Dataset -> View AllDatasets ()
+  datasetRow d = do
+    row id $ do
+      route (Route.Datasets $ Route.Dataset d.datasetId) (Style.link . width 100) $ text $ cs d.datasetId.fromId
+      route (Route.Proposal d.primaryProposalId Route.PropRoot) (Style.link . width 100) $ text d.primaryProposalId.fromId
+      route (Route.Proposal d.primaryProposalId $ Route.Program d.instrumentProgramId) (Style.link . width 180) $ text d.instrumentProgramId.fromId
+      el cell $ text $ cs $ show d.instrument
+      el (width 180) $ text $ showTimestamp d.createDate
+      el cell $ text $ cs $ showFFloat (Just 1) d.wavelengthMin ""
+      el cell $ text $ cs $ showFFloat (Just 1) d.wavelengthMax ""
+
+  cell = width 100
+
+
+section :: Mod AllDatasets
+section = Style.card . gap 15 . pad 15

@@ -44,17 +44,31 @@ instance (Datasets :> es) => HyperView ProgramDatasets es where
   update (SortBy srt) = do
     ProgramDatasets i <- viewId
     ds <- send $ Query (ByProgram i)
-    pure $ datasetsTable srt ds
+    pure $ datasetsTable SortBy srt ds
 
 
-datasetsTable :: SortField -> [Dataset] -> View ProgramDatasets ()
-datasetsTable srt ds = do
+datasetsTable :: forall id. (ViewAction (Action id)) => (SortField -> Action id) -> SortField -> [Dataset] -> View id ()
+datasetsTable sortBy srt ds = do
   let sorted = sortField srt ds
+  datasetsTableUnsorted sortBy sorted
+ where
+  sortField :: SortField -> ([Dataset] -> [Dataset])
+  sortField DatasetId = sortOn (.datasetId)
+  sortField ByLatest = sortOn (Down . (.scanDate))
+  sortField CreateDate = sortOn (Down . (.createDate))
+  sortField UpdateDate = sortOn (Down . (.updateDate))
+  sortField StartTime = sortOn (Down . (.startTime))
+  sortField Instrument = sortOn (.instrument)
+  sortField Stokes = sortOn (.stokesParameters)
+  sortField WaveMin = sortOn (.wavelengthMin)
+  sortField WaveMax = sortOn (.wavelengthMax)
 
+
+datasetsTableUnsorted :: forall id. (ViewAction (Action id)) => (SortField -> Action id) -> [Dataset] -> View id ()
+datasetsTableUnsorted sortBy ds = do
   -- is there a way to do alternating rows here?
-  table View.table sorted $ do
-    tcol (hd $ sortBtn ByLatest "Latest") $ \d -> cell $ datasetLatest d.latest
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ route (Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
+  table View.table ds $ do
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ route (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
@@ -84,31 +98,14 @@ datasetsTable srt ds = do
       (Just utc) -> showDate utc
       Nothing -> "-"
 
-  sortBtn :: SortField -> Text -> View ProgramDatasets ()
+  sortBtn :: SortField -> Text -> View id ()
   sortBtn st t =
-    button (SortBy st) Style.link (text t)
+    button (sortBy st) Style.link (text t)
 
   hd = View.hd
   cell = View.cell
 
-  sortField :: SortField -> ([Dataset] -> [Dataset])
-  sortField DatasetId = sortOn (.datasetId)
-  sortField ByLatest = sortOn (Down . (.scanDate))
-  sortField CreateDate = sortOn (Down . (.createDate))
-  sortField UpdateDate = sortOn (Down . (.updateDate))
-  sortField StartTime = sortOn (Down . (.startTime))
-  sortField Instrument = sortOn (.instrument)
-  sortField Stokes = sortOn (.stokesParameters)
-  sortField WaveMin = sortOn (.wavelengthMin)
-  sortField WaveMax = sortOn (.wavelengthMax)
 
-
-datasetLatest :: Bool -> View c ()
-datasetLatest False = none
-datasetLatest True = row id $ do
-  space
-  el (width 24 . height 24) Icons.checkCircle
-  space
 
 
 radiusBoundingBox :: Maybe BoundingBox -> View c ()
@@ -116,7 +113,7 @@ radiusBoundingBox Nothing = none
 radiusBoundingBox (Just b) = row (gap 5) $ do
   space
   forM_ (boundingPoints b) $ \c ->
-    code (Style.code) . cs $ showFFloat (Just 0) (boxRadius c) ""
+    code Style.code . cs $ showFFloat (Just 0) (boxRadius c) ""
   space
 
 -- rowHeight :: PxRem

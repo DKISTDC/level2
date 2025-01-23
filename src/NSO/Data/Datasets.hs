@@ -3,7 +3,6 @@
 module NSO.Data.Datasets
   ( Datasets (..)
   , Filter (..)
-  , Modify (..)
   , module NSO.Types.Dataset
   , module NSO.Types.Common
   , module NSO.Types.Wavelength
@@ -25,7 +24,7 @@ import NSO.Types.Wavelength
 data Datasets :: Effect where
   Query :: Filter -> Datasets m [Dataset]
   Create :: [Dataset] -> Datasets m ()
-  Modify :: Modify -> [Id Dataset] -> Datasets m ()
+  Save :: Dataset -> Datasets m ()
 
 
 type instance DispatchOf Datasets = 'Dynamic
@@ -38,10 +37,6 @@ data Filter
   | ById (Id Dataset)
 
 
-data Modify
-  = SetOld
-
-
 runDataDatasets
   :: (IOE :> es, Rel8 :> es)
   => Eff (Datasets : es) a
@@ -52,14 +47,11 @@ runDataDatasets = interpret $ \_ -> \case
   Query (ByProgram pid) -> queryProgram pid
   Query (ById did) -> queryById did
   Create ds -> insertAll ds
-  Modify SetOld ids -> updateOld ids
+  Save ds -> updateDataset ds
  where
   queryLatest :: (Rel8 :> es) => Eff es [Dataset]
   queryLatest = do
-    run $ select $ do
-      row <- each datasets
-      where_ (row.latest ==. lit True)
-      return row
+    run $ select $ each datasets
 
   queryProposal :: (Rel8 :> es) => Id Proposal -> Eff es [Dataset]
   queryProposal eid = do
@@ -71,7 +63,6 @@ runDataDatasets = interpret $ \_ -> \case
   queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
   queryProgram ip = do
     run $ select $ do
-      -- note that this DOESN'T limit by latest
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit ip)
       return row
@@ -94,21 +85,19 @@ runDataDatasets = interpret $ \_ -> \case
           , returning = NoReturning
           }
 
-  updateOld :: (Rel8 :> es) => [Id Dataset] -> Eff es ()
-  updateOld ids = do
-    let ids' = fmap lit ids
+  updateDataset :: (Rel8 :> es) => Dataset -> Eff es ()
+  updateDataset ds = do
     run_ $
       update $
         Update
           { target = datasets
-          , set = \_ row -> setOld row
-          , updateWhere = \_ row -> row.datasetId `in_` ids'
+          , set = \_ _row -> lit ds
+          , updateWhere = \_ row -> row.datasetId ==. lit ds.datasetId
           , from = pure ()
           , returning = NoReturning
           }
-   where
-    setOld :: Dataset' Expr -> Dataset' Expr
-    setOld row = row{latest = lit False}
+  -- case find (\d -> d.datasetId == row.datasetId)
+  --   row{latest = lit False}
 
   -- toDataset :: Dataset' Result -> Dataset
   -- toDataset d@Dataset'{..} =
@@ -154,7 +143,6 @@ runDataDatasets = interpret $ \_ -> \case
             , experimentDescription = "experiment_description"
             , exposureTime = "exposure_time"
             , boundingBox = "bounding_box"
-            , latest = "latest"
             , health = "health"
             , gosStatus = "gos_status"
             , aoLocked = "ao_locked"
