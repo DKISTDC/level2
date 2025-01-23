@@ -14,6 +14,7 @@ module NSO.Data.Programs
   , fromDatasets
   , loadAllProposals
   , loadAll
+  , loadProgram
   ) where
 
 import Data.Either (lefts, rights)
@@ -35,6 +36,13 @@ loadAll = do
   ds <- send $ Datasets.Query Latest
   ai <- send Inversions.All
   pure $ fmap (.program) $ fromDatasets ai ds
+
+
+loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [InstrumentProgramStatus]
+loadProgram progId = do
+  ds <- send $ Datasets.Query $ Datasets.ByProgram progId
+  invs <- send $ Inversions.ByProgram progId
+  pure $ fmap (\g -> instrumentProgramStatus g invs) (grouped (.instrumentProgramId) ds)
 
 
 loadAllProposals :: (Datasets :> es, Inversions :> es) => Eff es [ProposalPrograms]

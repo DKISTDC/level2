@@ -12,6 +12,7 @@ import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
 import Data.Grouped as G
 import Data.Ord (Down (..))
+import Data.Text qualified as T
 import Effectful
 import Effectful.Log
 import Effectful.Time
@@ -28,7 +29,7 @@ import Web.Hyperbole as H
 
 page
   :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
-  => Eff es (Page '[PView])
+  => Eff es (Page '[AllProposals, ProgramRow])
 page = do
   fs <- query
 
@@ -36,7 +37,7 @@ page = do
   now <- currentTime
 
   appLayout Proposals $ do
-    hyper PView $ do
+    hyper AllProposals $ do
       viewProposals now fs exs
 
 
@@ -55,10 +56,6 @@ data Filters = Filters
   deriving (Show, Read, Generic, ToQuery, FromQuery)
 
 
-loading :: View c ()
-loading = el_ "loading..."
-
-
 -----------------------------------------------------
 -- Query URL
 -----------------------------------------------------
@@ -67,13 +64,16 @@ loading = el_ "loading..."
 -- Proposals --------------------------------------
 -----------------------------------------------------
 
-data PView = PView
+data AllProposals = AllProposals
   deriving (Show, Read, ViewId)
 
 
-instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView PView es where
-  data Action PView = Filter Filters
+instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView AllProposals es where
+  data Action AllProposals = Filter Filters
     deriving (Show, Read, ViewAction)
+
+
+  type Require AllProposals = '[ProgramRow]
 
 
   update (Filter fs) = do
@@ -100,7 +100,7 @@ instance FromHttpApiData InversionFilter where
       Just a -> pure a
 
 
-viewProposals :: UTCTime -> Filters -> [ProposalPrograms] -> View PView ()
+viewProposals :: UTCTime -> Filters -> [ProposalPrograms] -> View AllProposals ()
 viewProposals now fs exs = do
   let sorted = sortOn (\p -> Down p.proposal.proposalId) exs
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
@@ -114,17 +114,17 @@ viewProposals now fs exs = do
   big = media (MinWidth 1000)
   small = media (MaxWidth 1000)
 
-  viewProposal :: ProposalPrograms -> View PView ()
+  viewProposal :: ProposalPrograms -> View AllProposals ()
   viewProposal e = do
     let shown = filter applyFilters $ G.toList e.programs
     proposalPrograms e shown
 
-  proposalPrograms :: ProposalPrograms -> [InstrumentProgramStatus] -> View PView ()
+  proposalPrograms :: ProposalPrograms -> [InstrumentProgramStatus] -> View AllProposals ()
   proposalPrograms _ [] = none
   proposalPrograms pp ipss = do
     let p = pp.proposal
     proposalCard pp.proposal $ do
-      tableInstrumentPrograms now ipss
+      tableInstrumentPrograms now $ fmap (\ips -> ips.program.programId) ipss
 
       let ignored = length pp.programs - length ipss
       when (ignored > 0) $ do
@@ -167,11 +167,11 @@ proposalCard p content = do
     View.hr (color Gray)
 
     col (gap 10) $ do
-      el truncate $ text p.description
+      el truncate $ text $ T.take 100 p.description
       content
 
 
-viewFilters :: Filters -> View PView ()
+viewFilters :: Filters -> View AllProposals ()
 viewFilters fs =
   col (gap 10) $ do
     el bold "Instrument"
@@ -197,19 +197,40 @@ viewFilters fs =
   off = Gray
 
 
-tableInstrumentPrograms :: UTCTime -> [InstrumentProgramStatus] -> View PView ()
-tableInstrumentPrograms now ips = do
+tableInstrumentPrograms :: UTCTime -> [Id InstrumentProgram] -> View AllProposals ()
+tableInstrumentPrograms _ ips = do
   let sorted = ips
   col id $ do
-    dataRows sorted $ \ip -> do
-      rowInstrumentProgram now ip
+    dataRows sorted $ \progId -> do
+      hyper (ProgramRow progId) $ rowInstrumentProgramLoad progId
 
 
 -----------------------------------------------------
--- IPRow
+-- ProgramRow
 -----------------------------------------------------
 
-rowInstrumentProgram :: UTCTime -> InstrumentProgramStatus -> View c ()
+data ProgramRow = ProgramRow (Id InstrumentProgram)
+  deriving (Show, Read, ViewId)
+
+
+instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView ProgramRow es where
+  data Action ProgramRow = Details
+    deriving (Show, Read, ViewAction)
+
+
+  update Details = do
+    ProgramRow progId <- viewId
+    ps <- Programs.loadProgram progId
+    now <- currentTime
+    pure $ mapM_ (rowInstrumentProgram now) ps
+
+
+rowInstrumentProgramLoad :: Id InstrumentProgram -> View ProgramRow ()
+rowInstrumentProgramLoad _progId = do
+  el (onLoad Details 100) $ text "..."
+
+
+rowInstrumentProgram :: UTCTime -> InstrumentProgramStatus -> View ProgramRow ()
 rowInstrumentProgram now psm = do
   let p = psm.program
   route (Route.Proposal p.proposalId $ Program p.programId) id $ do
