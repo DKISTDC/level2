@@ -471,21 +471,21 @@ viewGenerate inv admin status step =
       row truncate $ View.systemError $ cs e
       button RegenError (Style.btn Primary) "Restart"
     StepGenerateTransferring taskId -> do
-      el_ "Generating Fits - Transferring L1 Files"
+      el_ "Generating FITS - Transferring L1 Files"
       hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
         Transfer.viewLoadTransfer GenTransfer
     StepGeneratingFits _ -> do
-      loadingMessage "Generating Fits"
+      loadingMessage "Generating FITS"
       col (onLoad ReloadGen 1000) $ do
         viewStatus status.step
     StepGeneratingAsdf _ -> do
-      loadingMessage "Generating Asdf"
+      loadingMessage "Generating ASDF"
       el (onLoad ReloadGen 1000) none
     StepGenerated _ -> do
       row (gap 10) $ do
         viewGeneratedFiles inv
-        button RegenFits (Style.btnOutline Secondary) "Regen Fits"
-        button RegenAsdf (Style.btnOutline Secondary) "Regen Asdf"
+        button RegenFits (Style.btnOutline Secondary) "Regen FITS"
+        button RegenAsdf (Style.btnOutline Secondary) "Regen ASDF"
 
   loadingMessage msg =
     row (gap 5) $ do
