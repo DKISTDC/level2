@@ -27,6 +27,9 @@ module Effectful.Rel8
   , values
   , OnConflict (..)
   , in_
+  , distinctOn
+  , aggregate
+  , Query
   ) where
 
 import Control.Exception (Exception)

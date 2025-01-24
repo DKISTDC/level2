@@ -33,12 +33,12 @@ page
 page = do
   fs <- query
 
-  exs <- Programs.loadAllProposals
+  props <- Programs.loadAll
   now <- currentTime
 
   appLayout Proposals $ do
     hyper AllProposals $ do
-      viewProposals now fs exs
+      viewProposals now fs props
 
 
 newtype ShowVISP = ShowVISP {value :: Bool}
@@ -78,9 +78,9 @@ instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView AllProposal
 
   update (Filter fs) = do
     setQuery fs
-    exs <- Programs.loadAllProposals
+    props <- Programs.loadAll
     now <- currentTime
-    pure $ viewProposals now fs exs
+    pure $ viewProposals now fs props
 
 
 data InversionFilter
@@ -100,8 +100,8 @@ instance FromHttpApiData InversionFilter where
       Just a -> pure a
 
 
-viewProposals :: UTCTime -> Filters -> [ProposalPrograms] -> View AllProposals ()
-viewProposals now fs exs = do
+viewProposals :: UTCTime -> Filters -> [Proposal] -> View AllProposals ()
+viewProposals now fs props = do
   let sorted = sortOn (\p -> Down p.proposal.proposalId) exs
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
     row (big aside . gap 5) $ do

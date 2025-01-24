@@ -12,7 +12,7 @@ where
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Rel8
+import Effectful.Rel8 as Rel8
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -22,9 +22,10 @@ import NSO.Types.Wavelength
 
 -- Put all the operations here?
 data Datasets :: Effect where
-  Query :: Filter -> Datasets m [Dataset]
+  Find :: Filter -> Datasets m [Dataset]
   Create :: [Dataset] -> Datasets m ()
   Save :: Dataset -> Datasets m ()
+  DistinctProposals :: Datasets m [Dataset]
 
 
 type instance DispatchOf Datasets = 'Dynamic
@@ -42,12 +43,16 @@ runDataDatasets
   => Eff (Datasets : es) a
   -> Eff es a
 runDataDatasets = interpret $ \_ -> \case
-  Query Latest -> queryLatest
-  Query (ByProposal pid) -> queryProposal pid
-  Query (ByProgram pid) -> queryProgram pid
-  Query (ById did) -> queryById did
+  Find Latest -> queryLatest
+  Find (ByProposal pid) -> queryProposal pid
+  Find (ByProgram pid) -> queryProgram pid
+  Find (ById did) -> queryById did
   Create ds -> insertAll ds
   Save ds -> updateDataset ds
+  DistinctProposals -> do
+    run $ select $ do
+      let q = each datasets :: Query (Dataset' Expr)
+      distinctOn (.primaryProposalId) q
  where
   queryLatest :: (Rel8 :> es) => Eff es [Dataset]
   queryLatest = do

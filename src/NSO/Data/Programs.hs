@@ -11,9 +11,7 @@ module NSO.Data.Programs
   , instrumentProgramStatus
   , toProposal
   , toProposals
-  , fromDatasets
   , loadAllProposals
-  , loadAll
   , loadProgram
   ) where
 
@@ -31,33 +29,36 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Status
 
 
-loadAll :: (Datasets :> es, Inversions :> es) => Eff es [InstrumentProgramStatus]
-loadAll = do
-  ds <- send $ Datasets.Query Latest
-  ai <- send Inversions.All
-  pure $ fmap (.program) $ fromDatasets ai ds
+loadAllProposals :: (Datasets :> es) => Eff es [Proposal]
+loadAllProposals = do
+  ds <- send Datasets.DistinctProposals
+  pure $ fmap proposalFromDataset ds
 
 
 loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [InstrumentProgramStatus]
 loadProgram progId = do
-  ds <- send $ Datasets.Query $ Datasets.ByProgram progId
+  ds <- send $ Datasets.Find $ Datasets.ByProgram progId
   invs <- send $ Inversions.ByProgram progId
   pure $ fmap (\g -> instrumentProgramStatus g invs) (grouped (.instrumentProgramId) ds)
 
 
-loadAllProposals :: (Datasets :> es, Inversions :> es) => Eff es [ProposalPrograms]
-loadAllProposals = toProposals <$> loadAll
+proposalFromDataset :: Dataset -> Proposal
+proposalFromDataset d =
+  Proposal
+    { proposalId = d.primaryProposalId
+    , description = d.experimentDescription
+    , startTime = d.startTime
+    }
 
 
-fromDatasets :: AllInversions -> [Dataset] -> [ProgramFamily]
-fromDatasets ai ds =
-  let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
-      pvs = fmap (programInversions ai) gds :: [[Inversion]]
-      ips = zipWith instrumentProgramStatus gds pvs
-   in sortOn startTime $ zipWith3 ProgramFamily ips gds pvs
- where
-  startTime pf = pf.program.program.startTime
-
+-- fromDatasets :: AllInversions -> [Dataset] -> [ProgramFamily]
+-- fromDatasets ai ds =
+--   let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
+--       pvs = fmap (programInversions ai) gds :: [[Inversion]]
+--       ips = zipWith instrumentProgramStatus gds pvs
+--    in sortOn startTime $ zipWith3 ProgramFamily ips gds pvs
+--  where
+--   startTime pf = pf.program.program.startTime
 
 -- | All inversions for the given program
 programInversions :: AllInversions -> Grouped InstrumentProgram Dataset -> [Inversion]
@@ -105,8 +106,6 @@ programStatus _ (i : is) = do
           Just e -> StatusError e
           Nothing -> StatusInversion (inversionStep i')
 
-
--- status gd ivs =
 
 instrumentProgram :: Grouped InstrumentProgram Dataset -> InstrumentProgram
 instrumentProgram gd =
