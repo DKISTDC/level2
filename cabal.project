@@ -4,7 +4,7 @@ packages:
   ./types/
   -- ../telescope.hs/
   -- ../web-view/
-  -- ../hyperbole/
+  ../hyperbole/
   -- ../fits-parse/
   -- ../globus.hs
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz

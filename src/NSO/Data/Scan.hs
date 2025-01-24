@@ -8,7 +8,7 @@ import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Time
-import NSO.Data.Datasets
+import NSO.Data.Datasets as Datasets
 import NSO.Error
 import NSO.Metadata
 import NSO.Prelude
@@ -64,7 +64,7 @@ scanDatasetInventory = do
 syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es, Error DataError :> es) => Eff es SyncResults
 syncDatasets = do
   scan <- scanDatasetInventory
-  old <- indexed <$> send (Query Latest)
+  old <- indexed <$> Datasets.find All
 
   let sync = syncResults old scan
 

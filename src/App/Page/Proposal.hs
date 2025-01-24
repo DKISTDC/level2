@@ -23,10 +23,10 @@ page
   => Id Proposal
   -> Eff es (Page '[ProgramDatasets])
 page pid = do
-  ds <- send $ Datasets.Query (ByProposal pid)
-  ai <- send Inversions.All
+  ds <- Datasets.find (Datasets.ByProposal pid)
+  AllInversions ai <- send Inversions.All
   now <- currentTime
-  let pwds = Programs.fromDatasets ai ds
+  let pwds = Programs.programFamilies ai ds
 
   appLayout Proposals $ do
     col Style.page $ do
@@ -50,7 +50,7 @@ viewPrograms now (p : ps) = do
 viewProposal :: (HyperViewHandled ProgramDatasets c) => UTCTime -> Grouped Proposal ProgramFamily -> View c ()
 viewProposal now gx = do
   let pf = sample gx
-  viewExperimentDescription pf.program.program.experimentDescription
+  viewExperimentDescription pf.program.experimentDescription
   el Style.subheader $ do
     text "Instrument Programs"
   mapM_ (viewProgramSummary now) gx

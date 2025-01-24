@@ -7,7 +7,6 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
 import App.View.DataRow qualified as View
-import App.View.Icons as Icons
 import Data.Ord (Down (..))
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
@@ -43,7 +42,7 @@ instance (Datasets :> es) => HyperView ProgramDatasets es where
 
   update (SortBy srt) = do
     ProgramDatasets i <- viewId
-    ds <- send $ Query (ByProgram i)
+    ds <- send $ Find (ByProgram i)
     pure $ datasetsTable SortBy srt ds
 
 
@@ -104,8 +103,6 @@ datasetsTableUnsorted sortBy ds = do
 
   hd = View.hd
   cell = View.cell
-
-
 
 
 radiusBoundingBox :: Maybe BoundingBox -> View c ()

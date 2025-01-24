@@ -9,7 +9,6 @@ import App.View.DatasetsTable (radiusBoundingBox)
 import App.View.Layout
 import Data.Aeson (ToJSON, encode)
 import Data.Ord (Down (..))
-import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
 import NSO.Prelude
 import Web.Hyperbole
@@ -17,7 +16,7 @@ import Web.Hyperbole
 
 page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Eff es (Page '[])
 page di = do
-  ds <- send $ Datasets.Query (ById di)
+  ds <- Datasets.find (ById di)
 
   let sorted = sortOn (Down . (.scanDate)) ds
 

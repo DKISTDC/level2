@@ -20,6 +20,7 @@ data InstrumentProgram = InstrumentProgram
   , embargo :: Maybe UTCTime
   , qualified :: Bool
   }
+  deriving (Eq, Show)
 
 
 data Proposal = Proposal
@@ -27,3 +28,4 @@ data Proposal = Proposal
   , description :: Text
   , startTime :: UTCTime
   }
+  deriving (Eq, Show)

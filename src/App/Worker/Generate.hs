@@ -8,7 +8,7 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
-import NSO.Data.Datasets
+import NSO.Data.Datasets as Datasets
 import NSO.Data.Spectra (identifyLine)
 import NSO.Image.Frame as Frame
 import NSO.Image.Headers.Types (Depth, SliceXY (..), SlitX)
@@ -91,7 +91,7 @@ requireCanonicalDataset ip = do
  where
   findCanonicalDataset :: (Datasets :> es) => Id InstrumentProgram -> Eff es (Maybe Dataset)
   findCanonicalDataset ip' = do
-    ds <- send $ Query (ByProgram ip')
+    ds <- Datasets.find (ByProgram ip')
     pure $ L.find isCanonicalDataset ds
 
 

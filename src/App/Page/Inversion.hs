@@ -81,7 +81,7 @@ submitDownload ip ii = do
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
   inv <- loadInversion ii
-  ds <- send $ Datasets.Query $ Datasets.ByProgram inv.programId
+  ds <- Datasets.find $ Datasets.ByProgram inv.programId
   it <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
   Inversions.setDownloading ii it
   redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
@@ -249,7 +249,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
       -- hyper (InversionStatus ip iip ii) $ stepDownload inv Select
       TaskSucceeded -> do
         -- need to get the datasets used???
-        ds <- send $ Datasets.Query $ Datasets.ByProgram iip
+        ds <- Datasets.find $ Datasets.ByProgram iip
         Inversions.setDownloaded ii (map (.datasetId) ds)
         pure $ target (InversionStatus ip iip ii) $ el (onLoad Reload 0) none
       CheckTransfer -> Transfer.checkTransfer DwnTransfer ti

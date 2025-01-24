@@ -15,7 +15,6 @@ import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
 import App.Worker.GenWorker
-import Data.Grouped as G
 import Data.List (nub)
 import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
@@ -38,15 +37,14 @@ page
   -> Id InstrumentProgram
   -> Eff es (Page '[ProgramInversions, ProgramDatasets])
 page ip iip = do
-  ds' <- send $ Datasets.Query (Datasets.ByProgram iip)
+  ds' <- Datasets.find (Datasets.ByProgram iip)
   ds <- expectFound ds'
   let d = head ds
 
-  dse <- send $ Datasets.Query (ByProposal ip)
+  dse <- Datasets.find (Datasets.ByProposal ip)
   invs <- latestInversions iip
   now <- currentTime
-  let gds = Grouped ds :: Grouped InstrumentProgram Dataset
-  let p = instrumentProgramStatus gds invs
+  let ps = programFamilies invs dse
 
   appLayout Route.Proposals $ do
     col (Style.page . gap 30) $ do
@@ -61,7 +59,7 @@ page ip iip = do
 
       hyper (ProgramInversions ip iip) $ viewProgramInversions invs
 
-      viewProgramSummary now $ ProgramFamily p gds invs
+      mapM_ (viewProgramSummary now) ps
  where
   instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
   instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds

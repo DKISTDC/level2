@@ -32,10 +32,10 @@ viewExperimentDescription t = do
     mapM_ (el_ . text) ps
 
 
-viewProgramRow :: forall c. UTCTime -> InstrumentProgramStatus -> View c ()
-viewProgramRow now ips = row (gap 10 . textAlign AlignCenter . grow) $ do
-  let ip = ips.program :: InstrumentProgram
-  statusTag ips.status
+viewProgramRow :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramRow now fam = row (gap 10 . textAlign AlignCenter . grow) $ do
+  let ip = fam.program :: InstrumentProgram
+  statusTag fam.status
 
   -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
@@ -53,7 +53,7 @@ viewProgramRow now ips = row (gap 10 . textAlign AlignCenter . grow) $ do
 
   space
 
-  code (cell . color Secondary) ips.program.programId.fromId
+  code (cell . color Secondary) ip.programId.fromId
  where
   cell = dataCell . fontSize 14 . pad 2
 
@@ -87,7 +87,7 @@ statusTag = \case
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
 -- statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
 
-viewCriteria :: InstrumentProgramStatus -> Grouped InstrumentProgram Dataset -> View c ()
+viewCriteria :: ProgramFamily -> Grouped InstrumentProgram Dataset -> View c ()
 viewCriteria ip gd = do
   col (pad 8) $ do
     case ip.program.instrument of
@@ -148,15 +148,15 @@ viewCriteria ip gd = do
 viewProgramSummary :: (HyperViewHandled ProgramDatasets c) => UTCTime -> ProgramFamily -> View c ()
 viewProgramSummary now pf = do
   let ds = pf.datasets.items
-  let p = pf.program :: InstrumentProgramStatus
+  let prog = pf.program :: InstrumentProgram
   col Style.card $ do
-    route (Proposal p.program.proposalId $ Program p.program.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> p.program.programId.fromId
+    route (Proposal prog.proposalId $ Program prog.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
     col (gap 15 . pad 15) $ do
-      viewProgramDetails p now (NE.toList ds)
-      hyper (ProgramDatasets p.program.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)
+      viewProgramDetails pf now (NE.toList ds)
+      hyper (ProgramDatasets prog.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)
 
 
-viewProgramDetails :: InstrumentProgramStatus -> UTCTime -> [Dataset] -> View c ()
+viewProgramDetails :: ProgramFamily -> UTCTime -> [Dataset] -> View c ()
 viewProgramDetails _ _ [] = none
 viewProgramDetails ips now (d : ds) = do
   let p = ips.program :: InstrumentProgram

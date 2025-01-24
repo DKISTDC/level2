@@ -12,10 +12,9 @@ import App.View.DataRow (dataRows)
 import App.View.Icons as Icons
 import App.View.Layout
 import Data.Aeson qualified as A
-import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Time
-import NSO.Data.Datasets
+import NSO.Data.Datasets as Datasets
 import NSO.Data.Scan
 import NSO.Error
 import NSO.Metadata (Metadata)
@@ -30,7 +29,7 @@ import Web.View.Style (addClass, cls, prop)
 
 page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Eff es (Page '[AllDatasets, DatasetRow])
 page = do
-  ds <- send $ Query Latest
+  ds <- Datasets.find Datasets.All
   appLayout (Datasets DatasetRoot) $ do
     hyper AllDatasets $ viewPage $ viewDatasetSummary ds
 
@@ -54,7 +53,7 @@ instance (Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => 
     pure $ do
       viewPage $ viewScanResults sync
   update Existing = do
-    ds <- send $ Query Latest
+    ds <- Datasets.find Datasets.All
     pure $ do
       viewPage $ viewExistingDatasets ds
 
@@ -190,7 +189,7 @@ instance (Datasets :> es) => HyperView DatasetRow es where
 
   update Details = do
     DatasetRow did <- viewId
-    ds <- send $ Query (ById did)
+    ds <- Datasets.find (ById did)
     pure $ mapM_ datasetRowDetails ds
 
 

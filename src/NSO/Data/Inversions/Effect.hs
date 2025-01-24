@@ -21,6 +21,7 @@ data Inversions :: Effect where
   All :: Inversions m AllInversions
   ById :: Id Inversion -> Inversions m [Inversion]
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
+  ByProposal :: Id Proposal -> Inversions m [Inversion]
   Create :: Id Proposal -> Id InstrumentProgram -> Inversions m Inversion
   Remove :: Id Inversion -> Inversions m ()
   Update :: Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Inversions m ()
@@ -40,6 +41,12 @@ runDataInversions
 runDataInversions = interpret $ \_ -> \case
   All -> queryAll
   ByProgram pid -> queryInstrumentProgram pid
+  ByProposal pid -> do
+    irs <- run $ select $ do
+      row <- each inversions
+      where_ (row.proposalId ==. lit pid)
+      return row
+    pure $ map fromRow irs
   ById iid -> queryById iid
   Create ip iip -> create ip iip
   Remove iid -> remove iid

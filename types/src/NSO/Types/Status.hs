@@ -2,8 +2,9 @@ module NSO.Types.Status where
 
 import Data.Grouped
 import NSO.Prelude
+import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (InstrumentProgram, Proposal)
-import NSO.Types.Inversion (InversionStep)
+import NSO.Types.Inversion
 
 
 data ProgramStatus
@@ -12,16 +13,18 @@ data ProgramStatus
   | StatusError Text
   | -- we have a "latest" inversion, use its status
     StatusInversion InversionStep
-  deriving (Eq)
-
-
-data InstrumentProgramStatus = InstrumentProgramStatus
-  { program :: InstrumentProgram
-  , status :: ProgramStatus
-  }
+  deriving (Eq, Show)
 
 
 data ProposalPrograms = ProposalPrograms
   { proposal :: Proposal
-  , programs :: Grouped Proposal InstrumentProgramStatus
+  , programs :: Grouped Proposal ProgramFamily
+  }
+
+
+data ProgramFamily = ProgramFamily
+  { program :: InstrumentProgram
+  , status :: ProgramStatus
+  , datasets :: Grouped InstrumentProgram Dataset
+  , inversions :: [Inversion]
   }

@@ -4,15 +4,18 @@ module NSO.Data.Programs
   ( InstrumentProgram (..)
   , ProgramFamily (..)
   , ProgramStatus (..)
-  , InstrumentProgramStatus (..)
   , programStatus
   , programInversions
   , instrumentProgram
-  , instrumentProgramStatus
   , toProposal
   , toProposals
   , loadAllProposals
   , loadProgram
+  , programFamilies
+  , loadAllPrograms
+  , loadProposalPrograms
+  , proposalFromDataset
+  , groupByProgram
   ) where
 
 import Data.Either (lefts, rights)
@@ -31,16 +34,41 @@ import NSO.Types.Status
 
 loadAllProposals :: (Datasets :> es) => Eff es [Proposal]
 loadAllProposals = do
-  ds <- send Datasets.DistinctProposals
+  ds <- Datasets.find DistinctProposals
   pure $ fmap proposalFromDataset ds
 
 
-loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [InstrumentProgramStatus]
+loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [ProgramFamily]
 loadProgram progId = do
   ds <- send $ Datasets.Find $ Datasets.ByProgram progId
   invs <- send $ Inversions.ByProgram progId
-  pure $ fmap (\g -> instrumentProgramStatus g invs) (grouped (.instrumentProgramId) ds)
+  pure $ programFamilies invs ds
 
+
+loadAllPrograms :: (Datasets :> es, Inversions :> es) => Eff es [ProgramFamily]
+loadAllPrograms = do
+  ds <- Datasets.find Datasets.All
+  AllInversions ai <- send Inversions.All
+  pure $ programFamilies ai ds
+
+
+loadProposalPrograms :: (Datasets :> es, Inversions :> es) => Eff es [ProposalPrograms]
+loadProposalPrograms = do
+  progs <- loadAllPrograms
+  pure $ toProposals progs
+
+
+-- loadProposalProgram :: (Datasets :> es, Inversions :> es) => Id Proposal -> Eff es [ProposalPrograms]
+-- loadProposalProgram propId = do
+--   ds <- send $ Datasets.Find $ Datasets.ByProposal propId
+--   case ds of
+--     [] -> pure []
+--     (d : ds) -> do
+--       invs <- send $ Inversions.ByProposal propId
+--       let proposal = proposalFromDataset d
+--       let programs = fmap (\g -> instrumentProgramStatus g invs) (grouped (.instrumentProgramId) (d : ds))
+--       let gprogs = grouped (\ip -> ip.program.proposalId) programs
+--       pure $ ProposalPrograms{proposal, programs = gprogs}
 
 proposalFromDataset :: Dataset -> Proposal
 proposalFromDataset d =
@@ -51,28 +79,40 @@ proposalFromDataset d =
     }
 
 
--- fromDatasets :: AllInversions -> [Dataset] -> [ProgramFamily]
--- fromDatasets ai ds =
---   let gds = grouped (.instrumentProgramId) ds :: [Grouped InstrumentProgram Dataset]
---       pvs = fmap (programInversions ai) gds :: [[Inversion]]
---       ips = zipWith instrumentProgramStatus gds pvs
---    in sortOn startTime $ zipWith3 ProgramFamily ips gds pvs
---  where
---   startTime pf = pf.program.program.startTime
+groupByProgram :: [Dataset] -> [Grouped InstrumentProgram Dataset]
+groupByProgram = grouped (.instrumentProgramId)
 
--- | All inversions for the given program
-programInversions :: AllInversions -> Grouped InstrumentProgram Dataset -> [Inversion]
-programInversions (AllInversions ivs) gd =
+
+programFamilies :: [Inversion] -> [Dataset] -> [ProgramFamily]
+programFamilies invs ds =
+  sortOn startTime $ fmap programFamily (groupByProgram ds)
+ where
+  startTime pf = pf.program.startTime
+
+  programFamily :: Grouped InstrumentProgram Dataset -> ProgramFamily
+  programFamily gd =
+    let invs' = programInversions invs gd
+     in ProgramFamily
+          { program = instrumentProgram gd
+          , status = programStatus gd invs'
+          , datasets = gd
+          , inversions = invs'
+          }
+
+
+-- | Filter inversions for the given program
+programInversions :: [Inversion] -> Grouped InstrumentProgram Dataset -> [Inversion]
+programInversions ivs gd =
   let d = sample gd
    in filter (\i -> i.programId == d.instrumentProgramId) ivs
 
 
-toProposals :: [InstrumentProgramStatus] -> [ProposalPrograms]
-toProposals ips =
-  map toProposal $ grouped (\ip -> ip.program.proposalId) ips
+toProposals :: [ProgramFamily] -> [ProposalPrograms]
+toProposals pfs =
+  map toProposal $ grouped (\ip -> ip.program.proposalId) pfs
 
 
-toProposal :: Grouped Proposal InstrumentProgramStatus -> ProposalPrograms
+toProposal :: Grouped Proposal ProgramFamily -> ProposalPrograms
 toProposal g =
   let ip = sample g
       prop =
@@ -82,14 +122,6 @@ toProposal g =
           , startTime = ip.program.startTime
           }
    in ProposalPrograms{proposal = prop, programs = Grouped g.items}
-
-
-instrumentProgramStatus :: Grouped InstrumentProgram Dataset -> [Inversion] -> InstrumentProgramStatus
-instrumentProgramStatus gd invs =
-  InstrumentProgramStatus
-    { program = instrumentProgram gd
-    , status = programStatus gd invs
-    }
 
 
 programStatus :: Grouped InstrumentProgram Dataset -> [Inversion] -> ProgramStatus
@@ -131,10 +163,3 @@ instrumentProgram gd =
 
   identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
   identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d
-
-
-data ProgramFamily = ProgramFamily
-  { program :: InstrumentProgramStatus
-  , datasets :: Grouped InstrumentProgram Dataset
-  , inversions :: [Inversion]
-  }

@@ -1,6 +1,6 @@
 module NSO.Data.Spectra where
 
-import NSO.Data.Datasets
+import NSO.Data.Datasets hiding (find)
 import NSO.Prelude
 
 

@@ -3,6 +3,7 @@
 module NSO.Data.Datasets
   ( Datasets (..)
   , Filter (..)
+  , find
   , module NSO.Types.Dataset
   , module NSO.Types.Common
   , module NSO.Types.Wavelength
@@ -13,7 +14,7 @@ where
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Rel8 as Rel8
-import NSO.Prelude
+import NSO.Prelude hiding (find)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
@@ -25,17 +26,17 @@ data Datasets :: Effect where
   Find :: Filter -> Datasets m [Dataset]
   Create :: [Dataset] -> Datasets m ()
   Save :: Dataset -> Datasets m ()
-  DistinctProposals :: Datasets m [Dataset]
 
 
 type instance DispatchOf Datasets = 'Dynamic
 
 
 data Filter
-  = Latest
+  = All
   | ByProposal (Id Proposal)
   | ByProgram (Id InstrumentProgram)
   | ById (Id Dataset)
+  | DistinctProposals
 
 
 runDataDatasets
@@ -43,21 +44,18 @@ runDataDatasets
   => Eff (Datasets : es) a
   -> Eff es a
 runDataDatasets = interpret $ \_ -> \case
-  Find Latest -> queryLatest
+  Find All -> do
+    run $ select $ each datasets
   Find (ByProposal pid) -> queryProposal pid
   Find (ByProgram pid) -> queryProgram pid
   Find (ById did) -> queryById did
-  Create ds -> insertAll ds
-  Save ds -> updateDataset ds
-  DistinctProposals -> do
+  Find DistinctProposals -> do
     run $ select $ do
       let q = each datasets :: Query (Dataset' Expr)
       distinctOn (.primaryProposalId) q
+  Create ds -> insertAll ds
+  Save ds -> updateDataset ds
  where
-  queryLatest :: (Rel8 :> es) => Eff es [Dataset]
-  queryLatest = do
-    run $ select $ each datasets
-
   queryProposal :: (Rel8 :> es) => Id Proposal -> Eff es [Dataset]
   queryProposal eid = do
     run $ select $ do
@@ -157,3 +155,7 @@ runDataDatasets = interpret $ \_ -> \case
             , embargo = "embargo"
             }
       }
+
+
+find :: (Datasets :> es) => Filter -> Eff es [Dataset]
+find = send . Find
