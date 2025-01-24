@@ -137,7 +137,7 @@ instance KeywordInfo Object where
 
 
 newtype Instrument = Instrument Text
-  deriving newtype (ToKeyword, FromKeyword)
+  deriving newtype (ToKeyword, FromKeyword, Eq)
 instance KeywordInfo Instrument where
   keytype = "Instrument"
   description = "The instrument used to acquire the data associated with the header"

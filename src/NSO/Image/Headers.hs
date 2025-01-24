@@ -19,7 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
-import NSO.Types.Common (DateTime, Id (..))
+import NSO.Types.Common (DateTime(..), Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Header as Fits
@@ -225,7 +225,7 @@ observationHeader l1 = do
 
 datacenterHeader :: (Error ParseError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
-  dateBeg <- requireKey "DATE-BEG" l1
+  DateTime dateBeg <- requireKey "DATE-BEG" l1
   dkistver <- requireKey "DKISTVER" l1
   obsprId <- Key <$> requireKey "OBSPR_ID" l1
   experId <- Key <$> requireKey "EXPER_ID" l1

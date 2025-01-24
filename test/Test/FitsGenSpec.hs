@@ -13,6 +13,7 @@ import NSO.Image.DataCube
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
+import Telescope.Data.Parser (runPureParser)
 import NSO.Image.L1Input
 import NSO.Image.Primary as Primary
 import NSO.Image.Profile as Profile
@@ -20,12 +21,13 @@ import NSO.Image.Quantity as Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
+import NSO.Image.Headers
 import Skeletest
 import Skeletest.Predicate qualified as P
 import Telescope.Data.Axes hiding (Axis)
 import Telescope.Data.WCS
 import Telescope.Fits as Fits hiding (Axis)
-import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..), parseKeyword)
 
 
 spec :: Spec
@@ -34,6 +36,7 @@ spec = describe "Fits Generation" $ do
   specWCS
   specL1Frames
   specHeader
+  specDateHeaders
 
 
 specHeader :: Spec
@@ -282,6 +285,14 @@ runErrorIO eff = do
   case res of
     Left e -> throwM e
     Right a -> pure a
+
+
+specDateHeaders :: Spec
+specDateHeaders = do
+  describe "DateTime" $ do
+    it "should parse UTCTimes without Z" $ do
+      let res :: Either ParseError DateTime = runPureParser $ parseKeywordValue (String "2023-05-01T18:53:59.504")
+      res `shouldSatisfy` P.right P.anything
 
 
 specL1Frames :: Spec
