@@ -20,6 +20,7 @@ module NSO.Data.Programs
 
 import Data.Either (lefts, rights)
 import Data.Grouped as G
+import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -152,14 +153,17 @@ instrumentProgram gd =
         , startTime = d.startTime
         , instrument = d.instrument
         , onDisk = qualifyOnDisk gd
-        , spectralLines = rights ls
-        , otherWavelengths = lefts ls
+        , spectralLines = L.nub $ rights ls
+        , otherWavelengths = L.nub $ lefts ls
         , embargo = d.embargo
         , qualified = isQualified gd
         }
  where
   midWave :: Dataset -> Wavelength Nm
-  midWave d = (d.wavelengthMin + d.wavelengthMax) / 2
+  midWave d =
+    let Wavelength mn = d.wavelengthMin
+        Wavelength mx = d.wavelengthMax
+     in Wavelength $ fromIntegral $ round @Double @Int $ (mn + mx) / 2.0
 
   identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
   identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d

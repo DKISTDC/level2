@@ -30,10 +30,11 @@ instance ToAsdf (Wavelength a) where
 
 -- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py
 data SpectralLine
-  = HeI
-  | Ha
+  = NaD
   | FeI
+  | Ha
   | CaII CaIILine
+  | HeI
   deriving (Eq, Ord)
 
 
@@ -42,6 +43,7 @@ instance Show SpectralLine where
   show Ha = "Hα"
   show FeI = "FeI"
   show (CaII l) = "CaII " <> show l
+  show NaD = "Na D"
 
 
 data CaIILine
@@ -49,8 +51,6 @@ data CaIILine
   | CaII_854
   | CaII_866
   deriving (Bounded, Enum, Eq, Ord)
-
-
 instance Show CaIILine where
   show CaII_849 = "849"
   show CaII_854 = "854"

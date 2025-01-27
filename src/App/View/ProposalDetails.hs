@@ -15,6 +15,7 @@ import App.View.DatasetsTable as DatasetsTable
 import App.View.Icons as Icons
 import App.View.Inversions (inversionStepTag)
 import Data.Grouped
+import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import NSO.Data.Datasets
@@ -48,14 +49,15 @@ viewProgramRow now fam = row (gap 10 . textAlign AlignCenter . grow) $ do
   row (dataCell . gap 5 . fontSize 14) $ do
     maybe none embargoTag ip.embargo
     if ip.onDisk then diskTag else none
-    mapM_ lineTag ip.spectralLines
+    mapM_ lineTag $ L.sort ip.spectralLines
     mapM_ midTag $ sortOn id ip.otherWavelengths
 
   space
 
-  code (cell . color Secondary) ip.programId.fromId
+  code (cellData . color Secondary . minWidth 0) ip.programId.fromId
  where
-  cell = dataCell . fontSize 14 . pad 2
+  cellData = fontSize 14 . pad 2
+  cell = dataCell . cellData
 
   lineTag :: SpectralLine -> View c ()
   lineTag s = tag "pre" (dataTag . Style.tagOutline (light Secondary)) $ text $ cs $ show s
