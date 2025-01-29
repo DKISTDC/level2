@@ -78,7 +78,7 @@ data AllProposals = AllProposals
   deriving (Show, Read, ViewId)
 
 
-instance (Datasets :> es, Inversions :> es, Debug :> es) => HyperView AllProposals es where
+instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
   data Action AllProposals
     = FilterInstrument Instrument Bool
     | FilterStatus InversionFilter
@@ -97,7 +97,6 @@ instance (Datasets :> es, Inversions :> es, Debug :> es) => HyperView AllProposa
       fs <- query
       filterProposals $ setStatus status fs
     FilterProposal term -> do
-      delay 1000
       fs <- query
       filterProposals $ fs{propSearch = term}
    where
@@ -141,7 +140,7 @@ viewFilters fs =
   col (gap 10) $ do
     el bold "Proposal Id"
     stack id $ do
-      layer id $ search FilterProposal 500 (disableOnRequest . placeholder "1 118" . border 1 . pad 10 . grow . value fs.propSearch)
+      layer id $ search FilterProposal 500 (placeholder "1 118" . border 1 . pad 10 . grow . value fs.propSearch)
       clearButton
 
     el bold "Instrument"
@@ -162,16 +161,11 @@ viewFilters fs =
 
   clearButton =
     layer (popup (R 0)) $ do
-      el (pad (XY 5 10) . shownIfTerm) $ do
+      el (pad (XY 5 10) . shownIfTerm fs.propSearch) $ do
         button (FilterProposal "") (width 24 . hover (color (light Secondary))) Icons.xCircle
 
-  shownIfTerm =
-    if fs.propSearch /= ""
-      then display Block
-      else hide
-
-  disableOnRequest =
-    onRequest (Style.disabled . bg Secondary)
+  shownIfTerm "" = hide
+  shownIfTerm _ = display Block
 
   on = Primary
   off = Gray
