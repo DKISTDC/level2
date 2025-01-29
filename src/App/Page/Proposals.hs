@@ -119,7 +119,7 @@ viewProposals :: Filters -> [Proposal] -> View AllProposals ()
 viewProposals fs props = do
   let sorted = sortOn (\p -> Down p.proposalId) $ filter (applyFilters cleanTerm) props
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
-    row (big aside . gap 5) $ do
+    row (big aside . gap 10) $ do
       viewFilters fs
 
     col (gap 40 . grow . minWidth 0) $ do
@@ -136,19 +136,21 @@ viewProposals fs props = do
 
 
 viewFilters :: Filters -> View AllProposals ()
-viewFilters fs =
+viewFilters fs = do
   col (gap 10) $ do
     el bold "Proposal Id"
     stack id $ do
       layer id $ search FilterProposal 500 (placeholder "1 118" . border 1 . pad 10 . grow . value fs.propSearch)
       clearButton
 
+  col (gap 10) $ do
     el bold "Instrument"
     row (gap 5) $ do
       toggle (FilterInstrument VISP) fs.visp.value id "VISP"
       toggle (FilterInstrument VBI) fs.vbi id "VBI"
       toggle (FilterInstrument CRYO_NIRSP) fs.cryo id "Cryo-NIRSP"
 
+  col (gap 10) $ do
     el bold "Status"
     dropdown FilterStatus (== fs.status) (pad 5) $ do
       option Any "Any"
