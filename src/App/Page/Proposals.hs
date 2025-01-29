@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module App.Page.Proposals where
@@ -9,11 +10,13 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DataRow (dataRows)
+import App.View.Icons qualified as Icons
 import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import Effectful
+import Effectful.Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
 import Effectful.Time
@@ -22,13 +25,11 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
-import Text.Read (readMaybe)
-import Web.HttpApiData
 import Web.Hyperbole as H
 
 
 page
-  :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
+  :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es, Debug :> es)
   => Eff es (Page '[AllProposals, ProposalCard, ProgramRow])
 page = do
   fs <- query
@@ -38,6 +39,10 @@ page = do
     hyper AllProposals $ do
       viewProposals fs props
 
+
+-----------------------------------------------------
+-- Filters: Query
+-----------------------------------------------------
 
 newtype ShowVISP = ShowVISP {value :: Bool}
   deriving newtype (ToParam, FromParam, Eq, Read, Show)
@@ -50,34 +55,9 @@ data Filters = Filters
   , visp :: ShowVISP
   , vbi :: Bool
   , cryo :: Bool
+  , propSearch :: Text
   }
   deriving (Show, Read, Generic, ToQuery, FromQuery)
-
-
------------------------------------------------------
--- Query URL
------------------------------------------------------
-
------------------------------------------------------
--- Proposals --------------------------------------
------------------------------------------------------
-
-data AllProposals = AllProposals
-  deriving (Show, Read, ViewId)
-
-
-instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
-  data Action AllProposals = Filter Filters
-    deriving (Show, Read, ViewAction)
-
-
-  type Require AllProposals = '[ProposalCard]
-
-
-  update (Filter fs) = do
-    setQuery fs
-    props <- Programs.loadAllProposals
-    pure $ viewProposals fs props
 
 
 data InversionFilter
@@ -90,16 +70,55 @@ instance DefaultParam InversionFilter where
   defaultParam = Any
 
 
-instance FromHttpApiData InversionFilter where
-  parseQueryParam t =
-    case readMaybe (cs t) of
-      Nothing -> Left $ "Invalid InversionFilter: " <> t
-      Just a -> pure a
+-----------------------------------------------------
+-- Proposals
+-----------------------------------------------------
+
+data AllProposals = AllProposals
+  deriving (Show, Read, ViewId)
+
+
+instance (Datasets :> es, Inversions :> es, Debug :> es) => HyperView AllProposals es where
+  data Action AllProposals
+    = FilterInstrument Instrument Bool
+    | FilterStatus InversionFilter
+    | FilterProposal Text
+    deriving (Show, Read, ViewAction)
+
+
+  type Require AllProposals = '[ProposalCard]
+
+
+  update = \case
+    FilterInstrument instrument shown -> do
+      fs <- query
+      filterProposals $ setInstrumentFilter instrument shown fs
+    FilterStatus status -> do
+      fs <- query
+      filterProposals $ setStatus status fs
+    FilterProposal term -> do
+      delay 1000
+      fs <- query
+      filterProposals $ fs{propSearch = term}
+   where
+    setInstrumentFilter instr b fs =
+      case instr of
+        VBI -> fs{vbi = b}
+        VISP -> fs{visp = ShowVISP b}
+        CRYO_NIRSP -> fs{cryo = b}
+
+    setStatus status Filters{visp, vbi, cryo, propSearch} =
+      Filters{..}
+
+    filterProposals fs = do
+      setQuery fs
+      props <- Programs.loadAllProposals
+      pure $ viewProposals fs props
 
 
 viewProposals :: Filters -> [Proposal] -> View AllProposals ()
 viewProposals fs props = do
-  let sorted = sortOn (\p -> Down p.proposalId) props
+  let sorted = sortOn (\p -> Down p.proposalId) $ filter (applyFilters cleanTerm) props
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
     row (big aside . gap 5) $ do
       viewFilters fs
@@ -112,28 +131,47 @@ viewProposals fs props = do
   big = media (MinWidth 1000)
   small = media (MaxWidth 1000)
 
+  cleanTerm = T.replace " " "_" fs.propSearch
+  applyFilters term prop =
+    term `T.isInfixOf` prop.proposalId.fromId
+
 
 viewFilters :: Filters -> View AllProposals ()
 viewFilters fs =
   col (gap 10) $ do
-    el bold "Instrument"
+    el bold "Proposal Id"
+    stack id $ do
+      layer id $ search FilterProposal 500 (disableOnRequest . placeholder "1 118" . border 1 . pad 10 . grow . value fs.propSearch)
+      clearButton
 
+    el bold "Instrument"
     row (gap 5) $ do
-      toggle (Filter fs{visp = ShowVISP $ not fs.visp.value}) fs.visp.value id "VISP"
-      toggle (Filter fs{vbi = not fs.vbi}) fs.vbi id "VBI"
-      toggle (Filter fs{cryo = not fs.cryo}) fs.cryo id "Cryo-NIRSP"
+      toggle (FilterInstrument VISP) fs.visp.value id "VISP"
+      toggle (FilterInstrument VBI) fs.vbi id "VBI"
+      toggle (FilterInstrument CRYO_NIRSP) fs.cryo id "Cryo-NIRSP"
 
     el bold "Status"
-    dropdown (\i -> Filter $ setStatus i fs) (== fs.status) (pad 5) $ do
+    dropdown FilterStatus (== fs.status) (pad 5) $ do
       option Any "Any"
       option Qualified "Qualified"
       option Active "Active"
       option Complete "Complete"
  where
-  toggle action sel f =
-    button action (f . Style.btn (if sel then on else off))
+  toggle toAction sel f =
+    button (toAction $ not sel) (f . Style.btn (if sel then on else off))
 
-  setStatus s Filters{visp, vbi, cryo} = Filters{status = s, visp, vbi, cryo}
+  clearButton =
+    layer (popup (R 0)) $ do
+      el (pad (XY 5 10) . shownIfTerm) $ do
+        button (FilterProposal "") (width 24 . hover (color (light Secondary))) Icons.xCircle
+
+  shownIfTerm =
+    if fs.propSearch /= ""
+      then display Block
+      else hide
+
+  disableOnRequest =
+    onRequest (Style.disabled . bg Secondary)
 
   on = Primary
   off = Gray

@@ -23,8 +23,24 @@ import Web.Hyperbole (FromParam (..), Route)
 
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Read, Eq, Ord, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword)
+  deriving newtype (Show, Read, Eq, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword)
   deriving (Generic)
+
+
+instance Ord (Id a) where
+  (Id a) <= (Id b)
+    | "pid" `T.isPrefixOf` a = proposalLT
+    | otherwise = a <= b
+   where
+    proposalLT =
+      proposalParts a <= proposalParts b
+
+    proposalParts :: Text -> (Int, Int)
+    proposalParts pid =
+      let (cyclet, propt) = T.breakOn "_" $ T.drop 4 pid
+       in (readN (cs cyclet), readN (cs $ T.drop 1 propt))
+
+    readN = fromMaybe 0 . readMaybe
 
 
 randomId :: (GenRandom :> es) => Text -> Eff es (Id a)

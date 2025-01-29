@@ -24,6 +24,7 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
 import Effectful.Concurrent.STM
+import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
@@ -146,7 +147,7 @@ webServer config auth fits asdf =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Debug : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
   runApp =
     runTime
       . runConcurrent
@@ -166,6 +167,7 @@ webServer config auth fits asdf =
       . runAuth config.app.domain Redirect auth
       . runTasks fits
       . runTasks asdf
+      . runDebugIO
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

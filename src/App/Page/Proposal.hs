@@ -39,7 +39,6 @@ page pid = do
 
 -- DatasetsTable.datasetsTable ds
 
--- each InstrumentProgram MUST have datasets
 viewPrograms :: (HyperViewHandled ProgramDatasets c) => UTCTime -> [ProgramFamily] -> View c ()
 viewPrograms _ [] = el_ "Not Found"
 viewPrograms now (p : ps) = do
