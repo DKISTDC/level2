@@ -15,9 +15,7 @@ import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
 import App.Worker.GenWorker
-import Data.List (nub)
-import Data.Ord (Down (..))
-import Data.String.Interpolate (i)
+import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
@@ -36,62 +34,49 @@ page
   => Id Proposal
   -> Id InstrumentProgram
   -> Eff es (Page '[ProgramInversions, ProgramDatasets])
-page ip iip = do
-  ds' <- Datasets.find (Datasets.ByProgram iip)
-  ds <- expectFound ds'
-  let d = head ds
-
-  dse <- Datasets.find (Datasets.ByProposal ip)
-  invs <- latestInversions iip
+page propId progId = do
+  ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
+  invs <- findInversionsByProgram progId
   now <- currentTime
-  let ps = programFamilies invs dse
+  let progs = programFamilies invs (NE.toList ds)
 
   appLayout Route.Proposals $ do
     col (Style.page . gap 30) $ do
       col (gap 5) $ do
         el Style.header $ do
           text "Instrument Program - "
-          text iip.fromId
+          text progId.fromId
+        experimentLink (head ds)
 
-        experimentLink d (numOtherIps dse)
+      viewExperimentDescription (head ds).experimentDescription
 
-      viewExperimentDescription d.experimentDescription
+      hyper (ProgramInversions propId progId) $ viewProgramInversions invs
 
-      hyper (ProgramInversions ip iip) $ viewProgramInversions invs
-
-      mapM_ (viewProgramSummary now) ps
+      -- we don't really need/want to defer this
+      mapM_ (viewProgramSummary now) progs
  where
-  instrumentProgramIds :: [Dataset] -> [Id InstrumentProgram]
-  instrumentProgramIds ds = nub $ map (\d -> d.instrumentProgramId) ds
-
-  numOtherIps :: [Dataset] -> Int
-  numOtherIps dse = length (instrumentProgramIds dse) - 1
-
-  experimentLink :: Dataset -> Int -> View c ()
-  experimentLink d n = do
+  experimentLink :: Dataset -> View c ()
+  experimentLink d = do
     el_ $ do
       text "Proposal - "
       route (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
         text d.primaryProposalId.fromId
-      text $
-        if n > 0
-          then [i|(#{n} other Instrument Programs)|]
-          else ""
 
 
-latestInversions :: (Inversions :> es, Globus :> es) => Id InstrumentProgram -> Eff es [Inversion]
-latestInversions ip = fmap sortLatest <$> send $ Inversions.ByProgram ip
- where
-  sortLatest :: [Inversion] -> [Inversion]
-  sortLatest = sortOn (Down . (.updated))
-
+----------------------------------------------------
+-- ProgramInversions
+----------------------------------------------------
 
 data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Show, Read, ViewId)
+
+
 instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
     deriving (Show, Read, ViewAction)
+
+
   type Require ProgramInversions = '[]
 
 
@@ -161,12 +146,6 @@ viewOldInversion inv = row (gap 4) $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
   el_ $ text $ inversionStepLabel (inversionStep inv)
-
-
-refreshInversions :: (Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id InstrumentProgram -> Eff es (View ProgramInversions ())
-refreshInversions iip = do
-  invs <- latestInversions iip
-  pure $ viewProgramInversions invs
 
 -- clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())
 -- clearInversion ip iip = pure $ do

@@ -8,14 +8,19 @@ module NSO.Data.Inversions
   , inversionStep
   , inverting
   , downloadedDatasetIds
+  , findInversionsByProgram
   ) where
 
+import Data.Ord (Down (..))
+import Effectful
+import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions.Commit
 import NSO.Data.Inversions.Effect hiding (inversions)
 import NSO.Data.Inversions.Update
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
+import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion
 
 
@@ -78,3 +83,12 @@ inverting = \case
   StepInverting inv -> inv
   StepInverted inv -> Inverting (Just inv.transfer) (Just inv.commit)
   _ -> Inverting Nothing Nothing
+
+
+findInversionsByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]
+findInversionsByProgram ip = do
+  invs <- send $ ByProgram ip
+  pure $ sortLatest invs
+ where
+  sortLatest :: [Inversion] -> [Inversion]
+  sortLatest = sortOn (Down . (.updated))

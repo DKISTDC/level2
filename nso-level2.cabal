@@ -125,7 +125,7 @@ library
     , hasql
     , http-api-data
     , http-types
-    , hyperbole >=0.4.2
+    , hyperbole >=0.4.3
     , lens
     , massiv
     , megaparsec
@@ -185,7 +185,7 @@ executable level2
     , hasql
     , http-api-data
     , http-types
-    , hyperbole >=0.4.2
+    , hyperbole >=0.4.3
     , lens
     , massiv
     , megaparsec
@@ -257,7 +257,7 @@ test-suite spec
     , hasql
     , http-api-data
     , http-types
-    , hyperbole >=0.4.2
+    , hyperbole >=0.4.3
     , lens
     , massiv
     , megaparsec

@@ -37,6 +37,7 @@ data Filter
   | ByProgram (Id InstrumentProgram)
   | ById (Id Dataset)
   | DistinctProposals
+  | DistinctPrograms (Id Proposal)
 
 
 runDataDatasets
@@ -49,6 +50,11 @@ runDataDatasets = interpret $ \_ -> \case
   Find (ByProposal pid) -> queryProposal pid
   Find (ByProgram pid) -> queryProgram pid
   Find (ById did) -> queryById did
+  Find (DistinctPrograms pid) -> do
+    run $ select $ distinctOn (.instrumentProgramId) $ do
+      row <- each datasets :: Query (Dataset' Expr)
+      where_ (row.primaryProposalId ==. lit pid)
+      return row
   Find DistinctProposals -> do
     run $ select $ do
       let q = each datasets :: Query (Dataset' Expr)

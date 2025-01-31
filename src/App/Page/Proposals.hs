@@ -140,8 +140,8 @@ viewFilters fs = do
   col (gap 10) $ do
     el bold "Proposal Id"
     stack id $ do
-      layer id $ search FilterProposal 500 (placeholder "1 118" . border 1 . pad 10 . grow . value fs.propSearch)
-      clearButton
+      layer id $ search FilterProposal 500 (placeholder "1 118" . border 1 . pad 10 . grow)
+  -- clearButton
 
   col (gap 10) $ do
     el bold "Instrument"
@@ -161,13 +161,13 @@ viewFilters fs = do
   toggle toAction sel f =
     button (toAction $ not sel) (f . Style.btn (if sel then on else off))
 
-  clearButton =
-    layer (popup (R 0)) $ do
-      el (pad (XY 5 10) . shownIfTerm fs.propSearch) $ do
-        button (FilterProposal "") (width 24 . hover (color (light Secondary))) Icons.xCircle
-
-  shownIfTerm "" = hide
-  shownIfTerm _ = display Block
+  -- clearButton =
+  --   layer (popup (R 0)) $ do
+  --     el (pad (XY 5 10) . shownIfTerm fs.propSearch) $ do
+  --       button (FilterProposal "") (width 24 . hover (color (light Secondary))) Icons.xCircle
+  --
+  -- shownIfTerm "" = hide
+  -- shownIfTerm _ = display Block
 
   on = Primary
   off = Gray

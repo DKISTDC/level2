@@ -65,7 +65,7 @@ library
     , globus >=0.1.3
     , hasql
     , http-api-data
-    , hyperbole >=0.4.2
+    , hyperbole >=0.4.3
     , lens
     , modern-uri
     , random

@@ -55,7 +55,7 @@ dependencies:
   - random
   - modern-uri
   - lens
-  - hyperbole >= 0.4.2
+  - hyperbole >= 0.4.3
   - hasql
   - exceptions
   - binary

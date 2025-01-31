@@ -18,10 +18,12 @@ import Data.Grouped
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
+import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
+import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 import Web.Hyperbole.HyperView (HyperViewHandled)
 
@@ -145,18 +147,6 @@ viewCriteria ip gd = do
 --         forM_ wdp.datasets.items $ \d -> do
 --           route (Dataset d.datasetId) Style.link $ do
 --             text d.datasetId.fromId
---
-
-viewProgramSummary :: (HyperViewHandled ProgramDatasets c) => UTCTime -> ProgramFamily -> View c ()
-viewProgramSummary now pf = do
-  let ds = pf.datasets.items
-  let prog = pf.program :: InstrumentProgram
-  col Style.card $ do
-    route (Proposal prog.proposalId $ Program prog.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
-    col (gap 15 . pad 15) $ do
-      viewProgramDetails pf now (NE.toList ds)
-      hyper (ProgramDatasets prog.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)
-
 
 viewProgramDetails :: ProgramFamily -> UTCTime -> [Dataset] -> View c ()
 viewProgramDetails _ _ [] = none
@@ -171,3 +161,14 @@ viewProgramDetails ips now (d : ds) = do
   View.hr (color Gray)
 
   viewCriteria ips gd
+
+
+viewProgramSummary :: (HyperViewHandled ProgramDatasets c) => UTCTime -> ProgramFamily -> View c ()
+viewProgramSummary now pf = do
+  let ds = pf.datasets.items
+  let prog = pf.program :: InstrumentProgram
+  col Style.card $ do
+    route (Proposal prog.proposalId $ Program prog.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
+    col (gap 15 . pad 15) $ do
+      viewProgramDetails pf now (NE.toList ds)
+      hyper (ProgramDatasets prog.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)
