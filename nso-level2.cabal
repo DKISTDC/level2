@@ -124,6 +124,7 @@ library
     , globus >=0.1.3
     , hasql
     , http-api-data
+    , http-client
     , http-types
     , hyperbole >=0.4.3
     , lens
@@ -184,6 +185,7 @@ executable level2
     , globus >=0.1.3
     , hasql
     , http-api-data
+    , http-client
     , http-types
     , hyperbole >=0.4.3
     , lens
@@ -256,6 +258,7 @@ test-suite spec
     , globus >=0.1.3
     , hasql
     , http-api-data
+    , http-client
     , http-types
     , hyperbole >=0.4.3
     , lens

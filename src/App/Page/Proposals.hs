@@ -10,7 +10,6 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DataRow (dataRows)
-import App.View.Icons qualified as Icons
 import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
 import Data.Ord (Down (..))

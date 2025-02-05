@@ -19,7 +19,7 @@ import App.Version
 import App.Worker.GenWorker as Gen
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import Control.Monad (forever)
-import Control.Monad.Catch
+import Control.Monad.Catch (Exception, throwM)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
@@ -27,6 +27,7 @@ import Effectful.Concurrent.STM
 import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Environment
 import Effectful.Error.Static
+import Effectful.Exception (catch)
 import Effectful.Fail
 import Effectful.FileSystem
 import Effectful.GenRandom
@@ -41,10 +42,13 @@ import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
+import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..), path, responseStatus)
+import Network.HTTP.Req qualified as Req
 import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
+import Web.Hyperbole.Effect.Server qualified as Hyperbole
 
 
 main :: IO ()
@@ -147,7 +151,7 @@ webServer config auth fits asdf =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) a -> Eff es a
+  runApp :: (IOE :> es) => Eff (Debug : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runConcurrent
@@ -156,7 +160,7 @@ webServer config auth fits asdf =
       . runErrorWith @DataError crashWithError
       . runFileSystem
       . runScratch config.scratch
-      . runGlobus' config.globus
+      . (flip catch onGlobusErr . runGlobus' config.globus)
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
@@ -169,13 +173,22 @@ webServer config auth fits asdf =
       . runTasks asdf
       . runDebugIO
 
+  onGlobusErr :: (Log :> es) => Req.HttpException -> Eff es Response
+  onGlobusErr (Req.VanillaHttpException (HttpExceptionRequest req (StatusCodeException res _body))) = do
+    log Err $ dump "GLOBUS StatusCodeException" (req, res)
+    let status = responseStatus res
+    pure $ Hyperbole.Err $ Hyperbole.ErrOther $ "Globus request to " <> cs (path req) <> " failed with:\n " <> cs (show status)
+  onGlobusErr ex = do
+    log Err $ dump "GLOBUS" ex
+    pure $ Hyperbole.Err $ Hyperbole.ErrOther "Globus Error"
+
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL
 
 
-runGlobus' :: (Log :> es, IOE :> es, Scratch :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
-runGlobus' (GlobusDev (GlobusDevConfig dkist)) = runGlobusDev dkist
-runGlobus' (GlobusLive g) = runGlobus g
+runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
+runGlobus' (GlobusDev (GlobusDevConfig dkist)) action = runGlobusDev dkist action
+runGlobus' (GlobusLive g) action = runGlobus g action
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

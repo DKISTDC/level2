@@ -230,9 +230,6 @@ transferStatus (Id ti) = do
   send $ StatusTask acc (Tagged ti)
 
 
--- initTransfer :: (Hyperbole :> es, Globus :> es, Auth :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (Id Task)
--- initTransfer toRequest = do
-
 initTransfer :: (Globus :> es, Reader (Token Access) :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (App.Id Task)
 initTransfer toRequest = do
   acc <- ask
@@ -241,8 +238,6 @@ initTransfer toRequest = do
   pure $ Id res.task_id.unTagged
 
 
--- it would be nice to skip this.... it's a looooong upload
--- but it should move it into scratch correctly...
 initUpload
   :: (Hyperbole :> es, Globus :> es, Scratch :> es, Reader (Token Access) :> es)
   => TransferForm Identity

@@ -43,6 +43,7 @@ dependencies:
   - warp == 3.3.31
   - wai-extra
   - http-types
+  - http-client
   - casing
   - time
   - text

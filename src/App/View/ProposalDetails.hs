@@ -23,7 +23,6 @@ import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
-import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 import Web.Hyperbole.HyperView (HyperViewHandled)
 
