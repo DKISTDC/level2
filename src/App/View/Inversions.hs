@@ -8,28 +8,27 @@ import NSO.Prelude
 import Web.View
 
 
-inversionStepLabel :: InversionStep -> Text
-inversionStepLabel = \case
-  StepDownload _ -> "Downloading"
-  StepInvert _ -> "Inverting"
-  StepGenerate (StepGenerateError _) -> "Error"
-  StepGenerate _ -> "Generating"
-  StepPublish (StepPublished _) -> "Complete"
-  StepPublish _ -> "Publishing"
+inversionStepLabel :: Inversion -> Text
+inversionStepLabel inv
+  | isError inv = "Error"
+  | otherwise = stepLabel (inversionStep inv)
+ where
+  stepLabel = \case
+    StepComplete -> "Complete"
+    StepPublish -> "Publish"
+    StepGenerate -> "Generate"
+    StepInvert -> "Invert"
 
 
-inversionStepTagColor :: InversionStep -> AppColor
-inversionStepTagColor = \case
-  StepDownload _ -> Info
-  StepInvert _ -> Info
-  StepGenerate (StepGenerateError _) -> Danger
-  StepGenerate _ -> Info
-  StepPublish (StepPublished _) -> Success
-  StepPublish _ -> Info
+inversionStepColor :: Inversion -> AppColor
+inversionStepColor inv
+  | isError inv = Danger
+  | isComplete inv = Success
+  | otherwise = Info
 
 
-inversionStepTag :: InversionStep -> View c ()
-inversionStepTag step =
-  el (textAlign AlignCenter . stat (inversionStepTagColor step)) (text $ inversionStepLabel step)
+inversionStepTag :: Inversion -> View c ()
+inversionStepTag inv =
+  el (textAlign AlignCenter . stat (inversionStepColor inv)) (text $ inversionStepLabel inv)
  where
   stat c = tagCell . Style.tag c

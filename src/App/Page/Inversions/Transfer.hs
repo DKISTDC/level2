@@ -6,12 +6,32 @@ import App.Globus as Globus
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons as Icons
+import Data.Default (Default (..))
 import Effectful
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View qualified as WebView
+
+
+data ActiveTransfer = ActiveTransfer
+  { taskId :: Maybe (Id Task)
+  }
+  deriving (Generic, Show, Read, ToParam, FromParam, Session)
+instance Default ActiveTransfer where
+  def = ActiveTransfer Nothing
+
+
+saveActiveTransfer :: (Hyperbole :> es) => Id Task -> Eff es ()
+saveActiveTransfer taskId = do
+  saveSession $ ActiveTransfer (Just taskId)
+
+
+activeTransfer :: (Hyperbole :> es) => Eff es (Maybe (Id Task))
+activeTransfer = do
+  ActiveTransfer mtaskId <- session
+  pure mtaskId
 
 
 -----------------------------------------------------

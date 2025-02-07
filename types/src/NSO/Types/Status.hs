@@ -12,7 +12,7 @@ data ProgramStatus
   | StatusQualified
   | StatusError Text
   | -- we have a "latest" inversion, use its status
-    StatusInversion InversionStep
+    StatusInversion Inversion
   deriving (Eq, Show)
 
 

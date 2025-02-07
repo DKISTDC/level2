@@ -137,7 +137,7 @@ programStatus _ (i : is) = do
     let i' = head is'
      in case i'.invError of
           Just e -> StatusError e
-          Nothing -> StatusInversion (inversionStep i')
+          Nothing -> StatusInversion i'
 
 
 instrumentProgram :: Grouped InstrumentProgram Dataset -> InstrumentProgram

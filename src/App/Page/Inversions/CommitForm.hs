@@ -33,7 +33,7 @@ instance (Log :> es, IOE :> es, Inversions :> es, Globus :> es, Time :> es) => H
     log Debug $ dump "SaveCommit" gc
 
     guardIsValid (InversionCommit ip ii)
-    Inversions.setInverted ii gc
+    Inversions.setSoftwareCommit ii gc
 
     pure $ commitForm (Just gc) (CommitForm Valid)
    where

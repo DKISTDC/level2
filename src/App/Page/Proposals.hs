@@ -230,10 +230,9 @@ viewProposalDetails fs now prop progs = do
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
   checkInvertible Any _ = True
   checkInvertible Qualified StatusQualified = True
-  checkInvertible Active (StatusInversion (StepPublish (StepPublished _))) = False
-  checkInvertible Active (StatusInversion _) = True
   checkInvertible Active (StatusError _) = True
-  checkInvertible Complete (StatusInversion (StepPublish (StepPublished _))) = True
+  checkInvertible Active (StatusInversion inv) = not $ isComplete inv
+  checkInvertible Complete (StatusInversion inv) = isComplete inv
   checkInvertible _ _ = False
 
 
@@ -292,5 +291,5 @@ rowInstrumentProgramLoad _progId = do
 rowInstrumentProgram :: UTCTime -> ProgramFamily -> View ProgramRow ()
 rowInstrumentProgram now psm = do
   let p = psm.program
-  route (Route.Proposal p.proposalId $ Program p.programId) id $ do
+  route (Route.Proposal p.proposalId $ Program p.programId Prog) id $ do
     viewProgramRow now psm

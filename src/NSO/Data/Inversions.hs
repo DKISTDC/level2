@@ -3,14 +3,17 @@ module NSO.Data.Inversions
   , module NSO.Data.Inversions.Update
   , module NSO.Data.Inversions.Commit
   , module NSO.Types.Inversion
-  , isActive
   , isComplete
-  , inversionStep
-  , inverting
-  , downloadedDatasetIds
+  , isError
+  , isGenerated
+  , isInverted
   , findInversionsByProgram
+  , inversionStep
+  , InversionStep (..)
   ) where
 
+import Data.List qualified as L
+import Data.Maybe (isJust)
 import Data.Ord (Down (..))
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -19,70 +22,49 @@ import NSO.Data.Inversions.Effect hiding (inversions)
 import NSO.Data.Inversions.Update
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion
 
 
-isActive :: InversionStep -> Bool
-isActive = \case
-  StepPublish (StepPublished _) -> False
-  _ -> True
+isComplete :: Inversion -> Bool
+isComplete inv = isJust inv.published
 
 
-isComplete :: InversionStep -> Bool
-isComplete = \case
-  StepPublish (StepPublished _) -> True
-  _ -> False
+isError :: Inversion -> Bool
+isError inv = isJust inv.invError
+
+
+isGenerated :: Inversion -> Bool
+isGenerated inv =
+  let g = inv.generate
+   in isJust g.fits
+        && isJust g.asdf
+        && isJust g.transfer
+
+
+isInverted :: Inversion -> Bool
+isInverted inv =
+  let i = inv.invert
+   in not (L.null i.datasets)
+        && isJust i.commit
+        && isJust i.profileFit
+        && isJust i.profileOrig
+        && isJust i.quantities
+
+
+data InversionStep
+  = StepInvert
+  | StepGenerate
+  | StepPublish
+  | StepComplete
 
 
 inversionStep :: Inversion -> InversionStep
 inversionStep inv
-  | isDownloading = StepDownload inv.download
-  | isInverting = StepInvert inv.invert
-  | isGenerating = StepGenerate inv.generate
-  | otherwise = StepPublish inv.publish
- where
-  isDownloading :: Bool
-  isDownloading =
-    case inv.download of
-      StepDownloadNone -> True
-      StepDownloading _ -> True
-      StepDownloaded _ -> False
-
-  isInverting :: Bool
-  isInverting = do
-    case inv.invert of
-      StepInvertNone -> True
-      StepInverting _ -> True
-      StepInverted _ -> False
-
-  -- Only applies if other steps have failed
-  isGenerating :: Bool
-  isGenerating = do
-    case inv.generate of
-      StepGenerateNone -> True
-      StepGenerateWaiting -> True
-      StepGenerateTransferring _ -> True
-      StepGenerateError _ -> True
-      StepGeneratingFits _ -> True
-      StepGeneratingAsdf _ -> True
-      StepGenerated _ -> False
-
-
-downloadedDatasetIds :: Inversion -> [Id Dataset]
-downloadedDatasetIds inv =
-  case inv.download of
-    StepDownloadNone -> []
-    StepDownloading dwn -> dwn.datasets
-    StepDownloaded dwn -> dwn.datasets
-
-
-inverting :: StepInvert -> Inverting
-inverting = \case
-  StepInverting inv -> inv
-  StepInverted inv -> Inverting (Just inv.transfer) (Just inv.commit)
-  _ -> Inverting Nothing Nothing
+  | isComplete inv = StepComplete
+  | isGenerated inv = StepPublish
+  | isInverted inv = StepGenerate
+  | otherwise = StepInvert
 
 
 findInversionsByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]

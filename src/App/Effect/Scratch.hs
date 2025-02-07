@@ -102,7 +102,7 @@ input :: Path' Dir Input
 input = baseDir </> "input"
 
 
-generated :: Path' Dir Generated
+generated :: Path' Dir Generate
 generated = baseDir </> "generated"
 
 
@@ -134,19 +134,14 @@ outputL2Asdf ip ii =
 data Input
 
 
-data InvProfile
-data InvResults
-data OrigProfile
-
-
 -- data Timestamps
 data BLANCA
 
 
 data UploadFiles t = UploadFiles
-  { invProfile :: Path' t InvProfile
-  , invResults :: Path' t InvResults
-  , origProfile :: Path' t OrigProfile
+  { profileFit :: Path' t InvProfileFit
+  , profileOrig :: Path' t InvProfileOrig
+  , quantities :: Path' t InvQuantities
   -- , timestamps :: Path' t Timestamps
   }
   deriving (Generic, Show)
@@ -154,24 +149,24 @@ data UploadFiles t = UploadFiles
 
 inversionUploads :: Path' Dir BLANCA -> UploadFiles File
 inversionUploads bdir =
-  let invResults = bdir </> fileInvResults
-      invProfile = bdir </> fileInvProfile
-      origProfile = bdir </> fileOrigProfile
-   in UploadFiles{invResults, invProfile, origProfile}
+  let quantities = bdir </> fileQuantities
+      profileFit = bdir </> fileProfileFit
+      profileOrig = bdir </> fileProfileOrig
+   in UploadFiles{quantities, profileFit, profileOrig}
 
 
 -- timestamps = bdir </> fileTimestamps
 
-fileInvResults :: Path' Filename InvResults
-fileInvResults = Path "inv_res_mod.fits"
+fileQuantities :: Path' Filename InvQuantities
+fileQuantities = Path "inv_res_mod.fits"
 
 
-fileInvProfile :: Path' Filename InvProfile
-fileInvProfile = Path "inv_res_pre.fits"
+fileProfileFit :: Path' Filename InvProfileFit
+fileProfileFit = Path "inv_res_pre.fits"
 
 
-fileOrigProfile :: Path' Filename OrigProfile
-fileOrigProfile = Path "per_ori.fits"
+fileProfileOrig :: Path' Filename InvProfileOrig
+fileProfileOrig = Path "per_ori.fits"
 
 -- fileTimestamps :: Path' Filename Timestamps
 -- fileTimestamps = Path "timestamps.tsv"

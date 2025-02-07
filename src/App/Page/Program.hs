@@ -5,8 +5,11 @@ module App.Page.Program where
 import App.Colors
 import App.Effect.Auth
 import App.Error (expectFound)
-import App.Globus as Globus
+import App.Globus (DownloadFolder, FileLimit (Folders), Globus, TransferForm)
+import App.Globus qualified as Globus
 import App.Page.Inversion qualified as Inversion
+import App.Page.Inversions.Transfer (TransferAction (..), saveActiveTransfer)
+import App.Page.Inversions.Transfer qualified as Transfer
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -30,7 +33,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, IOE :> es)
+  :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Eff es (Page '[ProgramInversions, ProgramDatasets])
@@ -63,6 +66,16 @@ page propId progId = do
         text d.primaryProposalId.fromId
 
 
+submitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
+submitDownload propId progId = do
+  tfrm <- formData @TransferForm
+  tfls <- formData @DownloadFolder
+  ds <- Datasets.find $ Datasets.ByProgram progId
+  taskId <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
+  saveActiveTransfer taskId
+  redirect $ routeUrl (Route.Proposal propId $ Route.Program progId Route.Prog)
+
+
 ----------------------------------------------------
 -- ProgramInversions
 ----------------------------------------------------
@@ -74,6 +87,7 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
 instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
+    | Download
     deriving (Show, Read, ViewAction)
 
 
@@ -82,9 +96,14 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
 
   update = \case
     CreateInversion -> do
-      ProgramInversions ip iip <- viewId
-      inv <- send $ Inversions.Create ip iip
-      redirect $ inversionUrl ip inv.inversionId
+      ProgramInversions propId progId <- viewId
+      inv <- send $ Inversions.Create propId progId
+      redirect $ inversionUrl propId inv.inversionId
+    Download -> do
+      ProgramInversions propId progId <- viewId
+      r <- request
+      requireLogin $ do
+        redirect $ Globus.fileManagerSelectUrl (Folders 1) (Route.Proposal propId $ Route.Program progId Route.SubmitDownload) ("Transfer Instrument Program " <> progId.fromId) r
 
 
 inversionUrl :: Id Proposal -> Id Inversion -> Url
@@ -100,38 +119,32 @@ viewProgramInversions (inv : is) = do
       button CreateInversion Style.link "Start Over With New Inversion"
 viewProgramInversions _ = do
   button CreateInversion (Style.btn Primary) "Create Inversion"
+  button Download (Style.btn Primary) "Create Inversion"
 
 
 viewCurrentInversion :: Inversion -> View c ()
 viewCurrentInversion inv = do
   let step = inversionStep inv
-  Inversion.viewInversionContainer step $ do
-    Inversion.downloadStep step $ do
-      viewDownload step
-
-    Inversion.invertStep step $ do
+  Inversion.viewInversionContainer inv $ do
+    Inversion.invertStep inv $ do
       viewInvert step
 
-    Inversion.generateStep step $ do
+    Inversion.generateStep inv $ do
       viewGenerate step
 
-    Inversion.publishStep step $ do
+    Inversion.publishStep inv $ do
       viewPublish step
  where
-  viewDownload = \case
-    StepDownload _ -> continueButton
-    _ -> none
-
   viewInvert = \case
-    StepInvert _ -> continueButton
+    StepInvert -> continueButton
     _ -> none
 
   viewGenerate = \case
-    StepGenerate _ -> continueButton
+    StepGenerate -> continueButton
     _ -> none
 
   viewPublish = \case
-    StepPublish _ ->
+    StepPublish ->
       link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
     _ -> none
 
@@ -145,10 +158,41 @@ viewOldInversion inv = row (gap 4) $ do
   link (inversionUrl inv.proposalId inv.inversionId) Style.link $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
-  el_ $ text $ inversionStepLabel (inversionStep inv)
+  el_ $ text $ inversionStepLabel inv
+
 
 -- clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())
 -- clearInversion ip iip = pure $ do
 --   target (ProgramInversions ip iip) $ onLoad ReloadAll 0 emptyButtonSpace
 --  where
 --   emptyButtonSpace = el (height 44) none
+
+-- ----------------------------------------------------------------
+-- DOWNLOAD
+-- ----------------------------------------------------------------
+
+data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (Id Globus.Task)
+  deriving (Show, Read, ViewId)
+
+
+instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView DownloadTransfer es where
+  data Action DownloadTransfer
+    = DwnTransfer TransferAction
+    deriving (Show, Read, ViewAction)
+
+
+  type Require DownloadTransfer = '[ProgramInversions]
+
+
+  update (DwnTransfer action) = do
+    DownloadTransfer _ _progId taskId <- viewId
+    case action of
+      TaskFailed -> do
+        pure $ do
+          col (gap 10) $ do
+            Transfer.viewTransferFailed taskId
+      -- hyper (InversionStatus ip iip ii) $ stepDownload inv Select
+      TaskSucceeded -> do
+        -- ds <- Datasets.find $ Datasets.ByProgram progId
+        pure $ el_ "Downloaded Datasets: [x,y,z]"
+      CheckTransfer -> Transfer.checkTransfer DwnTransfer taskId

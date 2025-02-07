@@ -62,7 +62,7 @@ dependencies:
   - binary
   - effectful >= 2.3 && <3
   - data-diverse >= 4.7
-  - data-diverse
+  - data-default
   - containers
   - unordered-containers
   - bytestring

@@ -29,22 +29,22 @@ module App.Globus
   , UploadFiles (..)
   , DownloadFolder
   -- , Timestamps
-  , InvResults
-  , InvProfile
-  , OrigProfile
   , UserEmail (..)
   , dkistEndpoint
   , scratchCollection
   , initTransfer
+  , isTransferComplete
+  , GlobusError (..)
   ) where
 
-import App.Effect.Scratch (InvProfile, InvResults, OrigProfile, Scratch)
+import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Route (AppRoute)
 import Control.Monad.Catch (Exception, throwM)
 import Data.Tagged
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Globus
 import Effectful.Globus qualified as Globus
 import Effectful.Log
@@ -193,20 +193,20 @@ instance Form DownloadFolder Maybe where
 
 
 data UploadFiles t f = UploadFiles
-  { invProfile :: Field f (Path' t InvProfile)
-  , invResults :: Field f (Path' t InvResults)
-  , origProfile :: Field f (Path' t OrigProfile)
+  { quantities :: Field f (Path' t InvQuantities)
+  , profileFit :: Field f (Path' t InvProfileFit)
+  , profileOrig :: Field f (Path' t InvProfileOrig)
   -- , timestamps :: Path' t Timestamps
   }
   deriving (Generic)
 instance Form (UploadFiles Filename) Maybe where
   formParse f = do
     fs <- multi "file"
-    invProfile <- findFile Scratch.fileInvProfile fs
-    invResults <- findFile Scratch.fileInvResults fs
-    origProfile <- findFile Scratch.fileOrigProfile fs
+    quantities <- findFile Scratch.fileQuantities fs
+    profileFit <- findFile Scratch.fileProfileFit fs
+    profileOrig <- findFile Scratch.fileProfileOrig fs
     -- timestamps <- findFile Scratch.fileTimestamps fs
-    pure UploadFiles{invResults, invProfile, origProfile}
+    pure UploadFiles{quantities, profileFit, profileOrig}
    where
     sub :: Text -> Int -> Param
     sub t n = Param $ t <> "[" <> cs (show n) <> "]"
@@ -257,7 +257,7 @@ initUpload tform up ip ii = do
       , label = Just tform.label
       , source_endpoint = Tagged tform.endpoint_id
       , destination_endpoint = scratch
-      , data_ = [transferItem up.invResults, transferItem up.invProfile, transferItem up.origProfile]
+      , data_ = [transferItem up.quantities, transferItem up.profileFit, transferItem up.profileOrig]
       , sync_level = SyncChecksum
       , store_base_path_info = True
       }
@@ -379,4 +379,16 @@ scratchCollection = do
 
 data GlobusError
   = MissingScope Scope (NonEmpty TokenItem)
+  | TransferFailed (App.Id Task)
   deriving (Exception, Show)
+
+
+isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error GlobusError :> es) => App.Id Task -> Eff es Bool
+isTransferComplete it = do
+  task <- transferStatus it
+  case task.status of
+    Succeeded -> pure True
+    Failed -> throwError $ TransferFailed it
+    _ -> do
+      log Debug $ dump "Transfer" $ taskPercentComplete task
+      pure False

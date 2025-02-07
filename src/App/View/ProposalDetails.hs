@@ -154,7 +154,7 @@ viewProgramDetails ips now (d : ds) = do
   let gd = Grouped (d :| ds)
 
   row (textAlign AlignCenter) $ do
-    route (Proposal p.proposalId $ Program p.programId) grow $ do
+    route (Proposal p.proposalId $ Program p.programId Prog) grow $ do
       viewProgramRow now ips
 
   View.hr (color Gray)
@@ -167,7 +167,7 @@ viewProgramSummary now pf = do
   let ds = pf.datasets.items
   let prog = pf.program :: InstrumentProgram
   col Style.card $ do
-    route (Proposal prog.proposalId $ Program prog.programId) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
+    route (Proposal prog.proposalId $ Program prog.programId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
     col (gap 15 . pad 15) $ do
       viewProgramDetails pf now (NE.toList ds)
       hyper (ProgramDatasets prog.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)

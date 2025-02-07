@@ -25,7 +25,7 @@ instance Route AppRoute where
 
 data ProposalRoute
   = PropRoot
-  | Program (Id InstrumentProgram)
+  | Program (Id InstrumentProgram) ProgramRoute
   | Inversion (Id Inversion) InversionRoute
   deriving (Show, Generic, Eq)
 instance Route ProposalRoute where
@@ -34,11 +34,18 @@ instance Route ProposalRoute where
 
 data InversionRoute
   = Inv
-  | SubmitDownload
   | SubmitUpload
   deriving (Show, Generic, Eq)
 instance Route InversionRoute where
   baseRoute = Just Inv
+
+
+data ProgramRoute
+  = Prog
+  | SubmitDownload
+  deriving (Show, Generic, Eq)
+instance Route ProgramRoute where
+  baseRoute = Just Prog
 
 
 data DatasetRoute

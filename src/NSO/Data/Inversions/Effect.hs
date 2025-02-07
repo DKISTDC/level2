@@ -10,7 +10,6 @@ import Effectful.Rel8 hiding (Update)
 import Effectful.Rel8 qualified as Rel8
 import Effectful.Time
 import NSO.Data.Inversions.Commit
-import NSO.Data.Inversions.Step
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -104,40 +103,16 @@ runDataInversions = interpret $ \_ -> \case
 
   create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion
   create ip iip = do
-    inv <- empty ip iip
+    row <- emptyRow ip iip
     run_ $
       insert $
         Insert
           { into = inversions
-          , rows = values [lit (emptyRow inv)]
+          , rows = values [lit row]
           , onConflict = DoNothing
           , returning = NoReturning
           }
-    pure inv
-   where
-    emptyRow :: Inversion -> InversionRow Identity
-    emptyRow inv =
-      InversionRow
-        { inversionId = inv.inversionId
-        , programId = inv.programId
-        , proposalId = inv.proposalId
-        , created = inv.created
-        , updated = inv.created
-        , invError = Nothing
-        , downloaded = Nothing
-        , downloadTaskId = Nothing
-        , downloadDatasets = []
-        , uploaded = Nothing
-        , uploadTaskId = Nothing
-        , inverted = Nothing
-        , inversionSoftware = Nothing
-        , generatedFits = Nothing
-        , generatedAsdf = Nothing
-        , generateTaskId = Nothing
-        , generateTaskCompleted = Nothing
-        , published = Nothing
-        , publishTaskId = Nothing
-        }
+    pure $ fromRow row
 
 
 inversions :: TableSchema (InversionRow Name)
@@ -152,39 +127,42 @@ inversions =
           , created = "created"
           , updated = "updated"
           , invError = "error"
-          , downloaded = "download"
-          , downloadTaskId = "download_task_id"
-          , downloadDatasets = "download_datasets"
-          , uploaded = "upload"
-          , uploadTaskId = "upload_task_id"
-          , inverted = "inversion"
-          , inversionSoftware = "inversion_software"
-          , generatedFits = "generate_fits"
-          , generatedAsdf = "generate_asdf"
-          , generateTaskId = "generate_task_id"
-          , generateTaskCompleted = "generate_task_completed"
+          , datasets = "download_datasets"
+          , uploadedProfileFit = "upload_profile_fit"
+          , uploadedProfileOrig = "upload_profile_orig"
+          , uploadedQuantities = "upload_quantities"
+          , invSoftware = "inversion_software"
+          , generateFits = "generate_fits"
+          , generateAsdf = "generate_asdf"
+          , generateTransfer = "generate_task_completed"
           , published = "publish"
-          , publishTaskId = "publish_task_id"
+          , notes = "notes"
           }
     }
 
 
-empty :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion
-empty ip iip = do
+emptyRow :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es (InversionRow Identity)
+emptyRow propId progId = do
   now <- currentTime
-  i <- randomId "inv"
+  invId <- randomId "inv"
   pure $
-    Inversion
-      { inversionId = i
-      , programId = iip
-      , proposalId = ip
+    InversionRow
+      { inversionId = invId
+      , programId = progId
+      , proposalId = propId
       , created = now
       , updated = now
       , invError = Nothing
-      , download = StepDownloadNone
-      , invert = StepInvertNone
-      , generate = StepGenerateNone
-      , publish = StepPublishNone
+      , datasets = []
+      , uploadedProfileFit = Nothing
+      , uploadedProfileOrig = Nothing
+      , uploadedQuantities = Nothing
+      , invSoftware = Nothing
+      , generateFits = Nothing
+      , generateAsdf = Nothing
+      , generateTransfer = Nothing
+      , published = Nothing
+      , notes = ""
       }
 
 
@@ -194,11 +172,32 @@ fromRow row =
     { inversionId = row.inversionId
     , programId = row.programId
     , proposalId = row.proposalId
+    , datasets = row.datasets
     , created = row.created
     , updated = row.updated
     , invError = row.invError
-    , download = stepDownload row
-    , invert = stepInvert row
-    , generate = stepGenerate row
-    , publish = stepPublish row
+    , invert = invert row
+    , generate = generate row
+    , published = row.published
+    , notes = row.notes
+    }
+
+
+invert :: InversionRow Identity -> Invert
+invert row =
+  Invert
+    { datasets = row.datasets
+    , commit = row.invSoftware
+    , profileFit = row.uploadedProfileFit
+    , profileOrig = row.uploadedProfileOrig
+    , quantities = row.uploadedQuantities
+    }
+
+
+generate :: InversionRow Identity -> Generate
+generate row =
+  Generate
+    { fits = row.generateFits
+    , asdf = row.generateAsdf
+    , transfer = row.generateTransfer
     }

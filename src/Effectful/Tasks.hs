@@ -69,6 +69,18 @@ taskStatus chan t = do
   pure $ fromMaybe (idle @t) $ lookup t work
 
 
+taskLookupStatus :: forall t. (Eq t, WorkerTask t) => TaskChan t -> t -> STM (Maybe (Status t))
+taskLookupStatus chan t = do
+  wait <- readTVar chan.wait
+  work <- readTVar chan.work
+  lookupStatus wait work
+ where
+  lookupStatus wait work
+    | t `elem` wait = pure $ Just $ idle @t
+    | t `elem` fmap fst work = Just <$> taskStatus chan t
+    | otherwise = pure Nothing
+
+
 taskChanWaiting :: TaskChan t -> STM [t]
 taskChanWaiting chan =
   readTVar chan.wait
@@ -83,6 +95,7 @@ data Tasks t :: Effect where
   TaskGetStatus :: t -> Tasks t m (Status t)
   TaskSetStatus :: t -> Status t -> Tasks t m ()
   TaskModStatus :: t -> (Status t -> Status t) -> Tasks t m ()
+  TaskLookupStatus :: t -> Tasks t m (Maybe (Status t))
   TaskAdd :: t -> Tasks t m ()
   TasksAdd :: [t] -> Tasks t m ()
   TaskNext :: Tasks t m t
@@ -103,6 +116,8 @@ runTasks chan = interpret $ \_ -> \case
     atomically $ taskStatus chan t
   TaskSetStatus t s -> do
     atomically $ taskSetStatus chan t s
+  TaskLookupStatus t -> do
+    atomically $ taskLookupStatus chan t
   TaskModStatus t m -> do
     atomically $ taskModStatus chan t m
   TaskNext -> do

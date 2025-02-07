@@ -17,6 +17,7 @@ import App.Page.Proposals qualified as Proposals
 import App.Route
 import App.Version
 import App.Worker.GenWorker as Gen
+import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import Control.Monad (forever)
 import Control.Monad.Catch (Exception, throwM)
@@ -63,11 +64,12 @@ main = do
     runConcurrent $ do
       fits <- atomically taskChanNew
       asdf <- atomically taskChanNew
+      pubs <- atomically taskChanNew
       auth <- initAuth config.auth.admins config.auth.adminToken
 
       concurrently_
-        (startWebServer config auth fits asdf)
-        (runWorkers config auth fits asdf (startWorkers config))
+        (startWebServer config auth fits asdf pubs)
+        (runWorkers config auth fits asdf pubs (startWorkers config))
 
       pure ()
  where
@@ -76,15 +78,15 @@ main = do
       forever
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> Eff es ()
-  startWebServer config auth fits asdf =
+  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> TaskChan PublishTask -> Eff es ()
+  startWebServer config auth fits asdf pubs =
     runLogger "Server" $ do
       log Debug $ "Starting on :" <> show config.app.port
       log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
       liftIO $
         Warp.run config.app.port $
           addHeaders [("app-version", cs appVersion)] $
-            webServer config auth fits asdf
+            webServer config auth fits asdf pubs
 
   startGen cfg = do
     runLogger "FitsGen" $
@@ -106,7 +108,7 @@ main = do
       . runFailIO
       . runEnvironment
 
-  runWorkers config auth fits asdf =
+  runWorkers config auth fits asdf pubs =
     runFileSystem
       . runReader config.scratch
       . runRel8 config.db
@@ -119,6 +121,7 @@ main = do
       . runDataDatasets
       . runTasks @GenFits fits
       . runTasks @GenAsdf asdf
+      . runTasks @PublishTask pubs
 
 
 waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es) => Eff (Reader (Token Access) : es) () -> Eff es ()
@@ -127,8 +130,8 @@ waitForGlobusAccess work = do
   Auth.waitForAccess work
 
 
-webServer :: Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> Application
-webServer config auth fits asdf =
+webServer :: Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> TaskChan PublishTask -> Application
+webServer config auth fits asdf pubs =
   liveApp
     document
     (runApp . routeRequest $ router)
@@ -139,10 +142,12 @@ webServer config auth fits asdf =
   router (Proposal ip (Inversion i r)) =
     case r of
       Inv -> runPage $ Inversion.page ip i
-      SubmitDownload -> Inversion.submitDownload ip i
       SubmitUpload -> Inversion.submitUpload ip i
   router (Proposal p PropRoot) = runPage $ Proposal.page p
-  router (Proposal ip (Program iip)) = runPage $ Program.page ip iip
+  router (Proposal propId (Program progId r)) =
+    case r of
+      Prog -> runPage $ Program.page propId progId
+      SubmitDownload -> Program.submitDownload propId progId
   router (Datasets DatasetRoot) = runPage Datasets.page
   router (Datasets (Dataset d)) = runPage $ Dataset.page d
   router Experiments = do
@@ -151,7 +156,7 @@ webServer config auth fits asdf =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es) => Eff (Debug : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runConcurrent
@@ -171,6 +176,7 @@ webServer config auth fits asdf =
       . runAuth config.app.domain Redirect auth
       . runTasks fits
       . runTasks asdf
+      . runTasks pubs
       . runDebugIO
 
   onGlobusErr :: (Log :> es) => Req.HttpException -> Eff es Response

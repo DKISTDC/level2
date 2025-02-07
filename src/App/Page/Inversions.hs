@@ -87,7 +87,7 @@ viewProgram g = do
   let inv = sample g
   let sorted = sortOn (Down . (.updated)) $ NE.toList g.items :: [Inversion]
   col (gap 10) $ do
-    route (Route.Proposal inv.proposalId $ Route.Program inv.programId) Style.link $ do
+    route (Route.Proposal inv.proposalId $ Route.Program inv.programId Prog) Style.link $ do
       text inv.programId.fromId
     col id $ do
       dataRows sorted rowInversion
@@ -97,7 +97,7 @@ rowInversion :: Inversion -> View id ()
 rowInversion inv = do
   route (Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv) id $ do
     row (gap 10) $ do
-      inversionStepTag (inversionStep inv)
+      inversionStepTag inv
       el dataCell $ text $ cs $ showDate inv.updated
       -- el (width 150) $ text $ cs inv.programId.fromId
       space

@@ -1,7 +1,7 @@
 module App.Worker.PuppetMaster where
 
 import App.Worker.GenWorker
-import Data.Maybe (isNothing)
+import Data.Maybe (isJust, isNothing)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -30,26 +30,24 @@ manageMinions = do
 
 generateFits :: [Inversion] -> [GenFits]
 generateFits ivs = do
-  map genTask $ filter (\i -> needsFitsGen i.generate && isNothing i.invError) ivs
+  map genTask $ filter isFitsGen ivs
  where
   genTask inv = GenFits inv.proposalId inv.inversionId
 
-  -- wait, what if it is already running?
-  needsFitsGen :: StepGenerate -> Bool
-  needsFitsGen = \case
-    StepGenerateNone -> False -- these aren't on this step at all
-    StepGenerateWaiting -> True
-    StepGeneratingFits _ -> True
-    _ -> False
+  isFitsGen inv =
+    isInverted inv
+      && not (isError inv)
+      && isNothing inv.generate.fits
 
 
 generateAsdf :: [Inversion] -> [GenAsdf]
 generateAsdf ivs = do
-  map genTask $ filter (\i -> isAsdfGenStep i.generate && isNothing i.invError) ivs
+  map genTask $ filter isAsdfGen ivs
  where
   genTask inv = GenAsdf inv.proposalId inv.inversionId
 
-  isAsdfGenStep :: StepGenerate -> Bool
-  isAsdfGenStep = \case
-    StepGeneratingAsdf _ -> True
-    _ -> False
+  isAsdfGen inv =
+    isInverted inv
+      && not (isError inv)
+      && isJust inv.generate.fits
+      && isNothing inv.generate.asdf

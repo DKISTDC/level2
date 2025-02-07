@@ -57,6 +57,7 @@ library
       App.Worker.CPU
       App.Worker.Generate
       App.Worker.GenWorker
+      App.Worker.Publish
       App.Worker.PuppetMaster
       Effectful.Tasks
       Flow
@@ -66,7 +67,6 @@ library
       NSO.Data.Inversions
       NSO.Data.Inversions.Commit
       NSO.Data.Inversions.Effect
-      NSO.Data.Inversions.Step
       NSO.Data.Inversions.Update
       NSO.Data.Programs
       NSO.Data.Qualify
@@ -117,7 +117,8 @@ library
     , bytestring
     , casing
     , containers
-    , data-diverse
+    , data-default
+    , data-diverse >=4.7
     , effectful >=2.3 && <3
     , exceptions
     , filepath
@@ -178,7 +179,8 @@ executable level2
     , bytestring
     , casing
     , containers
-    , data-diverse
+    , data-default
+    , data-diverse >=4.7
     , effectful >=2.3 && <3
     , exceptions
     , filepath
@@ -251,7 +253,8 @@ test-suite spec
     , bytestring
     , casing
     , containers
-    , data-diverse
+    , data-default
+    , data-diverse >=4.7
     , effectful >=2.3 && <3
     , exceptions
     , filepath

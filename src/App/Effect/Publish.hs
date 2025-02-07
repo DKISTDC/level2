@@ -33,16 +33,12 @@ fileManagerOpenPublish = fileManagerOpenDir (App.Id dkistEndpoint.unTagged)
 -- /level2/generated/pid_1_118/inv.SD9T3L/
 -- /level2/generated/pid_1_118/inv.SD9T3L/
 transferSoftPublish
-  :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es, IOE :> es)
+  :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es)
   => App.Id Proposal
   -> App.Id Inversion
   -> Eff es (App.Id Task)
 transferSoftPublish propId invId = do
   scratch <- scratchCollection
-  liftIO $ print scratch
-  liftIO $ print dkistEndpoint
-  print $ outputL2Dir propId invId
-  print $ publishedDir propId invId
   initTransfer (transfer scratch)
  where
   transfer :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest

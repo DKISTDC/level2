@@ -204,7 +204,7 @@ datasetRowDetails d = do
   row id $ do
     route (Route.Datasets $ Route.Dataset d.datasetId) (Style.link . width 100) $ text $ cs d.datasetId.fromId
     route (Route.Proposal d.primaryProposalId Route.PropRoot) (Style.link . width 100) $ text d.primaryProposalId.fromId
-    route (Route.Proposal d.primaryProposalId $ Route.Program d.instrumentProgramId) (Style.link . width 180) $ text d.instrumentProgramId.fromId
+    route (Route.Proposal d.primaryProposalId $ Route.Program d.instrumentProgramId Prog) (Style.link . width 180) $ text d.instrumentProgramId.fromId
     el cell $ text $ cs $ show d.instrument
     el (width 180) $ text $ showTimestamp d.createDate
     el cell $ text $ cs $ showFFloat (Just 1) d.wavelengthMin ""

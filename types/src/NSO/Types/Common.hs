@@ -116,7 +116,7 @@ instrumentFromName t = readMaybe . cs $ t
 
 
 newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
-  deriving newtype (Show, Read, Eq, Ord, IsString)
+  deriving newtype (Show, Read, Eq, Ord, IsString, DBType)
 type Path = Path' File
 
 
