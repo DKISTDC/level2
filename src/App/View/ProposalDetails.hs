@@ -3,6 +3,8 @@ module App.View.ProposalDetails
   , viewProgramRow
   , viewCriteria
   , viewProgramDetails
+  , viewProgramDetails'
+  , viewProgramStats
   ) where
 
 import App.Colors
@@ -31,11 +33,20 @@ viewExperimentDescription t = do
     mapM_ (el_ . text) ps
 
 
-viewProgramRow :: forall c. UTCTime -> ProgramFamily -> View c ()
-viewProgramRow now fam = row (gap 10 . textAlign AlignCenter . grow) $ do
-  let ip = fam.program :: InstrumentProgram
-  statusTag fam.status
+viewDataRow :: View c () -> View c ()
+viewDataRow =
+  row (gap 10 . textAlign AlignCenter . grow)
 
+
+viewProgramRow :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramRow now fam = viewDataRow $ do
+  statusTag fam.status
+  viewProgramStats now fam
+
+
+viewProgramStats :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramStats now prog = viewDataRow $ do
+  let ip = prog.program
   -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
   el dataCell $ text $ cs $ show ip.instrument
@@ -97,15 +108,16 @@ viewCriteria ip gd = do
  where
   vispCriteria :: Grouped InstrumentProgram Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
-    el (bold . height criteriaRowHeight) "VISP Criteria"
-    row (gap 10 . Style.flexWrap) $ do
-      criteria "Stokes IQUV" $ qualifyStokes ds
-      criteria "On Disk" $ qualifyOnDisk ds
-      criteria "Spectra: FeI" $ qualifyLine FeI sls
-      criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
-      criteria "Health" $ qualifyHealth ds
-      criteria "GOS Status" $ qualifyGOS ds
-      criteria "AO Lock" $ qualifyAO ds
+    col (gap 10) $ do
+      el bold "VISP Criteria"
+      row (gap 10 . Style.flexWrap) $ do
+        criteria "Stokes IQUV" $ qualifyStokes ds
+        criteria "On Disk" $ qualifyOnDisk ds
+        criteria "Spectra: FeI" $ qualifyLine FeI sls
+        criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
+        criteria "Health" $ qualifyHealth ds
+        criteria "GOS Status" $ qualifyGOS ds
+        criteria "AO Lock" $ qualifyAO ds
 
   vbiCriteria = do
     el bold "VBI Criteria"
@@ -115,12 +127,12 @@ viewCriteria ip gd = do
     el bold "CRYO NIRSP Criteria"
     criteria "Not Supported" False
 
-  criteriaRowHeight :: Length
-  criteriaRowHeight = 32
+  -- criteriaRowHeight :: Length
+  -- criteriaRowHeight = 32
 
   criteria :: Text -> Bool -> View c ()
   criteria msg b =
-    row (gap 2 . height criteriaRowHeight . color (if b then Success else Danger)) $ do
+    row (gap 2 . color (if b then Success else Danger)) $ do
       el id checkmark
       el id (text msg)
    where
@@ -131,31 +143,20 @@ viewCriteria ip gd = do
           else Icons.xMark
 
 
--- viewProgramSummary :: UTCTime -> WithDatasets -> View c ()
--- viewProgramSummary now wdp = do
---   col (gap 10) $ do
---     col (bg White . gap 10 . pad 10) $ do
---       route (Proposal wdp.program.proposalId $ Program wdp.program.programId) flexRow $ do
---         viewProgramRow now wdp.program
---       row (gap 10) $ do
---         route (Proposal wdp.program.proposalId $ Program wdp.program.programId) Style.link $ do
---           text wdp.program.programId.fromId
---         space
---         forM_ wdp.datasets.items $ \d -> do
---           route (Dataset d.datasetId) Style.link $ do
---             text d.datasetId.fromId
+viewProgramDetails :: ProgramFamily -> UTCTime -> Grouped InstrumentProgram Dataset -> View c ()
+viewProgramDetails prog now ds = do
+  viewProgramDetails' (viewProgramRow now) prog ds
 
-viewProgramDetails :: ProgramFamily -> UTCTime -> [Dataset] -> View c ()
-viewProgramDetails _ _ [] = none
-viewProgramDetails ips now (d : ds) = do
-  let p = ips.program :: InstrumentProgram
-  let gd = Grouped (d :| ds)
+
+viewProgramDetails' :: (ProgramFamily -> View c ()) -> ProgramFamily -> Grouped InstrumentProgram Dataset -> View c ()
+viewProgramDetails' progRow prog gd = do
+  let p = prog.program :: InstrumentProgram
 
   row (textAlign AlignCenter . pad 10) $ do
     route (Proposal p.proposalId $ Program p.programId Prog) grow $ do
-      viewProgramRow now ips
+      progRow prog
 
   View.hr (color Gray)
 
   col (pad 15) $ do
-    viewCriteria ips gd
+    viewCriteria prog gd

@@ -8,12 +8,15 @@ import App.Error (expectFound)
 import App.Globus (DownloadFolder, FileLimit (Folders), Globus, TransferForm)
 import App.Globus qualified as Globus
 import App.Page.Inversion qualified as Inversion
+import App.Page.Inversions (rowInversion)
 import App.Page.Inversions.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
 import App.Page.Inversions.Transfer qualified as Transfer
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
+import App.View.DataRow (dataRows)
 import App.View.DatasetsTable as DatasetsTable
+import App.View.Icons qualified as Icons
 import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
@@ -29,6 +32,7 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
+import NSO.Data.Qualify (qualify)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
@@ -41,7 +45,8 @@ page
   -> Eff es (Page '[ProgramInversions, ProgramDatasets, DownloadTransfer])
 page propId progId = do
   ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
-  progs <- Programs.loadProgram progId
+  progs <- Programs.loadProgram progId >>= expectFound
+  let prog = head progs
   now <- currentTime
   download <- activeTransfer progId
 
@@ -49,17 +54,13 @@ page propId progId = do
     col (Style.page . gap 30) $ do
       viewPageHeader (head ds)
 
-      mapM_ (viewQualifications now) progs
+      hyper (ProgramInversions propId progId) $ viewProgramInversions prog
 
       col Style.card $ do
-        el (Style.cardHeader Secondary) $ text "Datasets"
-        forM_ progs $ \prog -> do
-          hyper (ProgramDatasets propId progId) $ viewDatasets (NE.toList prog.datasets.items) ByLatest download
+        el (Style.cardHeader Secondary) $ text "Program"
+        viewProgramDetails' (viewProgramStats now) prog prog.datasets
 
-      col Style.card $ do
-        el (Style.cardHeader Info) $ text "Inversions"
-        forM_ progs $ \prog -> do
-          hyper (ProgramInversions propId progId) $ viewProgramInversions prog.inversions
+        hyper (ProgramDatasets propId progId) $ viewDatasets (NE.toList prog.datasets.items) ByLatest download
 
       col (gap 10) $ do
         el bold "Experiment"
@@ -79,13 +80,6 @@ page propId progId = do
       text "Proposal - "
       route (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
         text d.primaryProposalId.fromId
-
-
-viewQualifications :: UTCTime -> ProgramFamily -> View c ()
-viewQualifications now pfam = do
-  col Style.card $ do
-    el (Style.cardHeader Secondary) $ text "Qualify"
-    viewProgramDetails pfam now (NE.toList pfam.datasets.items)
 
 
 -- ----------------------------------------------------------------
@@ -132,19 +126,28 @@ inversionUrl :: Id Proposal -> Id Inversion -> Url
 inversionUrl ip ii = routeUrl $ Route.Proposal ip $ Route.Inversion ii Route.Inv
 
 
-viewProgramInversions :: [Inversion] -> View ProgramInversions ()
-viewProgramInversions invs = do
-  col (gap 10 . pad 15) $ do
-    case invs of
-      inv : is -> viewInversions inv is
-      [] -> button CreateInversion (Style.btn Primary) "Create Inversion"
+viewProgramInversions :: ProgramFamily -> View ProgramInversions ()
+viewProgramInversions prog =
+  case prog.inversions of
+    (_ : _) -> viewInversions
+    [] -> firstInversion
  where
-  viewInversions inv is = do
-    viewCurrentInversion inv
-    col (gap 10) $ do
-      mapM_ viewOldInversion is
-      row id $ do
-        button CreateInversion Style.link "Start Over With New Inversion"
+  viewInversions = do
+    col Style.card $ do
+      el (Style.cardHeader invHeaderColor) $ text "Inversions"
+      col (gap 10 . pad 15) $ do
+        col id $ do
+          dataRows prog.inversions rowInversion
+        button CreateInversion (Style.btnOutline Primary) "Create New Inversion"
+
+  firstInversion = do
+    case qualify prog.datasets of
+      Left _ -> none
+      Right _ -> iconButton CreateInversion (Style.btn Primary) Icons.plus "Create Inversion"
+
+  invHeaderColor
+    | any isPublished prog.inversions = Success
+    | otherwise = Info
 
 
 viewCurrentInversion :: Inversion -> View c ()
@@ -230,7 +233,7 @@ viewDatasets ds srt xfer = do
   col (gap 15 . pad 15) $ do
     DatasetsTable.datasetsTable SortDatasets srt ds
     case xfer of
-      Nothing -> button GoDownload (Style.btn Primary) "Download Datasets"
+      Nothing -> iconButton GoDownload (Style.btn Primary) Icons.downTray "Download Datasets"
       Just taskId -> hyper (DownloadTransfer propId progId taskId) (Transfer.viewLoadTransfer DwnTransfer)
 
 
@@ -273,8 +276,8 @@ instance (Globus :> es, Auth :> es, Datasets :> es) => HyperView DownloadTransfe
           vw
 
 
-redownloadBtn :: Mod ProgramDatasets -> View ProgramDatasets () -> View DownloadTransfer ()
-redownloadBtn f cnt = do
+redownloadBtn :: Mod ProgramDatasets -> Text -> View DownloadTransfer ()
+redownloadBtn f lbl = do
   DownloadTransfer propId progId _ <- viewId
   target (ProgramDatasets propId progId) $ do
-    button GoDownload f cnt
+    iconButton GoDownload f Icons.downTray lbl

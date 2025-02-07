@@ -510,7 +510,7 @@ publishStep inv =
   viewStep' status 4 "Publish" none
  where
   status
-    | isComplete inv = StepDone
+    | isPublished inv = StepDone
     | isGenerated inv = StepActive
     | otherwise = StepNext
 
@@ -561,7 +561,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
 -- what if it is actively being published?
 viewPublish :: Inversion -> Maybe PublishStatus -> View PublishStep ()
 viewPublish inv mstatus
-  | isComplete inv = viewPublished inv.proposalId inv.inversionId
+  | isPublished inv = viewPublished inv.proposalId inv.inversionId
   | isInverted inv = viewCheckStatus
   | otherwise = none
  where

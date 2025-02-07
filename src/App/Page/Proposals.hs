@@ -231,8 +231,8 @@ viewProposalDetails fs now prop progs = do
   checkInvertible Any _ = True
   checkInvertible Qualified StatusQualified = True
   checkInvertible Active (StatusError _) = True
-  checkInvertible Active (StatusInversion inv) = not $ isComplete inv
-  checkInvertible Complete (StatusInversion inv) = isComplete inv
+  checkInvertible Active (StatusInversion inv) = not $ isPublished inv
+  checkInvertible Complete (StatusInversion inv) = isPublished inv
   checkInvertible _ _ = False
 
 

@@ -23,7 +23,7 @@ inversionStepLabel inv
 inversionStepColor :: Inversion -> AppColor
 inversionStepColor inv
   | isError inv = Danger
-  | isComplete inv = Success
+  | isPublished inv = Success
   | otherwise = Info
 
 

@@ -75,6 +75,6 @@ viewProgramSummary srt now pf = do
   let prog = pf.program :: InstrumentProgram
   col Style.card $ do
     route (Route.Proposal prog.proposalId $ Program prog.programId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
-    viewProgramDetails pf now (NE.toList ds)
+    viewProgramDetails pf now pf.datasets
     col (pad (TRBL 0 15 15 15)) $ do
       DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds)

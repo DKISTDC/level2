@@ -3,7 +3,7 @@ module App.View.Common where
 import App.Colors
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import NSO.Prelude
-import Web.View
+import Web.Hyperbole
 import Web.View.Style
 
 
@@ -33,3 +33,11 @@ progress p = do
   row (bg Gray . height 20) $ do
     el (width (Pct p) . bg (light Info)) $ do
       space
+
+
+iconButton :: (ViewAction (Action id)) => Action id -> Mod id -> View id () -> Text -> View id ()
+iconButton action f icon txt =
+  button action f $ do
+    row (gap 10) $ do
+      el (width 24) icon
+      text txt

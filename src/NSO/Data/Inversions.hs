@@ -3,7 +3,7 @@ module NSO.Data.Inversions
   , module NSO.Data.Inversions.Update
   , module NSO.Data.Inversions.Commit
   , module NSO.Types.Inversion
-  , isComplete
+  , isPublished
   , isError
   , isGenerated
   , isInverted
@@ -26,8 +26,8 @@ import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion
 
 
-isComplete :: Inversion -> Bool
-isComplete inv = isJust inv.published
+isPublished :: Inversion -> Bool
+isPublished inv = isJust inv.published
 
 
 isError :: Inversion -> Bool
@@ -61,7 +61,7 @@ data InversionStep
 
 inversionStep :: Inversion -> InversionStep
 inversionStep inv
-  | isComplete inv = StepComplete
+  | isPublished inv = StepComplete
   | isGenerated inv = StepPublish
   | isInverted inv = StepGenerate
   | otherwise = StepInvert
