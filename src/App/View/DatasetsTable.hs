@@ -8,17 +8,11 @@ import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
 import App.View.DataRow qualified as View
 import Data.Ord (Down (..))
-import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify (boxRadius)
 import NSO.Prelude
-import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Hyperbole
-
-
-data ProgramDatasets = ProgramDatasets (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
 
 
 data SortField
@@ -32,18 +26,6 @@ data SortField
   | WaveMin
   | WaveMax
   deriving (Show, Read)
-
-
-instance (Datasets :> es) => HyperView ProgramDatasets es where
-  data Action ProgramDatasets
-    = SortBy SortField
-    deriving (Show, Read, ViewAction)
-
-
-  update (SortBy srt) = do
-    ProgramDatasets i <- viewId
-    ds <- send $ Find (ByProgram i)
-    pure $ datasetsTable SortBy srt ds
 
 
 datasetsTable :: forall id. (ViewAction (Action id)) => (SortField -> Action id) -> SortField -> [Dataset] -> View id ()

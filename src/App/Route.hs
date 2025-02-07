@@ -46,6 +46,9 @@ data ProgramRoute
   deriving (Show, Generic, Eq)
 instance Route ProgramRoute where
   baseRoute = Just Prog
+  matchRoute [] = Just Prog
+  matchRoute ["submitdownload"] = Just SubmitDownload
+  matchRoute _ = Nothing
 
 
 data DatasetRoute

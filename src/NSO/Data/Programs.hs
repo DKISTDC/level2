@@ -42,7 +42,7 @@ loadAllProposals = do
 loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [ProgramFamily]
 loadProgram progId = do
   ds <- send $ Datasets.Find $ Datasets.ByProgram progId
-  invs <- send $ Inversions.ByProgram progId
+  invs <- Inversions.findByProgram progId
   pure $ programFamilies invs ds
 
 

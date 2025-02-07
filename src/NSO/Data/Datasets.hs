@@ -105,28 +105,6 @@ runDataDatasets = interpret $ \_ -> \case
           , from = pure ()
           , returning = NoReturning
           }
-  -- case find (\d -> d.datasetId == row.datasetId)
-  --   row{latest = lit False}
-
-  -- toDataset :: Dataset' Result -> Dataset
-  -- toDataset d@Dataset'{..} =
-  --   let frameCount' = fromIntegral d.frameCount
-  --       aoLocked' = fromIntegral d.aoLocked
-  --    in Dataset
-  --         { frameCount = frameCount'
-  --         , aoLocked = aoLocked'
-  --         , ..
-  --         }
-  --
-  -- fromDataset :: Dataset -> Dataset' Identity
-  -- fromDataset d@Dataset{..} =
-  --   let frameCount' = fromIntegral d.frameCount
-  --       aoLocked' = fromIntegral d.aoLocked
-  --    in Dataset'
-  --         { frameCount = frameCount'
-  --         , aoLocked = aoLocked'
-  --         , ..
-  --         }
 
   datasets :: TableSchema (Dataset' Name)
   datasets =

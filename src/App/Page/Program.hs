@@ -8,7 +8,7 @@ import App.Error (expectFound)
 import App.Globus (DownloadFolder, FileLimit (Folders), Globus, TransferForm)
 import App.Globus qualified as Globus
 import App.Page.Inversion qualified as Inversion
-import App.Page.Inversions.Transfer (TransferAction (..), saveActiveTransfer)
+import App.Page.Inversions.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
 import App.Page.Inversions.Transfer qualified as Transfer
 import App.Route qualified as Route
 import App.Style qualified as Style
@@ -18,46 +18,61 @@ import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
 import App.Worker.GenWorker
+import Data.Grouped (Grouped (..))
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Log
+import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
+import NSO.Data.Programs qualified as Programs
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Eff es (Page '[ProgramInversions, ProgramDatasets])
+  -> Eff es (Page '[ProgramInversions, ProgramDatasets, DownloadTransfer])
 page propId progId = do
   ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
-  invs <- findInversionsByProgram progId
+  progs <- Programs.loadProgram progId
   now <- currentTime
-  let progs = programFamilies invs (NE.toList ds)
+  download <- activeTransfer progId
 
   appLayout Route.Proposals $ do
     col (Style.page . gap 30) $ do
-      col (gap 5) $ do
-        el Style.header $ do
-          text "Instrument Program - "
-          text progId.fromId
-        experimentLink (head ds)
+      viewPageHeader (head ds)
 
-      viewExperimentDescription (head ds).experimentDescription
+      mapM_ (viewQualifications now) progs
 
-      hyper (ProgramInversions propId progId) $ viewProgramInversions invs
+      col Style.card $ do
+        el (Style.cardHeader Secondary) $ text "Datasets"
+        forM_ progs $ \prog -> do
+          hyper (ProgramDatasets propId progId) $ viewDatasets (NE.toList prog.datasets.items) ByLatest download
 
-      -- we don't really need/want to defer this
-      mapM_ (viewProgramSummary now) progs
+      col Style.card $ do
+        el (Style.cardHeader Info) $ text "Inversions"
+        forM_ progs $ \prog -> do
+          hyper (ProgramInversions propId progId) $ viewProgramInversions prog.inversions
+
+      col (gap 10) $ do
+        el bold "Experiment"
+        viewExperimentDescription (head ds).experimentDescription
  where
+  viewPageHeader :: Dataset -> View c ()
+  viewPageHeader ds = do
+    col (gap 5) $ do
+      el Style.header $ do
+        text "Instrument Program - "
+        text progId.fromId
+      experimentLink ds
+
   experimentLink :: Dataset -> View c ()
   experimentLink d = do
     el_ $ do
@@ -66,13 +81,26 @@ page propId progId = do
         text d.primaryProposalId.fromId
 
 
-submitDownload :: (Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
+viewQualifications :: UTCTime -> ProgramFamily -> View c ()
+viewQualifications now pfam = do
+  col Style.card $ do
+    el (Style.cardHeader Secondary) $ text "Qualify"
+    viewProgramDetails pfam now (NE.toList pfam.datasets.items)
+
+
+-- ----------------------------------------------------------------
+-- SUBMIT DOWNLOAD
+-- ----------------------------------------------------------------
+
+submitDownload :: (Log :> es, Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
 submitDownload propId progId = do
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
   ds <- Datasets.find $ Datasets.ByProgram progId
   taskId <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
-  saveActiveTransfer taskId
+
+  saveActiveTransfer progId taskId
+
   redirect $ routeUrl (Route.Proposal propId $ Route.Program progId Route.Prog)
 
 
@@ -87,7 +115,6 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
 instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
-    | Download
     deriving (Show, Read, ViewAction)
 
 
@@ -99,11 +126,6 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
       ProgramInversions propId progId <- viewId
       inv <- send $ Inversions.Create propId progId
       redirect $ inversionUrl propId inv.inversionId
-    Download -> do
-      ProgramInversions propId progId <- viewId
-      r <- request
-      requireLogin $ do
-        redirect $ Globus.fileManagerSelectUrl (Folders 1) (Route.Proposal propId $ Route.Program progId Route.SubmitDownload) ("Transfer Instrument Program " <> progId.fromId) r
 
 
 inversionUrl :: Id Proposal -> Id Inversion -> Url
@@ -111,15 +133,18 @@ inversionUrl ip ii = routeUrl $ Route.Proposal ip $ Route.Inversion ii Route.Inv
 
 
 viewProgramInversions :: [Inversion] -> View ProgramInversions ()
-viewProgramInversions (inv : is) = do
-  viewCurrentInversion inv
-  col (gap 10 . pad 10) $ do
-    mapM_ viewOldInversion is
-    row id $ do
-      button CreateInversion Style.link "Start Over With New Inversion"
-viewProgramInversions _ = do
-  button CreateInversion (Style.btn Primary) "Create Inversion"
-  button Download (Style.btn Primary) "Create Inversion"
+viewProgramInversions invs = do
+  col (gap 10 . pad 15) $ do
+    case invs of
+      inv : is -> viewInversions inv is
+      [] -> button CreateInversion (Style.btn Primary) "Create Inversion"
+ where
+  viewInversions inv is = do
+    viewCurrentInversion inv
+    col (gap 10) $ do
+      mapM_ viewOldInversion is
+      row id $ do
+        button CreateInversion Style.link "Start Over With New Inversion"
 
 
 viewCurrentInversion :: Inversion -> View c ()
@@ -168,6 +193,48 @@ viewOldInversion inv = row (gap 4) $ do
 --   emptyButtonSpace = el (height 44) none
 
 -- ----------------------------------------------------------------
+-- DATASETS
+-- ----------------------------------------------------------------
+
+data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
+  deriving (Show, Read, ViewId)
+
+
+instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView ProgramDatasets es where
+  data Action ProgramDatasets
+    = GoDownload
+    | SortDatasets SortField
+    deriving (Show, Read, ViewAction)
+
+
+  type Require ProgramDatasets = '[DownloadTransfer]
+
+
+  update GoDownload = do
+    ProgramDatasets propId progId <- viewId
+    r <- request
+    requireLogin $ do
+      redirect $ Globus.fileManagerSelectUrl (Folders 1) (Route.Proposal propId $ Route.Program progId Route.SubmitDownload) ("Transfer Instrument Program " <> progId.fromId) r
+  update (SortDatasets srt) = do
+    ProgramDatasets _ progId <- viewId
+    progs <- Programs.loadProgram progId
+    download <- activeTransfer progId
+    pure $ do
+      forM_ progs $ \prog -> do
+        viewDatasets (NE.toList prog.datasets.items) srt download
+
+
+viewDatasets :: [Dataset] -> SortField -> Maybe (Id Globus.Task) -> View ProgramDatasets ()
+viewDatasets ds srt xfer = do
+  ProgramDatasets propId progId <- viewId
+  col (gap 15 . pad 15) $ do
+    DatasetsTable.datasetsTable SortDatasets srt ds
+    case xfer of
+      Nothing -> button GoDownload (Style.btn Primary) "Download Datasets"
+      Just taskId -> hyper (DownloadTransfer propId progId taskId) (Transfer.viewLoadTransfer DwnTransfer)
+
+
+-- ----------------------------------------------------------------
 -- DOWNLOAD
 -- ----------------------------------------------------------------
 
@@ -175,24 +242,39 @@ data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView DownloadTransfer es where
+instance (Globus :> es, Auth :> es, Datasets :> es) => HyperView DownloadTransfer es where
   data Action DownloadTransfer
     = DwnTransfer TransferAction
     deriving (Show, Read, ViewAction)
 
 
-  type Require DownloadTransfer = '[ProgramInversions]
+  type Require DownloadTransfer = '[ProgramDatasets]
 
 
   update (DwnTransfer action) = do
-    DownloadTransfer _ _progId taskId <- viewId
+    DownloadTransfer _ progId taskId <- viewId
     case action of
       TaskFailed -> do
-        pure $ do
-          col (gap 10) $ do
-            Transfer.viewTransferFailed taskId
-      -- hyper (InversionStatus ip iip ii) $ stepDownload inv Select
+        pure $ col (gap 10) $ do
+          redownloadBtn (Style.btn Primary) "Download Datasets"
+          Transfer.viewTransferFailed taskId
       TaskSucceeded -> do
-        -- ds <- Datasets.find $ Datasets.ByProgram progId
-        pure $ el_ "Downloaded Datasets: [x,y,z]"
-      CheckTransfer -> Transfer.checkTransfer DwnTransfer taskId
+        ds <- Datasets.find (Datasets.ByProgram progId)
+        pure $ col (gap 10) $ do
+          redownloadBtn (Style.btn Primary) "Download Datasets"
+          row (gap 10 . color Success) $ do
+            el_ "Successfully Downloaded: "
+            forM_ ds $ \d -> do
+              el_ $ text d.datasetId.fromId
+      CheckTransfer -> do
+        vw <- Transfer.checkTransfer DwnTransfer taskId
+        pure $ col (gap 10) $ do
+          redownloadBtn (Style.btnLoading Secondary) "Downloading"
+          vw
+
+
+redownloadBtn :: Mod ProgramDatasets -> View ProgramDatasets () -> View DownloadTransfer ()
+redownloadBtn f cnt = do
+  DownloadTransfer propId progId _ <- viewId
+  target (ProgramDatasets propId progId) $ do
+    button GoDownload f cnt

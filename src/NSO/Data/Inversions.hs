@@ -7,7 +7,7 @@ module NSO.Data.Inversions
   , isError
   , isGenerated
   , isInverted
-  , findInversionsByProgram
+  , findByProgram
   , inversionStep
   , InversionStep (..)
   ) where
@@ -67,10 +67,9 @@ inversionStep inv
   | otherwise = StepInvert
 
 
-findInversionsByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]
-findInversionsByProgram ip = do
+findByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]
+findByProgram ip = do
   invs <- send $ ByProgram ip
-  pure $ sortLatest invs
+  pure $ sortOn latest invs
  where
-  sortLatest :: [Inversion] -> [Inversion]
-  sortLatest = sortOn (Down . (.updated))
+  latest = Down . (.updated)

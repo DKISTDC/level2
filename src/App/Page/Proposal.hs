@@ -2,6 +2,7 @@
 
 module App.Page.Proposal where
 
+import App.Colors
 import App.Effect.Auth
 import App.Error (expectFound)
 import App.Route as Route
@@ -9,6 +10,8 @@ import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.Layout
 import App.View.ProposalDetails
+import Data.Grouped (Grouped (..))
+import Data.List.NonEmpty qualified as NE
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -21,7 +24,7 @@ import Web.Hyperbole
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
-  -> Eff es (Page '[ProgramDatasets, ProgramSummary])
+  -> Eff es (Page '[ProgramSummary])
 page propId = do
   ds <- Datasets.find (Datasets.DistinctPrograms propId) >>= expectFound
 
@@ -39,16 +42,6 @@ page propId = do
         hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
 
 
--- viewPrograms :: (HyperViewHandled ProgramDatasets c) => UTCTime -> [ProgramFamily] -> View c ()
--- viewPrograms _ [] = el_ "Not Found"
--- viewPrograms now (p : ps) = do
---   let wds = Grouped (p :| ps) :: Grouped Proposal ProgramFamily
---   viewProposal now wds
-
--- viewProposal :: (HyperViewHandled ProgramDatasets c) => UTCTime -> Grouped Proposal ProgramFamily -> View c ()
--- viewProposal now gx = do
---   let pf = sample gx
-
 ----------------------------------------------------
 -- ProgramSummary
 ----------------------------------------------------
@@ -59,23 +52,29 @@ data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
 
 instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
-    = ProgramDetails
+    = ProgramDetails SortField
     deriving (Show, Read, ViewAction)
 
 
-  type Require ProgramSummary = '[ProgramDatasets]
-
-
-  update ProgramDetails = do
-    ProgramSummary _ progId <- viewId
-    ds <- Datasets.find (Datasets.ByProgram progId)
-    now <- currentTime
-    invs <- findInversionsByProgram progId
-    let progs = programFamilies invs ds
-    pure $ do
-      mapM_ (viewProgramSummary now) progs
+  update = \case
+    ProgramDetails srt -> do
+      ProgramSummary _ progId <- viewId
+      now <- currentTime
+      progs <- Programs.loadProgram progId
+      pure $ mapM_ (viewProgramSummary srt now) progs
 
 
 viewProgramSummaryLoad :: View ProgramSummary ()
 viewProgramSummaryLoad = do
-  el (onLoad ProgramDetails 100) ""
+  el (onLoad (ProgramDetails ByLatest) 100) ""
+
+
+viewProgramSummary :: SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
+viewProgramSummary srt now pf = do
+  let ds = pf.datasets.items
+  let prog = pf.program :: InstrumentProgram
+  col Style.card $ do
+    route (Route.Proposal prog.proposalId $ Program prog.programId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
+    viewProgramDetails pf now (NE.toList ds)
+    col (pad (TRBL 0 15 15 15)) $ do
+      DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds)

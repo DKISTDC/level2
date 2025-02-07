@@ -67,6 +67,15 @@ btnOutline c =
     . hover (borderColor (light c) . color (light c))
 
 
+btnLoading :: AppColor -> Mod c
+btnLoading c =
+  btnBase
+    . border 2
+    . borderColor c
+    . color c
+    . att "disabled" ""
+
+
 btnBase :: Mod c
 btnBase =
   pad (XY 15 10)
@@ -93,3 +102,9 @@ disabled = noClick . opacity 0.5
  where
   noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"
 
+
+flexWrap :: Mod c
+flexWrap =
+  addClass $
+    cls "fwrap"
+      & prop @Text "flex-wrap" "wrap"

@@ -181,6 +181,8 @@ data TransferForm f = TransferForm
   }
   deriving (Generic)
 instance Form TransferForm Maybe
+instance Show (TransferForm Identity) where
+  show tf = "TransferForm " <> unwords [show tf.label, show tf.path, show tf.endpoint_id]
 
 
 data DownloadFolder f = DownloadFolder

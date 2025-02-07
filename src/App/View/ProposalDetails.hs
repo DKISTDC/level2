@@ -2,7 +2,7 @@ module App.View.ProposalDetails
   ( viewExperimentDescription
   , viewProgramRow
   , viewCriteria
-  , viewProgramSummary
+  , viewProgramDetails
   ) where
 
 import App.Colors
@@ -11,12 +11,10 @@ import App.Style qualified as Style
 import App.View.Common (showTimestamp)
 import App.View.Common as View (hr)
 import App.View.DataRow (dataCell, tagCell)
-import App.View.DatasetsTable as DatasetsTable
 import App.View.Icons as Icons
 import App.View.Inversions (inversionStepTag)
 import Data.Grouped
 import Data.List qualified as L
-import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import Effectful.Time
 import NSO.Data.Datasets
@@ -24,7 +22,6 @@ import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
 import Web.Hyperbole
-import Web.Hyperbole.HyperView (HyperViewHandled)
 
 
 viewExperimentDescription :: Text -> View c ()
@@ -92,7 +89,7 @@ statusTag = \case
 
 viewCriteria :: ProgramFamily -> Grouped InstrumentProgram Dataset -> View c ()
 viewCriteria ip gd = do
-  col (pad 8) $ do
+  col id $ do
     case ip.program.instrument of
       VISP -> vispCriteria gd ip.program.spectralLines
       VBI -> vbiCriteria
@@ -101,13 +98,14 @@ viewCriteria ip gd = do
   vispCriteria :: Grouped InstrumentProgram Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
     el (bold . height criteriaRowHeight) "VISP Criteria"
-    criteria "Stokes IQUV" $ qualifyStokes ds
-    criteria "On Disk" $ qualifyOnDisk ds
-    criteria "Spectra: FeI" $ qualifyLine FeI sls
-    criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
-    criteria "Health" $ qualifyHealth ds
-    criteria "GOS Status" $ qualifyGOS ds
-    criteria "AO Lock" $ qualifyAO ds
+    row (gap 10 . Style.flexWrap) $ do
+      criteria "Stokes IQUV" $ qualifyStokes ds
+      criteria "On Disk" $ qualifyOnDisk ds
+      criteria "Spectra: FeI" $ qualifyLine FeI sls
+      criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
+      criteria "Health" $ qualifyHealth ds
+      criteria "GOS Status" $ qualifyGOS ds
+      criteria "AO Lock" $ qualifyAO ds
 
   vbiCriteria = do
     el bold "VBI Criteria"
@@ -122,9 +120,9 @@ viewCriteria ip gd = do
 
   criteria :: Text -> Bool -> View c ()
   criteria msg b =
-    row (gap 6 . height criteriaRowHeight . color (if b then Success else Danger)) $ do
-      el (pad 4) checkmark
-      el (pad 4) (text msg)
+    row (gap 2 . height criteriaRowHeight . color (if b then Success else Danger)) $ do
+      el id checkmark
+      el id (text msg)
    where
     checkmark =
       el (width 24 . height 24) $
@@ -153,21 +151,11 @@ viewProgramDetails ips now (d : ds) = do
   let p = ips.program :: InstrumentProgram
   let gd = Grouped (d :| ds)
 
-  row (textAlign AlignCenter) $ do
+  row (textAlign AlignCenter . pad 10) $ do
     route (Proposal p.proposalId $ Program p.programId Prog) grow $ do
       viewProgramRow now ips
 
   View.hr (color Gray)
 
-  viewCriteria ips gd
-
-
-viewProgramSummary :: (HyperViewHandled ProgramDatasets c) => UTCTime -> ProgramFamily -> View c ()
-viewProgramSummary now pf = do
-  let ds = pf.datasets.items
-  let prog = pf.program :: InstrumentProgram
-  col Style.card $ do
-    route (Proposal prog.proposalId $ Program prog.programId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
-    col (gap 15 . pad 15) $ do
-      viewProgramDetails pf now (NE.toList ds)
-      hyper (ProgramDatasets prog.programId) $ DatasetsTable.datasetsTable SortBy ByLatest (NE.toList ds)
+  col (pad 15) $ do
+    viewCriteria ips gd

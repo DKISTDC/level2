@@ -43,8 +43,8 @@ page propId invId = do
   mtok <- send AdminToken
   login <- send LoginUrl
   let admin = AdminLogin mtok login
-  up <- activeTransfer
-  gen <- send $ TaskGetStatus $ GenFits propId invId
+  up <- activeTransfer invId
+  gen <- send $ TaskLookupStatus $ GenFits propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
   appLayout Inversions $ do
     col Style.page $ do
@@ -72,12 +72,12 @@ submitUpload
   => Id Proposal
   -> Id Inversion
   -> Eff es Response
-submitUpload ip ii = do
+submitUpload propId invId = do
   tfrm <- formData @TransferForm
   tup <- formData @(UploadFiles Filename)
-  taskId <- requireLogin $ Globus.initUpload tfrm tup ip ii
-  saveActiveTransfer taskId
-  redirect $ routeUrl (Route.Proposal ip $ Route.Inversion ii Inv)
+  taskId <- requireLogin $ Globus.initUpload tfrm tup propId invId
+  saveActiveTransfer invId taskId
+  redirect $ routeUrl (Route.Proposal propId $ Route.Inversion invId Inv)
 
 
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
@@ -125,8 +125,8 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time 
       mtok <- send AdminToken
       login <- send LoginUrl
       inv <- loadInversion ii
-      up <- activeTransfer
-      gen <- send $ TaskGetStatus $ GenFits ip ii
+      up <- activeTransfer ii
+      gen <- send $ TaskLookupStatus $ GenFits ip ii
       pub <- send $ TaskLookupStatus $ PublishTask ip ii
       pure $ viewInversion inv (AdminLogin mtok login) up gen pub
 
@@ -139,7 +139,7 @@ viewInversionContainer inv cnt =
       cnt
 
 
-viewInversion :: Inversion -> AdminLogin -> Maybe (Id Task) -> GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion :: Inversion -> AdminLogin -> Maybe (Id Task) -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
 viewInversion inv admin up gen pub = do
   col (gap 10) $ do
     viewInversionContainer inv $ do
@@ -209,7 +209,7 @@ stepColor = \case
 
 
 datasetStep :: Inversion -> View c () -> View c ()
-datasetStep inv =
+datasetStep _inv =
   viewStep StepActive 1 "Datasets"
 
 
@@ -224,7 +224,7 @@ viewDatasets :: Inversion -> View InversionStatus ()
 -- viewDownload _ (StepDownloaded _) = do
 --   row (gap 10) $ do
 --     button Download (Style.btnOutline Secondary . grow) "Download Again"
-viewDatasets inv = el_ "Datasets here"
+viewDatasets _inv = el_ "Datasets here"
 
 
 -- button Cancel (Style.btnOutline Secondary) "Cancel"
@@ -385,7 +385,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
     loadGenerate = do
       GenerateStep propId _ invId <- viewId
       inv <- loadInversion invId
-      status <- send $ TaskGetStatus $ GenFits propId invId
+      status <- send $ TaskLookupStatus $ GenFits propId invId
       mtok <- send AdminToken
       login <- send LoginUrl
       pure $ do
@@ -406,7 +406,7 @@ generateStep inv =
     | otherwise = StepNext
 
 
-viewGenerate :: Inversion -> AdminLogin -> GenFitsStatus -> View GenerateStep ()
+viewGenerate :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
 viewGenerate inv admin status =
   col (gap 10) viewGen
  where
@@ -433,28 +433,30 @@ viewGenerate inv admin status =
     loadingMessage "Generating ASDF"
     el (onLoad ReloadGen 1000) none
 
-  viewGenerateStep = \case
-    GenStarted -> el_ "..."
-    GenWaiting -> do
-      row (onLoad ReloadGen 1000) $ do
-        loadingMessage "Waiting for job to start"
-        space
-        case admin.token of
-          Nothing -> link admin.loginUrl (Style.btnOutline Danger) "Needs Globus Login"
-          Just _ -> pure ()
-    GenTransferring taskId -> do
-      el_ "Generating FITS - Transferring L1 Files"
-      hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
-        Transfer.viewLoadTransfer GenTransfer
-    GenFrames _ _ -> do
-      loadingMessage "Generating FITS"
-      col (onLoad ReloadGen 1000) $ do
-        row (gap 5) $ do
+  viewGenerateStep Nothing = none
+  viewGenerateStep (Just gen) =
+    case gen of
+      GenStarted -> el_ "..."
+      GenWaiting -> do
+        row (onLoad ReloadGen 1000) $ do
+          loadingMessage "Waiting for job to start"
           space
-          el_ $ text $ cs $ show status.complete
-          el_ " / "
-          el_ $ text $ cs $ show status.total
-        View.progress (fromIntegral status.complete / fromIntegral status.total)
+          case admin.token of
+            Nothing -> link admin.loginUrl (Style.btnOutline Danger) "Needs Globus Login"
+            Just _ -> pure ()
+      GenTransferring taskId -> do
+        el_ "Generating FITS - Transferring L1 Files"
+        hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
+          Transfer.viewLoadTransfer GenTransfer
+      GenFrames _ _ -> do
+        loadingMessage "Generating FITS"
+        col (onLoad ReloadGen 1000) $ do
+          row (gap 5) $ do
+            space
+            el_ $ text $ cs $ show gen.complete
+            el_ " / "
+            el_ $ text $ cs $ show gen.total
+          View.progress (fromIntegral gen.complete / fromIntegral gen.total)
 
   loadingMessage msg =
     row (gap 5) $ do
