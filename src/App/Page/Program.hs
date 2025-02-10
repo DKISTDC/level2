@@ -120,11 +120,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
     CreateInversion -> do
       ProgramInversions propId progId <- viewId
       inv <- send $ Inversions.Create propId progId
-      redirect $ inversionUrl propId inv.inversionId
-
-
-inversionUrl :: Id Proposal -> Id Inversion -> Url
-inversionUrl ip ii = routeUrl $ Route.Proposal ip $ Route.Inversion ii Route.Inv
+      redirect $ Route.inversionUrl propId inv.inversionId
 
 
 viewProgramInversions :: ProgramFamily -> View ProgramInversions ()
@@ -174,17 +170,17 @@ viewCurrentInversion inv = do
 
   viewPublish = \case
     StepPublish ->
-      link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
+      link (Route.inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
     _ -> none
 
   continueButton =
-    link (inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "Continue Inversion"
+    link (Route.inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "Continue Inversion"
 
 
 viewOldInversion :: Inversion -> View c ()
 viewOldInversion inv = row (gap 4) $ do
   el_ "•"
-  link (inversionUrl inv.proposalId inv.inversionId) Style.link $ do
+  link (Route.inversionUrl inv.proposalId inv.inversionId) Style.link $ do
     text inv.inversionId.fromId
   el_ $ text $ cs $ showDate inv.created
   el_ $ text $ inversionStepLabel inv
@@ -235,7 +231,7 @@ viewDatasets ds srt xfer = do
     DatasetsTable.datasetsTable SortDatasets srt ds
     case xfer of
       Nothing -> iconButton GoDownload (Style.btn Primary) Icons.downTray "Download Datasets"
-      Just taskId -> hyper (DownloadTransfer propId progId taskId) (Transfer.viewLoadTransfer DwnTransfer)
+      Just taskId -> hyper (DownloadTransfer propId progId taskId) viewDownloadLoad
 
 
 -- ----------------------------------------------------------------
@@ -274,6 +270,13 @@ instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView Down
         pure $ col (gap 10) $ do
           redownloadBtn (Style.btnLoading Secondary) "Downloading"
           vw
+
+
+viewDownloadLoad :: View DownloadTransfer ()
+viewDownloadLoad = do
+  col (gap 10) $ do
+    redownloadBtn (Style.btn Secondary . att "disabled" "") "Download Datasets"
+    Transfer.viewLoadTransfer DwnTransfer
 
 
 redownloadBtn :: Mod ProgramDatasets -> Text -> View DownloadTransfer ()

@@ -68,3 +68,7 @@ data DevRoute
   deriving (Show, Generic, Eq)
 instance Route DevRoute where
   baseRoute = Just DevAuth
+
+
+inversionUrl :: Id Proposal -> Id Inversion -> Url
+inversionUrl ip ii = routeUrl $ App.Route.Proposal ip $ App.Route.Inversion ii Inv

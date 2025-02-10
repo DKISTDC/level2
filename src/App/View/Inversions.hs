@@ -15,9 +15,9 @@ inversionStepLabel inv
  where
   stepLabel = \case
     StepComplete -> "Complete"
-    StepPublish -> "Publish"
-    StepGenerate -> "Generate"
-    StepInvert -> "Invert"
+    StepPublish -> "Publishing"
+    StepGenerate -> "Generating"
+    StepInvert -> "Inverting"
 
 
 inversionStepColor :: Inversion -> AppColor

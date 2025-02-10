@@ -37,7 +37,7 @@ page
   :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, Time :> es, Tasks PublishTask :> es)
   => Id Proposal
   -> Id Inversion
-  -> Eff es (Page '[InversionStatus, GenerateStep, GenerateTransfer, InversionCommit, UploadTransfer, PublishStep])
+  -> Eff es (Page (InversionStatus : MoreInversions : InversionViews))
 page propId invId = do
   inv <- loadInversion invId
   mtok <- send AdminToken
@@ -64,6 +64,7 @@ page propId invId = do
             text inv.proposalId.fromId
 
       hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv admin up gen pub
+      hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
 submitUpload
@@ -91,11 +92,37 @@ redirectHome = do
   redirect $ pathUrl . routePath $ Inversions
 
 
--- ----------------------------------------------------------------
--- INVERSION STATUS -----------------------------------------------
--- ----------------------------------------------------------------
+-------------------------------------------------------------------
+--- INVERSIONS
+-------------------------------------------------------------------
 
-type InversionViews = '[UploadTransfer, InversionCommit, GenerateStep, GenerateTransfer, PublishStep]
+data MoreInversions = MoreInversions (Id Proposal) (Id InstrumentProgram)
+  deriving (Show, Read, ViewId)
+
+
+instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView MoreInversions es where
+  data Action MoreInversions
+    = CreateInversion
+    deriving (Show, Read, ViewAction)
+
+
+  update = \case
+    CreateInversion -> do
+      MoreInversions propId progId <- viewId
+      inv <- send $ Inversions.Create propId progId
+      redirect $ Route.inversionUrl propId inv.inversionId
+
+
+viewMoreInversions :: View MoreInversions ()
+viewMoreInversions = do
+  button CreateInversion (Style.btnOutline Primary) "Start Over with Another Inversion"
+
+
+-------------------------------------------------------------------
+--- INVERSION STATUS
+-------------------------------------------------------------------
+
+type InversionViews = '[UploadTransfer, InversionCommit, GenerateStep, GenerateTransfer, PublishStep, InversionAdmin]
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
@@ -107,6 +134,8 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time 
     = Upload
     | Reload
     deriving (Show, Read, ViewAction)
+
+
   type Require InversionStatus = InversionViews
 
 
@@ -157,55 +186,7 @@ viewInversion inv admin up gen pub = do
         hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
           viewPublish inv pub
 
-
-viewStep :: Step -> Int -> Text -> View c () -> View c ()
-viewStep step num stepName = viewStep' step num stepName (stepLine step)
-
-
-viewStep' :: Step -> Int -> Text -> View c () -> View c () -> View c ()
-viewStep' step num stepName line cnt =
-  row (gap 10 . stepEnabled) $ do
-    col id $ do
-      stepCircle step num
-      line
-    col (gap 10 . grow . pad (TRBL 0 0 40 0)) $ do
-      el (bold . color (stepColor step) . fontSize 22) (text stepName)
-      cnt
- where
-  stepEnabled =
-    case step of
-      StepNext -> Style.disabled
-      _ -> id
-
-
-stepLine :: Step -> View c ()
-stepLine = \case
-  StepActive -> line Info
-  StepNext -> line Secondary
-  StepDone -> line Success
-  StepError -> line Danger
- where
-  line clr = el (grow . border (TRBL 0 2 0 0) . width 18 . borderColor clr) ""
-
-
-stepCircle :: Step -> Int -> View c ()
-stepCircle step num =
-  el (circle . bg (stepColor step)) stepIcon
- where
-  circle = rounded 50 . pad 5 . color White . textAlign AlignCenter . width 34 . height 34
-  stepIcon =
-    case step of
-      StepDone -> Icons.check
-      StepError -> "!"
-      _ -> text $ cs $ show num
-
-
-stepColor :: Step -> AppColor
-stepColor = \case
-  StepActive -> Info
-  StepNext -> Secondary
-  StepDone -> Success
-  StepError -> Danger
+      hyper (InversionAdmin inv.proposalId inv.programId inv.inversionId) viewInversionAdmin
 
 
 datasetStep :: Inversion -> View c () -> View c ()
@@ -229,9 +210,58 @@ viewDatasets _inv = el_ "Datasets here"
 
 -- button Cancel (Style.btnOutline Secondary) "Cancel"
 
--- ----------------------------------------------------------------
+-------------------------------------------------------------------
+--- INVERSION ADMIN
+-------------------------------------------------------------------
+
+data InversionAdmin = InversionAdmin (Id Proposal) (Id InstrumentProgram) (Id Inversion)
+  deriving (Show, Read, ViewId)
+
+
+instance (Inversions :> es) => HyperView InversionAdmin es where
+  data Action InversionAdmin
+    = AreYouSure
+    | Delete
+    deriving (Show, Read, ViewAction)
+
+
+  update = \case
+    AreYouSure -> do
+      InversionAdmin _ _ invId <- viewId
+      inv <- loadInversion invId
+      pure $ viewInversionAdminConfim inv
+    Delete -> do
+      InversionAdmin propId progId invId <- viewId
+      send $ Inversions.Remove invId
+      redirect $ routeUrl $ Route.Proposal propId $ Route.Program progId Route.Prog
+
+
+viewInversionAdmin :: View InversionAdmin ()
+viewInversionAdmin = do
+  button AreYouSure (Style.btnOutline Danger) "Delete Inversion"
+
+
+viewInversionAdminConfim :: Inversion -> View InversionAdmin ()
+viewInversionAdminConfim inv
+  | isInverted inv = viewCannotDelete
+  | otherwise = viewAreYouSure
+
+
+viewCannotDelete :: View InversionAdmin ()
+viewCannotDelete = do
+  el (italic . color Secondary) "This has uploaded inversion results, it can no longer be deleted. Please create new inversion instead"
+
+
+viewAreYouSure :: View InversionAdmin ()
+viewAreYouSure = do
+  col (gap 15) $ do
+    el (bold . color Danger) "Are you sure?"
+    button Delete (Style.btn Danger) "Delete This Inverion"
+
+
+-------------------------------------------------------------------
 -- STEP INVERT
--- ----------------------------------------------------------------
+-------------------------------------------------------------------
 
 data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
   deriving (Show, Read, ViewId)
@@ -588,3 +618,57 @@ viewPublishTransfer taskId = do
 viewPublished :: Id Proposal -> Id Inversion -> View PublishStep ()
 viewPublished propId invId = do
   link (Publish.fileManagerOpenPublish $ Publish.publishedDir propId invId) (Style.btnOutline Success . grow . att "target" "_blank") "View Published Files"
+
+
+-------------------------------------------------------------------
+-- VERTICAL STEP INDICATORS
+-------------------------------------------------------------------
+
+viewStep :: Step -> Int -> Text -> View c () -> View c ()
+viewStep step num stepName = viewStep' step num stepName (stepLine step)
+
+
+viewStep' :: Step -> Int -> Text -> View c () -> View c () -> View c ()
+viewStep' step num stepName line cnt =
+  row (gap 10 . stepEnabled) $ do
+    col id $ do
+      stepCircle step num
+      line
+    col (gap 10 . grow . pad (TRBL 0 0 40 0)) $ do
+      el (bold . color (stepColor step) . fontSize 22) (text stepName)
+      cnt
+ where
+  stepEnabled =
+    case step of
+      StepNext -> Style.disabled
+      _ -> id
+
+
+stepLine :: Step -> View c ()
+stepLine = \case
+  StepActive -> line Info
+  StepNext -> line Secondary
+  StepDone -> line Success
+  StepError -> line Danger
+ where
+  line clr = el (grow . border (TRBL 0 2 0 0) . width 18 . borderColor clr) ""
+
+
+stepCircle :: Step -> Int -> View c ()
+stepCircle step num =
+  el (circle . bg (stepColor step)) stepIcon
+ where
+  circle = rounded 50 . pad 5 . color White . textAlign AlignCenter . width 34 . height 34
+  stepIcon =
+    case step of
+      StepDone -> Icons.check
+      StepError -> "!"
+      _ -> text $ cs $ show num
+
+
+stepColor :: Step -> AppColor
+stepColor = \case
+  StepActive -> Info
+  StepNext -> Secondary
+  StepDone -> Success
+  StepError -> Danger
