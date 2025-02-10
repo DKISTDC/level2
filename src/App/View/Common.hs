@@ -1,9 +1,12 @@
 module App.View.Common where
 
 import App.Colors
+import App.Style qualified as Style
+import App.View.Icons qualified as Icons
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import NSO.Prelude
-import Web.Hyperbole
+import Web.Hyperbole hiding (input, label)
+import Web.View qualified as View
 import Web.View.Style
 
 
@@ -41,3 +44,27 @@ iconButton action f icon txt =
     row (gap 10) $ do
       el (width 24) icon
       text txt
+
+
+toggleBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> Mod id -> View id () -> View id ()
+toggleBtn toAction sel f =
+  button (toAction $ not sel) (f . Style.btn (if sel then on else off))
+ where
+  on = Primary
+  off = Gray
+
+
+checkBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> Text -> View id ()
+checkBtn toAction sel lbl = do
+  View.button (gap 10 . onClick (toAction $ not sel) . flexRow) $ do
+    checkCircle sel id
+    text lbl
+
+
+checkCircle :: Bool -> Mod c -> View c ()
+checkCircle sel f =
+  el (f . rounded 100 . border 1 . width 20 . height 20 . Style.alignMiddle) $ do
+    content sel
+ where
+  content True = el (pad 2) Icons.check
+  content False = ""

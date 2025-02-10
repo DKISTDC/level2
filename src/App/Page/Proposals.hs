@@ -145,9 +145,9 @@ viewFilters fs = do
   col (gap 10) $ do
     el bold "Instrument"
     row (gap 5) $ do
-      toggle (FilterInstrument VISP) fs.visp.value id "VISP"
-      toggle (FilterInstrument VBI) fs.vbi id "VBI"
-      toggle (FilterInstrument CRYO_NIRSP) fs.cryo id "Cryo-NIRSP"
+      View.toggleBtn (FilterInstrument VISP) fs.visp.value id "VISP"
+      View.toggleBtn (FilterInstrument VBI) fs.vbi id "VBI"
+      View.toggleBtn (FilterInstrument CRYO_NIRSP) fs.cryo id "Cryo-NIRSP"
 
   col (gap 10) $ do
     el bold "Status"
@@ -156,21 +156,15 @@ viewFilters fs = do
       option Qualified "Qualified"
       option Active "Active"
       option Complete "Complete"
- where
-  toggle toAction sel f =
-    button (toAction $ not sel) (f . Style.btn (if sel then on else off))
 
-  -- clearButton =
-  --   layer (popup (R 0)) $ do
-  --     el (pad (XY 5 10) . shownIfTerm fs.propSearch) $ do
-  --       button (FilterProposal "") (width 24 . hover (color (light Secondary))) Icons.xCircle
-  --
-  -- shownIfTerm "" = hide
-  -- shownIfTerm _ = display Block
 
-  on = Primary
-  off = Gray
-
+-- clearButton =
+--   layer (popup (R 0)) $ do
+--     el (pad (XY 5 10) . shownIfTerm fs.propSearch) $ do
+--       button (FilterProposal "") (width 24 . hover (color (light Secondary))) Icons.xCircle
+--
+-- shownIfTerm "" = hide
+-- shownIfTerm _ = display Block
 
 -----------------------------------------------------
 -- ProposalCard

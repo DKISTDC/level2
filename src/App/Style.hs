@@ -99,8 +99,6 @@ input = pad 8 . border 1
 
 disabled :: Mod c
 disabled = noClick . opacity 0.5
- where
-  noClick = addClass $ cls "noclick" & prop @Text "pointer-events" "none"
 
 
 flexWrap :: Mod c
@@ -108,3 +106,21 @@ flexWrap =
   addClass $
     cls "fwrap"
       & prop @Text "flex-wrap" "wrap"
+
+
+alignMiddle :: Mod c
+alignMiddle =
+  addClass $
+    cls "amid"
+      & prop @Text "align-self" "center"
+
+
+pointer :: Mod c
+pointer =
+  addClass $
+    cls "point"
+      & prop @Text "cursor" "pointer"
+
+
+noClick :: Mod c
+noClick = addClass $ cls "no-click" & prop @Text "pointer-events" "none"

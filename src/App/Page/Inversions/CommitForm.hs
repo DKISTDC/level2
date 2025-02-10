@@ -5,7 +5,7 @@ module App.Page.Inversions.CommitForm where
 import App.Colors
 import App.Globus as Globus
 import App.Style qualified as Style
-import App.View.LiveInput (liveInput, onLoading)
+import App.View.LiveInput (liveInput)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
@@ -68,32 +68,18 @@ instance Show (CommitForm Validated) where
 
 commitForm :: Maybe GitCommit -> CommitForm Validated -> View InversionCommit ()
 commitForm gc vf = do
-  link "https://github.com/DKISTDC/ViSP-Inversion" (att "target" "_blank" . Style.link) $ text "ViSP-Inversion Git Commit"
-  liveInput (SaveCommit . GitCommit) (valStyle vf.gitCommit . inputValue gc . Style.input . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
-  invalidMessage vf.gitCommit
+  col (gap 5) $ do
+    link "https://github.com/DKISTDC/ViSP-Inversion" (att "target" "_blank" . Style.link . bold) $ text "ViSP-Inversion Git Commit"
+    liveInput (SaveCommit . GitCommit) (valStyle vf.gitCommit . inputValue gc . Style.input . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
+    invalidMessage vf.gitCommit
  where
-  -- let f = formFieldsWith vf
-  -- let val = validateWith @GitCommit @'[GitCommit] vg
-  -- form @CommitForm LoadValid (gap 10 . flexRow) $ do
-  --   submit (validationButton vf.gitCommit) "Save"
-  --   field f.gitCommit valStyle $ do
-  --     lbl
-  --     input TextInput (inputValue gc . Style.input . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
-  --     el (color Danger) invalidText
-
-  -- validationFeedback vg
-
-  -- validationFeedback (Invalid _) =
-  --   el (color Danger) "Invalid Git Commit"
-  -- validationFeedback _ = none
-
   inputValue Nothing = id
   inputValue (Just (GitCommit c)) = value c
 
   valStyle v = color (valColor v) . grow
 
   invalidMessage = \case
-    Invalid msg -> el (color Danger . onLoading hide) (text msg)
+    Invalid msg -> el (color Danger . onRequest hide) (text msg)
     _ -> none
 
   valColor (Invalid _) = Danger

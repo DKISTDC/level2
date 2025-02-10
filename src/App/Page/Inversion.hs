@@ -17,6 +17,7 @@ import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Inversions (inversionStepColor)
 import App.View.Layout
+import App.View.LiveInput (liveTextArea)
 import App.View.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
@@ -40,6 +41,7 @@ page
   -> Eff es (Page (InversionStatus : MoreInversions : InversionViews))
 page propId invId = do
   inv <- loadInversion invId
+  ds <- Datasets.find (Datasets.ByProgram inv.programId)
   mtok <- send AdminToken
   login <- send LoginUrl
   let admin = AdminLogin mtok login
@@ -63,7 +65,7 @@ page propId invId = do
           route (Route.Proposal inv.proposalId PropRoot) Style.link $ do
             text inv.proposalId.fromId
 
-      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv admin up gen pub
+      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds admin up gen pub
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
@@ -82,8 +84,8 @@ submitUpload propId invId = do
 
 
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
-loadInversion ii = do
-  (inv :| _) <- send (Inversions.ById ii) >>= expectFound
+loadInversion invId = do
+  (inv :| _) <- send (Inversions.ById invId) >>= expectFound
   pure inv
 
 
@@ -115,24 +117,25 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
 
 viewMoreInversions :: View MoreInversions ()
 viewMoreInversions = do
-  button CreateInversion (Style.btnOutline Primary) "Start Over with Another Inversion"
+  button CreateInversion (Style.btnOutline Primary) "Start Over With New Inversion"
 
 
 -------------------------------------------------------------------
 --- INVERSION STATUS
 -------------------------------------------------------------------
 
-type InversionViews = '[UploadTransfer, InversionCommit, GenerateStep, GenerateTransfer, PublishStep, InversionAdmin]
+type InversionViews = '[UploadTransfer, InversionCommit, GenerateStep, GenerateTransfer, PublishStep, InversionMeta]
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
+instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Upload
     | Reload
+    | SetDataset (Id Dataset) Bool
     deriving (Show, Read, ViewAction)
 
 
@@ -148,16 +151,21 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time 
           redirect $ Globus.fileManagerSelectUrl (Files 4) (Route.Proposal propId $ Route.Inversion invId SubmitUpload) ("Transfer Inversion Results " <> invId.fromId) r
       Reload -> do
         refresh
+      SetDataset dsetId sel -> do
+        inv <- loadInversion invId
+        Inversions.setDatasetUsed inv dsetId sel
+        refresh
    where
     refresh = do
-      InversionStatus ip _ ii <- viewId
+      InversionStatus propId progId invId <- viewId
+      ds <- Datasets.find (Datasets.ByProgram progId)
       mtok <- send AdminToken
       login <- send LoginUrl
-      inv <- loadInversion ii
-      up <- activeTransfer ii
-      gen <- send $ TaskLookupStatus $ GenFits ip ii
-      pub <- send $ TaskLookupStatus $ PublishTask ip ii
-      pure $ viewInversion inv (AdminLogin mtok login) up gen pub
+      inv <- loadInversion invId
+      up <- activeTransfer invId
+      gen <- send $ TaskLookupStatus $ GenFits propId invId
+      pub <- send $ TaskLookupStatus $ PublishTask propId invId
+      pure $ viewInversion inv ds (AdminLogin mtok login) up gen pub
 
 
 viewInversionContainer :: Inversion -> View c () -> View c ()
@@ -168,15 +176,12 @@ viewInversionContainer inv cnt =
       cnt
 
 
-viewInversion :: Inversion -> AdminLogin -> Maybe (Id Task) -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
-viewInversion inv admin up gen pub = do
+viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe (Id Task) -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion inv ds admin up gen pub = do
   col (gap 10) $ do
     viewInversionContainer inv $ do
-      datasetStep inv $ do
-        viewDatasets inv
-
       invertStep inv $ do
-        viewInvert inv up
+        viewInvert inv ds up
 
       generateStep inv $ do
         hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
@@ -186,73 +191,68 @@ viewInversion inv admin up gen pub = do
         hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
           viewPublish inv pub
 
-      hyper (InversionAdmin inv.proposalId inv.programId inv.inversionId) viewInversionAdmin
+      hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
 
-
-datasetStep :: Inversion -> View c () -> View c ()
-datasetStep _inv =
-  viewStep StepActive 1 "Datasets"
-
-
-viewDatasets :: Inversion -> View InversionStatus ()
--- viewDatasets _ StepDownloadNone = do
---   el_ "Please select a destination folder for the instrument program's datasets. You will be redirected to Globus."
---   row (gap 10) $ do
---     button Download (Style.btn Primary . grow) "Choose Folder"
--- -- button Cancel (Style.btnOutline Secondary) "Cancel"
--- viewDownload inv (StepDownloading dwn) = do
---   hyper (DownloadTransfer inv.proposalId inv.programId inv.inversionId dwn.transfer) (Transfer.viewLoadTransfer DwnTransfer)
--- viewDownload _ (StepDownloaded _) = do
---   row (gap 10) $ do
---     button Download (Style.btnOutline Secondary . grow) "Download Again"
-viewDatasets _inv = el_ "Datasets here"
-
-
--- button Cancel (Style.btnOutline Secondary) "Cancel"
 
 -------------------------------------------------------------------
---- INVERSION ADMIN
+--- INVERSION META
 -------------------------------------------------------------------
 
-data InversionAdmin = InversionAdmin (Id Proposal) (Id InstrumentProgram) (Id Inversion)
+data InversionMeta = InversionMeta (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es) => HyperView InversionAdmin es where
-  data Action InversionAdmin
+instance (Inversions :> es) => HyperView InversionMeta es where
+  data Action InversionMeta
     = AreYouSure
     | Delete
+    | SetNotes Text
     deriving (Show, Read, ViewAction)
 
 
-  update = \case
-    AreYouSure -> do
-      InversionAdmin _ _ invId <- viewId
-      inv <- loadInversion invId
-      pure $ viewInversionAdminConfim inv
-    Delete -> do
-      InversionAdmin propId progId invId <- viewId
-      send $ Inversions.Remove invId
-      redirect $ routeUrl $ Route.Proposal propId $ Route.Program progId Route.Prog
+  update action = do
+    InversionMeta propId progId invId <- viewId
+    case action of
+      AreYouSure -> do
+        inv <- loadInversion invId
+        pure $ viewInversionMeta' inv viewAreYouSure
+      Delete -> do
+        send $ Inversions.Remove invId
+        redirect $ routeUrl $ Route.Proposal propId $ Route.Program progId Route.Prog
+      SetNotes notes -> do
+        Inversions.setNotes invId notes
+        inv <- loadInversion invId
+        pure $ viewInversionMeta' inv viewDeleteBtn
 
 
-viewInversionAdmin :: View InversionAdmin ()
-viewInversionAdmin = do
+viewInversionMeta :: Inversion -> View InversionMeta ()
+viewInversionMeta inv = do
+  viewInversionMeta' inv $ do
+    if isInverted inv
+      then viewCannotDelete
+      else viewDeleteBtn
+
+
+viewInversionMeta' :: Inversion -> View InversionMeta () -> View InversionMeta ()
+viewInversionMeta' inv delContent = do
+  col (gap 20) $ do
+    col (gap 5) $ do
+      el bold "Notes"
+      liveTextArea SetNotes (att "rows" "3") inv.notes
+    delContent
+
+
+viewDeleteBtn :: View InversionMeta ()
+viewDeleteBtn = do
   button AreYouSure (Style.btnOutline Danger) "Delete Inversion"
 
 
-viewInversionAdminConfim :: Inversion -> View InversionAdmin ()
-viewInversionAdminConfim inv
-  | isInverted inv = viewCannotDelete
-  | otherwise = viewAreYouSure
-
-
-viewCannotDelete :: View InversionAdmin ()
+viewCannotDelete :: View InversionMeta ()
 viewCannotDelete = do
-  el (italic . color Secondary) "This has uploaded inversion results, it can no longer be deleted. Please create new inversion instead"
+  el (italic . color Secondary) "This Inversion has uploaded results, it can no longer be deleted. Please create new one instead"
 
 
-viewAreYouSure :: View InversionAdmin ()
+viewAreYouSure :: View InversionMeta ()
 viewAreYouSure = do
   col (gap 15) $ do
     el (bold . color Danger) "Are you sure?"
@@ -275,32 +275,32 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time 
 
 
   update (UpTransfer action) = do
-    UploadTransfer ip iip invId ti <- viewId
+    UploadTransfer propId progId invId ti <- viewId
     case action of
       TaskFailed -> do
         pure $ do
           col (gap 10) $ do
             Transfer.viewTransferFailed ti
-            target (InversionStatus ip iip invId) $ do
+            target (InversionStatus propId progId invId) $ do
               uploadSelect (Invalid "Upload Task Failed")
       TaskSucceeded -> do
         Inversions.setUploaded invId
         -- reload the parent
-        pure $ target (InversionStatus ip iip invId) $ do
+        pure $ target (InversionStatus propId progId invId) $ do
           el (onLoad Reload 200) $ do
             uploadSelect Valid
       CheckTransfer -> Transfer.checkTransfer UpTransfer ti
 
 
 -- invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
--- invertReload ip ii vw = do
---   inv <- loadInversion ii
+-- invertReload propId invId vw = do
+--   inv <- loadInversion invId
 --   pure $ target (InversionStatus inv.proposalId inv.inversionId) $ onLoad Reload 0 none
 
 -- -- | Check to see if we are have all the inversion fields filled out and need to reload
 -- checkInvertReload :: (HyperViewHandled InversionStatus id, Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
--- checkInvertReload ip ii vw = do
---   inv <- loadInversion ii
+-- checkInvertReload propId invId vw = do
+--   inv <- loadInversion invId
 --   pure $ case inv.step of
 --     StepGenerate _ -> hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ onLoad Reload 0 none
 --     _ -> vw
@@ -314,34 +314,31 @@ data Step
 
 invertStep :: Inversion -> View c () -> View c ()
 invertStep inv =
-  viewStep status 2 "Invert"
+  viewStep status 1 "Invert"
  where
   status
     | isInverted inv = StepDone
     | otherwise = StepActive
 
 
-viewInvert :: Inversion -> Maybe (Id Task) -> View InversionStatus ()
-viewInvert inv mtfer = do
-  col (gap 10) $ do
-    if isInverted inv
-      then viewComplete
-      else viewInverting
- where
-  viewInverting = do
+viewDatasets :: Inversion -> [Dataset] -> View InversionStatus ()
+viewDatasets inv ds = do
+  col (gap 5) $ do
+    el bold "Datasets Used"
+    forM_ ds $ \d -> do
+      View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets) d.datasetId.fromId
+
+
+viewInvert :: Inversion -> [Dataset] -> Maybe (Id Task) -> View InversionStatus ()
+viewInvert inv ds mtfer = do
+  col (gap 15) $ do
+    viewDatasets inv ds
+
     hyper (InversionCommit inv.proposalId inv.inversionId) $ do
       CommitForm.commitForm inv.invert.commit (CommitForm.fromExistingCommit inv.invert.commit)
 
     viewUploadTransfer mtfer
-  viewComplete = do
-    let mc = inv.invert.commit
-    -- let mt = Just inverted.transfer
-    hyper (InversionCommit inv.proposalId inv.inversionId) $ do
-      CommitForm.commitForm mc (CommitForm.fromExistingCommit mc)
-    col (gap 5) $ do
-      el_ "Upload Inversion Results"
-      button Upload (Style.btnOutline Success . grow) "Select New Files"
-
+ where
   viewUploadTransfer = \case
     Just it -> do
       hyper (UploadTransfer inv.proposalId inv.programId inv.inversionId it) (Transfer.viewLoadTransfer UpTransfer)
@@ -351,23 +348,24 @@ viewInvert inv mtfer = do
 
 uploadSelect :: Validated (Id Task) -> View InversionStatus ()
 uploadSelect val = do
-  col (gap 5 . file val) $ do
-    el id "Upload Inversion Results"
-    instructions val
-    ul id $ do
-      li id "inv_res_pre.fits"
-      li id "per_ori.fits"
-      li id "inv_res_mod.fits"
-    -- li id "timestamps.tsv"
+  col (gap 10 . file val) $ do
+    el bold "Inversion Results"
+    col (gap 5) $ do
+      uploadedFile True "inv_res_pre.fits"
+      uploadedFile True "per_ori.fits"
+      uploadedFile False "inv_res_mod.fits"
     case val of
-      Valid -> button Upload (Style.btnOutline Success . grow) "Select New Files"
-      _ -> button Upload (Style.btn Primary . grow) "Select Files"
+      Valid -> View.iconButton Upload (Style.btnOutline Success . grow) Icons.upTray "Select New Files"
+      _ -> View.iconButton Upload (Style.btn Primary . grow) Icons.upTray "Select Files"
  where
   file Valid = color Success
   file _ = color Black
 
-  instructions Valid = none
-  instructions _ = el_ "Please select the following files for upload. You will be redirected to Globus"
+  uploadedFile sel lbl =
+    row (gap 5 . if sel then color Success else id) $ do
+      el (width 15 . height 15 . Style.alignMiddle) $ do
+        if sel then Icons.check else ""
+      text lbl
 
 
 -- ----------------------------------------------------------------
@@ -391,18 +389,18 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
 
 
   update action = do
-    GenerateStep _ _ ii <- viewId
+    GenerateStep _ _ invId <- viewId
     case action of
       ReloadGen ->
         refresh
       RegenError -> do
-        Inversions.clearError ii
+        Inversions.clearError invId
         refreshInversion
       RegenFits -> do
-        Inversions.resetGenerating ii
+        Inversions.resetGenerating invId
         refreshInversion
       RegenAsdf -> do
-        Inversions.resetGeneratingAsdf ii
+        Inversions.resetGeneratingAsdf invId
         refreshInversion
    where
     refresh = do
@@ -422,13 +420,13 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
         viewGenerate inv (AdminLogin mtok login) status
 
     refreshInversion = do
-      GenerateStep ip iip ii <- viewId
-      pure $ target (InversionStatus ip iip ii) $ el (onLoad Reload 0) "RELOAD?"
+      GenerateStep propId progId invId <- viewId
+      pure $ target (InversionStatus propId progId invId) $ el (onLoad Reload 0) "RELOAD?"
 
 
 generateStep :: Inversion -> View c () -> View c ()
 generateStep inv =
-  viewStep status 3 "Generate"
+  viewStep status 2 "Generate"
  where
   status
     | isGenerated inv = StepDone
@@ -511,19 +509,19 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
 
 
   update (GenTransfer action) = do
-    GenerateTransfer ip iip ii ti <- viewId
+    GenerateTransfer propId progId invId taskId <- viewId
     case action of
       TaskFailed -> do
         pure $ do
-          Transfer.viewTransferFailed ti
-          target (GenerateStep ip iip ii) $ do
+          Transfer.viewTransferFailed taskId
+          target (GenerateStep propId progId invId) $ do
             button RegenFits (Style.btn Primary) "Restart Transfer"
       TaskSucceeded ->
         pure $ do
-          target (GenerateStep ip iip ii) $ do
+          target (GenerateStep propId progId invId) $ do
             el (onLoad ReloadGen 1000) "SUCCEEDED"
       CheckTransfer -> do
-        Transfer.checkTransfer GenTransfer ti
+        Transfer.checkTransfer GenTransfer taskId
 
 
 viewGeneratedFiles :: Inversion -> View c ()
@@ -537,7 +535,7 @@ viewGeneratedFiles inv =
 
 publishStep :: Inversion -> View c () -> View c ()
 publishStep inv =
-  viewStep' status 4 "Publish" none
+  viewStep' status 3 "Publish" none
  where
   status
     | isPublished inv = StepDone

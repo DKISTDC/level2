@@ -9,6 +9,7 @@ import Effectful.Time
 import NSO.Data.Inversions.Effect
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Dataset (Dataset)
 import NSO.Types.Inversion
 
 
@@ -75,3 +76,23 @@ resetGeneratingAsdf :: (Inversions :> es) => Id Inversion -> Eff es ()
 resetGeneratingAsdf iid = do
   send $ Update iid $ \InversionRow{..} ->
     InversionRow{invError = lit Nothing, generateAsdf = lit Nothing, published = lit Nothing, ..}
+
+
+setDatasetUsed :: (Inversions :> es) => Inversion -> Id Dataset -> Bool -> Eff es ()
+setDatasetUsed inv dsetId sel = do
+  send $ Update inv.inversionId $ \InversionRow{..} ->
+    InversionRow{datasets = lit $ setDataset sel dsetId inv.datasets, ..}
+ where
+  setDataset True = addDataset
+  setDataset False = remDataset
+  remDataset d =
+    filter (/= d)
+  addDataset d ds =
+    if d `elem` ds
+      then ds
+      else d : ds
+
+
+setNotes :: (Inversions :> es) => Id Inversion -> Text -> Eff es ()
+setNotes invId txt = do
+  send $ Update invId $ \InversionRow{..} -> InversionRow{notes = lit txt, ..}
