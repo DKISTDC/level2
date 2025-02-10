@@ -35,16 +35,17 @@ module App.Globus
   , initTransfer
   , isTransferComplete
   , GlobusError (..)
+  , catchGlobus
   ) where
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Route (AppRoute)
-import Control.Monad.Catch (Exception, throwM)
 import Data.Tagged
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Exception (Exception, catch)
 import Effectful.Globus
 import Effectful.Globus qualified as Globus
 import Effectful.Log
@@ -58,7 +59,10 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
 import Network.Globus.Auth (TokenItem, UserEmail (..), UserInfo, UserInfoResponse (..), UserProfile, scopeToken)
 import Network.Globus.Transfer (taskPercentComplete)
-import Network.HTTP.Types (QueryItem)
+import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..), responseStatus)
+import Network.HTTP.Client qualified as HTTP
+import Network.HTTP.Req qualified as Req
+import Network.HTTP.Types (QueryItem, unauthorized401)
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (Param (..))
 import Web.Hyperbole.Effect.Server (Host (..))
@@ -95,7 +99,7 @@ data UserLoginInfo = UserLoginInfo
   deriving (Show)
 
 
-userInfo :: (Globus :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
+userInfo :: (Globus :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
 userInfo tis = do
   oid <- requireScopeToken (Identity OpenId)
   Tagged trn <- requireScopeToken TransferAll
@@ -109,9 +113,8 @@ userInfo tis = do
       , transfer = Tagged trn
       }
  where
-  requireScopeToken :: Scope -> Eff es (Token a)
   requireScopeToken s = do
-    Tagged t <- maybe (throwM $ MissingScope s tis) pure $ scopeToken s tis
+    Tagged t <- maybe (throwError $ MissingScope s tis) pure $ scopeToken s tis
     pure $ Tagged t
 
 
@@ -226,10 +229,10 @@ instance Form (UploadFiles Filename) Maybe where
         else Left $ "Missing required file: " <> cs file
 
 
-transferStatus :: (Reader (Token Access) :> es, Globus :> es) => App.Id Task -> Eff es Task
+transferStatus :: (Log :> es, Reader (Token Access) :> es, Globus :> es, Error GlobusError :> es) => App.Id Task -> Eff es Task
 transferStatus (Id ti) = do
   acc <- ask
-  send $ StatusTask acc (Tagged ti)
+  catchGlobus $ send $ StatusTask acc (Tagged ti)
 
 
 initTransfer :: (Globus :> es, Reader (Token Access) :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (App.Id Task)
@@ -382,6 +385,9 @@ scratchCollection = do
 data GlobusError
   = MissingScope Scope (NonEmpty TokenItem)
   | TransferFailed (App.Id Task)
+  | Unauthorized HTTP.Request
+  | StatusError HTTP.Request
+  | ReqError Req.HttpException
   deriving (Exception, Show)
 
 
@@ -394,3 +400,25 @@ isTransferComplete it = do
     _ -> do
       log Debug $ dump "Transfer" $ taskPercentComplete task
       pure False
+
+
+catchGlobus :: (Log :> es, Globus :> es, Error GlobusError :> es) => Eff es a -> Eff es a
+catchGlobus eff =
+  catch eff onGlobusErr
+ where
+  onGlobusErr = \case
+    Req.VanillaHttpException (HttpExceptionRequest req (StatusCodeException res _body)) -> do
+      log Err $ dump "GLOBUS StatusCodeException" (req, res)
+      onStatusErr req $ responseStatus res
+    ex -> do
+      log Err $ dump "GLOBUS HttpException" ex
+      throwError $ ReqError ex
+
+  onStatusErr req status
+    | status == unauthorized401 = throwError $ Unauthorized req
+    | otherwise = throwError $ StatusError req
+
+-- pure $ Hyperbole.Err $ Hyperbole.ErrOther $ "Globus request to " <> cs (path req) <> " failed with:\n " <> cs (show status)
+-- onGlobusErr ex = do
+--   log Err $ dump "GLOBUS" ex
+--   pure $ Hyperbole.Err $ Hyperbole.ErrOther "Globus Error"

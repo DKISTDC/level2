@@ -9,8 +9,6 @@ import App.Globus (DownloadFolder, FileLimit (Folders), Globus, TransferForm)
 import App.Globus qualified as Globus
 import App.Page.Inversion qualified as Inversion
 import App.Page.Inversions (rowInversion)
-import App.Page.Inversions.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
-import App.Page.Inversions.Transfer qualified as Transfer
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
@@ -20,9 +18,12 @@ import App.View.Icons qualified as Icons
 import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
+import App.View.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
+import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker
 import Data.Grouped (Grouped (..))
 import Data.List.NonEmpty qualified as NE
+import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log hiding (Info)
@@ -245,7 +246,7 @@ data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Show, Read, ViewId)
 
 
-instance (Globus :> es, Auth :> es, Datasets :> es) => HyperView DownloadTransfer es where
+instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView DownloadTransfer es where
   data Action DownloadTransfer
     = DwnTransfer TransferAction
     deriving (Show, Read, ViewAction)
@@ -267,8 +268,7 @@ instance (Globus :> es, Auth :> es, Datasets :> es) => HyperView DownloadTransfe
           redownloadBtn (Style.btn Primary) "Download Datasets"
           row (gap 10 . color Success) $ do
             el_ "Successfully Downloaded: "
-            forM_ ds $ \d -> do
-              el_ $ text d.datasetId.fromId
+            el_ $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
       CheckTransfer -> do
         vw <- Transfer.checkTransfer DwnTransfer taskId
         pure $ col (gap 10) $ do

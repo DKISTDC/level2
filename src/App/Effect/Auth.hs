@@ -1,6 +1,6 @@
 module App.Effect.Auth where
 
-import App.Globus (UserEmail (..), UserLoginInfo (..))
+import App.Globus (GlobusError (..), UserEmail (..), UserLoginInfo (..))
 import App.Globus qualified as Globus
 import App.Types
 import Control.Monad (void)
@@ -8,6 +8,7 @@ import Data.Tagged
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Globus
 import Effectful.Globus qualified as Globus
 import Effectful.Log
@@ -40,7 +41,7 @@ type instance DispatchOf Auth = 'Dynamic
 
 
 runAuth
-  :: (Globus :> es, Route r, Concurrent :> es, Log :> es)
+  :: (Globus :> es, Route r, Concurrent :> es, Log :> es, Error GlobusError :> es)
   => AppDomain
   -> r
   -> AuthState

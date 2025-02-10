@@ -12,11 +12,9 @@ import App.View.DataRow (dataRows)
 import App.View.Icons as Icons
 import App.View.Layout
 import Data.Aeson qualified as A
-import Effectful.Error.Static
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Scan
-import NSO.Error
 import NSO.Metadata (Metadata)
 import NSO.Prelude
 import Numeric (showFFloat)
@@ -27,7 +25,7 @@ import Web.View.Style (addClass, cls, prop)
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es, Auth :> es) => Eff es (Page '[AllDatasets, DatasetRow])
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Auth :> es) => Eff es (Page '[AllDatasets, DatasetRow])
 page = do
   ds <- Datasets.find Datasets.All
   appLayout (Datasets DatasetRoot) $ do
@@ -38,7 +36,7 @@ data AllDatasets = AllDatasets
   deriving (Show, Read, ViewId)
 
 
-instance (Time :> es, Datasets :> es, Metadata :> es, Error DataError :> es) => HyperView AllDatasets es where
+instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView AllDatasets es where
   data Action AllDatasets
     = RunScan
     | Existing

@@ -28,7 +28,6 @@ import Effectful.Concurrent.STM
 import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Environment
 import Effectful.Error.Static
-import Effectful.Exception (catch)
 import Effectful.Fail
 import Effectful.FileSystem
 import Effectful.GenRandom
@@ -40,16 +39,12 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
-import NSO.Error
 import NSO.Metadata as Metadata
 import NSO.Prelude
-import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..), path, responseStatus)
-import Network.HTTP.Req qualified as Req
 import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
-import Web.Hyperbole.Effect.Server qualified as Hyperbole
 
 
 main :: IO ()
@@ -105,6 +100,7 @@ main = do
   runInit =
     runLogger "Init"
       . runErrorWith @Rel8Error crashWithError
+      . runErrorWith @GlobusError crashWithError
       . runFailIO
       . runEnvironment
 
@@ -156,16 +152,16 @@ webServer config auth fits asdf pubs =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error DataError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es) => Eff (Debug : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runConcurrent
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
-      . runErrorWith @DataError crashWithError
+      . runErrorWith @GlobusError crashWithError
       . runFileSystem
       . runScratch config.scratch
-      . (flip catch onGlobusErr . runGlobus' config.globus)
+      . runGlobus' config.globus
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
@@ -178,15 +174,6 @@ webServer config auth fits asdf pubs =
       . runTasks asdf
       . runTasks pubs
       . runDebugIO
-
-  onGlobusErr :: (Log :> es) => Req.HttpException -> Eff es Response
-  onGlobusErr (Req.VanillaHttpException (HttpExceptionRequest req (StatusCodeException res _body))) = do
-    log Err $ dump "GLOBUS StatusCodeException" (req, res)
-    let status = responseStatus res
-    pure $ Hyperbole.Err $ Hyperbole.ErrOther $ "Globus request to " <> cs (path req) <> " failed with:\n " <> cs (show status)
-  onGlobusErr ex = do
-    log Err $ dump "GLOBUS" ex
-    pure $ Hyperbole.Err $ Hyperbole.ErrOther "Globus Error"
 
   runGraphQL' True = runGraphQLMock Metadata.mockRequest
   runGraphQL' False = runGraphQL

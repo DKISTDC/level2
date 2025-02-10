@@ -38,7 +38,6 @@ library
       App.Page.Inversion
       App.Page.Inversions
       App.Page.Inversions.CommitForm
-      App.Page.Inversions.Transfer
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
@@ -54,6 +53,7 @@ library
       App.View.Layout
       App.View.LiveInput
       App.View.ProposalDetails
+      App.View.Transfer
       App.Worker.CPU
       App.Worker.Generate
       App.Worker.GenWorker
@@ -72,7 +72,6 @@ library
       NSO.Data.Qualify
       NSO.Data.Scan
       NSO.Data.Spectra
-      NSO.Error
       NSO.Image.Asdf
       NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable

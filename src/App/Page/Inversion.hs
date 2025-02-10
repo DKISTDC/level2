@@ -11,14 +11,14 @@ import App.Error (expectFound)
 import App.Globus as Globus
 import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
-import App.Page.Inversions.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
-import App.Page.Inversions.Transfer qualified as Transfer
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Inversions (inversionStepColor)
 import App.View.Layout
+import App.View.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
+import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
 import Effectful
@@ -237,7 +237,7 @@ data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id In
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es) => HyperView UploadTransfer es where
+instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Log :> es) => HyperView UploadTransfer es where
   data Action UploadTransfer
     = UpTransfer TransferAction
     deriving (Show, Read, ViewAction)
@@ -473,7 +473,7 @@ data GenerateTransfer = GenerateTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Show, Read, ViewId)
 
 
-instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => HyperView GenerateTransfer es where
+instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView GenerateTransfer es where
   type Require GenerateTransfer = '[GenerateStep]
   data Action GenerateTransfer
     = GenTransfer TransferAction
@@ -519,7 +519,7 @@ data PublishStep = PublishStep (Id Proposal) (Id InstrumentProgram) (Id Inversio
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es) => HyperView PublishStep es where
+instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es) => HyperView PublishStep es where
   type Require PublishStep = '[InversionStatus]
 
 

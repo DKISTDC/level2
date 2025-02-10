@@ -1,4 +1,4 @@
-module App.Page.Inversions.Transfer where
+module App.View.Transfer where
 
 import App.Colors
 import App.Effect.Auth
@@ -9,8 +9,11 @@ import App.View.Icons as Icons
 import Data.Default (Default (..))
 import Data.Map.Strict qualified as M
 import Effectful
+import Effectful.Error.Static
+import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
+import Network.HTTP.Client qualified as HTTP
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View qualified as WebView
@@ -47,7 +50,7 @@ activeTransfer ida = do
 
 
 -----------------------------------------------------
--- Inversion Transfer
+-- TransferAction -- view helpers
 -----------------------------------------------------
 
 data TransferAction
@@ -58,10 +61,12 @@ data TransferAction
 
 
 -- I want it to reload itself and call these when necessary
-checkTransfer :: (ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
+checkTransfer :: (Log :> es, ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer toAction it = do
-  task <- requireLogin $ Globus.transferStatus it
-  pure $ viewTransfer toAction it task
+  res <- requireLogin $ runErrorNoCallStack @GlobusError $ Globus.transferStatus it
+  pure $ case res of
+    Left err -> viewTransferError err it
+    Right task -> viewTransfer toAction it task
 
 
 viewLoadTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> View id ()
@@ -97,10 +102,25 @@ viewTransferProgress it task = do
   rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
 
 
+viewTransferError :: GlobusError -> Id Task -> View c ()
+viewTransferError err =
+  viewTransferFailed' message
+ where
+  message =
+    case err of
+      Unauthorized req -> "Unauthorized: " <> cs (HTTP.host req) <> cs (HTTP.path req)
+      _ -> cs $ show err
+
+
 viewTransferFailed :: Id Task -> View c ()
-viewTransferFailed it = do
-  row id $ do
-    el (color Danger) "Transfer Failed"
+viewTransferFailed = do
+  viewTransferFailed' "Transfer Failed"
+
+
+viewTransferFailed' :: Text -> Id Task -> View c ()
+viewTransferFailed' msg it = do
+  row Style.flexWrap $ do
+    el (color Danger) (text msg)
     space
     activityLink it
 

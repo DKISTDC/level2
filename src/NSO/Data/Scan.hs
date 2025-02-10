@@ -6,10 +6,8 @@ import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
 import Effectful.Dispatch.Dynamic
-import Effectful.Error.Static
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
-import NSO.Error
 import NSO.Metadata
 import NSO.Prelude
 
@@ -45,7 +43,7 @@ data ScanResult = ScanResult
 data ScanError = ScanError String Value
 
 
-scanDatasetInventory :: (Metadata :> es, Time :> es, Error DataError :> es) => Eff es ScanResult
+scanDatasetInventory :: (Metadata :> es, Time :> es) => Eff es ScanResult
 scanDatasetInventory = do
   now <- currentTime
   ads <- send AllDatasets
@@ -61,7 +59,7 @@ scanDatasetInventory = do
   scanError (Right _) = Nothing
 
 
-syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es, Error DataError :> es) => Eff es SyncResults
+syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es) => Eff es SyncResults
 syncDatasets = do
   scan <- scanDatasetInventory
   old <- indexed <$> Datasets.find All
