@@ -36,7 +36,6 @@ import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
-import Network.HTTP.Types (Query)
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (fromQueryData)
 

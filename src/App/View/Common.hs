@@ -54,11 +54,10 @@ toggleBtn toAction sel f =
   off = Gray
 
 
-checkBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> Text -> View id ()
-checkBtn toAction sel lbl = do
-  View.button (gap 10 . onClick (toAction $ not sel) . flexRow) $ do
+checkBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> View id ()
+checkBtn toAction sel = do
+  View.button (onClick (toAction $ not sel)) $ do
     checkCircle sel id
-    text lbl
 
 
 checkCircle :: Bool -> Mod c -> View c ()

@@ -111,8 +111,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
   update = \case
     CreateInversion -> do
       MoreInversions propId progId <- viewId
-      inv <- send $ Inversions.Create propId progId
-      redirect $ Route.inversionUrl propId inv.inversionId
+      redirect $ routeUrl $ Route.Proposal propId $ Program progId Prog
 
 
 viewMoreInversions :: View MoreInversions ()
@@ -207,6 +206,7 @@ instance (Inversions :> es) => HyperView InversionMeta es where
     = AreYouSure
     | Delete
     | SetNotes Text
+    | Cancel
     deriving (Show, Read, ViewAction)
 
 
@@ -223,6 +223,9 @@ instance (Inversions :> es) => HyperView InversionMeta es where
         Inversions.setNotes invId notes
         inv <- loadInversion invId
         pure $ viewInversionMeta' inv viewDeleteBtn
+      Cancel -> do
+        inv <- loadInversion invId
+        pure $ viewInversionMeta inv
 
 
 viewInversionMeta :: Inversion -> View InversionMeta ()
@@ -255,8 +258,10 @@ viewCannotDelete = do
 viewAreYouSure :: View InversionMeta ()
 viewAreYouSure = do
   col (gap 15) $ do
-    el (bold . color Danger) "Are you sure?"
-    button Delete (Style.btn Danger) "Delete This Inverion"
+    el (bold . color Danger) "Are you sure? This cannot be undone"
+    row (gap 10) $ do
+      button Cancel (Style.btnOutline Secondary . grow) "Cancel"
+      button Delete (Style.btn Danger) "Delete This Inverion"
 
 
 -------------------------------------------------------------------
@@ -326,7 +331,9 @@ viewDatasets inv ds = do
   col (gap 5) $ do
     el bold "Datasets Used"
     forM_ ds $ \d -> do
-      View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets) d.datasetId.fromId
+      row (gap 10) $ do
+        View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets)
+        route (Route.Datasets $ Dataset d.datasetId) Style.link $ text d.datasetId.fromId
 
 
 viewInvert :: Inversion -> [Dataset] -> Maybe (Id Task) -> View InversionStatus ()
