@@ -19,11 +19,11 @@ import Telescope.Asdf
 import Telescope.Data.Parser (expected)
 import Telescope.Fits as Telescope
 import Text.Read (readMaybe)
-import Web.Hyperbole (FromParam (..), Route)
+import Web.Hyperbole (FromParam (..), Route, ToParam (..))
 
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Read, Eq, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword)
+  deriving newtype (Show, Read, Eq, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword, ToParam, FromParam)
   deriving (Generic)
 
 
@@ -120,6 +120,7 @@ newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
 type Path = Path' File
 
 
+-- would use the default "String = [Char]" instance
 instance FromParam (Path' t a) where
   parseParam t = do
     f <- parseParam @Text t

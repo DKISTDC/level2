@@ -18,7 +18,7 @@ import App.View.Icons qualified as Icons
 import App.View.Inversions (inversionStepLabel)
 import App.View.Layout
 import App.View.ProposalDetails
-import App.View.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
+import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker
 import Data.Grouped (Grouped (..))
@@ -36,7 +36,9 @@ import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
+import Network.HTTP.Types (Query)
 import Web.Hyperbole
+import Web.Hyperbole.Data.QueryData (fromQueryData)
 
 
 page
@@ -49,7 +51,7 @@ page propId progId = do
   progs <- Programs.loadProgram progId >>= expectFound
   let prog = head progs
   now <- currentTime
-  download <- activeTransfer progId
+  ActiveDownload download <- query
 
   appLayout Route.Proposals $ do
     col (Style.page . gap 30) $ do
@@ -87,6 +89,12 @@ page propId progId = do
 -- SUBMIT DOWNLOAD
 -- ----------------------------------------------------------------
 
+data ActiveDownload = ActiveDownload
+  { downloadTaskId :: Maybe (Id Globus.Task)
+  }
+  deriving (Generic, ToQuery, FromQuery)
+
+
 submitDownload :: (Log :> es, Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
 submitDownload propId progId = do
   tfrm <- formData @TransferForm
@@ -94,9 +102,16 @@ submitDownload propId progId = do
   ds <- Datasets.find $ Datasets.ByProgram progId
   taskId <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
 
-  saveActiveTransfer progId taskId
+  let dwn = ActiveDownload (Just taskId)
 
-  redirect $ routeUrl (Route.Proposal propId $ Route.Program progId Route.Prog)
+  redirect $ activeDownloadQuery dwn $ routeUrl (Route.Proposal propId $ Route.Program progId Route.Prog)
+ where
+  setUrlQuery q Url{scheme, domain, path} =
+    Url{scheme, domain, path, query = q}
+
+  activeDownloadQuery :: ActiveDownload -> Url -> Url
+  activeDownloadQuery ad =
+    setUrlQuery (fromQueryData $ toQuery ad)
 
 
 ----------------------------------------------------
@@ -218,7 +233,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
     progs <- Programs.loadProgram progId
-    download <- activeTransfer progId
+    ActiveDownload download <- query
     pure $ do
       forM_ progs $ \prog -> do
         viewDatasets (NE.toList prog.datasets.items) srt download
