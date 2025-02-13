@@ -14,6 +14,7 @@ import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
+import System.FilePath (takeDirectory, takeFileName)
 import System.FilePath qualified as FP
 import Telescope.Asdf
 import Telescope.Data.Parser (expected)
@@ -120,11 +121,17 @@ newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
 type Path = Path' File
 
 
--- would use the default "String = [Char]" instance
-instance FromParam (Path' t a) where
+-- we don't want to use the default "String = [Char]" instance
+instance FromParam (Path' Filename a) where
   parseParam t = do
     f <- parseParam @Text t
-    pure $ Path (cs f)
+    pure $ Path (takeFileName $ cs f)
+
+
+instance FromParam (Path' Dir a) where
+  parseParam t = do
+    f <- parseParam @Text t
+    pure $ Path (takeDirectory $ cs f)
 
 
 (</>) :: Path' x a -> Path' y b -> Path' z c

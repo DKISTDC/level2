@@ -6,6 +6,7 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Web.Hyperbole
+import Web.Hyperbole.Route (genMatchRoute, genRoutePath)
 
 
 data AppRoute
@@ -34,7 +35,6 @@ instance Route ProposalRoute where
 
 data InversionRoute
   = Inv
-  | SubmitUpload
   deriving (Show, Generic, Eq)
 instance Route InversionRoute where
   baseRoute = Just Inv
@@ -43,12 +43,20 @@ instance Route InversionRoute where
 data ProgramRoute
   = Prog
   | SubmitDownload
+  | SubmitUpload (Id Inversion)
+  | InvUpload (Id Inversion)
   deriving (Show, Generic, Eq)
 instance Route ProgramRoute where
   baseRoute = Just Prog
+
+
+  routePath (InvUpload invId) = ["upload", invId.fromId]
+  routePath other = genRoutePath other
+
+
   matchRoute [] = Just Prog
-  matchRoute ["submitdownload"] = Just SubmitDownload
-  matchRoute _ = Nothing
+  matchRoute ["upload", invId] = Just $ InvUpload $ Id invId
+  matchRoute segs = genMatchRoute segs
 
 
 data DatasetRoute
@@ -70,5 +78,25 @@ instance Route DevRoute where
   baseRoute = Just DevAuth
 
 
-inversionUrl :: Id Proposal -> Id Inversion -> Url
-inversionUrl ip ii = routeUrl $ App.Route.Proposal ip $ App.Route.Inversion ii Inv
+inversion :: Id Proposal -> Id Inversion -> AppRoute
+inversion ip ii = App.Route.Proposal ip $ App.Route.Inversion ii Inv
+
+
+inversionUpload :: Id Proposal -> Id InstrumentProgram -> Id Inversion -> AppRoute
+inversionUpload propId progId invId =
+  App.Route.Proposal propId $ Program progId $ InvUpload invId
+
+
+submitUpload :: Id Proposal -> Id InstrumentProgram -> Id Inversion -> AppRoute
+submitUpload propId progId invId =
+  App.Route.Proposal propId $ Program progId $ SubmitUpload invId
+
+
+proposal :: Id Proposal -> AppRoute
+proposal propId =
+  App.Route.Proposal propId PropRoot
+
+
+program :: Id Proposal -> Id InstrumentProgram -> AppRoute
+program propId progId =
+  App.Route.Proposal propId $ Program progId Prog

@@ -41,7 +41,9 @@ module App.Globus
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Route (AppRoute)
+import Data.List qualified as L
 import Data.Tagged
+import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -63,10 +65,10 @@ import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..), respo
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Req qualified as Req
 import Network.HTTP.Types (QueryItem, unauthorized401)
+import Web.FormUrlEncoded qualified as FUE
 import Web.Hyperbole
-import Web.Hyperbole.Data.QueryData (Param (..))
 import Web.Hyperbole.Effect.Server (Host (..))
-import Web.Hyperbole.View.Forms (formLookupParam)
+import Web.Hyperbole.View.Forms (formLookupParam, formParseParam)
 import Web.View as WebView
 
 
@@ -126,8 +128,8 @@ data FileLimit
   | Files Int
 
 
-fileManagerSelectUrl :: FileLimit -> AppRoute -> Text -> Request -> Url
-fileManagerSelectUrl lmt r lbl req =
+fileManagerSelectUrl :: FileLimit -> Url -> Text -> Request -> Url
+fileManagerSelectUrl lmt red lbl req =
   Url
     "https://"
     "app.globus.org"
@@ -149,15 +151,17 @@ fileManagerSelectUrl lmt r lbl req =
   folderLimit (Folders n) = show n
   folderLimit (Files _) = "0"
 
-  serverUrl :: [Text] -> Url
-  serverUrl p = Url "https://" (cs req.host.text) p []
+  serverUrl :: Url -> Url
+  serverUrl u =
+    Url "https://" (cs req.host.text) u.path u.query
 
   currentUrl' :: Url
-  currentUrl' = serverUrl req.path
+  currentUrl' = Url "https://" (cs req.host.text) req.path $ filter notHyperbole req.query
 
   submitUrl :: Url
-  submitUrl =
-    serverUrl $ routePath r
+  submitUrl = serverUrl red
+
+  notHyperbole (k, _) = not $ T.isPrefixOf "hyp-" (cs k)
 
 
 -- DEBUG ONLY: hard coded aasgard
@@ -176,23 +180,23 @@ fileManagerOpenDir origin dir =
     ]
 
 
-data TransferForm f = TransferForm
-  { label :: Field f Text
+data TransferForm = TransferForm
+  { label :: Text
   , -- , endpoint :: Field Text
-    path :: Field f (Path' Dir TransferForm)
-  , endpoint_id :: Field f Text
+    path :: Path' Dir TransferForm
+  , endpoint_id :: Text
   }
   deriving (Generic)
-instance Form TransferForm Maybe
-instance Show (TransferForm Identity) where
+instance FormParse TransferForm
+instance Show TransferForm where
   show tf = "TransferForm " <> unwords [show tf.label, show tf.path, show tf.endpoint_id]
 
 
-data DownloadFolder f = DownloadFolder
-  { folder :: Field f (Maybe (Path' Dir DownloadFolder))
+data DownloadFolder = DownloadFolder
+  { folder :: Maybe (Path' Dir DownloadFolder)
   }
   deriving (Generic)
-instance Form DownloadFolder Maybe where
+instance FormParse DownloadFolder where
   formParse f = do
     DownloadFolder <$> formLookupParam "folder[0]" f
 
@@ -204,29 +208,31 @@ data UploadFiles t f = UploadFiles
   -- , timestamps :: Path' t Timestamps
   }
   deriving (Generic)
-instance Form (UploadFiles Filename) Maybe where
+instance Show (UploadFiles Filename Maybe) where
+  show (UploadFiles q pf po) = "UploadFiles " <> show q <> " " <> show pf <> " " <> show po
+instance FormParse (UploadFiles Filename Maybe) where
   formParse f = do
-    fs <- multi "file"
-    quantities <- findFile Scratch.fileQuantities fs
-    profileFit <- findFile Scratch.fileProfileFit fs
-    profileOrig <- findFile Scratch.fileProfileOrig fs
-    -- timestamps <- findFile Scratch.fileTimestamps fs
+    fs <- files f
+    let quantities = findFile Scratch.fileQuantities fs
+    let profileFit = findFile Scratch.fileProfileFit fs
+    let profileOrig = findFile Scratch.fileProfileOrig fs
     pure UploadFiles{quantities, profileFit, profileOrig}
    where
-    sub :: Text -> Int -> Param
-    sub t n = Param $ t <> "[" <> cs (show n) <> "]"
-    multi t = do
-      sub0 <- formLookupParam (sub t 0) f
-      sub1 <- formLookupParam (sub t 1) f
-      sub2 <- formLookupParam (sub t 2) f
-      sub3 <- formLookupParam (sub t 3) f
-      pure $ catMaybes [sub0, sub1, sub2, sub3]
+    files :: FUE.Form -> Either Text [Path' Filename ()]
+    files frm = do
+      f0 <- formLookupParam "file[0]" frm
+      f1 <- formLookupParam "file[1]" frm
+      f2 <- formLookupParam "file[2]" frm
+      f3 <- formLookupParam "file[3]" frm
+      pure $ catMaybes [f0, f1, f2, f3]
 
-    findFile :: Path' Filename a -> [FilePath] -> Either Text (Path' Filename a)
-    findFile (Path file) fs = do
-      if file `elem` fs
-        then pure $ Path file
-        else Left $ "Missing required file: " <> cs file
+    findFile :: Path' Filename a -> [Path' Filename ()] -> Maybe (Path' Filename a)
+    findFile file fs = do
+      Path ff <- L.find (isFile file) fs
+      pure $ Path ff
+
+    isFile :: Path' Filename a -> Path' Filename () -> Bool
+    isFile (Path fa) (Path fb) = fa == fb
 
 
 transferStatus :: (Log :> es, Reader (Token Access) :> es, Globus :> es, Error GlobusError :> es) => App.Id Task -> Eff es Task
@@ -245,8 +251,8 @@ initTransfer toRequest = do
 
 initUpload
   :: (Hyperbole :> es, Globus :> es, Scratch :> es, Reader (Token Access) :> es)
-  => TransferForm Identity
-  -> UploadFiles Filename Identity
+  => TransferForm
+  -> UploadFiles Filename Maybe
   -> App.Id Proposal
   -> App.Id Inversion
   -> Eff es (App.Id Task)
@@ -262,7 +268,7 @@ initUpload tform up ip ii = do
       , label = Just tform.label
       , source_endpoint = Tagged tform.endpoint_id
       , destination_endpoint = scratch
-      , data_ = [transferItem up.quantities, transferItem up.profileFit, transferItem up.profileOrig]
+      , data_ = catMaybes [transferItem <$> up.quantities, transferItem <$> up.profileFit, transferItem <$> up.profileOrig]
       , sync_level = SyncChecksum
       , store_base_path_info = True
       }
@@ -283,7 +289,7 @@ initUpload tform up ip ii = do
     source t fn = t </> fn
 
 
-initDownloadL1Inputs :: (Globus :> es, Reader (Token Access) :> es) => TransferForm Identity -> DownloadFolder Identity -> [Dataset] -> Eff es (App.Id Task)
+initDownloadL1Inputs :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
 initDownloadL1Inputs tform df ds = do
   initTransfer downloadTransferRequest
  where
@@ -351,7 +357,7 @@ initScratchDataset d = do
 --         , recursive = False
 --         }
 
-downloadDestinationFolder :: TransferForm Identity -> DownloadFolder Identity -> Path' Dir TransferForm
+downloadDestinationFolder :: TransferForm -> DownloadFolder -> Path' Dir TransferForm
 downloadDestinationFolder tform df =
   -- If they didn't select a folder, use the current folder
   case df.folder of

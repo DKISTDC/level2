@@ -14,7 +14,7 @@ import App.View.Common (showTimestamp)
 import App.View.Common as View (hr)
 import App.View.DataRow (dataCell, tagCell)
 import App.View.Icons as Icons
-import App.View.Inversions (inversionStepTag)
+import App.View.Inversion (inversionStepTag)
 import Data.Grouped
 import Data.List qualified as L
 import Data.Text qualified as Text

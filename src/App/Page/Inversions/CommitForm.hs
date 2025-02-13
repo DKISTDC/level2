@@ -61,7 +61,8 @@ data CommitForm f = CommitForm
   { gitCommit :: Field f GitCommit
   }
   deriving (Generic)
-instance Form CommitForm Validated
+instance FormParse (CommitForm Identity)
+instance Fields CommitForm Validated
 instance Show (CommitForm Validated) where
   show f = "CommitForm " ++ show f.gitCommit
 

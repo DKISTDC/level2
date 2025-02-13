@@ -38,6 +38,7 @@ library
       App.Page.Inversion
       App.Page.Inversions
       App.Page.Inversions.CommitForm
+      App.Page.InversionUpload
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
@@ -49,7 +50,7 @@ library
       App.View.DataRow
       App.View.DatasetsTable
       App.View.Icons
-      App.View.Inversions
+      App.View.Inversion
       App.View.Layout
       App.View.LiveInput
       App.View.ProposalDetails

@@ -79,6 +79,7 @@ runGlobusDev dkistDir = interpret $ \_ -> \case
  where
   localCopy :: (Scratch :> es, Log :> es) => Id Collection -> Path' any src -> Path' any dest -> Eff es ()
   localCopy cl src dest = do
+    log Debug $ "(Globus Dev) localCopy: " <> "\n\tsrc= " <> src.filePath <> "\n\tdst= " <> dest.filePath
     if cl == dkistEndpoint
       then symLinkDir (dkistDir </> src) dest
       else do

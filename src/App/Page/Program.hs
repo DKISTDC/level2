@@ -7,15 +7,13 @@ import App.Effect.Auth
 import App.Error (expectFound)
 import App.Globus (DownloadFolder, FileLimit (Folders), Globus, TransferForm)
 import App.Globus qualified as Globus
-import App.Page.Inversion qualified as Inversion
-import App.Page.Inversions (rowInversion)
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.DatasetsTable as DatasetsTable
 import App.View.Icons qualified as Icons
-import App.View.Inversions (inversionStepLabel)
+import App.View.Inversion (rowInversion)
 import App.View.Layout
 import App.View.ProposalDetails
 import App.View.Transfer (TransferAction (..))
@@ -133,8 +131,8 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
   update = \case
     CreateInversion -> do
       ProgramInversions propId progId <- viewId
-      inv <- send $ Inversions.Create propId progId
-      redirect $ Route.inversionUrl propId inv.inversionId
+      invId <- send Inversions.NewId
+      redirect $ routeUrl $ Route.inversionUpload propId progId invId
 
 
 viewProgramInversions :: ProgramFamily -> View ProgramInversions ()
@@ -149,56 +147,62 @@ viewProgramInversions prog =
       col (gap 10 . pad 15) $ do
         col id $ do
           dataRows prog.inversions rowInversion
-        button CreateInversion (Style.btnOutline Primary) "Create New Inversion"
+        iconButton CreateInversion (Style.btnOutline Primary) Icons.plus "Create New Inversion"
 
   firstInversion = do
-    case qualify prog.datasets of
-      Left _ -> none
-      Right _ -> iconButton CreateInversion (Style.btn Primary) Icons.plus "Create Inversion"
+    let res = qualify prog.datasets
+    iconButton CreateInversion (Style.btn Primary . qualified res) Icons.plus "Create Inversion"
+    qualifyMessage res
+
+  qualifyMessage = \case
+    Left _ -> el italic "This Instrument Program failed to qualify for inversion. See below."
+    Right _ -> none
+
+  qualified = \case
+    Left _ -> Style.disabled
+    Right _ -> id
 
   invHeaderColor
     | any isPublished prog.inversions = Success
     | otherwise = Info
 
 
-viewCurrentInversion :: Inversion -> View c ()
-viewCurrentInversion inv = do
-  let step = inversionStep inv
-  Inversion.viewInversionContainer inv $ do
-    Inversion.invertStep inv $ do
-      viewInvert step
+-- viewCurrentInversion :: Inversion -> View c ()
+-- viewCurrentInversion inv = do
+--   let step = inversionStep inv
+--   viewInversionContainer inv $ do
+--     Inversion.invertStep inv $ do
+--       viewInvert step
+--
+--     Inversion.generateStep inv $ do
+--       viewGenerate step
+--
+--     Inversion.publishStep inv $ do
+--       viewPublish step
+--  where
+--   viewInvert = \case
+--     StepInvert -> continueButton
+--     _ -> none
+--
+--   viewGenerate = \case
+--     StepGenerate -> continueButton
+--     _ -> none
+--
+--   viewPublish = \case
+--     StepPublish ->
+--       link (Route.inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
+--     _ -> none
+--
+--   continueButton =
+--     link (Route.inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "Continue Inversion"
 
-    Inversion.generateStep inv $ do
-      viewGenerate step
-
-    Inversion.publishStep inv $ do
-      viewPublish step
- where
-  viewInvert = \case
-    StepInvert -> continueButton
-    _ -> none
-
-  viewGenerate = \case
-    StepGenerate -> continueButton
-    _ -> none
-
-  viewPublish = \case
-    StepPublish ->
-      link (Route.inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "View Inversion"
-    _ -> none
-
-  continueButton =
-    link (Route.inversionUrl inv.proposalId inv.inversionId) (Style.btn Primary) "Continue Inversion"
-
-
-viewOldInversion :: Inversion -> View c ()
-viewOldInversion inv = row (gap 4) $ do
-  el_ "•"
-  link (Route.inversionUrl inv.proposalId inv.inversionId) Style.link $ do
-    text inv.inversionId.fromId
-  el_ $ text $ cs $ showDate inv.created
-  el_ $ text $ inversionStepLabel inv
-
+-- viewOldInversion :: Inversion -> View c ()
+-- viewOldInversion inv = row (gap 4) $ do
+--   el_ "•"
+--   link (Route.inversionUrl inv.proposalId inv.inversionId) Style.link $ do
+--     text inv.inversionId.fromId
+--   el_ $ text $ cs $ showDate inv.created
+--   el_ $ text $ inversionStepLabel inv
 
 -- clearInversion :: Id Proposal -> Id InstrumentProgram -> Eff es (View InversionStatus ())
 -- clearInversion ip iip = pure $ do
@@ -228,7 +232,8 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
     ProgramDatasets propId progId <- viewId
     r <- request
     requireLogin $ do
-      redirect $ Globus.fileManagerSelectUrl (Folders 1) (Route.Proposal propId $ Route.Program progId Route.SubmitDownload) ("Transfer Instrument Program " <> progId.fromId) r
+      let u = routeUrl $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
+      redirect $ Globus.fileManagerSelectUrl (Folders 1) u ("Transfer Instrument Program " <> progId.fromId) r
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
     progs <- Programs.loadProgram progId

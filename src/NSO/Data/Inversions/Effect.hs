@@ -22,6 +22,7 @@ data Inversions :: Effect where
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   ByProposal :: Id Proposal -> Inversions m [Inversion]
   Create :: Id Proposal -> Id InstrumentProgram -> Inversions m Inversion
+  NewId :: Inversions m (Id Inversion)
   Remove :: Id Inversion -> Inversions m ()
   Update :: Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Inversions m ()
   -- maybe doesn't belong on Inversions?
@@ -51,6 +52,7 @@ runDataInversions = interpret $ \_ -> \case
   Remove iid -> remove iid
   Update iid f -> updateInversion iid f
   ValidateGitCommit repo gc -> validateGitCommit repo gc
+  NewId -> newInversionId
  where
   -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es) => Eff es AllInversions
@@ -141,10 +143,14 @@ inversions =
     }
 
 
+newInversionId :: (GenRandom :> es) => Eff es (Id Inversion)
+newInversionId = randomId "inv"
+
+
 emptyRow :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es (InversionRow Identity)
 emptyRow propId progId = do
   now <- currentTime
-  invId <- randomId "inv"
+  invId <- newInversionId
   pure $
     InversionRow
       { inversionId = invId

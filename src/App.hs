@@ -10,6 +10,7 @@ import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Datasets qualified as Datasets
 import App.Page.Inversion qualified as Inversion
+import App.Page.InversionUpload qualified as InversionUpload
 import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
@@ -135,15 +136,14 @@ webServer config auth fits asdf pubs =
   router Dashboard = runPage Dashboard.page
   router Proposals = runPage Proposals.page
   router Inversions = runPage Inversions.page
-  router (Proposal ip (Inversion i r)) =
-    case r of
-      Inv -> runPage $ Inversion.page ip i
-      SubmitUpload -> Inversion.submitUpload ip i
+  router (Proposal ip (Inversion i Inv)) = runPage $ Inversion.page ip i
   router (Proposal p PropRoot) = runPage $ Proposal.page p
   router (Proposal propId (Program progId r)) =
     case r of
       Prog -> runPage $ Program.page propId progId
       SubmitDownload -> Program.submitDownload propId progId
+      InvUpload invId -> runPage $ InversionUpload.page propId progId invId
+      SubmitUpload invId -> InversionUpload.submitUpload propId progId invId
   router (Datasets DatasetRoot) = runPage Datasets.page
   router (Datasets (Dataset d)) = runPage $ Dataset.page d
   router Experiments = do

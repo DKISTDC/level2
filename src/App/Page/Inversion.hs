@@ -15,10 +15,10 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
-import App.View.Inversions (inversionStepColor)
+import App.View.Inversion (viewInversionContainer)
 import App.View.Layout
 import App.View.LiveInput (liveTextArea)
-import App.View.Transfer (TransferAction (..), activeTransfer, saveActiveTransfer)
+import App.View.Transfer (TransferAction (..), activeTransfer)
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
@@ -69,20 +69,6 @@ page propId invId = do
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
-submitUpload
-  :: forall es
-   . (Hyperbole :> es, Log :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es)
-  => Id Proposal
-  -> Id Inversion
-  -> Eff es Response
-submitUpload propId invId = do
-  tfrm <- formData @TransferForm
-  tup <- formData @(UploadFiles Filename)
-  taskId <- requireLogin $ Globus.initUpload tfrm tup propId invId
-  saveActiveTransfer invId taskId
-  redirect $ routeUrl (Route.Proposal propId $ Route.Inversion invId Inv)
-
-
 loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
 loadInversion invId = do
   (inv :| _) <- send (Inversions.ById invId) >>= expectFound
@@ -123,7 +109,7 @@ viewMoreInversions = do
 --- INVERSION STATUS
 -------------------------------------------------------------------
 
-type InversionViews = '[UploadTransfer, InversionCommit, GenerateStep, GenerateTransfer, PublishStep, InversionMeta]
+type InversionViews = '[InversionCommit, GenerateStep, GenerateTransfer, PublishStep, InversionMeta]
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
@@ -132,8 +118,7 @@ data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id 
 
 instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
-    = Upload
-    | Reload
+    = Reload
     | SetDataset (Id Dataset) Bool
     deriving (Show, Read, ViewAction)
 
@@ -142,12 +127,8 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
 
 
   update action = do
-    InversionStatus propId _ invId <- viewId
+    InversionStatus _ _ invId <- viewId
     case action of
-      Upload -> do
-        r <- request
-        requireLogin $ do
-          redirect $ Globus.fileManagerSelectUrl (Files 4) (Route.Proposal propId $ Route.Inversion invId SubmitUpload) ("Transfer Inversion Results " <> invId.fromId) r
       Reload -> do
         refresh
       SetDataset dsetId sel -> do
@@ -165,14 +146,6 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
       gen <- send $ TaskLookupStatus $ GenFits propId invId
       pub <- send $ TaskLookupStatus $ PublishTask propId invId
       pure $ viewInversion inv ds (AdminLogin mtok login) up gen pub
-
-
-viewInversionContainer :: Inversion -> View c () -> View c ()
-viewInversionContainer inv cnt =
-  col (Style.card . gap 15) $ do
-    el (Style.cardHeader (inversionStepColor inv)) "Inversion"
-    col (gap 0 . pad 15) $ do
-      cnt
 
 
 viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe (Id Task) -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
@@ -268,34 +241,33 @@ viewAreYouSure = do
 -- STEP INVERT
 -------------------------------------------------------------------
 
-data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
-  deriving (Show, Read, ViewId)
-
-
-instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Log :> es) => HyperView UploadTransfer es where
-  data Action UploadTransfer
-    = UpTransfer TransferAction
-    deriving (Show, Read, ViewAction)
-  type Require UploadTransfer = '[InversionStatus]
-
-
-  update (UpTransfer action) = do
-    UploadTransfer propId progId invId ti <- viewId
-    case action of
-      TaskFailed -> do
-        pure $ do
-          col (gap 10) $ do
-            Transfer.viewTransferFailed ti
-            target (InversionStatus propId progId invId) $ do
-              uploadSelect (Invalid "Upload Task Failed")
-      TaskSucceeded -> do
-        Inversions.setUploaded invId
-        -- reload the parent
-        pure $ target (InversionStatus propId progId invId) $ do
-          el (onLoad Reload 200) $ do
-            uploadSelect Valid
-      CheckTransfer -> Transfer.checkTransfer UpTransfer ti
-
+-- data UploadTransfer = UploadTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
+--   deriving (Show, Read, ViewId)
+--
+--
+-- instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Log :> es) => HyperView UploadTransfer es where
+--   data Action UploadTransfer
+--     = UpTransfer TransferAction
+--     deriving (Show, Read, ViewAction)
+--   type Require UploadTransfer = '[InversionStatus]
+--
+--
+--   update (UpTransfer action) = do
+--     UploadTransfer propId progId invId ti <- viewId
+--     case action of
+--       TaskFailed -> do
+--         pure $ do
+--           col (gap 10) $ do
+--             Transfer.viewTransferFailed ti
+--             target (InversionStatus propId progId invId) $ do
+--               uploadSelect (Invalid "Upload Task Failed")
+--       TaskSucceeded -> do
+--         Inversions.setUploaded invId
+--         -- reload the parent
+--         pure $ target (InversionStatus propId progId invId) $ do
+--           el (onLoad Reload 200) $ do
+--             uploadSelect Valid
+--       CheckTransfer -> Transfer.checkTransfer UpTransfer ti
 
 -- invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
 -- invertReload propId invId vw = do
@@ -337,43 +309,21 @@ viewDatasets inv ds = do
 
 
 viewInvert :: Inversion -> [Dataset] -> Maybe (Id Task) -> View InversionStatus ()
-viewInvert inv ds mtfer = do
+viewInvert inv ds _mtfer = do
   col (gap 15) $ do
     viewDatasets inv ds
 
     hyper (InversionCommit inv.proposalId inv.inversionId) $ do
       CommitForm.commitForm inv.invert.commit (CommitForm.fromExistingCommit inv.invert.commit)
 
-    viewUploadTransfer mtfer
- where
-  viewUploadTransfer = \case
-    Just it -> do
-      hyper (UploadTransfer inv.proposalId inv.programId inv.inversionId it) (Transfer.viewLoadTransfer UpTransfer)
-    Nothing -> do
-      uploadSelect NotInvalid
 
-
-uploadSelect :: Validated (Id Task) -> View InversionStatus ()
-uploadSelect val = do
-  col (gap 10 . file val) $ do
-    el bold "Inversion Results"
-    col (gap 5) $ do
-      uploadedFile True "inv_res_pre.fits"
-      uploadedFile True "per_ori.fits"
-      uploadedFile False "inv_res_mod.fits"
-    case val of
-      Valid -> View.iconButton Upload (Style.btnOutline Success . grow) Icons.upTray "Select New Files"
-      _ -> View.iconButton Upload (Style.btn Primary . grow) Icons.upTray "Select Files"
- where
-  file Valid = color Success
-  file _ = color Black
-
-  uploadedFile sel lbl =
-    row (gap 5 . if sel then color Success else id) $ do
-      el (width 15 . height 15 . Style.alignMiddle) $ do
-        if sel then Icons.check else ""
-      text lbl
-
+-- viewUploadTransfer mtfer
+-- where
+--  viewUploadTransfer = \case
+--    Just it -> do
+--      hyper (UploadTransfer inv.proposalId inv.programId inv.inversionId it) (Transfer.viewLoadTransfer UpTransfer)
+--    Nothing -> do
+--      uploadSelect NotInvalid
 
 -- ----------------------------------------------------------------
 -- STEP GENERATE

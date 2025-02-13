@@ -1,7 +1,8 @@
 module App.Effect.Auth where
 
-import App.Globus (GlobusError (..), UserEmail (..), UserLoginInfo (..))
+import App.Globus (FileLimit (..), GlobusError (..), UserEmail (..), UserLoginInfo (..))
 import App.Globus qualified as Globus
+import App.Route (AppRoute (..))
 import App.Types
 import Control.Monad (void)
 import Data.Tagged
@@ -169,3 +170,10 @@ getLastUrl :: (Hyperbole :> es) => Eff es (Maybe Url)
 getLastUrl = do
   auth <- session @GlobusAuth
   pure auth.currentUrl
+
+
+openFileManager :: (Hyperbole :> es, Auth :> es) => FileLimit -> Url -> Text -> Eff es a
+openFileManager files red lbl = do
+  r <- request
+  requireLogin $ do
+    redirect $ Globus.fileManagerSelectUrl files red lbl r

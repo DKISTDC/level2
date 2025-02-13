@@ -4,9 +4,8 @@ import App.Effect.Auth
 import App.Page.Proposals qualified as Proposals
 import App.Route as Route
 import App.Style qualified as Style
-import App.View.Common (showDate)
-import App.View.DataRow (dataCell, dataRows)
-import App.View.Inversions (inversionStepTag)
+import App.View.DataRow (dataRows)
+import App.View.Inversion (rowInversion)
 import App.View.Layout
 import Data.Grouped
 import Data.List.NonEmpty qualified as NE
@@ -91,17 +90,6 @@ viewProgram g = do
       text inv.programId.fromId
     col id $ do
       dataRows sorted rowInversion
-
-
-rowInversion :: Inversion -> View id ()
-rowInversion inv = do
-  route (Route.Proposal inv.proposalId $ Route.Inversion inv.inversionId Inv) id $ do
-    row (gap 10) $ do
-      inversionStepTag inv
-      el dataCell $ text $ cs $ showDate inv.updated
-      -- el (width 150) $ text $ cs inv.programId.fromId
-      space
-      el (Style.link . width 100) $ text $ cs inv.inversionId.fromId
 
 -- viewByProposal :: Proposal -> [Inversion] -> View id ()
 -- viewByProposal _ [] = none
