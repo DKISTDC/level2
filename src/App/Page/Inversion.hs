@@ -150,7 +150,8 @@ viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenFitsStatus -> 
 viewInversion inv ds admin gen pub = do
   col (gap 10) $ do
     viewInversionContainer inv $ do
-      stepUpload StepDone none
+      stepUpload (uploadStep inv) $ do
+        viewUpload inv
 
       stepMetadata (metadataStep inv) $ do
         viewMetadata inv ds
@@ -164,6 +165,18 @@ viewInversion inv ds admin gen pub = do
           viewPublish inv pub
 
       hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
+
+
+uploadStep :: Inversion -> Step
+uploadStep inv
+  | isUploaded inv = StepDone
+  | otherwise = StepError
+
+
+viewUpload :: Inversion -> View c ()
+viewUpload inv
+  | isUploaded inv = none
+  | otherwise = el (color Danger) "Uploaded files missing"
 
 
 -------------------------------------------------------------------

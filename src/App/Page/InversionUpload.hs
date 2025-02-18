@@ -119,12 +119,12 @@ allUploadStatus files =
         else NoUpload
  where
   allUploaded =
-    isUploaded files.quantities && isUploaded files.profileFit && isUploaded files.profileOrig
+    uploaded files.quantities && uploaded files.profileFit && uploaded files.profileOrig
 
   anyUploadTask up =
     uploadTask up.quantities <|> uploadTask up.profileFit <|> uploadTask up.profileOrig
 
-  isUploaded = \case
+  uploaded = \case
     Uploaded -> True
     _ -> False
 

@@ -57,10 +57,10 @@ rowInversion inv = do
   route (Route.inversion inv.proposalId inv.inversionId) id $ do
     row (gap 10) $ do
       inversionStepTag inv
-      el dataCell $ text $ cs $ showDate inv.updated
+      el (Style.link . width 100) $ text $ cs inv.inversionId.fromId
       -- el (width 150) $ text $ cs inv.programId.fromId
       space
-      el (Style.link . width 100) $ text $ cs inv.inversionId.fromId
+      el dataCell $ text $ cs $ showDate inv.updated
 
 
 -------------------------------------------------------------------
