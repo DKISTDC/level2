@@ -168,15 +168,11 @@ viewInversion inv ds admin gen pub = do
 
 
 uploadStep :: Inversion -> Step
-uploadStep inv
-  | isUploaded inv = StepDone
-  | otherwise = StepError
+uploadStep _ = StepDone
 
 
 viewUpload :: Inversion -> View c ()
-viewUpload inv
-  | isUploaded inv = none
-  | otherwise = el (color Danger) "Uploaded files missing"
+viewUpload _ = none
 
 
 -------------------------------------------------------------------

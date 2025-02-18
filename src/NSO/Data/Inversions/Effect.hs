@@ -129,9 +129,6 @@ inversions =
           , updated = "updated"
           , invError = "error"
           , datasets = "download_datasets"
-          , uploadedProfileFit = "upload_profile_fit"
-          , uploadedProfileOrig = "upload_profile_orig"
-          , uploadedQuantities = "upload_quantities"
           , invSoftware = "inversion_software"
           , generateFits = "generate_fits"
           , generateAsdf = "generate_asdf"
@@ -158,9 +155,6 @@ emptyRow propId progId invId = do
       , updated = now
       , invError = Nothing
       , datasets = []
-      , uploadedProfileFit = Just now
-      , uploadedProfileOrig = Just now
-      , uploadedQuantities = Just now
       , invSoftware = Nothing
       , generateFits = Nothing
       , generateAsdf = Nothing
@@ -192,9 +186,6 @@ invert row =
   Invert
     { datasets = row.datasets
     , commit = row.invSoftware
-    , profileFit = row.uploadedProfileFit
-    , profileOrig = row.uploadedProfileOrig
-    , quantities = row.uploadedQuantities
     }
 
 

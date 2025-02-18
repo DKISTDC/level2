@@ -41,9 +41,6 @@ data InversionRow f = InversionRow
   , created :: Column f UTCTime
   , updated :: Column f UTCTime
   , datasets :: Column f [Id Dataset] -- datasets used for the inversion
-  , uploadedProfileFit :: Column f (Maybe UTCTime)
-  , uploadedProfileOrig :: Column f (Maybe UTCTime)
-  , uploadedQuantities :: Column f (Maybe UTCTime)
   , invSoftware :: Column f (Maybe GitCommit)
   , generateFits :: Column f (Maybe UTCTime)
   , generateAsdf :: Column f (Maybe UTCTime)
@@ -67,9 +64,6 @@ newtype GitCommit = GitCommit Text
 data Invert = Invert
   { datasets :: [Id Dataset]
   , commit :: Maybe GitCommit
-  , profileFit :: Maybe UTCTime
-  , profileOrig :: Maybe UTCTime
-  , quantities :: Maybe UTCTime
   }
   deriving (Show, Eq)
 

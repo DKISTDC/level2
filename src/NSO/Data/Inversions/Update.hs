@@ -13,19 +13,6 @@ import NSO.Types.Dataset (Dataset)
 import NSO.Types.Inversion
 
 
--- TODO: replace with check files separately
-setUploaded :: (Inversions :> es, Time :> es) => Id Inversion -> Eff es ()
-setUploaded invId = do
-  now <- currentTime
-  send $ Update invId $ \InversionRow{..} ->
-    InversionRow
-      { uploadedProfileFit = lit (Just now)
-      , uploadedProfileOrig = lit (Just now)
-      , uploadedQuantities = lit (Just now)
-      , ..
-      }
-
-
 setSoftwareCommit :: (Inversions :> es) => Id Inversion -> GitCommit -> Eff es ()
 setSoftwareCommit iid commit = do
   send $ Update iid $ \InversionRow{..} -> InversionRow{invSoftware = lit (Just commit), ..}

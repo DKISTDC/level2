@@ -7,7 +7,6 @@ module NSO.Data.Inversions
   , isError
   , isGenerated
   , isInverted
-  , isUploaded
   , findByProgram
   , inversionStep
   , InversionStep (..)
@@ -34,7 +33,7 @@ isPublished inv = isJust inv.published
 isError :: Inversion -> Bool
 isError inv =
   -- all inversions that exist in the database should be uploaded
-  isJust inv.invError || not (isUploaded inv)
+  isJust inv.invError
 
 
 isGenerated :: Inversion -> Bool
@@ -45,20 +44,11 @@ isGenerated inv =
         && isJust g.transfer
 
 
-isUploaded :: Inversion -> Bool
-isUploaded inv =
-  let i = inv.invert
-   in isJust i.profileFit
-        && isJust i.profileOrig
-        && isJust i.quantities
-
-
 isInverted :: Inversion -> Bool
 isInverted inv =
   let i = inv.invert
    in not (L.null i.datasets)
         && isJust i.commit
-        && isUploaded inv
 
 
 data InversionStep
