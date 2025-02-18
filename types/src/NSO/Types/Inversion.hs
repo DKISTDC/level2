@@ -9,7 +9,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import Rel8 (Column, DBType, Rel8able, Result)
-import Web.Hyperbole (FromParam)
+import Web.Hyperbole (FromParam, ToParam)
 
 
 data InvQuantities
@@ -60,7 +60,7 @@ deriving stock instance (f ~ Result) => Eq (InversionRow f)
 
 
 newtype GitCommit = GitCommit Text
-  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord, FromParam)
+  deriving newtype (Show, Read, Eq, ToJSON, FromJSON, DBType, Ord, FromParam, ToParam)
   deriving (Generic)
 
 

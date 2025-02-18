@@ -26,6 +26,7 @@ module NSO.Prelude
     -- * Effects
   , Eff
   , (:>)
+  , send
 
     -- * Lifted IO
   , putStrLn
@@ -52,6 +53,7 @@ import Data.Tagged (Tagged (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Effectful
+import Effectful.Dispatch.Dynamic
 import GHC.Generics (Generic)
 import Prelude hiding (Real, even, head, last, log, odd, print, putStr, putStrLn, readFile, reverse, truncate, writeFile, (!!))
 import Prelude qualified

@@ -6,8 +6,6 @@ import App.Globus as Globus
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons as Icons
-import Data.Default (Default (..))
-import Data.Map.Strict qualified as M
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log
@@ -17,36 +15,6 @@ import Network.HTTP.Client qualified as HTTP
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View qualified as WebView
-
-
------------------------------------------------------
--- ActiveTransfer - stored in session
------------------------------------------------------
-
--- without implementing Session manually and setting the cookie path
--- the active transfer is unique to each route
--- I should create an effect for this...
-
-data ActiveTransfers = ActiveTransfers
-  { transfers :: Map Text (Id Task)
-  }
-  deriving (Generic, Show, Read, ToParam, FromParam)
-instance Default ActiveTransfers where
-  def = ActiveTransfers mempty
-instance Session ActiveTransfers where
-  cookiePath = Just []
-
-
-saveActiveTransfer :: (Hyperbole :> es) => Id a -> Id Task -> Eff es ()
-saveActiveTransfer ida taskId = do
-  ActiveTransfers xfers <- session
-  saveSession $ ActiveTransfers $ M.insert ida.fromId taskId xfers
-
-
-activeTransfer :: (Hyperbole :> es) => Id a -> Eff es (Maybe (Id Task))
-activeTransfer ida = do
-  ActiveTransfers xfers <- session
-  pure $ M.lookup ida.fromId xfers
 
 
 -----------------------------------------------------

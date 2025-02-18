@@ -12,6 +12,7 @@ import Effectful.Time
 import NSO.Data.Inversions.Commit
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Dataset (Dataset)
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 
@@ -21,7 +22,7 @@ data Inversions :: Effect where
   ById :: Id Inversion -> Inversions m [Inversion]
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
   ByProposal :: Id Proposal -> Inversions m [Inversion]
-  Create :: Id Proposal -> Id InstrumentProgram -> Inversions m Inversion
+  Create :: Id Proposal -> Id InstrumentProgram -> Id Inversion -> Maybe GitCommit -> [Id Dataset] -> Inversions m Inversion
   NewId :: Inversions m (Id Inversion)
   Remove :: Id Inversion -> Inversions m ()
   Update :: Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Inversions m ()
@@ -48,7 +49,18 @@ runDataInversions = interpret $ \_ -> \case
       return row
     pure $ map fromRow irs
   ById iid -> queryById iid
-  Create ip iip -> create ip iip
+  Create propId progId invId commit dsets -> do
+    row <- emptyRow propId progId invId
+    let row' = row{invSoftware = commit, datasets = dsets}
+    run_ $
+      insert $
+        Insert
+          { into = inversions
+          , rows = values [lit row']
+          , onConflict = DoNothing
+          , returning = NoReturning
+          }
+    pure $ fromRow row
   Remove iid -> remove iid
   Update iid f -> updateInversion iid f
   ValidateGitCommit repo gc -> validateGitCommit repo gc
@@ -103,19 +115,6 @@ runDataInversions = interpret $ \_ -> \case
   setUpdated :: UTCTime -> InversionRow Expr -> InversionRow Expr
   setUpdated now InversionRow{..} = InversionRow{updated = lit now, ..}
 
-  create :: (Rel8 :> es, Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Inversion
-  create ip iip = do
-    row <- emptyRow ip iip
-    run_ $
-      insert $
-        Insert
-          { into = inversions
-          , rows = values [lit row]
-          , onConflict = DoNothing
-          , returning = NoReturning
-          }
-    pure $ fromRow row
-
 
 inversions :: TableSchema (InversionRow Name)
 inversions =
@@ -147,10 +146,9 @@ newInversionId :: (GenRandom :> es) => Eff es (Id Inversion)
 newInversionId = randomId "inv"
 
 
-emptyRow :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Eff es (InversionRow Identity)
-emptyRow propId progId = do
+emptyRow :: (Time :> es, GenRandom :> es) => Id Proposal -> Id InstrumentProgram -> Id Inversion -> Eff es (InversionRow Identity)
+emptyRow propId progId invId = do
   now <- currentTime
-  invId <- newInversionId
   pure $
     InversionRow
       { inversionId = invId
@@ -160,9 +158,9 @@ emptyRow propId progId = do
       , updated = now
       , invError = Nothing
       , datasets = []
-      , uploadedProfileFit = Nothing
-      , uploadedProfileOrig = Nothing
-      , uploadedQuantities = Nothing
+      , uploadedProfileFit = Just now
+      , uploadedProfileOrig = Just now
+      , uploadedQuantities = Just now
       , invSoftware = Nothing
       , generateFits = Nothing
       , generateAsdf = Nothing

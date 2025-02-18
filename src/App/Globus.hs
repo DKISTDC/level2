@@ -40,7 +40,6 @@ module App.Globus
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
-import App.Route (AppRoute)
 import Data.List qualified as L
 import Data.Tagged
 import Data.Text qualified as T
@@ -68,7 +67,7 @@ import Network.HTTP.Types (QueryItem, unauthorized401)
 import Web.FormUrlEncoded qualified as FUE
 import Web.Hyperbole
 import Web.Hyperbole.Effect.Server (Host (..))
-import Web.Hyperbole.View.Forms (formLookupParam, formParseParam)
+import Web.Hyperbole.View.Forms (formLookupParam)
 import Web.View as WebView
 
 

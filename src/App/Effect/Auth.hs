@@ -2,7 +2,6 @@ module App.Effect.Auth where
 
 import App.Globus (FileLimit (..), GlobusError (..), UserEmail (..), UserLoginInfo (..))
 import App.Globus qualified as Globus
-import App.Route (AppRoute (..))
 import App.Types
 import Control.Monad (void)
 import Data.Tagged
