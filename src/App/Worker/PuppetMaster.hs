@@ -37,6 +37,7 @@ generateFits ivs = do
   isFitsGen inv =
     isInverted inv
       && not (isError inv)
+      && not inv.deleted
       && isNothing inv.generate.fits
 
 
@@ -49,5 +50,6 @@ generateAsdf ivs = do
   isAsdfGen inv =
     isInverted inv
       && not (isError inv)
+      && not inv.deleted
       && isJust inv.generate.fits
       && isNothing inv.generate.asdf

@@ -396,6 +396,7 @@ generateStep inv
 
 viewGenerate :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
 viewGenerate inv admin status
+  | inv.deleted = none
   | isInverted inv = viewGenerate' inv admin status
   | otherwise = none
 
