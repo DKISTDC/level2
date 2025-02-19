@@ -120,6 +120,7 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
   data Action InversionStatus
     = Reload
     | SetDataset (Id Dataset) Bool
+    | Restore
     deriving (Show, Read, ViewAction)
 
 
@@ -135,6 +136,9 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
         inv <- loadInversion invId
         Inversions.setDatasetUsed inv dsetId sel
         refresh
+      Restore -> do
+        send $ Inversions.Deleted invId False
+        refresh
    where
     refresh = do
       InversionStatus propId progId invId <- viewId
@@ -149,23 +153,33 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
 
 viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
 viewInversion inv ds admin gen pub = do
-  col (gap 10) $ do
-    viewInversionContainer inv $ do
-      stepUpload (uploadStep inv) $ do
-        viewUpload inv
+  col (gap 30) $ do
+    if inv.deleted
+      then restoreButton
+      else none
+    col (disableIfDeleted) $ do
+      viewInversionContainer inv $ do
+        stepUpload (uploadStep inv) $ do
+          viewUpload inv
 
-      stepMetadata (metadataStep inv) $ do
-        viewMetadata inv ds
+        stepMetadata (metadataStep inv) $ do
+          viewMetadata inv ds
 
-      stepGenerate (generateStep inv) $ do
-        hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
-          viewGenerate inv admin gen
+        stepGenerate (generateStep inv) $ do
+          hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
+            viewGenerate inv admin gen
 
-      stepPublish (publishStep inv) $ do
-        hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
-          viewPublish inv pub
+        stepPublish (publishStep inv) $ do
+          hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
+            viewPublish inv pub
 
-      hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
+        hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
+ where
+  disableIfDeleted = if inv.deleted then Style.disabled else id
+  restoreButton =
+    col (gap 10) $ do
+      el (color Danger . italic) "Inversion has been archived"
+      button Restore (Style.btn Primary) "Restore"
 
 
 uploadStep :: Inversion -> Step
@@ -187,10 +201,11 @@ data InversionMeta = InversionMeta (Id Proposal) (Id InstrumentProgram) (Id Inve
 instance (Inversions :> es) => HyperView InversionMeta es where
   data Action InversionMeta
     = SetNotes Text
-    | DeleteConfirm
-    | DeleteCancel
     | Delete
     deriving (Show, Read, ViewAction)
+
+
+  type Require InversionMeta = '[InversionStatus]
 
 
   update action = do
@@ -200,23 +215,19 @@ instance (Inversions :> es) => HyperView InversionMeta es where
         Inversions.setNotes invId notes
         inv <- loadInversion invId
         pure $ viewInversionMeta inv
-      DeleteConfirm -> do
-        inv <- loadInversion invId
-        pure $ viewInversionMeta' inv viewAreYouSure
-      DeleteCancel -> do
-        inv <- loadInversion invId
-        pure $ viewInversionMeta inv
       Delete -> do
-        send $ Inversions.Remove invId
-        redirect $ routeUrl $ Route.Proposal propId $ Route.Program progId Route.Prog
+        send $ Inversions.Deleted invId True
+        pure $ target (InversionStatus propId progId invId) $ el (onLoad Reload 100) ""
 
 
 viewInversionMeta :: Inversion -> View InversionMeta ()
-viewInversionMeta inv = do
-  viewInversionMeta' inv $ do
-    if isPublished inv
-      then viewCannotDelete
-      else viewDeleteBtn
+viewInversionMeta inv =
+  viewInversionMeta' inv deleteContents
+ where
+  deleteContents
+    | inv.deleted = none
+    | isPublished inv = viewCannotDelete
+    | otherwise = viewDeleteBtn
 
 
 viewInversionMeta' :: Inversion -> View InversionMeta () -> View InversionMeta ()
@@ -230,7 +241,7 @@ viewInversionMeta' inv delContent = do
 
 viewDeleteBtn :: View InversionMeta ()
 viewDeleteBtn = do
-  button DeleteConfirm (Style.btnOutline Danger) "Delete Inversion"
+  button Delete (Style.btnOutline Danger) "Archive Inversion"
 
 
 viewCannotDelete :: View InversionMeta ()
@@ -238,14 +249,14 @@ viewCannotDelete = do
   el (italic . color Secondary) "This Inversion has been published, it can no longer be deleted. Please create new one instead"
 
 
-viewAreYouSure :: View InversionMeta ()
-viewAreYouSure = do
-  col (gap 15) $ do
-    el (bold . color Danger) "Are you sure? This cannot be undone"
-    row (gap 10) $ do
-      button DeleteCancel (Style.btnOutline Secondary . grow) "Cancel"
-      button Delete (Style.btn Danger) "Delete This Inverion"
-
+--
+-- viewAreYouSure :: View InversionMeta ()
+-- viewAreYouSure = do
+--   col (gap 15) $ do
+--     el (bold . color Danger) "Are you sure? This cannot be undone"
+--     row (gap 10) $ do
+--       button DeleteCancel (Style.btnOutline Secondary . grow) "Cancel"
+--       button Delete (Style.btn Danger) "Delete This Inverion"
 
 -------------------------------------------------------------------
 -- STEP INVERT

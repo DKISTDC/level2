@@ -16,6 +16,7 @@ import Web.View
 inversionStepLabel :: Inversion -> Text
 inversionStepLabel inv
   | isError inv = "Error"
+  | inv.deleted = "Archived"
   | otherwise = stepLabel (inversionStep inv)
  where
   stepLabel = \case
@@ -27,6 +28,7 @@ inversionStepLabel inv
 
 inversionStepColor :: Inversion -> AppColor
 inversionStepColor inv
+  | inv.deleted = Secondary
   | isError inv = Danger
   | isPublished inv = Success
   | otherwise = Info

@@ -1,9 +1,10 @@
 ALTER TABLE inversions
+DROP COLUMN notes,
+DROP COLUMN deleted,
 ADD COLUMN download TIMESTAMP DEFAULT NOW(),
 ADD COLUMN download_task_id TEXT DEFAULT 'migration-fake-task',
 ADD COLUMN upload TIMESTAMP DEFAULT NOW(),
 ADD COLUMN upload_task_id TEXT DEFAULT 'migration-fake-task',
-DROP COLUMN notes,
 ADD COLUMN inversion TIMESTAMP DEFAULT NOW(),
 ADD COLUMN publish_task_id TEXT DEFAULT 'migration-fake-task',
 ADD COLUMN generate_task_id TEXT DEFAULT 'migration-fake-task',

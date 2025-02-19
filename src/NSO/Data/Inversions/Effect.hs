@@ -2,6 +2,7 @@
 
 module NSO.Data.Inversions.Effect where
 
+import Data.Maybe (isJust)
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
@@ -24,7 +25,7 @@ data Inversions :: Effect where
   ByProposal :: Id Proposal -> Inversions m [Inversion]
   Create :: Id Proposal -> Id InstrumentProgram -> Id Inversion -> Maybe GitCommit -> [Id Dataset] -> Inversions m Inversion
   NewId :: Inversions m (Id Inversion)
-  Remove :: Id Inversion -> Inversions m ()
+  Deleted :: Id Inversion -> Bool -> Inversions m ()
   Update :: Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Inversions m ()
   -- maybe doesn't belong on Inversions?
   ValidateGitCommit :: GitRepo -> GitCommit -> Inversions m Bool
@@ -61,7 +62,10 @@ runDataInversions = interpret $ \_ -> \case
           , returning = NoReturning
           }
     pure $ fromRow row
-  Remove iid -> remove iid
+  Deleted iid b -> do
+    now <- currentTime
+    let val = if b then (Just now) else Nothing
+    updateInversion iid $ \InversionRow{..} -> InversionRow{deleted = lit val, ..}
   Update iid f -> updateInversion iid f
   ValidateGitCommit repo gc -> validateGitCommit repo gc
   NewId -> newInversionId
@@ -87,17 +91,6 @@ runDataInversions = interpret $ \_ -> \case
       where_ (row.programId ==. lit ip)
       return row
     pure $ map fromRow irs
-
-  remove :: (Rel8 :> es) => Id Inversion -> Eff es ()
-  remove iid = do
-    run_ $
-      delete $
-        Delete
-          { from = inversions
-          , using = each inversions
-          , deleteWhere = \_ r -> r.inversionId ==. lit iid
-          , returning = Returning (.inversionId)
-          }
 
   updateInversion :: (Rel8 :> es, Time :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
   updateInversion iid f = do
@@ -127,6 +120,7 @@ inversions =
           , proposalId = "proposal_id"
           , created = "created"
           , updated = "updated"
+          , deleted = "deleted"
           , invError = "error"
           , datasets = "download_datasets"
           , invSoftware = "inversion_software"
@@ -153,6 +147,7 @@ emptyRow propId progId invId = do
       , proposalId = propId
       , created = now
       , updated = now
+      , deleted = Nothing
       , invError = Nothing
       , datasets = []
       , invSoftware = Nothing
@@ -172,6 +167,7 @@ fromRow row =
     , proposalId = row.proposalId
     , datasets = row.datasets
     , created = row.created
+    , deleted = isJust row.deleted
     , updated = row.updated
     , invError = row.invError
     , invert = invert row

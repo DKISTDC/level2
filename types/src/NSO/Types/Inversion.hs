@@ -23,6 +23,7 @@ data Inversion = Inversion
   , proposalId :: Id Proposal
   , created :: UTCTime
   , updated :: UTCTime
+  , deleted :: Bool
   , datasets :: [Id Dataset]
   , invert :: Invert
   , generate :: Generate
@@ -40,6 +41,7 @@ data InversionRow f = InversionRow
   , proposalId :: Column f (Id Proposal)
   , created :: Column f UTCTime
   , updated :: Column f UTCTime
+  , deleted :: Column f (Maybe UTCTime)
   , datasets :: Column f [Id Dataset] -- datasets used for the inversion
   , invSoftware :: Column f (Maybe GitCommit)
   , generateFits :: Column f (Maybe UTCTime)

@@ -69,6 +69,6 @@ inversionStep inv
 findByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]
 findByProgram ip = do
   invs <- send $ ByProgram ip
-  pure $ sortOn latest invs
+  pure $ sortOn latest $ filter (\i -> not i.deleted) invs
  where
   latest = Down . (.updated)

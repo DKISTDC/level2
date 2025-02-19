@@ -13,6 +13,11 @@ import NSO.Types.Dataset (Dataset)
 import NSO.Types.Inversion
 
 
+setDeleted :: (Inversions :> es) => Id Inversion -> Bool -> Eff es ()
+setDeleted iid del = do
+  send $ Deleted iid del
+
+
 setSoftwareCommit :: (Inversions :> es) => Id Inversion -> GitCommit -> Eff es ()
 setSoftwareCommit iid commit = do
   send $ Update iid $ \InversionRow{..} -> InversionRow{invSoftware = lit (Just commit), ..}
