@@ -105,7 +105,6 @@ library
       OverloadedStrings
       QuasiQuotes
       DuplicateRecordFields
-      LambdaCase
       NoImplicitPrelude
       NoFieldSelectors
       StrictData
@@ -146,9 +145,9 @@ library
     , unordered-containers
     , uuid
     , wai-extra
-    , warp ==3.3.31
+    , warp >=3.4
     , web-view >=0.7
-  default-language: GHC2021
+  default-language: GHC2024
 
 executable level2
   main-is: Main.hs
@@ -167,7 +166,6 @@ executable level2
       OverloadedStrings
       QuasiQuotes
       DuplicateRecordFields
-      LambdaCase
       NoImplicitPrelude
       NoFieldSelectors
       StrictData
@@ -209,9 +207,9 @@ executable level2
     , unordered-containers
     , uuid
     , wai-extra
-    , warp ==3.3.31
+    , warp >=3.4
     , web-view >=0.7
-  default-language: GHC2021
+  default-language: GHC2024
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -238,7 +236,6 @@ test-suite spec
       OverloadedStrings
       QuasiQuotes
       DuplicateRecordFields
-      LambdaCase
       NoImplicitPrelude
       NoFieldSelectors
       StrictData
@@ -284,6 +281,6 @@ test-suite spec
     , unordered-containers
     , uuid
     , wai-extra
-    , warp ==3.3.31
+    , warp >=3.4
     , web-view
-  default-language: GHC2021
+  default-language: GHC2024

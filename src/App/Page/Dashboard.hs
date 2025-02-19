@@ -10,6 +10,7 @@ import App.Route
 import App.Style qualified as Style
 import App.Version
 import App.View.DataRow qualified as View
+import App.View.Icons qualified as Icons
 import App.View.Layout
 import App.Worker.GenWorker
 import Data.Text (pack)
@@ -86,4 +87,6 @@ workView waiting working = do
   status GenWaiting =
     el_ "Waiting"
   status s =
-    el (color Colors.Info . italic) (text $ pack $ show s)
+    row (gap 5) $ do
+      el (width 20) Icons.spinnerCircle
+      el (color Colors.Info . italic) (text $ pack $ show s)

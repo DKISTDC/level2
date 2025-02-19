@@ -15,7 +15,7 @@ extra-doc-files:
 extra-source-files:
   - deps/metadata.graphql
 
-language: GHC2021
+language: GHC2024
 
 
 ghc-options:
@@ -31,7 +31,6 @@ default-extensions:
   - OverloadedStrings
   - QuasiQuotes
   - DuplicateRecordFields
-  - LambdaCase
   - NoImplicitPrelude
   - NoFieldSelectors
   - StrictData
@@ -40,7 +39,7 @@ dependencies:
   - base >=4.16.4.0
   - nso-level2-types
   - web-view >= 0.7
-  - warp == 3.3.31
+  - warp >= 3.4
   - wai-extra
   - http-types
   - http-client

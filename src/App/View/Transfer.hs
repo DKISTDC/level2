@@ -29,12 +29,10 @@ data TransferAction
 
 
 -- I want it to reload itself and call these when necessary
-checkTransfer :: (Log :> es, ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
+checkTransfer :: (Log :> es, ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es, Error GlobusError :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer toAction it = do
-  res <- requireLogin $ runErrorNoCallStack @GlobusError $ Globus.transferStatus it
-  pure $ case res of
-    Left err -> viewTransferError err it
-    Right task -> viewTransfer toAction it task
+  task <- requireLogin $ Globus.transferStatus it
+  pure $ viewTransfer toAction it task
 
 
 viewLoadTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> View id ()
@@ -70,9 +68,9 @@ viewTransferProgress it task = do
   rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
 
 
-viewTransferError :: GlobusError -> Id Task -> View c ()
-viewTransferError err =
-  viewTransferFailed' message
+viewTransferError :: Id Task -> GlobusError -> View c ()
+viewTransferError taskId err =
+  viewTransferFailed' message taskId
  where
   message =
     case err of

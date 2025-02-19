@@ -1,3 +1,6 @@
+DELETE FROM inversions WHERE download is NULL;
+DELETE FROM inversions WHERE upload is NULL;
+
 -- Add UP migration script here
 ALTER TABLE inversions
 DROP COLUMN download,

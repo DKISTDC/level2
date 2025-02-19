@@ -6,7 +6,7 @@ module App.Page.InversionUpload where
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager, requireLogin)
 import App.Effect.Scratch (Scratch)
-import App.Globus as Globus (FileLimit (Files), Globus, Task, TransferForm, UploadFiles (..), initUpload)
+import App.Globus as Globus (FileLimit (Files), Globus, GlobusError, Task, TransferForm, UploadFiles (..), initUpload)
 import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
 import App.Route qualified as Route
@@ -19,6 +19,7 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import Data.Default (Default (..))
 import Effectful
+import Effectful.Error.Static
 import Effectful.Log hiding (Info)
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -59,8 +60,7 @@ page propId progId invId = do
       col (gap 25) $ do
         Inversion.viewInversionContainer' Info $ do
           col (gap 15) $ do
-            hyper (Uploads propId progId invId) $ viewUpload qs.uploads
-            hyper (MetadataForm propId progId invId) $ viewMetadataForm dall qs.uploads qs.metadata
+            hyper (Uploads propId progId invId) $ viewUpload dall qs.uploads qs.metadata
 
         hyper (Manage propId progId) $ do
           View.iconButton Cancel (Style.btnOutline Secondary) Icons.xMark "Cancel"
@@ -215,33 +215,43 @@ data Uploads = Uploads (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 
 
-instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es) => HyperView Uploads es where
+instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es) => HyperView Uploads es where
   data Action Uploads
     = Upload
     | UpTransfer (Id Task) TransferAction
     deriving (Show, Read, ViewAction)
 
 
+  type Require Uploads = '[MetadataForm]
+
+
   update action = do
     Uploads propId progId invId <- viewId
+    QueryState uploads metadata <- query @QueryState
     case action of
       Upload -> do
-        files <- query
-        let u = setUploadQuery files $ routeUrl $ Route.submitUpload propId progId invId
+        let u = setUploadQuery uploads $ routeUrl $ Route.submitUpload propId progId invId
         openFileManager (Files 3) u ("Transfer Inversion Results " <> invId.fromId)
       UpTransfer taskId trans -> do
-        files <- query
+        dall <- Datasets.find (Datasets.ByProgram progId)
         case trans of
           TaskFailed -> do
-            pure $ viewUploadWithTransfer files $ do
+            pure $ viewUploadWithTransfer dall uploads metadata $ do
               Transfer.viewTransferFailed taskId
+              View.iconButton Upload (Style.btn Primary) Icons.upTray "Select New Files"
           TaskSucceeded -> do
-            let files' = filesUploaded files
-            setQuery $ QueryState files' def
-            pure $ viewUpload files'
+            -- TODO: we need to reload
+            let uploads' = filesUploaded uploads
+            setQuery $ QueryState uploads' def
+            pure $ viewUpload dall uploads' metadata
           CheckTransfer -> do
-            vw <- Transfer.checkTransfer (UpTransfer taskId) taskId
-            pure $ viewUploadWithTransfer files vw
+            res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer (UpTransfer taskId) taskId
+            pure $ viewUploadWithTransfer dall uploads metadata $ do
+              case res of
+                Right vw -> vw
+                Left err -> do
+                  Transfer.viewTransferError taskId err
+                  View.iconButton Upload (Style.btn Primary) Icons.upTray "Select New Files"
    where
     filesUploaded :: UploadFiles Filename UploadStatus -> UploadFiles Filename UploadStatus
     filesUploaded up =
@@ -254,9 +264,9 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es) => HyperView Up
     fileUploaded s = s
 
 
-viewUpload :: UploadFiles Filename UploadStatus -> View Uploads ()
-viewUpload files = do
-  viewUploadWithTransfer files $ do
+viewUpload :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> View Uploads ()
+viewUpload dall files meta = do
+  viewUploadWithTransfer dall files meta $ do
     case allUploadStatus files of
       Uploading taskId -> do
         Transfer.viewLoadTransfer (UpTransfer taskId)
@@ -266,15 +276,18 @@ viewUpload files = do
         View.iconButton Upload (Style.btnOutline Success) Icons.upTray "Select New Files"
 
 
-viewUploadWithTransfer :: UploadFiles Filename UploadStatus -> View Uploads () -> View Uploads ()
-viewUploadWithTransfer files xfer = do
+viewUploadWithTransfer :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> View Uploads () -> View Uploads ()
+viewUploadWithTransfer dall uploads meta xfer = do
+  Uploads propId progId invId <- viewId
   el (Style.subheader . headerColor) "Upload Inversion Results"
   col (pad 10 . gap 10) $ do
     col (gap 5) $ do
-      uploadedFile files.quantities "inv_res_pre.fits"
-      uploadedFile files.profileFit "inv_res_mod.fits"
-      uploadedFile files.profileOrig "per_ori.fits"
+      uploadedFile uploads.quantities "inv_res_pre.fits"
+      uploadedFile uploads.profileFit "inv_res_mod.fits"
+      uploadedFile uploads.profileOrig "per_ori.fits"
     xfer
+
+  hyper (MetadataForm propId progId invId) $ viewMetadataForm dall uploads meta
  where
   -- stepMetadata StepNext none
   -- stepGenerate StepNext none
@@ -297,7 +310,7 @@ viewUploadWithTransfer files xfer = do
     _ -> none
 
   headerColor =
-    case allUploadStatus files of
+    case allUploadStatus uploads of
       Uploaded -> color Success
       _ -> color Info
 
@@ -418,7 +431,7 @@ validateMetadata meta =
   validateDatasets _ = Valid
 
   validateCommit :: Maybe GitCommit -> Validated (Maybe GitCommit)
-  validateCommit Nothing = Invalid "Missing Git Commit"
+  validateCommit Nothing = Invalid "Missing or Invalid Git Commit"
   validateCommit _ = Valid
 
 

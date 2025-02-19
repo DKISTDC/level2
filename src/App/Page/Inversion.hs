@@ -24,6 +24,7 @@ import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import Effectful.Time
@@ -186,51 +187,65 @@ data InversionMeta = InversionMeta (Id Proposal) (Id InstrumentProgram) (Id Inve
 instance (Inversions :> es) => HyperView InversionMeta es where
   data Action InversionMeta
     = SetNotes Text
+    | DeleteConfirm
+    | DeleteCancel
+    | Delete
     deriving (Show, Read, ViewAction)
 
 
   update action = do
-    InversionMeta _ _ invId <- viewId
+    InversionMeta propId progId invId <- viewId
     case action of
       SetNotes notes -> do
         Inversions.setNotes invId notes
         inv <- loadInversion invId
         pure $ viewInversionMeta inv
+      DeleteConfirm -> do
+        inv <- loadInversion invId
+        pure $ viewInversionMeta' inv viewAreYouSure
+      DeleteCancel -> do
+        inv <- loadInversion invId
+        pure $ viewInversionMeta inv
+      Delete -> do
+        send $ Inversions.Remove invId
+        redirect $ routeUrl $ Route.Proposal propId $ Route.Program progId Route.Prog
 
 
 viewInversionMeta :: Inversion -> View InversionMeta ()
 viewInversionMeta inv = do
+  viewInversionMeta' inv $ do
+    if isPublished inv
+      then viewCannotDelete
+      else viewDeleteBtn
+
+
+viewInversionMeta' :: Inversion -> View InversionMeta () -> View InversionMeta ()
+viewInversionMeta' inv delContent = do
   col (gap 20) $ do
     col (gap 5) $ do
       el bold "Notes"
       liveTextArea SetNotes (att "rows" "3") inv.notes
+    delContent
 
 
--- viewInversionMeta :: Inversion -> View InversionMeta ()
--- viewInversionMeta inv = do
---   viewInversionMeta' inv $ do
---     if isInverted inv
---       then viewCannotDelete
---       else viewDeleteBtn
+viewDeleteBtn :: View InversionMeta ()
+viewDeleteBtn = do
+  button DeleteConfirm (Style.btnOutline Danger) "Delete Inversion"
 
---
--- viewDeleteBtn :: View InversionMeta ()
--- viewDeleteBtn = do
---   button AreYouSure (Style.btnOutline Danger) "Delete Inversion"
---
---
--- viewCannotDelete :: View InversionMeta ()
--- viewCannotDelete = do
---   el (italic . color Secondary) "This Inversion has uploaded results, it can no longer be deleted. Please create new one instead"
---
---
--- viewAreYouSure :: View InversionMeta ()
--- viewAreYouSure = do
---   col (gap 15) $ do
---     el (bold . color Danger) "Are you sure? This cannot be undone"
---     row (gap 10) $ do
---       button Cancel (Style.btnOutline Secondary . grow) "Cancel"
---       button Delete (Style.btn Danger) "Delete This Inverion"
+
+viewCannotDelete :: View InversionMeta ()
+viewCannotDelete = do
+  el (italic . color Secondary) "This Inversion has been published, it can no longer be deleted. Please create new one instead"
+
+
+viewAreYouSure :: View InversionMeta ()
+viewAreYouSure = do
+  col (gap 15) $ do
+    el (bold . color Danger) "Are you sure? This cannot be undone"
+    row (gap 10) $ do
+      button DeleteCancel (Style.btnOutline Secondary . grow) "Cancel"
+      button Delete (Style.btn Danger) "Delete This Inverion"
+
 
 -------------------------------------------------------------------
 -- STEP INVERT
@@ -465,7 +480,8 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
           target (GenerateStep propId progId invId) $ do
             el (onLoad ReloadGen 1000) "SUCCEEDED"
       CheckTransfer -> do
-        Transfer.checkTransfer GenTransfer taskId
+        res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer GenTransfer taskId
+        pure $ either (Transfer.viewTransferError taskId) id res
 
 
 viewGeneratedFiles :: Inversion -> View c ()
@@ -519,7 +535,8 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
       PublishTransfer _ TaskSucceeded -> do
         refreshInversion
       PublishTransfer taskId CheckTransfer -> do
-        Transfer.checkTransfer (PublishTransfer taskId) taskId
+        res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer (PublishTransfer taskId) taskId
+        pure $ either (Transfer.viewTransferError taskId) id res
    where
     refreshInversion = do
       PublishStep propId progId invId <- viewId

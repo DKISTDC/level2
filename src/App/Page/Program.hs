@@ -5,7 +5,7 @@ module App.Page.Program where
 import App.Colors
 import App.Effect.Auth
 import App.Error (expectFound)
-import App.Globus (DownloadFolder, FileLimit (Folders), Globus, TransferForm)
+import App.Globus (DownloadFolder, FileLimit (Folders), Globus, GlobusError, TransferForm)
 import App.Globus qualified as Globus
 import App.Route qualified as Route
 import App.Style qualified as Style
@@ -24,6 +24,7 @@ import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import Effectful.Time
@@ -285,10 +286,10 @@ instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView Down
             el_ "Successfully Downloaded: "
             el_ $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
       CheckTransfer -> do
-        vw <- Transfer.checkTransfer DwnTransfer taskId
+        res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer DwnTransfer taskId
         pure $ col (gap 10) $ do
           redownloadBtn (Style.btnLoading Secondary) "Downloading"
-          vw
+          either (Transfer.viewTransferError taskId) id res
 
 
 viewDownloadLoad :: View DownloadTransfer ()
