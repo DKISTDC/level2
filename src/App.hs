@@ -77,7 +77,7 @@ main = do
   startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> TaskChan PublishTask -> Eff es ()
   startWebServer config auth fits asdf pubs =
     runLogger "Server" $ do
-      log Debug $ "Starting on :" <> show config.app.port
+      -- log Debug $ "Starting on :" <> show config.app.port
       log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
       liftIO $
         Warp.run config.app.port $
@@ -179,9 +179,10 @@ webServer config auth fits asdf pubs =
   runGraphQL' False = runGraphQL
 
 
-runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
+runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusDev (GlobusDevConfig dkist)) action = runGlobusDev dkist action
-runGlobus' (GlobusLive g) action = runGlobus g action
+runGlobus' (GlobusLive g) action =
+  catchHttpGlobus (runGlobus g action)
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

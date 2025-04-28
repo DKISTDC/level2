@@ -171,8 +171,9 @@ getLastUrl = do
   pure auth.currentUrl
 
 
-openFileManager :: (Hyperbole :> es, Auth :> es) => FileLimit -> Url -> Text -> Eff es a
-openFileManager files red lbl = do
-  r <- request
+openFileManager :: (Hyperbole :> es, Auth :> es, Reader App :> es) => FileLimit -> Text -> Url -> Eff es a
+openFileManager files lbl submitUrl = do
+  cancelUrl <- currentUrl
+  app <- ask @App
   requireLogin $ do
-    redirect $ Globus.fileManagerSelectUrl files red lbl r
+    redirect $ Globus.fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl

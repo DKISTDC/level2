@@ -11,6 +11,7 @@ import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
 import App.Route qualified as Route
 import App.Style qualified as Style
+import App.Types (App)
 import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Inversion qualified as Inversion
@@ -21,6 +22,7 @@ import Data.Default (Default (..))
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log hiding (Info)
+import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
@@ -138,7 +140,7 @@ allUploadStatus files =
 
 submitUpload
   :: forall es
-   . (Hyperbole :> es, Log :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es, Log :> es)
+   . (Hyperbole :> es, Log :> es, Error GlobusError :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es, Log :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
@@ -215,7 +217,7 @@ data Uploads = Uploads (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Show, Read, ViewId)
 
 
-instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es) => HyperView Uploads es where
+instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es, Reader App :> es) => HyperView Uploads es where
   data Action Uploads
     = Upload
     | UpTransfer (Id Task) TransferAction
@@ -231,7 +233,7 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es)
     case action of
       Upload -> do
         let u = setUploadQuery uploads $ routeUrl $ Route.submitUpload propId progId invId
-        openFileManager (Files 3) u ("Transfer Inversion Results " <> invId.fromId)
+        openFileManager (Files 3) ("Transfer Inversion Results " <> invId.fromId) u
       UpTransfer taskId trans -> do
         dall <- Datasets.find (Datasets.ByProgram progId)
         case trans of

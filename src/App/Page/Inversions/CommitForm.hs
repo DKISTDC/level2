@@ -23,9 +23,7 @@ invalidCommit = Invalid "Git Commit not found in remote repository"
 data CommitForm f = CommitForm
   { gitCommit :: Field f GitCommit
   }
-  deriving (Generic)
-instance FormParse (CommitForm Identity)
-instance Fields CommitForm Validated
+  deriving (Generic, FromFormF, GenFields Validated)
 instance Show (CommitForm Validated) where
   show f = "CommitForm " ++ show f.gitCommit
 

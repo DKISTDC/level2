@@ -49,6 +49,7 @@ library
       App.View.Common
       App.View.DataRow
       App.View.DatasetsTable
+      App.View.Error
       App.View.Icons
       App.View.Inversion
       App.View.Layout
@@ -111,7 +112,7 @@ library
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       aeson
-    , base >=4.16.4.0
+    , base >=4.18
     , binary
     , bytestring
     , casing
@@ -134,7 +135,7 @@ library
     , monad-loops
     , nso-level2-types
     , random
-    , rel8 >=1.5.0
+    , rel8 >=1.6
     , req
     , string-conversions
     , string-interpolate
@@ -172,7 +173,7 @@ executable level2
   ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , base >=4.16.4.0
+    , base >=4.18
     , binary
     , bytestring
     , casing
@@ -196,7 +197,7 @@ executable level2
     , nso-level2
     , nso-level2-types
     , random
-    , rel8 >=1.5.0
+    , rel8 >=1.6
     , req
     , string-conversions
     , string-interpolate
@@ -245,7 +246,7 @@ test-suite spec
   build-depends:
       Diff >=0.5 && <1.0
     , aeson
-    , base >=4.16.4.0
+    , base >=4.18
     , binary
     , bytestring
     , casing
@@ -269,7 +270,7 @@ test-suite spec
     , nso-level2
     , nso-level2-types
     , random
-    , rel8 >=1.5.0
+    , rel8 >=1.6
     , req
     , skeletest
     , string-conversions

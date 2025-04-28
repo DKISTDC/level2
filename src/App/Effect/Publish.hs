@@ -1,8 +1,10 @@
 module App.Effect.Publish where
 
 import App.Effect.Scratch (Scratch, outputL2Dir)
-import App.Globus (Globus, Task, Token, Token' (..), dkistEndpoint, fileManagerOpenDir, initTransfer, scratchCollection)
+import App.Globus (Globus, GlobusError, Task, Token, Token' (..), dkistEndpoint, fileManagerOpenDir, initTransfer, scratchCollection)
 import Effectful
+import Effectful.Error.Static
+import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Image.Frame (L2Frame)
 import NSO.Prelude
@@ -33,7 +35,7 @@ fileManagerOpenPublish = fileManagerOpenDir (App.Id dkistEndpoint.unTagged)
 -- /level2/generated/pid_1_118/inv.SD9T3L/
 -- /level2/generated/pid_1_118/inv.SD9T3L/
 transferSoftPublish
-  :: (Globus :> es, Reader (Token Access) :> es, Scratch :> es)
+  :: (Globus :> es, Log :> es, Error GlobusError :> es, Reader (Token Access) :> es, Scratch :> es)
   => App.Id Proposal
   -> App.Id Inversion
   -> Eff es (App.Id Task)

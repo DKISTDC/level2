@@ -35,11 +35,13 @@ module App.Globus
   , initTransfer
   , isTransferComplete
   , GlobusError (..)
-  , catchGlobus
+  , catchHttpGlobus
   ) where
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
+import App.Types (AppDomain (..))
+import Data.ByteString (ByteString)
 import Data.List qualified as L
 import Data.Tagged
 import Data.Text qualified as T
@@ -63,11 +65,10 @@ import Network.Globus.Transfer (taskPercentComplete)
 import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..), responseStatus)
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Req qualified as Req
-import Network.HTTP.Types (QueryItem, unauthorized401)
+import Network.HTTP.Types (QueryItem, Status, unauthorized401)
 import Web.FormUrlEncoded qualified as FUE
 import Web.Hyperbole
-import Web.Hyperbole.Effect.Server (Host (..))
-import Web.Hyperbole.View.Forms (formLookupParam)
+import Web.Hyperbole.View.Forms (formLookup)
 import Web.View as WebView
 
 
@@ -100,8 +101,8 @@ data UserLoginInfo = UserLoginInfo
   deriving (Show)
 
 
-userInfo :: (Globus :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
-userInfo tis = do
+userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
+userInfo tis = catchHttpGlobus $ do
   oid <- requireScopeToken (Identity OpenId)
   Tagged trn <- requireScopeToken TransferAll
 
@@ -127,17 +128,17 @@ data FileLimit
   | Files Int
 
 
-fileManagerSelectUrl :: FileLimit -> Url -> Text -> Request -> Url
-fileManagerSelectUrl lmt red lbl req =
+fileManagerSelectUrl :: FileLimit -> Text -> AppDomain -> Url -> Url -> Url
+fileManagerSelectUrl lmt lbl domain submitUrl cancelUrl =
   Url
     "https://"
     "app.globus.org"
     ["file-manager"]
     [ ("method", Just "POST")
-    , ("action", Just $ cs (renderUrl submitUrl))
+    , ("action", Just $ cs (renderUrl $ appUrl submitUrl))
     , ("folderlimit", Just $ cs $ folderLimit lmt)
     , ("filelimit", Just $ cs $ fileLimit lmt)
-    , ("cancelurl", Just $ cs (renderUrl currentUrl'))
+    , ("cancelurl", Just $ cs (renderUrl $ appUrl cancelUrl))
     , ("label", Just $ cs lbl)
     ]
  where
@@ -150,17 +151,12 @@ fileManagerSelectUrl lmt red lbl req =
   folderLimit (Folders n) = show n
   folderLimit (Files _) = "0"
 
-  serverUrl :: Url -> Url
-  serverUrl u =
-    Url "https://" (cs req.host.text) u.path u.query
-
-  currentUrl' :: Url
-  currentUrl' = Url "https://" (cs req.host.text) req.path $ filter notHyperbole req.query
-
-  submitUrl :: Url
-  submitUrl = serverUrl red
-
-  notHyperbole (k, _) = not $ T.isPrefixOf "hyp-" (cs k)
+  -- convert a url to redirect to this server
+  appUrl :: Url -> Url
+  appUrl u =
+    -- request came from current server
+    -- should come from app config server?
+    Url "https://" domain.unTagged u.path u.query
 
 
 -- DEBUG ONLY: hard coded aasgard
@@ -185,8 +181,7 @@ data TransferForm = TransferForm
     path :: Path' Dir TransferForm
   , endpoint_id :: Text
   }
-  deriving (Generic)
-instance FormParse TransferForm
+  deriving (Generic, FromForm)
 instance Show TransferForm where
   show tf = "TransferForm " <> unwords [show tf.label, show tf.path, show tf.endpoint_id]
 
@@ -195,9 +190,9 @@ data DownloadFolder = DownloadFolder
   { folder :: Maybe (Path' Dir DownloadFolder)
   }
   deriving (Generic)
-instance FormParse DownloadFolder where
-  formParse f = do
-    DownloadFolder <$> formLookupParam "folder[0]" f
+instance FromForm DownloadFolder where
+  fromForm f = do
+    DownloadFolder <$> formLookup "folder[0]" f
 
 
 data UploadFiles t f = UploadFiles
@@ -209,8 +204,8 @@ data UploadFiles t f = UploadFiles
   deriving (Generic)
 instance Show (UploadFiles Filename Maybe) where
   show (UploadFiles q pf po) = "UploadFiles " <> show q <> " " <> show pf <> " " <> show po
-instance FormParse (UploadFiles Filename Maybe) where
-  formParse f = do
+instance FromForm (UploadFiles Filename Maybe) where
+  fromForm f = do
     fs <- files f
     let quantities = findFile Scratch.fileQuantities fs
     let profileFit = findFile Scratch.fileProfileFit fs
@@ -219,10 +214,10 @@ instance FormParse (UploadFiles Filename Maybe) where
    where
     files :: FUE.Form -> Either Text [Path' Filename ()]
     files frm = do
-      f0 <- formLookupParam "file[0]" frm
-      f1 <- formLookupParam "file[1]" frm
-      f2 <- formLookupParam "file[2]" frm
-      f3 <- formLookupParam "file[3]" frm
+      f0 <- formLookup "file[0]" frm
+      f1 <- formLookup "file[1]" frm
+      f2 <- formLookup "file[2]" frm
+      f3 <- formLookup "file[3]" frm
       pure $ catMaybes [f0, f1, f2, f3]
 
     findFile :: Path' Filename a -> [Path' Filename ()] -> Maybe (Path' Filename a)
@@ -237,11 +232,11 @@ instance FormParse (UploadFiles Filename Maybe) where
 transferStatus :: (Log :> es, Reader (Token Access) :> es, Globus :> es, Error GlobusError :> es) => App.Id Task -> Eff es Task
 transferStatus (Id ti) = do
   acc <- ask
-  catchGlobus $ send $ StatusTask acc (Tagged ti)
+  catchHttpGlobus $ send $ StatusTask acc (Tagged ti)
 
 
-initTransfer :: (Globus :> es, Reader (Token Access) :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (App.Id Task)
-initTransfer toRequest = do
+initTransfer :: (Globus :> es, Log :> es, Error GlobusError :> es, Reader (Token Access) :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (App.Id Task)
+initTransfer toRequest = catchHttpGlobus $ do
   acc <- ask
   sub <- send $ Globus.SubmissionId acc
   res <- send $ Globus.Transfer acc $ toRequest sub
@@ -249,7 +244,7 @@ initTransfer toRequest = do
 
 
 initUpload
-  :: (Hyperbole :> es, Globus :> es, Scratch :> es, Reader (Token Access) :> es)
+  :: (Hyperbole :> es, Globus :> es, Log :> es, Error GlobusError :> es, Scratch :> es, Reader (Token Access) :> es)
   => TransferForm
   -> UploadFiles Filename Maybe
   -> App.Id Proposal
@@ -288,7 +283,7 @@ initUpload tform up ip ii = do
     source t fn = t </> fn
 
 
-initDownloadL1Inputs :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
+initDownloadL1Inputs :: (Globus :> es, Log :> es, Error GlobusError :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (App.Id Task)
 initDownloadL1Inputs tform df ds = do
   initTransfer downloadTransferRequest
  where
@@ -310,7 +305,7 @@ initDownloadL1Inputs tform df ds = do
       downloadDestinationFolder tform df </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-initScratchDataset :: (IOE :> es, Log :> es, Globus :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
+initScratchDataset :: (IOE :> es, Log :> es, Globus :> es, Error GlobusError :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
 initScratchDataset d = do
   scratch <- scratchCollection
   initTransfer (transfer scratch)
@@ -391,7 +386,7 @@ data GlobusError
   = MissingScope Scope (NonEmpty TokenItem)
   | TransferFailed (App.Id Task)
   | Unauthorized HTTP.Request
-  | StatusError HTTP.Request
+  | StatusError HTTP.Request Status ByteString
   | ReqError Req.HttpException
   deriving (Exception, Show)
 
@@ -407,21 +402,21 @@ isTransferComplete it = do
       pure False
 
 
-catchGlobus :: (Log :> es, Globus :> es, Error GlobusError :> es) => Eff es a -> Eff es a
-catchGlobus eff =
+catchHttpGlobus :: (Log :> es, Error GlobusError :> es) => Eff es a -> Eff es a
+catchHttpGlobus eff =
   catch eff onGlobusErr
  where
   onGlobusErr = \case
-    Req.VanillaHttpException (HttpExceptionRequest req (StatusCodeException res _body)) -> do
+    Req.VanillaHttpException (HttpExceptionRequest req (StatusCodeException res body)) -> do
       log Err $ dump "GLOBUS StatusCodeException" (req, res)
-      onStatusErr req $ responseStatus res
+      onStatusErr req (responseStatus res) body
     ex -> do
       log Err $ dump "GLOBUS HttpException" ex
       throwError $ ReqError ex
 
-  onStatusErr req status
+  onStatusErr req (status :: Status) body
     | status == unauthorized401 = throwError $ Unauthorized req
-    | otherwise = throwError $ StatusError req
+    | otherwise = throwError $ StatusError req status body
 
 -- pure $ Hyperbole.Err $ Hyperbole.ErrOther $ "Globus request to " <> cs (path req) <> " failed with:\n " <> cs (show status)
 -- onGlobusErr ex = do

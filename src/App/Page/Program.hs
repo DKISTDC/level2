@@ -3,15 +3,17 @@
 module App.Page.Program where
 
 import App.Colors
-import App.Effect.Auth
+import App.Effect.Auth as Auth
 import App.Error (expectFound)
 import App.Globus (DownloadFolder, FileLimit (Folders), Globus, GlobusError, TransferForm)
 import App.Globus qualified as Globus
 import App.Route qualified as Route
 import App.Style qualified as Style
+import App.Types (App)
 import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.DatasetsTable as DatasetsTable
+import App.View.Error
 import App.View.Icons qualified as Icons
 import App.View.Inversion (rowInversion)
 import App.View.Layout
@@ -26,6 +28,7 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log hiding (Info)
+import Effectful.Reader.Dynamic (Reader)
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
@@ -37,6 +40,8 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (fromQueryData)
+import Web.Hyperbole.Effect.Hyperbole
+import Web.Hyperbole.Effect.Server as Hyperbole
 
 
 page
@@ -95,10 +100,11 @@ data ActiveDownload = ActiveDownload
 
 submitDownload :: (Log :> es, Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
 submitDownload propId progId = do
+  log Debug $ dump "Submit Download" (propId, progId)
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
   ds <- Datasets.find $ Datasets.ByProgram progId
-  taskId <- requireLogin $ Globus.initDownloadL1Inputs tfrm tfls ds
+  taskId <- requireLogin $ userFacingError @GlobusError $ Globus.initDownloadL1Inputs tfrm tfls ds
 
   let dwn = ActiveDownload (Just taskId)
 
@@ -219,7 +225,7 @@ data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
   deriving (Show, Read, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView ProgramDatasets es where
+instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
     = GoDownload
     | SortDatasets SortField
@@ -231,10 +237,9 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
 
   update GoDownload = do
     ProgramDatasets propId progId <- viewId
-    r <- request
-    requireLogin $ do
-      let u = routeUrl $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
-      redirect $ Globus.fileManagerSelectUrl (Folders 1) u ("Transfer Instrument Program " <> progId.fromId) r
+    -- r <- request
+    let submitUrl = routeUrl $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
+    Auth.openFileManager (Folders 1) ("Transfer Instrument Program " <> progId.fromId) submitUrl
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
     progs <- Programs.loadProgram progId

@@ -1,13 +1,49 @@
-version: '3.8'
-
 services:
+
+  metadata-postgres:
+    build:
+      context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
+      dockerfile: postgres.Dockerfile
+
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: metadata-store
+
+      PGUSER: dev
+      PGPASSWORD: dev
+      PGDATABASE: metadata-store
+    ports:
+      - "54320:5432"
+
+  metadata-store-api:
+    build:
+      context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
+      dockerfile: Dockerfile
+
+    environment:
+      MESH_CONFIG: '{
+          "metadata-store-operations-support": { "mesh_address": "metadata-postgres","mesh_port": 5432},
+          "metadata-store-processing-support": {"mesh_address": "metadata-postgres","mesh_port": 5432},
+          "metadata-store-quality-report": {"mesh_address": "metadata-postgres","mesh_port": 5432},
+          "metadata-store-search-support": {"mesh_address": "metadata-postgres","mesh_port": 5432},
+          "metadata-store-object-inventory": {"mesh_address": "metadata-mongodb","mesh_port": 27017},
+          "system-monitoring-log-apm": {"mesh_address": "localhost","mesh_port": 8200}
+        }'
+      GUNICORN_CMD_ARGS: "-w 4 -t 1800 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8080"
+
+    ports:
+      - "8080:8080"
+
+
   postgres:
     image: postgres:16
-    restart: always
+    # this makes it try to always be on, even if the container isn't running
+    # restart: always
     environment:
       POSTGRES_DB: level2
-      POSTGRES_USER: guest
-      POSTGRES_PASSWORD: guest
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
     volumes:
       - pgdata:/var/lib/pgsql/data
     ports:
@@ -20,17 +56,21 @@ services:
       - ~/certs:/etc/nginx/certs:ro
     ports:
       - "443:443"
+      # - "4033:4033"
 
-  level2:
-    build: .
-    depends_on:
-      - postgres
-    environment:
-      PORT: "8080"
-      DATABASE_URL: postgres://guest:guest@postgres:5432/level2
-      METADATA_API: http://internal-api-gateway.service.prod.consul/graphql
-    ports:
-      - "8080:8080"
+  # You must run metadata-store-api!
+  # metadata-store-api:
+
+  # level2:
+  #   build: .
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     PORT: "8080"
+  #     DATABASE_URL: postgres://guest:guest@postgres:5432/level2
+  #     METADATA_API: http://internal-api-gateway.service.prod.consul/graphql
+  #   ports:
+  #     - "8080:8080"
 
 networks:
   default:

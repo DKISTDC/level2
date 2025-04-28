@@ -61,6 +61,7 @@ fitsTask
   :: forall es
    . ( Reader (Token Access) :> es
      , Globus :> es
+     , Error GlobusError :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es
@@ -115,7 +116,7 @@ fitsTask numWorkers task = do
 
 
 transferL1Frames
-  :: (IOE :> es, Log :> es, Inversions :> es, Concurrent :> es, Tasks GenFits :> es, Time :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
+  :: (IOE :> es, Log :> es, Error GlobusError :> es, Inversions :> es, Concurrent :> es, Tasks GenFits :> es, Time :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
   => GenFits
   -> Dataset
   -> Inversion

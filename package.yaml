@@ -36,7 +36,7 @@ default-extensions:
   - StrictData
 
 dependencies:
-  - base >=4.16.4.0
+  - base >= 4.18
   - nso-level2-types
   - web-view >= 0.7
   - warp >= 3.4
@@ -51,7 +51,7 @@ dependencies:
   - string-interpolate
   - string-conversions
   - req
-  - rel8 >= 1.5.0
+  - rel8 >= 1.6
   - random
   - modern-uri
   - lens
