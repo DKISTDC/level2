@@ -80,7 +80,7 @@ proposalFromDataset d =
     }
 
 
-groupByProgram :: [Dataset] -> [Grouped InstrumentProgram Dataset]
+groupByProgram :: [Dataset] -> [Grouped (Id InstrumentProgram) Dataset]
 groupByProgram = grouped (.instrumentProgramId)
 
 
@@ -90,7 +90,7 @@ programFamilies invs ds =
  where
   startTime pf = pf.program.startTime
 
-  programFamily :: Grouped InstrumentProgram Dataset -> ProgramFamily
+  programFamily :: Grouped (Id InstrumentProgram) Dataset -> ProgramFamily
   programFamily gd =
     let invs' = programInversions invs gd
      in ProgramFamily
@@ -102,7 +102,7 @@ programFamilies invs ds =
 
 
 -- | Filter inversions for the given program
-programInversions :: [Inversion] -> Grouped InstrumentProgram Dataset -> [Inversion]
+programInversions :: [Inversion] -> Grouped (Id InstrumentProgram) Dataset -> [Inversion]
 programInversions ivs gd =
   let d = sample gd
    in filter (\i -> i.programId == d.instrumentProgramId) ivs
@@ -113,7 +113,7 @@ toProposals pfs =
   map toProposal $ grouped (\ip -> ip.program.proposalId) pfs
 
 
-toProposal :: Grouped Proposal ProgramFamily -> ProposalPrograms
+toProposal :: Grouped (Id Proposal) ProgramFamily -> ProposalPrograms
 toProposal g =
   let ip = sample g
       prop =
@@ -125,7 +125,7 @@ toProposal g =
    in ProposalPrograms{proposal = prop, programs = Grouped g.items}
 
 
-programStatus :: Grouped InstrumentProgram Dataset -> [Inversion] -> ProgramStatus
+programStatus :: Grouped (Id InstrumentProgram) Dataset -> [Inversion] -> ProgramStatus
 programStatus gd [] =
   if isQualified gd
     then StatusQualified
@@ -140,7 +140,7 @@ programStatus _ (i : is) = do
           Nothing -> StatusInversion i'
 
 
-instrumentProgram :: Grouped InstrumentProgram Dataset -> InstrumentProgram
+instrumentProgram :: Grouped (Id InstrumentProgram) Dataset -> InstrumentProgram
 instrumentProgram gd =
   let d = sample gd
       ls = NE.toList $ fmap identifyLine gd.items

@@ -1,7 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module NSO.Data.Scan where
 
 import Data.Aeson as Aeson (Result (..), Value)
 import Data.Bifunctor (bimap)
+import Data.Either (lefts, rights)
+import Data.Grouped
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
@@ -10,105 +15,125 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Metadata
 import NSO.Prelude
+import NSO.Types.InstrumentProgram
 
 
--- scanDatasets :: (Time :> es, GraphQL :> es, Rel8 :> es, Error RequestError :> es) => Eff es [Dataset]
--- scanDatasets = do
---   now <- currentTime
---   ds <- fetchDatasets now
---   _ <- query () $ insertAll ds
---   pure ds
+-- Check Available -------------------------------------------------
 
-data SyncResult
-  = New
-  | Unchanged
-  | Updated
-  deriving (Eq)
+runScanAvailable :: (Metadata :> es, Datasets :> es) => Eff es [Grouped (Id Proposal) DatasetAvailable]
+runScanAvailable = do
+  -- assume there aren't parse errors in these fields
+  scanAvailable <$> send AvailableDatasets
+ where
+  scanAvailable :: [DatasetAvailable] -> [Grouped (Id Proposal) DatasetAvailable]
+  scanAvailable = grouped (\d -> Id d.primaryProposalId)
 
 
-data SyncResults = SyncResults
-  { new :: [Dataset]
-  , updated :: [Dataset]
-  , unchanged :: [Dataset]
+-- Scan Proposal --------------------------------------------------------
+
+data ScanProposal = ScanProposal
+  { proposalId :: Id Proposal
   , errors :: [ScanError]
+  , datasets :: [SyncDataset]
   }
 
+
+runScanProposals :: (Metadata :> es, Datasets :> es, Time :> es) => [Grouped (Id Proposal) DatasetAvailable] -> Eff es [ScanProposal]
+runScanProposals gds = do
+  exs <- experimentDescriptions <$> send AllExperiments
+  forM gds $ \gd -> do
+    let propId = Id (sample gd).primaryProposalId
+    runScanProposal' exs propId
+
+
+runScanProposal :: (Metadata :> es, Datasets :> es, Time :> es) => Id Proposal -> Eff es ScanProposal
+runScanProposal propId = do
+  exs <- send AllExperiments
+  runScanProposal' (experimentDescriptions exs) propId
+
+
+runScanProposal' :: (Metadata :> es, Datasets :> es, Time :> es) => Map (Id Experiment) Text -> Id Proposal -> Eff es ScanProposal
+runScanProposal' exs propId = do
+  now <- currentTime
+  pds <- send $ DatasetsByProposal propId
+  ds <- indexed <$> Datasets.find (ByProposal propId)
+  pure $ scanProposal $ scanResult now exs ds pds
+ where
+  scanProposal ScanResult{..} = ScanProposal{proposalId = propId, datasets, errors}
+
+
+-- Scan Results / Calculate Sync ------------------------------------------------
 
 data ScanResult = ScanResult
-  { datasets :: [Dataset]
-  , errors :: [ScanError]
+  { errors :: [ScanError]
+  , datasets :: [SyncDataset]
   }
+
+
+scanResult :: UTCTime -> Map (Id Experiment) Text -> Map (Id Dataset) Dataset -> [ParsedResult DatasetInventory] -> ScanResult
+scanResult now exs m res =
+  let ds = fmap (toDataset now exs) res
+   in ScanResult
+        { errors = lefts ds
+        , datasets = fmap (syncDataset m) $ rights ds
+        }
+
+
+data SyncDataset = SyncDataset
+  { dataset :: Dataset
+  , sync :: Sync
+  }
+
+
+syncDataset :: Map (Id Dataset) Dataset -> Dataset -> SyncDataset
+syncDataset m dataset =
+  SyncDataset
+    { dataset
+    , sync = (sync m dataset)
+    }
+
+
+sync :: Map (Id Dataset) Dataset -> Dataset -> Sync
+sync old d = fromMaybe New $ do
+  dold <- M.lookup d.datasetId old
+  if d == dold{scanDate = d.scanDate}
+    then pure Skip
+    else pure Update
+
+
+-- Perform Sync -------------------------------------------------------------------------------------------------------------------
+
+execSync :: [SyncDataset] -> Eff es ()
+execSync = _
+
+
+-- Sync Dataset --------------------------------------------------------------
+
+data Sync
+  = New
+  | Skip
+  | Update
+  deriving (Eq, Show)
 
 
 data ScanError = ScanError String Value
+  deriving (Show, Eq)
 
 
-scanDatasetInventory :: (Metadata :> es, Time :> es) => Eff es ScanResult
-scanDatasetInventory = do
-  now <- currentTime
-  ads <- send AllDatasets
-  exs <- send AllExperiments
-  let parsed = fmap (toDataset now exs) ads
-  let datasets = mapMaybe success parsed
-  let errors = mapMaybe scanError parsed
-  pure $ ScanResult{datasets, errors}
- where
-  success (Left _) = Nothing
-  success (Right d) = Just d
-  scanError (Left err) = Just err
-  scanError (Right _) = Nothing
-
-
-syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es) => Eff es SyncResults
-syncDatasets = do
-  scan <- scanDatasetInventory
-  old <- indexed <$> Datasets.find All
-
-  let sync = syncResults old scan
-
-  -- Insert any new datasets
-  send $ Create sync.new
-
-  -- Update any old datasets
-  mapM_ (send . Save) sync.updated
-
-  -- Ignore any unchanged
-  pure sync
-
-
-syncResults :: Map (Id Dataset) Dataset -> ScanResult -> SyncResults
-syncResults old scan =
-  let srs = map (syncResult old) scan.datasets
-      res = zip srs scan.datasets
-      new = results New res
-      updated = results Updated res
-      unchanged = results Unchanged res
-   in SyncResults{new, updated, unchanged, errors = scan.errors}
- where
-  results r = map snd . filter ((== r) . fst)
-
-
-syncResult :: Map (Id Dataset) Dataset -> Dataset -> SyncResult
-syncResult old d = fromMaybe New $ do
-  dold <- M.lookup d.datasetId old
-  if d == dold{scanDate = d.scanDate}
-    then pure Unchanged
-    else pure Updated
-
-
-toDataset :: UTCTime -> [ExperimentDescription] -> ParsedDataset -> Either ScanError Dataset
-toDataset _ _ (ParsedDataset val (Error err)) = Left $ ScanError err val
-toDataset scanDate exs (ParsedDataset val (Success d)) = do
+toDataset :: UTCTime -> Map (Id Experiment) Text -> ParsedResult DatasetInventory -> Either ScanError Dataset
+toDataset _ _ (ParsedResult val (Error err)) = Left $ ScanError err val
+toDataset scanDate exs (ParsedResult val (Success d)) = do
   bimap (\err -> ScanError err val) id parseDataset
  where
   parseDataset = do
     ins <- parseInstrument d.instrumentName
-    exd <- parseExperiment d.primaryExperimentId
+    exd <- parseExperiment $ Id d.primaryExperimentId
     emb <- parseEmbargo
     pure $
       Dataset'
         { datasetId = Id d.datasetId
         , scanDate = scanDate
+        , bucket = d.bucket
         , observingProgramId = Id d.observingProgramExecutionId
         , instrumentProgramId = Id d.instrumentProgramExecutionId
         , boundingBox = boundingBoxNaN d.boundingBox
@@ -134,11 +159,11 @@ toDataset scanDate exs (ParsedDataset val (Success d)) = do
         , embargo = emb
         }
 
-  parseExperiment :: Text -> Either String Text
+  parseExperiment :: Id Experiment -> Either String Text
   parseExperiment eid =
-    case L.find (\e -> e.experimentId == eid) exs of
+    case M.lookup eid exs of
       Nothing -> Left "Experiment Description"
-      (Just e) -> pure e.experimentDescription
+      (Just e) -> pure e
 
   parseInstrument :: Text -> Either String Instrument
   parseInstrument input =
@@ -166,5 +191,50 @@ toDataset scanDate exs (ParsedDataset val (Success d)) = do
       else Just bb
 
 
+experimentDescriptions :: [ExperimentDescription] -> Map (Id Experiment) Text
+experimentDescriptions eds = M.fromList $ fmap (\ed -> (Id ed.experimentId, ed.experimentDescription)) eds
+
+
 indexed :: [Dataset] -> Map (Id Dataset) Dataset
 indexed = M.fromList . map (\d -> (d.datasetId, d))
+
+-- data ScanDataset = ScanDataset
+--   { datasetId :: Id Dataset
+--   , primaryProposalId :: Id Proposal
+--   , updateDate :: UTCTime
+--   , sync :: Sync
+--   }
+--
+-- scanDataset :: Map (Id Dataset) Dataset -> DatasetAvailable -> ScanDataset
+-- scanDataset m dsa =
+--   case M.lookup (Id dsa.datasetId) m of
+--     Nothing -> scanSync New
+--     Just d ->
+--       if dsa.updateDate.utc > d.updateDate
+--         then scanSync Update
+--         else scanSync Skip
+--  where
+--   scanSync s =
+--     ScanDataset
+--       { datasetId = Id dsa.datasetId
+--       , primaryProposalId = Id dsa.primaryProposalId
+--       , updateDate = dsa.updateDate.utc
+--       , sync = s
+--       }
+--       p
+--
+-- syncDatasets :: (Datasets :> es, Metadata :> es, Time :> es) => Eff es SyncResults
+-- syncDatasets = do
+--   scan <- scanDatasetInventory
+--   old <- indexed <$> Datasets.find All
+--
+--   let sync = syncResults old scan
+--
+--   -- Insert any new datasets
+--   send $ Create sync.new
+--
+--   -- Update any old datasets
+--   mapM_ (send . Save) sync.updated
+--
+--   -- Ignore any unchanged
+--   pure sync

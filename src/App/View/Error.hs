@@ -4,13 +4,11 @@ module App.View.Error where
 
 import App.Colors
 import App.Globus (GlobusError (..))
-import Data.Aeson as A
 import Effectful
 import Effectful.Error.Static
 import NSO.Prelude
 import Web.Hyperbole
 import Web.Hyperbole.Effect.Hyperbole
-import Web.Hyperbole.Effect.Server
 
 
 class UserFacingError err where

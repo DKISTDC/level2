@@ -26,6 +26,7 @@ data Datasets :: Effect where
   Find :: Filter -> Datasets m [Dataset]
   Create :: [Dataset] -> Datasets m ()
   Save :: Dataset -> Datasets m ()
+  Ids :: Datasets m [Id Dataset]
 
 
 type instance DispatchOf Datasets = 'Dynamic
@@ -45,6 +46,9 @@ runDataDatasets
   => Eff (Datasets : es) a
   -> Eff es a
 runDataDatasets = interpret $ \_ -> \case
+  Ids -> do
+    run $ select $ fmap (.datasetId) $ distinctOn (.datasetId) $ do
+      each datasets :: Query (Dataset' Expr)
   Find All -> do
     run $ select $ each datasets
   Find (ByProposal pid) -> queryProposal pid
@@ -114,6 +118,7 @@ runDataDatasets = interpret $ \_ -> \case
           Dataset'
             { datasetId = "dataset_id"
             , observingProgramId = "observing_program_id"
+            , bucket = "bucket"
             , instrumentProgramId = "instrument_program_id"
             , instrument = "instrument"
             , scanDate = "scan_date"

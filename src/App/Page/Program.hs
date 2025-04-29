@@ -40,8 +40,6 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (fromQueryData)
-import Web.Hyperbole.Effect.Hyperbole
-import Web.Hyperbole.Effect.Server as Hyperbole
 
 
 page

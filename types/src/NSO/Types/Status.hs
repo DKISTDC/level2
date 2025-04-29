@@ -2,6 +2,7 @@ module NSO.Types.Status where
 
 import Data.Grouped
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (InstrumentProgram, Proposal)
 import NSO.Types.Inversion
@@ -25,6 +26,6 @@ data ProposalPrograms = ProposalPrograms
 data ProgramFamily = ProgramFamily
   { program :: InstrumentProgram
   , status :: ProgramStatus
-  , datasets :: Grouped InstrumentProgram Dataset
+  , datasets :: Grouped (Id InstrumentProgram) Dataset
   , inversions :: [Inversion]
   }

@@ -53,7 +53,7 @@ page = do
             , proposal = p.proposal
             }
 
-    groupPrograms :: [Inversion] -> [Grouped InstrumentProgram Inversion]
+    groupPrograms :: [Inversion] -> [Grouped (Id InstrumentProgram) Inversion]
     groupPrograms = grouped (.programId)
 
     hasInversions p =
@@ -64,7 +64,7 @@ page = do
 
 data ProposalInversions = ProposalInversions
   { proposal :: Proposal
-  , programInversions :: [Grouped InstrumentProgram Inversion]
+  , programInversions :: [Grouped (Id InstrumentProgram) Inversion]
   }
 
 
@@ -81,7 +81,7 @@ viewProposal p = do
     mapM_ viewProgram p.programInversions
 
 
-viewProgram :: Grouped InstrumentProgram Inversion -> View id ()
+viewProgram :: Grouped (Id InstrumentProgram) Inversion -> View id ()
 viewProgram g = do
   let inv = sample g
   let sorted = sortOn (Down . (.updated)) $ NE.toList g.items :: [Inversion]

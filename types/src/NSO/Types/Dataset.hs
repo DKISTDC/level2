@@ -23,6 +23,7 @@ data Dataset' f = Dataset'
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
   , updateDate :: Column f UTCTime
+  , bucket :: Column f Text
   , wavelengthMin :: Column f (Wavelength Nm)
   , wavelengthMax :: Column f (Wavelength Nm)
   , startTime :: Column f UTCTime

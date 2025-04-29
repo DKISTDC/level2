@@ -17,7 +17,7 @@ sample :: Grouped a b -> b
 sample g = NE.head g.items
 
 
-grouped :: (Eq id, Ord id) => (a -> id) -> [a] -> [Grouped t a]
+grouped :: (Eq id, Ord id) => (a -> id) -> [a] -> [Grouped id a]
 grouped f input =
   let items = group' . L.sortOn f $ input
    in fmap Grouped items

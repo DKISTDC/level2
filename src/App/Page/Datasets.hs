@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module App.Page.Datasets where
@@ -11,52 +12,117 @@ import App.View.Common
 import App.View.DataRow (dataRows)
 import App.View.Icons as Icons
 import App.View.Layout
+import App.View.Loading as View
 import Data.Aeson qualified as A
+import Data.Grouped
+import Data.String.Interpolate (i)
+import Debug.Trace
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Scan
-import NSO.Metadata (Metadata)
+import NSO.Metadata (DatasetAvailable (..), Metadata)
 import NSO.Prelude
+import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View.Style (addClass, cls, prop)
 
 
+-- TODO: we want to be able to show progress
+-- start the work, then scan everything. Why not one at a time?
+-- TODO: Store status in-memory using worker state
+-- TODO: View errors from the in-memory process, etc. Recent jobs, etc
+--
+-- TODO: this page should show: recent scans... With their results... Which items were updated, etc
+-- can click into different scans
+--
+-- TODO: A single Scan should show:
+-- current progress! It might be in-progress
+-- new datasets
+-- updated datasets
+-- uchanged datasets
+-- errors
+-- filter by each
+
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Auth :> es) => Eff es (Page '[AllDatasets, DatasetRow])
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Auth :> es) => Eff es (Page '[Current, Scan, DatasetRow])
 page = do
-  ds <- Datasets.find Datasets.All
+  ids <- send $ Datasets.Ids
   appLayout (Datasets DatasetRoot) $ do
-    hyper AllDatasets $ viewPage $ viewDatasetSummary ds
+    col (Style.page) $ do
+      hyper Scan viewRunScan
+
+      col section $ do
+        el (bold . fontSize 24) "Current Datasets"
+        hyper Current $ viewExistingDatasets ids []
 
 
-data AllDatasets = AllDatasets
+-- Scan --------------------------------------------------
+
+data Scan = Scan
   deriving (Show, Read, ViewId)
 
 
-instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView AllDatasets es where
-  data Action AllDatasets
+instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView Scan es where
+  data Action Scan
     = RunScan
-    | Existing
     deriving (Show, Read, ViewAction)
 
 
-  type Require AllDatasets = '[DatasetRow]
+  type Require Scan = '[DatasetRow]
 
 
   update RunScan = do
-    sync <- syncDatasets
-    pure $ do
-      viewPage $ viewScanResults sync
-  update Existing = do
+    gds <- runScanAvailable
+    res <- runScanProposals gds
+
+    pure $ viewScanDatasets res
+
+
+viewRunScan :: View Scan ()
+viewRunScan = do
+  button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary . onRequest Style.disabled) "Run Scan"
+
+
+viewScanDatasets :: [ScanProposal] -> View Scan ()
+viewScanDatasets gds = do
+  el bold "SCAN DATASETS"
+  forM_ gds $ \sp -> do
+    el bold $ text $ "SCAN " <> sp.proposalId.fromId
+    forM_ sp.errors $ \e -> do
+      el (color Danger) (text $ cs $ show e)
+    forM_ sp.datasets $ \d -> do
+      row (gap 10) $ do
+        el id (text d.dataset.datasetId.fromId)
+        case d.sync of
+          New -> el_ "New"
+          Update -> el_ "Update"
+          Skip -> el_ "Skip"
+
+
+-- Current Datasets --------------------------------------------------
+
+data Current = Current
+  deriving (Show, Read, ViewId)
+
+
+instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView Current es where
+  data Action Current
+    = LoadExisting
+    deriving (Show, Read, ViewAction)
+
+
+  type Require Current = '[DatasetRow]
+
+
+  update LoadExisting = do
     ds <- Datasets.find Datasets.All
-    pure $ do
-      viewPage $ viewExistingDatasets ds
+    pure $ viewExistingDatasets [] ds
 
 
-viewDeleted :: [Id Dataset] -> View AllDatasets ()
+viewDeleted :: [Id Dataset] -> View Current ()
 viewDeleted ds = do
   col Style.page $ do
     col (gap 5) $ do
@@ -65,61 +131,51 @@ viewDeleted ds = do
         el_ (text d.fromId)
 
 
-viewPage :: View AllDatasets () -> View AllDatasets ()
+viewPage :: View Current () -> View Current ()
 viewPage content = do
-  loading
-  col (Style.page . onRequest hide) $ do
-    col (gap 10) $ do
-      button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary) "Run Scan"
-      button Existing (pad 10 . bold . fontSize 24 . Style.btnOutline Primary) "Current Datasets"
+  col (gap 10) $ do
     content
- where
-  loading = el (hide . pad 100 . grow . onRequest flexRow) $ do
-    space
-    el (width 200 . color (light Primary)) Icons.spinner
-    space
 
 
-viewDatasetSummary :: [Dataset] -> View AllDatasets ()
+viewDatasetSummary :: [Dataset] -> View Current ()
 viewDatasetSummary ds = do
   row (gap 5 . section) $ do
     el_ "Datasets: "
     el_ $ text $ cs $ show $ length ds
 
 
--- viewAllDatasets :: Either [Dataset] SyncResults -> View AllDatasets ()
--- viewAllDatasets res = do
+-- viewCurrent :: Either [Dataset] SyncResults -> View Current ()
+-- viewCurrent res = do
 --   case res of
 --     Left ds -> viewExistingDatasets ds
 --     Right sync -> viewScanResults sync
 
-viewExistingDatasets :: [Dataset] -> View AllDatasets ()
-viewExistingDatasets ds = do
-  col section $ do
-    el (bold . fontSize 24) "Datasets"
-    datasetsTable ds
+viewExistingDatasets :: [Id Dataset] -> [Dataset] -> View Current ()
+viewExistingDatasets ds [] = do
+  el (onLoad LoadExisting 100) $ View.loadingCard
+viewExistingDatasets _ ds = do
+  mapM_ (\d -> el id $ text $ d.datasetId.fromId) ds
 
 
-viewScanResults :: SyncResults -> View AllDatasets ()
-viewScanResults sr = do
-  col section $ do
-    el (bold . fontSize 24) "Errors"
-    errorsTable sr.errors
+-- viewScanResults :: ScanResult -> View Current ()
+-- viewScanResults sr = do
+--   col section $ do
+--     el (bold . fontSize 24) "Errors"
+--     errorsTable sr.errors
+--
+--   col section $ do
+--     el (bold . fontSize 24) "Updated"
+--     datasetsTable sr.updated
+--
+--   col section $ do
+--     el (bold . fontSize 24) "New"
+--     datasetsTable sr.new
+--
+--   col section $ do
+--     el (bold . fontSize 24) "Unchanged"
+--     datasetsTable sr.unchanged
 
-  col section $ do
-    el (bold . fontSize 24) "Updated"
-    datasetsTable sr.updated
-
-  col section $ do
-    el (bold . fontSize 24) "New"
-    datasetsTable sr.new
-
-  col section $ do
-    el (bold . fontSize 24) "Unchanged"
-    datasetsTable sr.unchanged
-
-
-errorsTable :: [ScanError] -> View AllDatasets ()
+errorsTable :: [ScanError] -> View Current ()
 errorsTable errs = do
   col (gap 10) $ do
     mapM_ errorRow errs
@@ -138,14 +194,13 @@ errorsTable errs = do
 -- Datasets (Debug)
 -----------------------------------------------------
 
-datasetsTable :: [Dataset] -> View AllDatasets ()
-datasetsTable [] = none
-datasetsTable ds = do
-  let sorted = sortOn (\d -> (d.primaryProposalId, d.instrumentProgramId, d.datasetId)) ds :: [Dataset]
-  col (gap 0) $ do
-    dataRows sorted $ \d -> do
-      hyper (DatasetRow d.datasetId) $ datasetRow d
-
+-- datasetsTable :: [Dataset] -> View Current ()
+-- datasetsTable [] = none
+-- datasetsTable ds = do
+--   let sorted = sortOn (\d -> (d.primaryProposalId, d.instrumentProgramId, d.datasetId)) ds :: [Dataset]
+--   col (gap 0) $ do
+--     dataRows sorted $ \d -> do
+--       hyper (DatasetRow d.datasetId) $ datasetRow d
 
 -- table View.table sorted $ do
 --   --    -- tcol (hd "Input Id") $ \d -> cell . cs . show $ d.inputDatasetObserveFramesPartId
@@ -168,7 +223,7 @@ datasetsTable ds = do
 -- tcol (hd "Bounding Box") $ \d -> cell . cs . show $ d.boundingBox
 -- tcol (hd "On Disk") $ \d -> cell . cs $ maybe "" (show . isOnDisk (dayOfYear d.startTime)) d.boundingBox
 
-section :: Mod AllDatasets
+section :: Mod id
 section = Style.card . gap 15 . pad 15
 
 
@@ -191,10 +246,10 @@ instance (Datasets :> es) => HyperView DatasetRow es where
     pure $ mapM_ datasetRowDetails ds
 
 
-datasetRow :: Dataset -> View DatasetRow ()
-datasetRow d = do
+datasetRow :: Id Dataset -> View DatasetRow ()
+datasetRow did = do
   row (onLoad Details 100) $ do
-    route (Route.Datasets $ Route.Dataset d.datasetId) (Style.link . width 100) $ text $ cs d.datasetId.fromId
+    route (Route.Datasets $ Route.Dataset did) (Style.link . width 100) $ text $ cs did.fromId
 
 
 datasetRowDetails :: Dataset -> View DatasetRow ()

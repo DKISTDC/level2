@@ -40,11 +40,10 @@ module App.Globus
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
-import App.Types (AppDomain (..))
+import App.Types (AppDomain)
 import Data.ByteString (ByteString)
 import Data.List qualified as L
 import Data.Tagged
-import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static

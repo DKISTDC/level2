@@ -40,6 +40,7 @@ viewDataset d =
       dataField "Instrument Program Id" $ route (Proposal d.primaryProposalId $ Program d.instrumentProgramId Prog) Style.link $ text d.instrumentProgramId.fromId
       dataField "Proposal Id" $ route (Proposal d.primaryProposalId PropRoot) Style.link $ text d.primaryProposalId.fromId
       dataField "Experiment Id" $ text d.primaryExperimentId.fromId
+      dataField "bucket" $ text d.bucket
       dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
       dataField "Create Date" $ text $ showTimestamp d.createDate
       dataField "Update Date" $ text $ showTimestamp d.updateDate

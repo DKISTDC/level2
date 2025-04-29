@@ -3,17 +3,22 @@
 
 module Effectful.GraphQL where
 
-import Control.Exception (Exception, throwIO)
+import Control.Monad.Catch (Exception, throwM)
 import Data.Aeson hiding (Result)
-import Data.Aeson.Types (Parser, parseEither)
+import Data.Aeson.Types (Parser, parseEither, parseMaybe)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.List qualified as L
 import Data.String (fromString)
 import Data.String.Interpolate (i)
 import Data.Text qualified as T
+import Debug.Trace
 import Effectful
+import Effectful.Debug
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
+
+-- import Effectful.Log
 import GHC.Generics
 import NSO.Prelude
 import Network.HTTP.Req
@@ -62,17 +67,51 @@ data Request = Request
   deriving (Generic, ToJSON, FromJSON)
 
 
-parseQueryResponse :: forall a. (FromJSON (Result a), Query a) => a -> Value -> Either String [Result a]
-parseQueryResponse q = parseEither parseData
+data ServerErrors = ServerErrors
+  { errors :: [ServerError]
+  }
+  deriving (Generic, FromJSON, Show)
+
+
+data ServerError = ServerError
+  { message :: Text
+  , locations :: [ServerErrorLocation]
+  }
+  deriving (Generic, FromJSON, Show)
+
+
+data ServerErrorLocation = ServerErrorLocation
+  { line :: Int
+  , column :: Int
+  }
+  deriving (Generic, FromJSON, Show)
+
+
+-- parseQueryErrors :: a -> Value -> Parser [ServerErrorMessage]
+-- parseQueryErrors = _
+
+parseQueryResponse :: forall a. (FromJSON (Result a), Query a) => a -> Value -> Parser [Result a]
+parseQueryResponse q = parseData
  where
   parseData :: Value -> Parser [Result a]
   parseData = withObject "DataResponse" $ \v -> do
+    -- return a parse error here!
+    -- errors :: Maybe [ServerErrorMessage] <- v .:? "errors"
+    -- checkErrors errors
     items <- v .: "data"
     parseItems items
 
+  -- checkErrors :: Maybe [ServerErrorMessage] -> Parser ()
+  -- checkErrors = \case
+  --   Nothing -> pure ()
+  --   Just [] -> pure ()
+  --   Just errs -> fail $ "Server Errors: " <> mconcat (fmap (cs . (.message)) errs)
+
   parseItems :: Value -> Parser [Result a]
-  parseItems = withObject "Response Data Items" $ \v -> do
-    v .: fromString (T.unpack $ selectorName q)
+  parseItems =
+    let sel = cs (selectorName q)
+     in withObject ("query " <> cs (operationName q) <> " - response." <> sel) $ \v -> do
+          v .: fromString sel
 
 
 service :: Text -> Maybe Service
@@ -87,7 +126,7 @@ httpsText t = https $ T.drop 8 t
 
 
 runGraphQL
-  :: (IOE :> es)
+  :: (Error GraphQLError :> es, IOE :> es)
   => Eff (GraphQL : es) a
   -> Eff es a
 runGraphQL = interpret $ \_ -> \case
@@ -96,9 +135,17 @@ runGraphQL = interpret $ \_ -> \case
     let headers = header "Content-Type" "application/json"
     v <- runReq defaultHttpConfig $ do
       responseBody <$> req POST url (ReqBodyLbs inp) jsonResponse headers
-    case parseQueryResponse q v of
-      Left e -> liftIO $ throwIO $ GraphQLParseError e
+    checkQueryErrors q v
+    res <- case parseEither (parseQueryResponse q) v of
+      Left e -> throwError $ GraphQLParseError e
       Right as -> pure as
+    pure res
+ where
+  checkQueryErrors q v =
+    case parseMaybe parseJSON v of
+      Just errs ->
+        throwError $ GraphQLServerError (query q) errs
+      Nothing -> pure ()
 
 
 runGraphQLMock
@@ -108,8 +155,9 @@ runGraphQLMock
   -> Eff es a
 runGraphQLMock mock = interpret $ \_ -> \case
   Query (Service url) q -> liftIO $ do
+    putStrLn "Query MOCK"
     resp <- mock (renderUrl url) (request q)
-    case parseQueryResponse q =<< eitherDecode resp of
+    case parseEither (parseQueryResponse q) =<< eitherDecode resp of
       Left e -> fail $ "Fetch Mock Decode: " <> show e
       Right a -> pure a
 
@@ -195,4 +243,5 @@ genConName _ = constructorName @(Rep a) Proxy
 
 data GraphQLError
   = GraphQLParseError String
+  | GraphQLServerError Text ServerErrors
   deriving (Show, Exception)

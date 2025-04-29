@@ -152,13 +152,14 @@ webServer config auth fits asdf pubs =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es) => Eff (Debug : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runConcurrent
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @GlobusError crashWithError
+      . runErrorWith @GraphQLError crashWithError
       . runFileSystem
       . runScratch config.scratch
       . runGlobus' config.globus
@@ -188,5 +189,6 @@ runGlobus' (GlobusLive g) action =
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a
 crashWithError c e = do
   log Err "Caught: Crashing"
+  log Err $ show e
   log Err $ prettyCallStack c
   liftIO $ throwM e
