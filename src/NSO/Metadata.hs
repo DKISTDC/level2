@@ -42,13 +42,14 @@ runMetadata s = interpret $ \_ -> \case
   DatasetById did -> do
     send $ Query s (DatasetFull did)
   DatasetsByProposal pid -> do
-    print $ query $ DatasetsProposalQuery pid
+    putStrLn $ "DatasetsByProposal: " <> cs pid.fromId
     send $ Query s (DatasetsProposalQuery pid)
   AvailableDatasets -> do
     let q = (DatasetsAvailable Nothing)
     res <- send $ Query s q
     pure res
   AllExperiments -> do
+    putStrLn "AllExperiments"
     send $ Query s ExperimentDescriptions
 
 

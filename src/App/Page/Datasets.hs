@@ -47,12 +47,12 @@ import Web.View.Style (addClass, cls, prop)
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Auth :> es) => Eff es (Page '[Current, Scan, DatasetRow])
+page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Auth :> es) => Eff es (Page '[Current, Scan, ScanProp, DatasetRow])
 page = do
   ids <- send $ Datasets.Ids
   appLayout (Datasets DatasetRoot) $ do
     col (Style.page) $ do
-      hyper Scan viewRunScan
+      hyper Scan viewStartScan
 
       col section $ do
         el (bold . fontSize 24) "Current Datasets"
@@ -67,39 +67,73 @@ data Scan = Scan
 
 instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView Scan es where
   data Action Scan
-    = RunScan
+    = StartScan
     deriving (Show, Read, ViewAction)
 
 
-  type Require Scan = '[DatasetRow]
+  type Require Scan = '[DatasetRow, ScanProp]
 
 
-  update RunScan = do
+  update StartScan = do
     gds <- runScanAvailable
-    res <- runScanProposals gds
-
-    pure $ viewScanDatasets res
-
-
-viewRunScan :: View Scan ()
-viewRunScan = do
-  button RunScan (pad 10 . bold . fontSize 24 . Style.btn Primary . onRequest Style.disabled) "Run Scan"
+    -- res <- runScanProposals gds
+    pure $ viewScanProps gds
 
 
-viewScanDatasets :: [ScanProposal] -> View Scan ()
-viewScanDatasets gds = do
-  el bold "SCAN DATASETS"
-  forM_ gds $ \sp -> do
-    el bold $ text $ "SCAN " <> sp.proposalId.fromId
-    forM_ sp.errors $ \e -> do
-      el (color Danger) (text $ cs $ show e)
-    forM_ sp.datasets $ \d -> do
-      row (gap 10) $ do
-        el id (text d.dataset.datasetId.fromId)
-        case d.sync of
-          New -> el_ "New"
-          Update -> el_ "Update"
-          Skip -> el_ "Skip"
+viewStartScan :: View Scan ()
+viewStartScan = do
+  col (gap 10) $ do
+    button StartScan (pad 10 . bold . fontSize 24 . Style.btn Primary . onRequest Style.disabled) "Run Scan"
+    el (display None . onRequest (display Block) . section) View.loadingCard
+
+
+viewScanProps :: [Grouped (Id Proposal) DatasetAvailable] -> View Scan ()
+viewScanProps gds =
+  col (gap 15) $ do
+    forM_ gds $ \g -> do
+      col (gap 10 . section) $ do
+        hyper (ScanProp (Id (sample g).primaryProposalId)) viewPropInit
+
+
+-- Proposal Scan ----------------------------------------------------
+
+data ScanProp = ScanProp (Id Proposal)
+  deriving (Show, Read, ViewId)
+
+
+instance (Datasets :> es, Time :> es, Metadata :> es) => HyperView ScanProp es where
+  data Action ScanProp
+    = RunScanProposal
+    deriving (Show, Read, ViewAction)
+
+
+  update RunScanProposal = do
+    ScanProp propId <- viewId
+    scan <- runScanProposal propId
+    pure $ viewPropScan scan
+
+
+viewPropInit :: View ScanProp ()
+viewPropInit = do
+  ScanProp propId <- context
+  col (gap 10) $ do
+    el (bold . onLoad RunScanProposal 100) $ text propId.fromId
+    View.loadingCard
+
+
+viewPropScan :: ScanProposal -> View ScanProp ()
+viewPropScan scan = do
+  ScanProp propId <- viewId
+  el bold $ text propId.fromId
+  forM_ scan.errors $ \e -> do
+    el (color Danger) (text $ cs $ show e)
+  forM_ scan.datasets $ \d -> do
+    row (gap 10) $ do
+      el id (text d.dataset.datasetId.fromId)
+      case d.sync of
+        New -> el_ "New"
+        Update -> el_ "Update"
+        Skip -> el_ "Skip"
 
 
 -- Current Datasets --------------------------------------------------
