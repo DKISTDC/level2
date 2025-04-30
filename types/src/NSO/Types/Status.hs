@@ -19,7 +19,7 @@ data ProgramStatus
 
 data ProposalPrograms = ProposalPrograms
   { proposal :: Proposal
-  , programs :: Grouped Proposal ProgramFamily
+  , programs :: Grouped (Id Proposal) ProgramFamily
   }
 
 

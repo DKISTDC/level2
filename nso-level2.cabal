@@ -62,7 +62,7 @@ library
       App.Worker.GenWorker
       App.Worker.Publish
       App.Worker.PuppetMaster
-      App.Worker.ScanMetadata
+      App.Worker.SyncMetadata
       Effectful.Tasks
       Flow
       Flow.Example
@@ -74,8 +74,8 @@ library
       NSO.Data.Inversions.Update
       NSO.Data.Programs
       NSO.Data.Qualify
-      NSO.Data.Scan
       NSO.Data.Spectra
+      NSO.Data.Sync
       NSO.Image.Asdf
       NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable

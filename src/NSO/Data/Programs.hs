@@ -122,7 +122,7 @@ toProposal g =
           , description = ip.program.experimentDescription
           , startTime = ip.program.startTime
           }
-   in ProposalPrograms{proposal = prop, programs = Grouped g.items}
+   in ProposalPrograms{proposal = prop, programs = g}
 
 
 programStatus :: Grouped (Id InstrumentProgram) Dataset -> [Inversion] -> ProgramStatus

@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module NSO.Data.Scan where
+module NSO.Data.Sync where
 
 import Data.Aeson as Aeson (Result (..), Value)
 import Data.Bifunctor (bimap)
@@ -10,12 +10,91 @@ import Data.Grouped
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
+import Effectful
+import Effectful.Concurrent
+import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
+import Effectful.Log
 import Effectful.Time
-import NSO.Data.Datasets as Datasets
+import NSO.Data.Datasets (Datasets)
+import NSO.Data.Datasets qualified as Datasets
 import NSO.Metadata
 import NSO.Prelude
+import NSO.Types.Common
+import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import NSO.Types.Wavelength
+
+
+-- we probably need an identifier, no?
+-- what's the main state
+-- data SyncTask = SyncTask
+--   { started :: UTCTime
+--   , proposals :: Map (Id Proposal) SyncStep
+--   }
+
+type SyncId = UTCTime
+
+
+data SyncState = SyncState
+  { started :: UTCTime
+  , complete :: Maybe UTCTime
+  , proposals :: [Id Proposal]
+  , scans :: Map (Id Proposal) ScanProposal
+  }
+
+
+data MetadataSync :: Effect where
+  Create :: MetadataSync m SyncId
+  History :: MetadataSync m [SyncId]
+  Get :: SyncId -> MetadataSync m SyncState
+  SetProposals :: SyncId -> [Id Proposal] -> MetadataSync m ()
+  SetScan :: SyncId -> Id Proposal -> ScanProposal -> MetadataSync m ()
+  SetComplete :: SyncId -> MetadataSync m ()
+type instance DispatchOf MetadataSync = Dynamic
+
+
+type History = TVar [SyncState]
+
+
+runMetadataSync :: (Concurrent :> es, IOE :> es, Time :> es) => History -> Eff (MetadataSync : es) a -> Eff es a
+runMetadataSync var = interpret $ \_ -> \case
+  Create -> do
+    now <- currentTime
+    atomically $ do
+      modifyTVar var (empty now :)
+    pure now
+  History -> do
+    sts <- atomically $ readTVar var
+    pure $ fmap (.started) sts
+  Get t -> do
+    sts <- atomically $ readTVar var
+    pure $ fromMaybe (empty t) $ L.find (\st -> st.started == t) sts
+  SetProposals s propIds -> do
+    modifySync s $ \st -> st{proposals = propIds}
+  SetScan s propId scan ->
+    modifySync s $ \st -> st{scans = M.insert propId scan st.scans}
+  SetComplete s -> do
+    now <- currentTime
+    modifySync s $ \st -> st{complete = Just now}
+ where
+  empty t = SyncState t Nothing [] M.empty
+
+  modifySync :: (Concurrent :> es) => SyncId -> (SyncState -> SyncState) -> Eff es ()
+  modifySync t f = do
+    atomically $ do
+      modifyTVar var $ fmap (modifyId t f)
+
+  modifyId :: SyncId -> (SyncState -> SyncState) -> SyncState -> SyncState
+  modifyId time f st =
+    if st.started == time
+      then f st
+      else st
+
+
+initMetadataSync :: (Concurrent :> es) => Eff es (TVar [SyncState])
+initMetadataSync = do
+  newTVarIO []
 
 
 -- Check Available -------------------------------------------------
@@ -56,7 +135,7 @@ runScanProposal' :: (Metadata :> es, Datasets :> es, Time :> es) => Map (Id Expe
 runScanProposal' exs propId = do
   now <- currentTime
   pds <- send $ DatasetsByProposal propId
-  ds <- indexed <$> Datasets.find (ByProposal propId)
+  ds <- indexed <$> Datasets.find (Datasets.ByProposal propId)
   pure $ scanProposal $ scanResult now exs ds pds
  where
   scanProposal ScanResult{..} = ScanProposal{proposalId = propId, datasets, errors}
@@ -103,8 +182,9 @@ sync old d = fromMaybe New $ do
 
 -- Perform Sync -------------------------------------------------------------------------------------------------------------------
 
-execSync :: [SyncDataset] -> Eff es ()
-execSync = _
+execSync :: (Log :> es) => [SyncDataset] -> Eff es ()
+execSync sds = do
+  log Debug $ "Fake Exec"
 
 
 -- Sync Dataset --------------------------------------------------------------

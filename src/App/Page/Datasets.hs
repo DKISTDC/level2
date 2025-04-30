@@ -19,7 +19,7 @@ import Data.String.Interpolate (i)
 import Debug.Trace
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Scan
+import NSO.Data.Sync
 import NSO.Metadata (DatasetAvailable (..), Metadata)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram

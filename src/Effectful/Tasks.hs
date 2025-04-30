@@ -31,6 +31,7 @@ taskChanNew = do
   pure $ TaskChan{wait, work, queue}
 
 
+-- Idempotent. A task that exactly matches an existing one will not be added twice
 taskAdd :: (Eq t) => TaskChan t -> t -> STM ()
 taskAdd chan t = do
   wait <- readTVar chan.wait
