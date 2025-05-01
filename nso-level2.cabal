@@ -42,6 +42,7 @@ library
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
+      App.Page.Sync
       App.Route
       App.Style
       App.Types

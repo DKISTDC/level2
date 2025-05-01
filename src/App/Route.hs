@@ -1,5 +1,7 @@
 module App.Route where
 
+import Data.Time.Format.ISO8601 (iso8601ParseM, iso8601Show)
+import NSO.Data.Sync (SyncId)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -62,13 +64,19 @@ instance Route ProgramRoute where
 data DatasetRoute
   = DatasetRoot
   | Dataset (Id Dataset)
+  | Sync SyncId
   deriving (Show, Generic, Eq)
 instance Route DatasetRoute where
+  baseRoute = Just DatasetRoot
   matchRoute [] = Just DatasetRoot
   matchRoute [d] = Just (Dataset $ Id d)
+  matchRoute ["sync", st] = do
+    s <- iso8601ParseM (cs st) :: Maybe UTCTime
+    pure $ Sync s
   matchRoute _ = Nothing
   routePath DatasetRoot = []
   routePath (Dataset d) = [d.fromId]
+  routePath (Sync s) = ["sync", cs $ iso8601Show s]
 
 
 data DevRoute

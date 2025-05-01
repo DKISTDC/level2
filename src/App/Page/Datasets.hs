@@ -94,23 +94,27 @@ loadSyncs = do
 viewSyncs :: [SyncState] -> View Syncs ()
 viewSyncs syncs = do
   col (gap 10 . onLoad SyncsRefresh 1000) $ do
-    el (bold . fontSize 24) "Last Metadata Sync"
+    el (bold . fontSize 24) "Metadata Sync History"
     case (L.sortOn (Down . (.started)) syncs) of
       [] -> do
         View.loadingCard
-      [s] -> do
-        viewSyncDetails s
-      (s : ss) -> do
-        viewSyncDetails s
-        tag "hr" id none
-        el (bold . fontSize 24) "Metadata Sync History"
+      ss -> do
         mapM_ viewSyncSummary ss
 
 
 viewSyncSummary :: SyncState -> View Syncs ()
 viewSyncSummary s = do
   row (gap 10) $ do
-    el_ $ text $ cs $ showDate s.started
+    route (Route.Datasets (Route.Sync s.started)) Style.link $ text $ cs $ showDate s.started
+    scanProgress s.scans s.proposals
+ where
+  scanProgress ss ps
+    | length ps == 0 = "Loading..."
+    | length ss == length ps = "Complete"
+    | otherwise = do
+        el_ $ text $ cs $ show (length s.scans)
+        text " / "
+        el_ $ text $ cs $ show (length s.proposals)
 
 
 -- each proposal needs its own section!

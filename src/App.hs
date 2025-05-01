@@ -15,6 +15,7 @@ import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
+import App.Page.Sync qualified as Sync
 import App.Route
 import App.Version
 import App.Worker.GenWorker as Gen
@@ -159,6 +160,7 @@ webServer config auth fits asdf pubs sync =
       SubmitUpload invId -> InversionUpload.submitUpload propId progId invId
   router (Datasets DatasetRoot) = runPage Datasets.page
   router (Datasets (Dataset d)) = runPage $ Dataset.page d
+  router (Datasets (Sync d)) = runPage $ Sync.page d
   router Experiments = do
     redirect (pathUrl . routePath $ Proposals)
   router Logout = runPage Auth.logout
