@@ -9,21 +9,15 @@ import App.Route
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common
-import App.View.Common (showDate)
-import App.View.DataRow (dataRows)
-import App.View.Icons as Icons
 import App.View.Layout
 import App.View.Loading as View
 import Data.Aeson qualified as A
-import Data.Grouped
 import Data.List qualified as L
 import Data.Ord (Down (..))
-import Data.String.Interpolate (i)
-import Debug.Trace
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Sync as Sync
-import NSO.Metadata (DatasetAvailable (..), Metadata)
+import NSO.Metadata (Metadata)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
@@ -256,7 +250,7 @@ viewDatasetSummary ds = do
 --     Right sync -> viewScanResults sync
 
 viewExistingDatasets :: [Id Dataset] -> [Dataset] -> View Current ()
-viewExistingDatasets ds [] = do
+viewExistingDatasets _ [] = do
   el (onLoad LoadExisting 100) $ View.loadingCard
 viewExistingDatasets _ ds = do
   mapM_ (\d -> el id $ text $ d.datasetId.fromId) ds

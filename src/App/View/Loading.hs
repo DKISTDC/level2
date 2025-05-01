@@ -1,9 +1,6 @@
 module App.View.Loading where
 
-import App.Colors
-import App.Style (card)
 import App.View.Icons (skeleton)
-import NSO.Prelude
 import Web.Hyperbole
 
 

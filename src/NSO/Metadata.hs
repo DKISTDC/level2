@@ -7,7 +7,6 @@ import Data.Aeson qualified as A
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 qualified as L
 import Data.String.Interpolate (i)
-import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.GraphQL
