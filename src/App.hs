@@ -20,6 +20,7 @@ import App.Version
 import App.Worker.GenWorker as Gen
 import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
+import App.Worker.SyncMetadata as Sync
 import Control.Monad (forever)
 import Control.Monad.Catch (Exception, throwM)
 import Effectful
@@ -62,12 +63,14 @@ main = do
       fits <- atomically taskChanNew
       asdf <- atomically taskChanNew
       pubs <- atomically taskChanNew
+      metas <- atomically taskChanNew
+      props <- atomically taskChanNew
       sync <- initMetadataSync
       auth <- initAuth config.auth.admins config.auth.adminToken
 
       concurrently_
         (startWebServer config auth fits asdf pubs sync)
-        (runWorkers config auth fits asdf pubs sync (startWorkers config))
+        (runWorkers config auth fits asdf pubs sync metas props (startWorkers config))
 
       pure ()
  where
@@ -98,22 +101,27 @@ main = do
       id
       [ startPuppetMaster
       , startGen cfg
+      , startWorker Sync.syncMetadataTask
+      , startWorker Sync.syncProposalTask
       ]
 
   runInit =
     runLogger "Init"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @GlobusError crashWithError
+      . runErrorWith @GraphQLError crashWithError
       . runFailIO
       . runEnvironment
 
-  runWorkers config auth fits asdf pubs sync =
+  runWorkers config auth fits asdf pubs sync metas props =
     runFileSystem
       . runReader config.scratch
       . runRel8 config.db
       . runScratch config.scratch
       . runGlobus' config.globus
       . runAuth config.app.domain Redirect auth
+      . runGraphQL
+      . runMetadata config.services.metadata
       . runGenRandom
       . runTime
       . runDataInversions
@@ -121,6 +129,8 @@ main = do
       . runTasks @GenFits fits
       . runTasks @GenAsdf asdf
       . runTasks @PublishTask pubs
+      . runTasks @SyncMetadataTask metas
+      . runTasks @SyncProposalTask props
       . runMetadataSync sync
 
 
@@ -187,7 +197,10 @@ webServer config auth fits asdf pubs sync =
 runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusDev (GlobusDevConfig dkist)) action = runGlobusDev dkist action
 runGlobus' (GlobusLive g) action =
-  catchHttpGlobus (runGlobus g action)
+  -- catchHttpGlobus (runGlobus g action)
+  -- come up with a better way to do this. This catches all IO errors right now
+  -- maybe I just need a generic handler...
+  runGlobus g action
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

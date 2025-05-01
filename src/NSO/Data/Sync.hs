@@ -38,8 +38,8 @@ type SyncId = UTCTime
 
 data SyncState = SyncState
   { started :: UTCTime
-  , complete :: Maybe UTCTime
-  , proposals :: [Id Proposal]
+  , -- , error :: Maybe String
+    proposals :: [Id Proposal]
   , scans :: Map (Id Proposal) ScanProposal
   }
 
@@ -50,7 +50,9 @@ data MetadataSync :: Effect where
   Get :: SyncId -> MetadataSync m SyncState
   SetProposals :: SyncId -> [Id Proposal] -> MetadataSync m ()
   SetScan :: SyncId -> Id Proposal -> ScanProposal -> MetadataSync m ()
-  SetComplete :: SyncId -> MetadataSync m ()
+
+
+-- SetError :: SyncId -> String -> MetadataSync m ()
 type instance DispatchOf MetadataSync = Dynamic
 
 
@@ -74,11 +76,11 @@ runMetadataSync var = interpret $ \_ -> \case
     modifySync s $ \st -> st{proposals = propIds}
   SetScan s propId scan ->
     modifySync s $ \st -> st{scans = M.insert propId scan st.scans}
-  SetComplete s -> do
-    now <- currentTime
-    modifySync s $ \st -> st{complete = Just now}
  where
-  empty t = SyncState t Nothing [] M.empty
+  -- SetError s e ->
+  -- modifySync s $ \st -> st{error = Just e}
+
+  empty t = SyncState t [] M.empty
 
   modifySync :: (Concurrent :> es) => SyncId -> (SyncState -> SyncState) -> Eff es ()
   modifySync t f = do
@@ -92,6 +94,11 @@ runMetadataSync var = interpret $ \_ -> \case
       else st
 
 
+lastSync :: (MetadataSync :> es) => Eff es (Maybe UTCTime)
+lastSync = do
+  listToMaybe <$> send History
+
+
 initMetadataSync :: (Concurrent :> es) => Eff es (TVar [SyncState])
 initMetadataSync = do
   newTVarIO []
@@ -99,7 +106,7 @@ initMetadataSync = do
 
 -- Check Available -------------------------------------------------
 
-runScanAvailable :: (Metadata :> es, Datasets :> es) => Eff es [Grouped (Id Proposal) DatasetAvailable]
+runScanAvailable :: (Metadata :> es) => Eff es [Grouped (Id Proposal) DatasetAvailable]
 runScanAvailable = do
   -- assume there aren't parse errors in these fields
   scanAvailable <$> send AvailableDatasets
@@ -115,6 +122,7 @@ data ScanProposal = ScanProposal
   , errors :: [ScanError]
   , datasets :: [SyncDataset]
   }
+  deriving (Show)
 
 
 runScanProposals :: (Metadata :> es, Datasets :> es, Time :> es) => [Grouped (Id Proposal) DatasetAvailable] -> Eff es [ScanProposal]
@@ -162,6 +170,7 @@ data SyncDataset = SyncDataset
   { dataset :: Dataset
   , sync :: Sync
   }
+  deriving (Show)
 
 
 syncDataset :: Map (Id Dataset) Dataset -> Dataset -> SyncDataset
@@ -182,9 +191,16 @@ sync old d = fromMaybe New $ do
 
 -- Perform Sync -------------------------------------------------------------------------------------------------------------------
 
-execSync :: (Log :> es) => [SyncDataset] -> Eff es ()
+execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
 execSync sds = do
-  log Debug $ "Fake Exec"
+  -- replace all the datasets!
+  let new = fmap (.dataset) $ filter (\s -> s.sync == New) sds
+  log Debug $ dump "SYNC NEW" (length new)
+  send $ Datasets.Create new
+
+  let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
+  log Debug $ dump "SYNC UPDATE" (length ups)
+  mapM_ (send . Datasets.Save) ups
 
 
 -- Sync Dataset --------------------------------------------------------------

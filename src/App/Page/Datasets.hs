@@ -9,17 +9,20 @@ import App.Route
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.View.Common
+import App.View.Common (showDate)
 import App.View.DataRow (dataRows)
 import App.View.Icons as Icons
 import App.View.Layout
 import App.View.Loading as View
 import Data.Aeson qualified as A
 import Data.Grouped
+import Data.List qualified as L
+import Data.Ord (Down (..))
 import Data.String.Interpolate (i)
 import Debug.Trace
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Sync
+import NSO.Data.Sync as Sync
 import NSO.Metadata (DatasetAvailable (..), Metadata)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -47,12 +50,14 @@ import Web.View.Style (addClass, cls, prop)
 -- import NSO.Data.Dataset
 -- import NSO.Data.Types
 
-page :: (Hyperbole :> es, Time :> es, Datasets :> es, Metadata :> es, Auth :> es) => Eff es (Page '[Current, Scan, ScanProp, DatasetRow])
+page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Eff es (Page '[Current, Syncs, ScanProp, DatasetRow])
 page = do
   ids <- send $ Datasets.Ids
+  syncs <- loadSyncs
   appLayout (Datasets DatasetRoot) $ do
     col (Style.page) $ do
-      hyper Scan viewStartScan
+      col section $ do
+        hyper Syncs $ viewSyncs syncs
 
       col section $ do
         el (bold . fontSize 24) "Current Datasets"
@@ -61,39 +66,101 @@ page = do
 
 -- Scan --------------------------------------------------
 
-data Scan = Scan
+data Syncs = Syncs
   deriving (Show, Read, ViewId)
 
 
-instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView Scan es where
-  data Action Scan
-    = StartScan
+instance (MetadataSync :> es) => HyperView Syncs es where
+  data Action Syncs
+    = SyncsRefresh
     deriving (Show, Read, ViewAction)
 
 
-  type Require Scan = '[DatasetRow, ScanProp]
+  type Require Syncs = '[DatasetRow, ScanProp]
 
 
-  update StartScan = do
-    gds <- runScanAvailable
+  update SyncsRefresh = do
+    syncs <- loadSyncs
     -- res <- runScanProposals gds
-    pure $ viewScanProps gds
+    pure $ viewSyncs syncs
 
 
-viewStartScan :: View Scan ()
-viewStartScan = do
-  col (gap 10) $ do
-    button StartScan (pad 10 . bold . fontSize 24 . Style.btn Primary . onRequest Style.disabled) "Run Scan"
-    el (display None . onRequest (display Block) . section) View.loadingCard
+loadSyncs :: (MetadataSync :> es) => Eff es [SyncState]
+loadSyncs = do
+  syncIds <- send $ Sync.History
+  mapM (\s -> send $ Sync.Get s) syncIds
 
 
-viewScanProps :: [Grouped (Id Proposal) DatasetAvailable] -> View Scan ()
-viewScanProps gds =
-  col (gap 15) $ do
-    forM_ gds $ \g -> do
-      col (gap 10 . section) $ do
-        hyper (ScanProp (Id (sample g).primaryProposalId)) viewPropInit
+viewSyncs :: [SyncState] -> View Syncs ()
+viewSyncs syncs = do
+  col (gap 10 . onLoad SyncsRefresh 1000) $ do
+    el (bold . fontSize 24) "Last Metadata Sync"
+    case (L.sortOn (Down . (.started)) syncs) of
+      [] -> do
+        View.loadingCard
+      [s] -> do
+        viewSyncDetails s
+      (s : ss) -> do
+        viewSyncDetails s
+        tag "hr" id none
+        el (bold . fontSize 24) "Metadata Sync History"
+        mapM_ viewSyncSummary ss
 
+
+viewSyncSummary :: SyncState -> View Syncs ()
+viewSyncSummary s = do
+  row (gap 10) $ do
+    el_ $ text $ cs $ showDate s.started
+
+
+-- each proposal needs its own section!
+viewSyncDetails :: SyncState -> View Syncs ()
+viewSyncDetails s = do
+  el bold $ text $ cs $ showDate s.started
+  -- el (color Danger) $ text $ cs $ show s.error
+  -- code id $ cs $ show s.proposals
+  forM_ s.scans $ \sc -> do
+    viewSyncProposal sc
+
+
+viewSyncProposal :: ScanProposal -> View Syncs ()
+viewSyncProposal scan = do
+  let skips = filter (\d -> d.sync == Skip) scan.datasets
+  let other = filter (\d -> d.sync /= Skip) scan.datasets
+
+  col (gap 5) $ do
+    row (gap 10) $ do
+      el bold $ text scan.proposalId.fromId
+      el italic $ text $ (cs $ show $ length skips) <> " skipped"
+
+    forM_ scan.errors $ \e -> do
+      el (color Danger . pad (XY 5 0)) (text $ cs $ show e)
+
+    mapM_ viewSyncDataset other
+
+
+viewSyncDataset :: SyncDataset -> View Syncs ()
+viewSyncDataset s = do
+  row (gap 10 . pad (XY 5 0)) $ do
+    route (Route.Datasets $ Route.Dataset s.dataset.datasetId) Style.link $ text $ s.dataset.datasetId.fromId
+    case s.sync of
+      New -> el_ "New"
+      Update -> el_ "Update"
+      Skip -> el_ "Skip"
+
+
+-- viewStartScan :: View Syncs ()
+-- viewStartScan = do
+--   col (gap 10) $ do
+--     button StartScan (pad 10 . bold . fontSize 24 . Style.btn Primary . onRequest Style.disabled) "Run Scan"
+--     el (display None . onRequest (display Block) . section) View.loadingCard
+
+-- viewScanProps :: [Grouped (Id Proposal) DatasetAvailable] -> View Syncs ()
+-- viewScanProps gds =
+--   col (gap 15) $ do
+--     forM_ gds $ \g -> do
+--       col (gap 10 . section) $ do
+--         hyper (ScanProp (Id (sample g).primaryProposalId)) viewPropInit
 
 -- Proposal Scan ----------------------------------------------------
 
