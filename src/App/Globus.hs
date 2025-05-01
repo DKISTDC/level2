@@ -372,7 +372,7 @@ datasetTransferItem dest d =
     }
  where
   datasetSourcePath :: Path' Dir Dataset
-  datasetSourcePath = Path "data" </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+  datasetSourcePath = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
 scratchCollection :: (Scratch :> es) => Eff es (Globus.Id Collection)
