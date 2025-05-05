@@ -1,22 +1,25 @@
 services:
 
+  # metadata-store-api ----------------------------------------
+
   metadata-postgres:
+    image: metadata-postgres
     build:
       context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
       dockerfile: postgres.Dockerfile
-
-    environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: metadata-store
-
-      PGUSER: dev
-      PGPASSWORD: dev
-      PGDATABASE: metadata-store
     ports:
       - "54320:5432"
 
+  metadata-mongodb:
+    image: metadata-mongodb
+    build:
+      context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
+      dockerfile: mongodb.Dockerfile
+    ports:
+      - "27017:27017"
+
   metadata-store-api:
+    image: metadata-store-api
     build:
       context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
       dockerfile: Dockerfile
@@ -30,11 +33,12 @@ services:
           "metadata-store-object-inventory": {"mesh_address": "metadata-mongodb","mesh_port": 27017},
           "system-monitoring-log-apm": {"mesh_address": "localhost","mesh_port": 8200}
         }'
-      GUNICORN_CMD_ARGS: "-w 4 -t 1800 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8080"
 
     ports:
       - "8080:8080"
 
+
+  # level2 -----------------------------------------------
 
   postgres:
     image: postgres:16
@@ -57,9 +61,6 @@ services:
     ports:
       - "443:443"
       # - "4033:4033"
-
-  # You must run metadata-store-api!
-  # metadata-store-api:
 
   # level2:
   #   build: .

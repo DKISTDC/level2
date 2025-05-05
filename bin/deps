@@ -1,4 +1,15 @@
 #!/bin/bash
+set -euo pipefail
 
-docker-compose up postgres nginx
+# export METADATA_STORE_API_DIR="${METADATA_STORE_API_DIR:-../metdata-store-api}"
+
+# cleanup() {
+#   echo "Shutting down: metdata-store-api"
+#   (cd $METADATA_STORE_API_DIR && docker-compose down)
+# }
+# trap cleanup EXIT
+
+# (cd $METADATA_STORE_API_DIR && docker-compose --profile full up --build -d)
+
+docker-compose up postgres nginx metadata-postgres metadata-mongodb metadata-store-api --build
 
