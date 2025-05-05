@@ -50,7 +50,6 @@ dependencies:
   - filepath
   - string-interpolate
   - string-conversions
-  - req
   - rel8 >= 1.6
   - random
   - modern-uri

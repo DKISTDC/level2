@@ -48,7 +48,6 @@ library
       OverloadedStrings
       QuasiQuotes
       DuplicateRecordFields
-      LambdaCase
       NoImplicitPrelude
       NoFieldSelectors
       StrictData
@@ -65,12 +64,13 @@ library
     , globus >=0.1.3
     , hasql
     , http-api-data
+    , http-client
+    , http-types
     , hyperbole >=0.4.3
     , lens
     , modern-uri
     , random
     , rel8
-    , req
     , scientific
     , string-conversions
     , string-interpolate
@@ -78,4 +78,4 @@ library
     , telescope ==0.2.*
     , text
     , time
-  default-language: GHC2021
+  default-language: GHC2024

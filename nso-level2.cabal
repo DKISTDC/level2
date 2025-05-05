@@ -139,7 +139,6 @@ library
     , nso-level2-types
     , random
     , rel8 >=1.6
-    , req
     , string-conversions
     , string-interpolate
     , tagged
@@ -201,7 +200,6 @@ executable level2
     , nso-level2-types
     , random
     , rel8 >=1.6
-    , req
     , string-conversions
     , string-interpolate
     , tagged
@@ -274,7 +272,6 @@ test-suite spec
     , nso-level2-types
     , random
     , rel8 >=1.6
-    , req
     , skeletest
     , string-conversions
     , string-interpolate

@@ -1,12 +1,15 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Effectful.GraphQL where
 
-import Control.Monad.Catch (Exception, throwM)
+import Control.Monad.Catch (Exception)
 import Data.Aeson hiding (Result)
-import Data.Aeson.Types (Parser, parseEither, parseMaybe)
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Aeson qualified as A
+import Data.Aeson.Key qualified as K
+import Data.Aeson.KeyMap qualified as KM
+import Data.Aeson.Types qualified as A
 import Data.Char (toLower)
 import Data.List qualified as L
 import Data.String (fromString)
@@ -14,64 +17,73 @@ import Data.String.Interpolate (i)
 import Data.Text qualified as T
 import Debug.Trace
 import Effectful
-import Effectful.Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-
--- import Effectful.Log
 import GHC.Generics
 import NSO.Prelude
-import Network.HTTP.Req
-import Text.URI (mkURI)
+import Network.HTTP.Client hiding (Proxy, Request, Response)
+import Network.HTTP.Client qualified as Http
+import Network.HTTP.Types (methodPost)
 
 
 data GraphQL :: Effect where
-  Query :: (Query a, FromJSON (Result a)) => Service -> a -> GraphQL m [Result a]
+  Query :: (Request a, FromJSON (Data a)) => Service -> a -> GraphQL m (Data a)
+  Mutation :: (Request a, FromJSON (Data a)) => Service -> a -> GraphQL m (Data a)
 type instance DispatchOf GraphQL = 'Dynamic
 
 
-class Query a where
-  type Result a :: Type
+class Request a where
+  type Data a :: Type
 
 
-  operationName :: a -> Text
-  default operationName :: (Generic a, ConstructorName (Rep a)) => a -> Text
-  operationName _ = T.pack $ genConName @a Proxy
-
-
-  selectorName :: a -> Text
-  default selectorName :: a -> Text
-  selectorName a = T.pack $ mapFirst toLower $ T.unpack $ operationName a
+  rootField :: Text
+  default rootField :: (Generic a, ConstructorName (Rep a)) => Text
+  rootField = mapFirst toLower $ T.pack $ genConName @a
    where
-    mapFirst f (x : xs) = f x : xs
-    mapFirst _ xs = xs
+    mapFirst :: (Char -> Char) -> Text -> Text
+    mapFirst f t =
+      T.map f (T.take 1 t) <> T.drop 1 t
 
 
-  query :: a -> Text
-  default query :: (Generic (Result a), FieldNames (Rep (Result a))) => a -> Text
-  query a =
-    let fields = genQueryFields @(Result a) Proxy
-        op = operationName a
-        sel = selectorName a
-     in [i| query #{op} { #{sel} { #{fields} }}|]
+  parameters :: a -> [(Key, A.Value)]
+  default parameters :: (ToJSON a) => a -> [(Key, A.Value)]
+  parameters a =
+    case toJSON a of
+      Object o -> KM.toList o
+      _ -> []
 
 
-newtype Service = Service (Url 'Http)
+  request :: a -> Text
+  default request :: (Generic (Data a), FieldNames (Data a)) => a -> Text
+  request a =
+    let params = parametersText (parameters a)
+        fields = requestFields @(Data a)
+     in [i| #{rootField @a}#{params} { #{fields} }|]
 
 
-data Request = Request
-  { operationName :: Text
-  , query :: Text
-  -- , variables :: Text
-  }
-  deriving (Generic, ToJSON, FromJSON)
+parametersText :: [(Key, A.Value)] -> Text
+parametersText [] = ""
+parametersText ps = "(" <> T.intercalate "," (fmap paramText ps) <> ")"
+ where
+  paramText (k, val) = K.toText k <> ": " <> cs (A.encode val)
 
 
-data ServerErrors = ServerErrors
-  { errors :: [ServerError]
-  }
-  deriving (Generic, FromJSON, Show)
+class RequestParameters a where
+  requestParameters :: a -> [(Text, A.Value)]
 
+
+class Mutation a
+
+
+newtype Service = Service Http.Request
+
+
+-- data Request = Request
+--   { operationName :: Text
+--   , query :: Text
+--   -- , variables :: Text
+--   }
+--   deriving (Generic, ToJSON, FromJSON)
 
 data ServerError = ServerError
   { message :: Text
@@ -87,88 +99,106 @@ data ServerErrorLocation = ServerErrorLocation
   deriving (Generic, FromJSON, Show)
 
 
+data Response a
+  = Errors [ServerError]
+  | Data A.Value
+
+
+instance (Request a) => FromJSON (Response a) where
+  parseJSON = withObject "GraphQL Response" $ \o -> do
+    Errors <$> o .: "errors" <|> Data <$> parseData o
+   where
+    parseData o = do
+      dat <- o .: "data"
+      dat .: fromString (cs $ rootField @a)
+
+
 -- parseQueryErrors :: a -> Value -> Parser [ServerErrorMessage]
 -- parseQueryErrors = _
 
-parseQueryResponse :: forall a. (FromJSON (Result a), Query a) => a -> Value -> Parser [Result a]
-parseQueryResponse q = parseData
- where
-  parseData :: Value -> Parser [Result a]
-  parseData = withObject "DataResponse" $ \v -> do
-    -- return a parse error here!
-    -- errors :: Maybe [ServerErrorMessage] <- v .:? "errors"
-    -- checkErrors errors
-    items <- v .: "data"
-    parseItems items
-
-  -- checkErrors :: Maybe [ServerErrorMessage] -> Parser ()
-  -- checkErrors = \case
-  --   Nothing -> pure ()
-  --   Just [] -> pure ()
-  --   Just errs -> fail $ "Server Errors: " <> mconcat (fmap (cs . (.message)) errs)
-
-  parseItems :: Value -> Parser [Result a]
-  parseItems =
-    let sel = cs (selectorName q)
-     in withObject ("query " <> cs (operationName q) <> " - response." <> sel) $ \v -> do
-          v .: fromString sel
-
+-- parseResponse :: forall a. (FromJSON (Data a), Request a) => a -> Value -> Parser (Either [ServerError] (Data a))
+-- parseResponse q val = Left <$> parseErrors val <|> Right <$> parseData val
+--  where
+--   parseErrors :: Value -> Parser [ServerError]
+--   parseErrors = withObject "GraphQL response errors" $ \o -> do
+--     o .: "errors"
+--
+--   parseData :: Value -> Parser (Data a)
+--   parseData = withObject "GraphQL Response data" $ \v -> do
+--     dt <- v .: "data"
+--     parseRootField dt
+--
+--   -- checkErrors :: Maybe [ServerErrorMessage] -> Parser ()
+--   -- checkErrors = \case
+--   --   Nothing -> pure ()
+--   --   Just [] -> pure ()
+--   --   Just errs -> fail $ "Server Errors: " <> mconcat (fmap (cs . (.message)) errs)
+--
+--   parseRootField :: Value -> Parser (Data a)
+--   parseRootField =
+--     let field = cs $ rootField q
+--      in withObject ("GraphQL Response data.rootField: " <> cs field) $ \v -> do
+--           v .: fromString field
 
 service :: Text -> Maybe Service
 service inp = do
-  uri <- mkURI inp
-  url <- fst <$> useHttpURI uri
-  pure $ Service url
+  traceM $ "service: " <> show inp
+  req <- parseRequest (cs inp)
+  pure $ Service req
 
 
-httpsText :: Text -> Url 'Https
-httpsText t = https $ T.drop 8 t
-
+-- httpsText :: Text -> Url 'Https
+-- httpsText t = https $ T.drop 8 t
 
 runGraphQL
   :: (Error GraphQLError :> es, IOE :> es)
   => Eff (GraphQL : es) a
   -> Eff es a
 runGraphQL = interpret $ \_ -> \case
-  Query (Service url) q -> do
-    let inp = encode $ request q
-    let headers = header "Content-Type" "application/json"
-    v <- runReq defaultHttpConfig $ do
-      responseBody <$> req POST url (ReqBodyLbs inp) jsonResponse headers
-    checkQueryErrors q v
-    res <- case parseEither (parseQueryResponse q) v of
-      Left e -> throwError $ GraphQLParseError e
-      Right as -> pure as
-    pure res
- where
-  checkQueryErrors q v =
-    case parseMaybe parseJSON v of
-      Just errs ->
-        throwError $ GraphQLServerError (query q) errs
-      Nothing -> pure ()
+  Query s q -> sendRequest s "query" q
+  Mutation s q -> sendRequest s "mutation" q
 
 
-runGraphQLMock
-  :: (IOE :> es)
-  => (Text -> Request -> IO ByteString)
-  -> Eff (GraphQL : es) a
-  -> Eff es a
-runGraphQLMock mock = interpret $ \_ -> \case
-  Query (Service url) q -> liftIO $ do
-    putStrLn "Query MOCK"
-    resp <- mock (renderUrl url) (request q)
-    case parseEither (parseQueryResponse q) =<< eitherDecode resp of
-      Left e -> fail $ "Fetch Mock Decode: " <> show e
-      Right a -> pure a
+newtype ReqType = ReqType Text
+  deriving newtype (IsString)
 
 
-request :: (Query a) => a -> Request
-request q =
-  Request
-    { operationName = operationName q
-    , query = query q
-    }
+sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :> es, IOE :> es) => Service -> ReqType -> r -> Eff es (Data r)
+sendRequest (Service sv) (ReqType rt) r = do
+  -- liftIO $ putStrLn $ "QUERY: " <> show sv
+  let requestHeaders = [("Content-Type", "application/json")]
+  let requestBody = RequestBodyBS $ cs $ rt <> request r
+  let req = sv{method = methodPost, requestHeaders, requestBody}
+  mgr <- liftIO $ Http.newManager defaultManagerSettings
+  res <- liftIO $ Http.httpLbs req mgr
+  case A.eitherDecode @(Response r) (responseBody res) of
+    Left e -> throwError $ GraphQLParseError (request r) e
+    Right (Errors es) -> throwError $ GraphQLServerError (request r) es
+    Right (Data v) -> do
+      case A.parseEither parseJSON v of
+        Left e -> throwError $ GraphQLParseError (request r) e
+        Right d -> pure d
 
+
+-- runGraphQLMock
+--   :: (IOE :> es)
+--   => (Text -> Request -> IO ByteString)
+--   -> Eff (GraphQL : es) a
+--   -> Eff es a
+-- runGraphQLMock mock = interpret $ \_ -> \case
+--   Query (Service url) q -> liftIO $ do
+--     putStrLn "Query MOCK"
+--     resp <- mock (renderUrl url) (request q)
+--     case parseEither (parseQueryResponse q) =<< eitherDecode resp of
+--       Left e -> fail $ "Fetch Mock Decode: " <> show e
+--       Right a -> pure a
+
+-- request :: (Query a) => a -> Request
+-- request q =
+--   Request
+--     { operationName = operationName q
+--     , query = query q
+--     }
 
 data NestedFields = NestedFields String [NestedFields]
 
@@ -209,8 +239,8 @@ instance FieldNames (K1 R f) where
   fieldNames _ = []
 
 
-genQueryFields :: forall a. (Generic a, FieldNames (Rep a)) => Proxy a -> String
-genQueryFields _ = allFields $ fieldNames @(Rep a) Proxy
+requestFields :: forall a. (FieldNames a) => String
+requestFields = allFields $ fieldNames @a Proxy
  where
   allFields :: [NestedFields] -> String
   allFields = L.intercalate "\n" . fmap fields
@@ -237,11 +267,11 @@ instance (ConstructorName f) => ConstructorName (M1 S meta f) where
   constructorName _ = constructorName (Proxy :: Proxy f)
 
 
-genConName :: forall a. (Generic a, ConstructorName (Rep a)) => Proxy a -> String
-genConName _ = constructorName @(Rep a) Proxy
+genConName :: forall a. (Generic a, ConstructorName (Rep a)) => String
+genConName = constructorName @(Rep a) Proxy
 
 
 data GraphQLError
-  = GraphQLParseError String
-  | GraphQLServerError Text ServerErrors
+  = GraphQLParseError Text String
+  | GraphQLServerError Text [ServerError]
   deriving (Show, Exception)

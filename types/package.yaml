@@ -38,7 +38,6 @@ dependencies:
   - string-conversions
   - filepath
   - rel8
-  - req
   - hasql
   - random
   - modern-uri
@@ -47,6 +46,8 @@ dependencies:
   - exceptions
   - effectful >= 2.4 && <3
   - http-api-data
+  - http-client
+  - http-types
   - data-diverse
   - data-diverse
   - containers
