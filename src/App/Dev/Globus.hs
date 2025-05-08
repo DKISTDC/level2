@@ -1,8 +1,7 @@
 module App.Dev.Globus where
 
 import App.Effect.Scratch as Scratch
-import App.Globus
-import App.Route
+import App.Effect.Transfer
 import Data.List.NonEmpty
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -11,6 +10,8 @@ import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common (Path' (..), PathType (..), (</>))
 import Network.Globus.Auth
+import Network.Globus.Types qualified as Globus
+import Network.URI.Static (uri)
 import Web.Hyperbole
 import Web.View.Types.Url qualified as Url
 
@@ -22,7 +23,7 @@ runGlobusDev
   -> Eff es a
 runGlobusDev dkistDir = interpret $ \_ -> \case
   AuthUrl red _ _ -> do
-    pure $ Uri Https "localhost" (routePath $ Dev DevAuth) (Query [("redirect", Just $ renderUri red)])
+    pure $ Tagged [uri|https://localhost/dev?|] & Globus.param "redirect" (renderUri red)
   GetUserInfo _ -> do
     pure $
       UserInfoResponse

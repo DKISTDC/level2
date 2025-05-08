@@ -5,8 +5,9 @@ module App.Page.InversionUpload where
 
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager, requireLogin)
+import App.Effect.FileManager (FileLimit (Files))
 import App.Effect.Scratch (Scratch)
-import App.Globus as Globus (FileLimit (Files), Globus, GlobusError, Task, TransferForm, UploadFiles (..), initUpload)
+import App.Effect.Transfer as Transfer (TransferForm, UploadFiles (..), initUpload)
 import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
 import App.Route qualified as Route
@@ -21,6 +22,7 @@ import App.View.Transfer qualified as Transfer
 import Data.Default (Default (..))
 import Effectful
 import Effectful.Error.Static
+import Effectful.Globus (Globus, GlobusError, Task)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
@@ -152,7 +154,7 @@ submitUpload propId progId invId = do
   tup <- formData @(UploadFiles Filename Maybe)
   log Debug $ dump "Form" tup
 
-  taskId <- requireLogin $ Globus.initUpload tfrm tup propId invId
+  taskId <- requireLogin $ Transfer.initUpload tfrm tup propId invId
   let new = uploads taskId tup
 
   files <- query

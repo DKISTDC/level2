@@ -5,7 +5,6 @@ module App.Page.Dashboard where
 import App.Colors as Colors
 import App.Effect.Auth
 import App.Effect.Scratch (Scratch)
-import App.Globus
 import App.Route
 import App.Style qualified as Style
 import App.Version
@@ -22,6 +21,7 @@ import Effectful.Log
 import Effectful.Tasks
 import NSO.Data.Datasets
 import NSO.Prelude
+import Network.Globus (Token, Token' (..))
 import Web.Hyperbole
 
 

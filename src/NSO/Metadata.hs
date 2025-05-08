@@ -2,18 +2,19 @@
 
 module NSO.Metadata where
 
-import Data.Aeson (FromJSON (..), Value, fromJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value, fromJSON)
 import Data.Aeson qualified as A
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 qualified as L
-import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Fetch (FetchResponse (..))
 import Effectful.GraphQL
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import Network.HTTP.Client (RequestBody)
+import Network.HTTP.Types
+import Network.URI
 
 
 data Metadata :: Effect where
@@ -25,6 +26,8 @@ type instance DispatchOf Metadata = 'Dynamic
 
 
 data ParsedResult a = ParsedResult Value (A.Result a)
+instance (FieldNames a) => FieldNames (ParsedResult a) where
+  fieldNames _ = fieldNames (Proxy @a)
 
 
 instance (FromJSON a) => FromJSON (ParsedResult a) where
@@ -39,82 +42,58 @@ runMetadata
   -> Eff es a
 runMetadata s = interpret $ \_ -> \case
   DatasetById did -> do
-    send $ Query s (DatasetFull did)
+    send $ Query s (DatasetInventories [] [did])
   DatasetsByProposal pid -> do
-    putStrLn $ "DatasetsByProposal: " <> cs pid.fromId
-    send $ Query s (DatasetsProposalQuery pid)
+    send $ Query s (DatasetInventories [pid] [])
   AvailableDatasets -> do
-    let q = (DatasetsAvailable Nothing)
-    res <- send $ Query s q
+    res <- send $ Query s $ DatasetsAvailable $ DatasetInventories [] []
     pure res
   AllExperiments -> do
     putStrLn "AllExperiments"
     send $ Query s ExperimentDescriptions
 
 
-newtype DatasetFull = DatasetFull
-  { datasetId :: Id Dataset
+data DatasetInventories = DatasetInventories
+  { primaryProposalIds :: [Id Proposal]
+  , datasetIds :: [Id Dataset]
   }
-  deriving (Show, Eq, Generic)
-instance Query DatasetFull where
-  type Result DatasetFull = ParsedResult DatasetInventory
-  query d =
-    let selectedId = d.datasetId.fromId
-        fields = genQueryFields @DatasetInventory Proxy :: String
-     in [i| query DatasetById { datasetInventories (filterParams:{datasetIds:["#{selectedId}"]}) { #{fields} }}|]
+  deriving (Generic, ToJSON)
+instance Request DatasetInventories where
+  type Data DatasetInventories = [ParsedResult DatasetInventory]
+  parameters d = [("filterParams", toJSON d)]
 
 
-data DatasetsProposalQuery = DatasetsProposalQuery
-  { proposalId :: Id Proposal
-  }
-  deriving (Show, Eq, Generic)
-instance Query DatasetsProposalQuery where
-  type Result DatasetsProposalQuery = ParsedResult DatasetInventory
-  selectorName _ = "datasetInventories"
-  query q =
-    let selectedId = q.proposalId.fromId
-        fields = genQueryFields @DatasetInventory Proxy :: String
-     in [i| query DatasetsProposalQuery { datasetInventories
-          (filterParams:{ primaryProposalIds:["#{selectedId}"]})
-            { #{fields}
-            }
-          }|]
+newtype DatasetsAvailable = DatasetsAvailable DatasetInventories
+  deriving (Generic)
+instance Request DatasetsAvailable where
+  type Data DatasetsAvailable = [DatasetAvailable]
+  parameters (DatasetsAvailable d) = parameters d
 
 
-newtype DatasetsAvailable = DatasetsAvailable
-  { isEmbargoed :: Maybe Bool
-  }
-  deriving (Show, Eq, Generic)
-instance Query DatasetsAvailable where
-  type Result DatasetsAvailable = DatasetAvailable
-  selectorName _ = "datasetInventories"
+mockMetadata :: Method -> URI -> [Header] -> RequestBody -> IO FetchResponse
+mockMetadata _ _ _ _ = pure $ FetchResponse "" [] status200
 
 
--- query _ =
---   let fields = genQueryFields @DatasetAvailable Proxy :: String
---    in [i| query DatasetsAvailable { datasetInventories { #{fields} }}|]
+-- case A.eitherDecode @(Response r) (responseBody res) of
+--   Left e -> throwError $ GraphQLParseError (request r) e
+--   Right (Errors es) -> throwError $ GraphQLServerError (request r) es
+--   Right (Data v) -> do
+--     case A.parseEither parseJSON v of
+--       Left e -> throwError $ GraphQLParseError (request r) e
+--       Right d -> pure d
 
-data ExperimentDescriptions = ExperimentDescriptions
-  deriving (Show, Eq, Generic)
-instance Query ExperimentDescriptions where
-  type Result ExperimentDescriptions = ExperimentDescription
-
-
-mockRequest :: Text -> Request -> IO ByteString
-mockRequest _ r = do
-  putStrLn $ "MOCK Graphql: " <> cs r.operationName
-  case r.operationName of
-    "DatasetInventories" -> L.readFile "deps/datasets.json"
-    "ExperimentDescriptions" -> L.readFile "deps/experiments.json"
-    op -> fail $ "GraphQL Request not mocked: " <> cs op
-
+-- putStrLn $ "MOCK Graphql: " <> cs r.operationName
+-- case r.operationName of
+--   "DatasetInventories" -> L.readFile "deps/datasets.json"
+--   "ExperimentDescriptions" -> L.readFile "deps/experiments.json"
+--   op -> fail $ "GraphQL Request not mocked: " <> cs op
 
 data DatasetAvailable = DatasetAvailable
   { datasetId :: Text
   , primaryProposalId :: Text
   , updateDate :: DateTime
   }
-  deriving (Generic, Show, Eq, FromJSON)
+  deriving (Generic, Show, Eq, FromJSON, FieldNames)
 
 
 data DatasetInventory = DatasetInventory
@@ -178,11 +157,18 @@ data DatasetInventory = DatasetInventory
     lightLevel :: Distribution
   , friedParameter :: Maybe Distribution
   }
-  deriving (Generic, Show, Eq, FromJSON)
+  deriving (Generic, Show, Eq, FromJSON, FieldNames)
+
+
+data ExperimentDescriptions = ExperimentDescriptions
+  deriving (Show, Eq, Generic)
+instance Request ExperimentDescriptions where
+  type Data ExperimentDescriptions = [ExperimentDescription]
+  parameters _ = []
 
 
 data ExperimentDescription = ExperimentDescription
   { experimentId :: Text
   , experimentDescription :: Text
   }
-  deriving (Generic, Show, Eq, FromJSON)
+  deriving (Generic, Show, Eq, FromJSON, FieldNames)

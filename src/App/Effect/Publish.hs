@@ -1,9 +1,12 @@
 module App.Effect.Publish where
 
+import App.Effect.FileManager (fileManagerOpenDir)
 import App.Effect.Scratch (Scratch, outputL2Dir)
-import App.Globus (Globus, GlobusError, Task, Token, Token' (..), dkistEndpoint, fileManagerOpenDir, initTransfer, scratchCollection)
+import App.Effect.Scratch qualified as Scratch
+import App.Effect.Transfer (dkistEndpoint, initTransfer)
 import Effectful
 import Effectful.Error.Static
+import Effectful.Globus (Globus, GlobusError, Task, Token, Token' (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Image.Frame (L2Frame)
@@ -40,7 +43,7 @@ transferSoftPublish
   -> App.Id Inversion
   -> Eff es (App.Id Task)
 transferSoftPublish propId invId = do
-  scratch <- scratchCollection
+  scratch <- Scratch.collection
   initTransfer (transfer scratch)
  where
   transfer :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest

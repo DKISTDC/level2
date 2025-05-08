@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedLists #-}
+
 module App.Effect.Auth where
 
-import App.Globus (FileLimit (..), GlobusError (..), UserEmail (..), UserLoginInfo (..))
-import App.Globus qualified as Globus
+import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
 import App.Types
 import Control.Monad (void)
+import Data.ByteString.Char8 qualified as BC
 import Data.Tagged
 import Effectful
 import Effectful.Concurrent.STM
@@ -14,6 +16,9 @@ import Effectful.Globus qualified as Globus
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
+import Network.Globus (UserEmail (..), UserInfo (..), UserInfoResponse (..), UserProfile (..))
+import Network.HTTP.Types qualified as HTTP
+import Network.URI
 import Web.Hyperbole
 import Web.View as WebView
 
@@ -49,13 +54,13 @@ runAuth
   -> Eff es a
 runAuth dom r auth = interpret $ \_ -> \case
   LoginUrl -> do
-    Globus.authUrl $ redirectUri dom r
+    authUrl $ redirectUri dom r
   AuthWithCode authCode -> do
     let red = redirectUri dom r
-    ts <- Globus.accessTokens red authCode
+    ts <- accessTokens red authCode
     log Debug $ dump "TS" ts
 
-    u <- Globus.userInfo ts
+    u <- userInfo ts
     when (isAdmin u) $ do
       log Debug $ dump "FOUND ADMIN" u.transfer
       void $ atomically $ tryPutTMVar auth.adminToken u.transfer
@@ -87,12 +92,14 @@ initAuth admins mtok = do
   token (Just t) = newTMVarIO t
 
 
--- WARNING:  until we update the globus app, it only allows /redirect, no query, no nothing
-redirectUri :: (Route r) => AppDomain -> r -> Uri Globus.Redirect
+-- WARNING:  doesn't support querystring
+redirectUri :: (Route r) => AppDomain -> r -> Uri Redirect
 redirectUri dom r = do
-  -- let path = T.intercalate "/" rp
-  Uri Https (cs dom.unTagged) (routePath r) (Query []) -- (Query [("path", Just path)])
+  Tagged $ URI "https:" (Just $ URIAuth "" (cs dom.unTagged) "") (cs $ renderPath $ routePath r) "" ""
 
+
+-- let path = T.intercalate "/" rp
+-- Uri Https (cs dom.unTagged) (routePath r) (Query []) -- (Query [("path", Just path)])
 
 -- getRedirectUri :: (Hyperbole :> es, Auth :> es) => Eff es (Uri Globus.Redirect)
 -- getRedirectUri = do
@@ -176,4 +183,50 @@ openFileManager files lbl submitUrl = do
   cancelUrl <- currentUrl
   app <- ask @App
   requireLogin $ do
-    redirect $ Globus.fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl
+    redirect $ fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl
+
+
+-- Globus stuff -------------------------------------------------------------
+
+authUrl :: (Globus :> es) => Uri Redirect -> Eff es WebView.Url
+authUrl red = do
+  uri <- send $ AuthUrl red [TransferAll, Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
+  pure $ convertUrl uri
+ where
+  convertUrl :: Uri a -> WebView.Url
+  convertUrl (Tagged u) =
+    Url{scheme = cs u.uriScheme, domain = cs (uriAuthToString id u.uriAuthority ""), path = WebView.pathSegments (cs u.uriPath), query = queryBs u.uriQuery}
+  queryBs :: String -> Query
+  queryBs s = HTTP.parseQuery (BC.pack s)
+
+
+accessTokens :: (Globus :> es) => Uri Redirect -> Token Exchange -> Eff es (NonEmpty TokenItem)
+accessTokens red tok = do
+  send $ GetAccessTokens tok red
+
+
+data UserLoginInfo = UserLoginInfo
+  { info :: UserInfo
+  , email :: Maybe UserEmail
+  , profile :: Maybe UserProfile
+  , transfer :: Token Access
+  }
+  deriving (Show)
+
+
+userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
+userInfo tis = do
+  oid <- requireScopeToken (Identity OpenId) tis
+  Tagged trn <- requireScopeToken TransferAll tis
+
+  ur <- send $ GetUserInfo oid
+  pure $
+    UserLoginInfo
+      { info = ur.info
+      , email = ur.email
+      , profile = ur.profile
+      , transfer = Tagged trn
+      }
+
+-- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
+-- accessToken (Token cid) (Token sec) red (Token code) =

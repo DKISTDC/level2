@@ -113,6 +113,14 @@ instance (Request a) => FromJSON (Response a) where
       dat .: fromString (cs $ rootField @a)
 
 
+-- case A.eitherDecode @(Response r) (responseBody res) of
+--   Left e -> throwError $ GraphQLParseError (request r) e
+--   Right (Errors es) -> throwError $ GraphQLServerError (request r) es
+--   Right (Data v) -> do
+--     case A.parseEither parseJSON v of
+--       Left e -> throwError $ GraphQLParseError (request r) e
+--       Right d -> pure d
+
 -- parseQueryErrors :: a -> Value -> Parser [ServerErrorMessage]
 -- parseQueryErrors = _
 
@@ -130,7 +138,7 @@ instance (Request a) => FromJSON (Response a) where
 --
 --   -- checkErrors :: Maybe [ServerErrorMessage] -> Parser ()
 --   -- checkErrors = \case
---   --   Nothing -> pure ()
+--   --   Nothing -> pure 
 --   --   Just [] -> pure ()
 --   --   Just errs -> fail $ "Server Errors: " <> mconcat (fmap (cs . (.message)) errs)
 --
@@ -182,7 +190,7 @@ sendRequest (Service sv) (ReqType rt) r = do
 
 -- runGraphQLMock
 --   :: (IOE :> es)
---   => (Text -> Request -> IO ByteString)
+--   => _
 --   -> Eff (GraphQL : es) a
 --   -> Eff es a
 -- runGraphQLMock mock = interpret $ \_ -> \case
@@ -192,6 +200,7 @@ sendRequest (Service sv) (ReqType rt) r = do
 --     case parseEither (parseQueryResponse q) =<< eitherDecode resp of
 --       Left e -> fail $ "Fetch Mock Decode: " <> show e
 --       Right a -> pure a
+--   Mutation (Service url) r -> _
 
 -- request :: (Query a) => a -> Request
 -- request q =
@@ -204,39 +213,49 @@ data NestedFields = NestedFields String [NestedFields]
 
 
 -- | Return the field names for a given object by proxy
-class FieldNames f where
-  fieldNames :: Proxy f -> [NestedFields]
+class FieldNames (a :: Type) where
+  fieldNames :: Proxy a -> [NestedFields]
+  default fieldNames :: (Generic a, GFieldNames (Rep a)) => Proxy a -> [NestedFields]
+  fieldNames _ = gFieldNames @(Rep a) Proxy
 
 
-instance (FieldNames f, FieldNames g) => FieldNames (f :*: g) where
-  fieldNames _ = fieldNames (Proxy :: Proxy f) ++ fieldNames (Proxy :: Proxy g)
+instance (FieldNames a) => FieldNames [a] where
+  fieldNames _ = fieldNames @a Proxy
 
 
-instance (FieldNames f, FieldNames g) => FieldNames (f :+: g) where
-  fieldNames _ = fieldNames (Proxy :: Proxy f) ++ fieldNames (Proxy :: Proxy g)
+class GFieldNames (f :: Type -> Type) where
+  gFieldNames :: Proxy f -> [NestedFields]
 
 
-instance (Selector s) => FieldNames (M1 S s f) where
-  fieldNames _ = [NestedFields (selName @s undefined) []]
+instance (GFieldNames f, GFieldNames g) => GFieldNames (f :*: g) where
+  gFieldNames _ = gFieldNames (Proxy :: Proxy f) ++ gFieldNames (Proxy :: Proxy g)
 
 
--- instance (KnownSymbol name, FieldNames f) => FieldNames (M1 S ('MetaSel ('Just name) _1 _2 _3) f) where
---   fieldNames _ = [NestedFields (symbolVal (Proxy :: Proxy name)) (fieldNames @f Proxy)]
-
-instance (FieldNames f) => FieldNames (M1 D meta f) where
-  fieldNames _ = fieldNames (Proxy :: Proxy f)
+instance (GFieldNames f, GFieldNames g) => GFieldNames (f :+: g) where
+  gFieldNames _ = gFieldNames (Proxy :: Proxy f) ++ gFieldNames (Proxy :: Proxy g)
 
 
-instance (FieldNames f) => FieldNames (M1 C meta f) where
-  fieldNames _ = fieldNames (Proxy :: Proxy f)
+instance (Selector s) => GFieldNames (M1 S s f) where
+  gFieldNames _ = [NestedFields (selName @s undefined) []]
 
 
-instance FieldNames U1 where
-  fieldNames _ = []
+-- instance (KnownSymbol name, GFieldNames f) => GFieldNames (M1 S ('MetaSel ('Just name) _1 _2 _3) f) where
+--   gFieldNames _ = [NestedFields (symbolVal (Proxy :: Proxy name)) (gFieldNames @f Proxy)]
+
+instance (GFieldNames f) => GFieldNames (M1 D meta f) where
+  gFieldNames _ = gFieldNames (Proxy :: Proxy f)
 
 
-instance FieldNames (K1 R f) where
-  fieldNames _ = []
+instance (GFieldNames f) => GFieldNames (M1 C meta f) where
+  gFieldNames _ = gFieldNames (Proxy :: Proxy f)
+
+
+instance GFieldNames U1 where
+  gFieldNames _ = []
+
+
+instance GFieldNames (K1 R f) where
+  gFieldNames _ = []
 
 
 requestFields :: forall a. (FieldNames a) => String

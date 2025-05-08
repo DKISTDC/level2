@@ -131,6 +131,12 @@ outputL2Asdf ip ii =
   filePath (outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
+collection :: (Scratch :> es) => Eff es (Globus.Id Collection)
+collection = do
+  Id c <- send Globus
+  pure $ Tagged c
+
+
 data Input
 
 

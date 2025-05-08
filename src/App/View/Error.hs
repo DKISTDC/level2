@@ -3,10 +3,10 @@
 module App.View.Error where
 
 import App.Colors
-import App.Globus (GlobusError (..))
 import Effectful
 import Effectful.Error.Static
 import NSO.Prelude
+import Network.Globus (GlobusError (..))
 import Web.Hyperbole
 import Web.Hyperbole.Effect.Hyperbole
 
@@ -44,10 +44,19 @@ instance UserFacingError GlobusError where
   viewError :: GlobusError -> View c ()
   viewError err =
     case err of
-      StatusError req status body -> do
+      Unauthorized req body -> do
+        errorMessage "GLOBUS Unauthorized" $ do
+          codeDump $ cs $ show req
+          codeDump $ cs body
+      ResponseBadStatus req status body -> do
         errorMessage "GLOBUS Status Error" $ do
           codeDump $ cs $ show status
-          codeDump $ cs body
           codeDump $ cs $ show req
+          codeDump $ cs body
+      ResponseBadJSON req e body -> do
+        errorMessage "GLOBUS JSON Parse Error" $ do
+          codeDump $ cs e
+          codeDump $ cs $ show req
+          codeDump $ cs body
       _ -> do
         errorMessage "GLOBUS Error" $ codeDump $ cs $ show err

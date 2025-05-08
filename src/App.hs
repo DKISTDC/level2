@@ -4,7 +4,6 @@ import App.Config
 import App.Dev.Globus (globusDevAuth, runGlobusDev)
 import App.Effect.Auth as Auth
 import App.Effect.Scratch (Scratch, runScratch)
-import App.Globus as Globus
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
@@ -32,9 +31,11 @@ import Effectful.Debug (Debug, runDebugIO)
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
+import Effectful.Fetch
 import Effectful.FileSystem
 import Effectful.GenRandom
-import Effectful.GraphQL hiding (Request (..))
+import Effectful.Globus (Globus, GlobusError, Token, Token' (..), runGlobus)
+import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
@@ -45,6 +46,7 @@ import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
 import NSO.Metadata as Metadata
 import NSO.Prelude
+import Network.HTTP.Client qualified as Http
 import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
@@ -119,7 +121,7 @@ main = do
       . runReader config.scratch
       . runRel8 config.db
       . runScratch config.scratch
-      . runGlobus' config.globus
+      . runGlobus' config.globus config.manager
       . runAuth config.app.domain Redirect auth
       . runGraphQL
       . runMetadata config.services.metadata
@@ -167,7 +169,7 @@ webServer config auth fits asdf pubs sync =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runConcurrent
@@ -177,7 +179,7 @@ webServer config auth fits asdf pubs sync =
       . runErrorWith @GraphQLError crashWithError
       . runFileSystem
       . runScratch config.scratch
-      . runGlobus' config.globus
+      . runGlobus' config.globus config.manager
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
@@ -192,17 +194,18 @@ webServer config auth fits asdf pubs sync =
       . runMetadataSync sync
       . runDebugIO
 
-  runGraphQL' True = runGraphQLMock Metadata.mockRequest
-  runGraphQL' False = runGraphQL
+  runGraphQL' :: (IOE :> es, Error GraphQLError :> es) => Bool -> Eff (GraphQL : Fetch : es) a -> Eff es a
+  runGraphQL' True = runFetchMock mockMetadata . runGraphQL
+  runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
 
-runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Eff (Globus : es) a -> Eff es a
-runGlobus' (GlobusDev (GlobusDevConfig dkist)) action = runGlobusDev dkist action
-runGlobus' (GlobusLive g) action =
+runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
+runGlobus' (GlobusDev (GlobusDevConfig dkist)) _ action = runGlobusDev dkist action
+runGlobus' (GlobusLive g) mgr action =
   -- catchHttpGlobus (runGlobus g action)
   -- come up with a better way to do this. This catches all IO errors right now
   -- maybe I just need a generic handler...
-  runGlobus g action
+  runGlobus g mgr action
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

@@ -2,13 +2,14 @@ module App.Worker.Publish where
 
 import App.Effect.Publish (transferSoftPublish)
 import App.Effect.Scratch as Scratch
-import App.Globus (Globus, GlobusError, Task, Token, Token' (Access))
-import App.Globus qualified as Globus
+import App.Effect.Transfer qualified as Transfer
+import Control.Monad.Catch (Exception)
 import Control.Monad.Loops
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Globus (Globus, GlobusError, Task, Token, Token' (Access))
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
@@ -17,6 +18,8 @@ import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import Network.Globus (taskPercentComplete)
+import Network.Globus qualified as Globus
 
 
 data PublishTask = PublishTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
@@ -53,10 +56,13 @@ publishTask
   => PublishTask
   -> Eff es ()
 publishTask task = do
-  res <- runErrorNoCallStack @GlobusError workWithError
-  either failed pure res
+  res <- runErrorNoCallStack @GlobusError . runErrorNoCallStack @PublishError $ workWithError
+  case res of
+    Left err -> failed err
+    Right (Left err) -> failed err
+    Right (Right a) -> pure a
  where
-  workWithError :: Eff (Error GlobusError : es) ()
+  workWithError :: Eff (Error PublishError : Error GlobusError : es) ()
   workWithError = do
     log Debug "Publish Task"
 
@@ -65,10 +71,27 @@ publishTask task = do
 
     log Debug " - publish transferring"
 
-    untilM_ (threadDelay (2 * 1000 * 1000)) (Globus.isTransferComplete taskId)
+    untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
 
     Inversions.setPublished task.inversionId
 
+  failed :: (Show e) => e -> Eff es ()
   failed err = do
     log Err $ dump "Publish Error" err
     Inversions.setError task.inversionId (cs $ show err)
+
+
+data PublishError
+  = TransferFailed (Id Task)
+  deriving (Show, Eq, Exception)
+
+
+isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error PublishError :> es, Error GlobusError :> es) => Id Task -> Eff es Bool
+isTransferComplete it = do
+  task <- Transfer.transferStatus it
+  case task.status of
+    Globus.Succeeded -> pure True
+    Globus.Failed -> throwError $ TransferFailed it
+    _ -> do
+      log Debug $ dump "Transfer" $ taskPercentComplete task
+      pure False

@@ -18,7 +18,6 @@ module App.Config
 
 import App.Dev.Globus (DKIST)
 import App.Effect.Scratch qualified as Scratch
-import App.Globus (GlobusClient (..), Id' (..), Token, Token' (..), UserEmail (..))
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -28,11 +27,14 @@ import Effectful
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
+import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
 import NSO.Prelude
 import NSO.Types.Common
+import Network.Globus (Id' (..), Token, Token' (..), UserEmail (..))
+import Network.HTTP.Client qualified as Http
 import Text.Read (readMaybe)
 import Web.Hyperbole
 
@@ -46,6 +48,7 @@ data Config = Config
   , auth :: AuthInfo
   , db :: Rel8.Connection
   , numWorkers :: Int
+  , manager :: Http.Manager
   }
 
 
@@ -79,7 +82,8 @@ initConfig = do
   scratch <- initScratch
   auth <- initAuth globus
   numWorkers <- readEnv "NUM_WORKERS"
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers}
+  manager <- liftIO $ Http.newManager Http.defaultManagerSettings
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers, manager}
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo

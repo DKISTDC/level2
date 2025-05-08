@@ -4,9 +4,10 @@ module App.Page.Program where
 
 import App.Colors
 import App.Effect.Auth as Auth
+import App.Effect.FileManager (FileLimit (Folders))
+import App.Effect.Transfer (DownloadFolder, TransferForm)
+import App.Effect.Transfer qualified as Transfer
 import App.Error (expectFound)
-import App.Globus (DownloadFolder, FileLimit (Folders), Globus, GlobusError, TransferForm)
-import App.Globus qualified as Globus
 import App.Route qualified as Route
 import App.Style qualified as Style
 import App.Types (App)
@@ -27,6 +28,7 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Globus (Globus, GlobusError)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import Effectful.Tasks
@@ -38,6 +40,7 @@ import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
+import Network.Globus (Task)
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (fromQueryData)
 
@@ -91,7 +94,7 @@ page propId progId = do
 -- ----------------------------------------------------------------
 
 data ActiveDownload = ActiveDownload
-  { downloadTaskId :: Maybe (Id Globus.Task)
+  { downloadTaskId :: Maybe (Id Task)
   }
   deriving (Generic, ToQuery, FromQuery)
 
@@ -102,7 +105,7 @@ submitDownload propId progId = do
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
   ds <- Datasets.find $ Datasets.ByProgram progId
-  taskId <- requireLogin $ userFacingError @GlobusError $ Globus.initDownloadL1Inputs tfrm tfls ds
+  taskId <- requireLogin $ userFacingError @GlobusError $ Transfer.initDownloadL1Inputs tfrm tfls ds
 
   let dwn = ActiveDownload (Just taskId)
 
@@ -247,7 +250,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
         viewDatasets (NE.toList prog.datasets.items) srt download
 
 
-viewDatasets :: [Dataset] -> SortField -> Maybe (Id Globus.Task) -> View ProgramDatasets ()
+viewDatasets :: [Dataset] -> SortField -> Maybe (Id Task) -> View ProgramDatasets ()
 viewDatasets ds srt xfer = do
   ProgramDatasets propId progId <- viewId
   col (gap 15 . pad 15) $ do
@@ -261,7 +264,7 @@ viewDatasets ds srt xfer = do
 -- DOWNLOAD
 -- ----------------------------------------------------------------
 
-data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (Id Globus.Task)
+data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (Id Task)
   deriving (Show, Read, ViewId)
 
 

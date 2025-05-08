@@ -26,10 +26,11 @@ library
       App.Config
       App.Dev.Globus
       App.Effect.Auth
+      App.Effect.FileManager
       App.Effect.Publish
       App.Effect.Scratch
+      App.Effect.Transfer
       App.Error
-      App.Globus
       App.Mock
       App.Page.Auth
       App.Page.Dashboard
@@ -64,6 +65,7 @@ library
       App.Worker.Publish
       App.Worker.PuppetMaster
       App.Worker.SyncMetadata
+      Effectful.Fetch
       Effectful.Tasks
       Flow
       Flow.Example
@@ -134,8 +136,8 @@ library
     , lens
     , massiv
     , megaparsec
-    , modern-uri
     , monad-loops
+    , network-uri
     , nso-level2-types
     , random
     , rel8 >=1.6
@@ -194,8 +196,8 @@ executable level2
     , lens
     , massiv
     , megaparsec
-    , modern-uri
     , monad-loops
+    , network-uri
     , nso-level2
     , nso-level2-types
     , random
@@ -266,8 +268,8 @@ test-suite spec
     , lens
     , massiv
     , megaparsec
-    , modern-uri
     , monad-loops
+    , network-uri
     , nso-level2
     , nso-level2-types
     , random

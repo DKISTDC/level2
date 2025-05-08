@@ -1,8 +1,7 @@
 module App.Worker.GenWorker where
 
 import App.Effect.Scratch as Scratch
-import App.Globus (Globus, GlobusError, Task, Token, Token' (Access))
-import App.Globus qualified as Globus
+import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate as Gen
 import Control.Monad (zipWithM)
@@ -14,6 +13,8 @@ import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
+import Effectful.Globus (Globus, GlobusError, Task, TaskStatus (..), Token, Token' (Access))
+import Effectful.Globus qualified as Globus
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
@@ -127,7 +128,7 @@ transferL1Frames task d inv = do
     Nothing -> transfer
  where
   transfer = do
-    taskId <- Globus.initScratchDataset d
+    taskId <- Transfer.initScratchDataset d
     log Debug $ dump "Task" taskId
 
     send $ TaskSetStatus task $ GenTransferring taskId
@@ -138,9 +139,11 @@ transferL1Frames task d inv = do
     Inversions.setGenTransferred task.inversionId
    where
     taskComplete taskId = do
-      runErrorNoCallStackWith @GlobusError
-        (const $ throwError $ L1TransferFailed taskId)
-        (Globus.isTransferComplete taskId)
+      tsk <- Transfer.transferStatus taskId
+      case tsk.status of
+        Failed -> throwError $ L1TransferFailed taskId
+        Succeeded -> pure True
+        _ -> pure False
 
 
 -- | Generate a single frame

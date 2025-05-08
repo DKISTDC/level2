@@ -4,10 +4,10 @@ module App.Page.Auth where
 
 import App.Colors
 import App.Effect.Auth
-import App.Globus as Globus
 import App.Route
 import App.View.Icons as Icons
 import Effectful.Dispatch.Dynamic
+import Effectful.Globus
 import Effectful.Log
 import NSO.Prelude
 import Web.Hyperbole

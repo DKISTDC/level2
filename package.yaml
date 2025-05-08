@@ -52,7 +52,7 @@ dependencies:
   - string-conversions
   - rel8 >= 1.6
   - random
-  - modern-uri
+  - network-uri
   - lens
   - hyperbole >= 0.4.3
   - hasql

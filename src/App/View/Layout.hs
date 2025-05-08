@@ -2,9 +2,9 @@ module App.View.Layout where
 
 import App.Colors
 import App.Effect.Auth
-import App.Globus as Globus
 import App.Route
 import Effectful
+import Effectful.Globus
 import NSO.Prelude
 import Web.Hyperbole hiding (layout)
 import Web.View qualified as WebView

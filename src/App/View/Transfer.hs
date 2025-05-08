@@ -2,16 +2,17 @@ module App.View.Transfer where
 
 import App.Colors
 import App.Effect.Auth
-import App.Globus as Globus
+import App.Effect.Transfer as Transfer
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons as Icons
 import Effectful
 import Effectful.Error.Static
+import Effectful.Globus (Globus, GlobusError (..), Task, TaskStatus (..))
 import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
-import Network.HTTP.Client qualified as HTTP
+import Network.Globus qualified as Globus
 import Numeric (showFFloat)
 import Web.Hyperbole
 import Web.View qualified as WebView
@@ -31,7 +32,7 @@ data TransferAction
 -- I want it to reload itself and call these when necessary
 checkTransfer :: (Log :> es, ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es, Error GlobusError :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer toAction it = do
-  task <- requireLogin $ Globus.transferStatus it
+  task <- requireLogin $ Transfer.transferStatus it
   pure $ viewTransfer toAction it task
 
 
@@ -62,7 +63,7 @@ viewTransferProgress it task = do
     el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
     space
     activityLink it
-  View.progress (taskPercentComplete task)
+  View.progress (Globus.taskPercentComplete task)
  where
   rate :: String
   rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
@@ -74,7 +75,7 @@ viewTransferError taskId err =
  where
   message =
     case err of
-      Unauthorized req -> "Unauthorized: " <> cs (HTTP.host req) <> cs (HTTP.path req)
+      Unauthorized req _ -> "Unauthorized: " <> cs (show req)
       _ -> cs $ show err
 
 

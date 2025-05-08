@@ -4,11 +4,11 @@ module App.Page.Inversion where
 
 import App.Colors
 import App.Effect.Auth
+import App.Effect.FileManager (fileManagerOpenInv)
 import App.Effect.Publish qualified as Publish
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
 import App.Error (expectFound)
-import App.Globus as Globus
 import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
 import App.Route as Route
@@ -25,6 +25,7 @@ import App.Worker.Publish as Publish
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Globus (Globus, GlobusError, Task)
 import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import Effectful.Time
@@ -498,7 +499,7 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
 
 viewGeneratedFiles :: Inversion -> View c ()
 viewGeneratedFiles inv =
-  link (Globus.fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
+  link (fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
 
 
 -- ----------------------------------------------------------------

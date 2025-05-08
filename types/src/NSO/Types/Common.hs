@@ -24,7 +24,7 @@ import Web.Hyperbole (FromParam (..), Route, ToParam (..))
 
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Read, Eq, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword, ToParam, FromParam)
+  deriving newtype (Show, Read, Eq, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword, ToParam, FromParam, ToJSON)
   deriving (Generic)
 
 
