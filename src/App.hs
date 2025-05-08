@@ -125,7 +125,7 @@ main = do
       . runFetchHttp config.manager
       . runAuth config.app.domain Redirect auth
       . runGraphQL config.manager
-      . runMetadata config.services.metadata
+      . runMetadataMock config.services.metadata
       . runGenRandom
       . runTime
       . runDataInversions

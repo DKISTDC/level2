@@ -12,6 +12,7 @@ import App.View.Common
 import App.View.Layout
 import App.View.Loading as View
 import Data.Aeson qualified as A
+import Data.Grouped
 import Data.List qualified as L
 import Data.Ord (Down (..))
 import Effectful.Time
@@ -25,25 +26,6 @@ import Web.Hyperbole
 import Web.View.Style (addClass, cls, prop)
 
 
--- TODO: we want to be able to show progress
--- start the work, then scan everything. Why not one at a time?
--- TODO: Store status in-memory using worker state
--- TODO: View errors from the in-memory process, etc. Recent jobs, etc
---
--- TODO: this page should show: recent scans... With their results... Which items were updated, etc
--- can click into different scans
---
--- TODO: A single Scan should show:
--- current progress! It might be in-progress
--- new datasets
--- updated datasets
--- uchanged datasets
--- errors
--- filter by each
-
--- import NSO.Data.Dataset
--- import NSO.Data.Types
-
 page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Eff es (Page '[Current, Syncs, ScanProp, DatasetRow])
 page = do
   ids <- send $ Datasets.Ids
@@ -55,7 +37,7 @@ page = do
 
       col section $ do
         el (bold . fontSize 24) "Current Datasets"
-        hyper Current $ viewExistingDatasets ids []
+        hyper Current $ viewExistingDatasets ids Nothing
 
 
 -- Scan --------------------------------------------------
@@ -102,8 +84,9 @@ viewSyncSummary s = do
     route (Route.Datasets (Route.Sync s.started)) Style.link $ text $ cs $ showDate s.started
     scanProgress s.scans s.proposals
  where
-  scanProgress ss ps
-    | length ps == 0 = "Loading..."
+  scanProgress _ Nothing = "Loading..."
+  scanProgress ss (Just ps)
+    | length ps == 0 = "Empty"
     | length ss == length ps = "Complete"
     | otherwise = do
         el_ $ text $ cs $ show (length s.scans)
@@ -218,7 +201,7 @@ instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView Current es wh
 
   update LoadExisting = do
     ds <- Datasets.find Datasets.All
-    pure $ viewExistingDatasets [] ds
+    pure $ viewExistingDatasets [] (Just ds)
 
 
 viewDeleted :: [Id Dataset] -> View Current ()
@@ -249,11 +232,20 @@ viewDatasetSummary ds = do
 --     Left ds -> viewExistingDatasets ds
 --     Right sync -> viewScanResults sync
 
-viewExistingDatasets :: [Id Dataset] -> [Dataset] -> View Current ()
-viewExistingDatasets _ [] = do
+viewExistingDatasets :: [Id Dataset] -> Maybe [Dataset] -> View Current ()
+viewExistingDatasets _ Nothing = do
   el (onLoad LoadExisting 100) $ View.loadingCard
-viewExistingDatasets _ ds = do
-  mapM_ (\d -> el id $ text $ d.datasetId.fromId) ds
+viewExistingDatasets _ (Just []) = do
+  el italic "no datasets available"
+viewExistingDatasets _ (Just ds) = do
+  let gps = grouped (.primaryProposalId) ds
+  col (gap 10) $ do
+    forM_ gps $ \g -> do
+      let pid = (sample g).primaryProposalId
+      row (gap 10) $ do
+        route (Route.Proposal pid Route.PropRoot) Style.link $ text $ cs pid.fromId
+        text " - "
+        el id $ text $ (cs $ show (length g.items)) <> " datasets"
 
 
 -- viewScanResults :: ScanResult -> View Current ()

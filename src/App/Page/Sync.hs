@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -50,8 +51,11 @@ viewSyncDetails s = do
     el (bold . fontSize 24) $ text $ "Metadata Sync: " <> cs (showDate s.started)
     -- el (color Danger) $ text $ cs $ show s.error
     -- code id $ cs $ show s.proposals
-    forM_ (L.reverse $ M.elems s.scans) $ \sc -> do
-      viewSyncProposal sc
+    case s.scans of
+      [] -> el italic "Empty"
+      ss ->
+        forM_ (L.reverse $ M.elems ss) $ \sc -> do
+          viewSyncProposal sc
 
 
 viewSyncProposal :: ScanProposal -> View SyncDetails ()
@@ -61,7 +65,7 @@ viewSyncProposal scan = do
 
   col (gap 5) $ do
     row (gap 10) $ do
-      el bold $ text scan.proposalId.fromId
+      route (Route.Proposal scan.proposalId Route.PropRoot) (Style.link . bold) $ text $ cs scan.proposalId.fromId
       el italic $ text $ (cs $ show $ length skips) <> " skipped"
 
     forM_ scan.errors $ \e -> do

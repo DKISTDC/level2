@@ -26,20 +26,13 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
 
--- we probably need an identifier, no?
--- what's the main state
--- data SyncTask = SyncTask
---   { started :: UTCTime
---   , proposals :: Map (Id Proposal) SyncStep
---   }
-
 type SyncId = UTCTime
 
 
 data SyncState = SyncState
   { started :: UTCTime
   , -- , error :: Maybe String
-    proposals :: [Id Proposal]
+    proposals :: Maybe [Id Proposal]
   , scans :: Map (Id Proposal) ScanProposal
   }
 
@@ -52,7 +45,6 @@ data MetadataSync :: Effect where
   SetScan :: SyncId -> Id Proposal -> ScanProposal -> MetadataSync m ()
 
 
--- SetError :: SyncId -> String -> MetadataSync m ()
 type instance DispatchOf MetadataSync = Dynamic
 
 
@@ -73,14 +65,14 @@ runMetadataSync var = interpret $ \_ -> \case
     sts <- atomically $ readTVar var
     pure $ fromMaybe (empty t) $ L.find (\st -> st.started == t) sts
   SetProposals s propIds -> do
-    modifySync s $ \st -> st{proposals = propIds}
+    modifySync s $ \st -> st{proposals = Just propIds}
   SetScan s propId scan ->
     modifySync s $ \st -> st{scans = M.insert propId scan st.scans}
  where
   -- SetError s e ->
   -- modifySync s $ \st -> st{error = Just e}
 
-  empty t = SyncState t [] M.empty
+  empty t = SyncState t Nothing M.empty
 
   modifySync :: (Concurrent :> es) => SyncId -> (SyncState -> SyncState) -> Eff es ()
   modifySync t f = do

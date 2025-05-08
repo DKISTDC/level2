@@ -4,8 +4,10 @@ module NSO.Metadata where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, fromJSON)
 import Data.Aeson qualified as A
+import Data.ByteString.Lazy qualified as BL
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Fetch (FetchResponse (..))
 import Effectful.GraphQL
 import NSO.Prelude
@@ -49,8 +51,45 @@ runMetadata s = interpret $ \_ -> \case
     res <- send $ Query s $ DatasetsAvailable $ DatasetInventories [] []
     pure res
   AllExperiments -> do
-    putStrLn "AllExperiments"
     send $ Query s ExperimentDescriptions
+
+
+runMetadataMock
+  :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
+  => Service
+  -> Eff (Metadata : es) a
+  -> Eff es a
+runMetadataMock _ = interpret $ \_ -> \case
+  DatasetById did -> do
+    let r = DatasetInventories [] [did]
+    ds <- datasetInventories r
+    pure $ filter (isDatasetId did) ds
+  DatasetsByProposal pid -> do
+    let r = DatasetInventories [pid] []
+    ds <- datasetInventories r
+    pure $ filter (isProposalId pid) ds
+  AvailableDatasets -> do
+    let r = DatasetsAvailable $ DatasetInventories [] []
+    datasetInventories r
+  AllExperiments -> do
+    mockJsonFile ExperimentDescriptions "./deps/experiments.json"
+ where
+  mockJsonFile r json = do
+    cnt <- liftIO $ BL.readFile json
+    parseResponse r cnt
+
+  datasetInventories r = do
+    ds1118 <- mockJsonFile r "./deps/dataset_inventories_pid_1_118.json"
+    ds2114 <- mockJsonFile r "./deps/dataset_inventories_pid_2_114.json"
+    pure $ ds1118 <> ds2114
+
+  isDatasetId did (ParsedResult _ (A.Success d)) =
+    d.datasetId == did.fromId
+  isDatasetId _ _ = False
+
+  isProposalId pid (ParsedResult _ (A.Success d)) =
+    d.primaryProposalId == pid.fromId
+  isProposalId _ _ = False
 
 
 data DatasetInventories = DatasetInventories
@@ -74,20 +113,6 @@ instance Request DatasetsAvailable where
 mockMetadata :: Method -> URI -> [Header] -> RequestBody -> IO FetchResponse
 mockMetadata _ _ _ _ = pure $ FetchResponse "" [] status200
 
-
--- case A.eitherDecode @(Response r) (responseBody res) of
---   Left e -> throwError $ GraphQLParseError (request r) e
---   Right (Errors es) -> throwError $ GraphQLServerError (request r) es
---   Right (Data v) -> do
---     case A.parseEither parseJSON v of
---       Left e -> throwError $ GraphQLParseError (request r) e
---       Right d -> pure d
-
--- putStrLn $ "MOCK Graphql: " <> cs r.operationName
--- case r.operationName of
---   "DatasetInventories" -> L.readFile "deps/datasets.json"
---   "ExperimentDescriptions" -> L.readFile "deps/experiments.json"
---   op -> fail $ "GraphQL Request not mocked: " <> cs op
 
 data DatasetAvailable = DatasetAvailable
   { datasetId :: Text

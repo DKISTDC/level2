@@ -1,6 +1,15 @@
 services:
 
   # metadata-store-api ----------------------------------------
+  # If metadata knows how to seed itself...
+  # it might not do so in a way that satisfies everyone
+  #
+  # If level2 does it, it can seed it with exactly the data it wants
+  # but we don't want it to seed the data unless it is in "dev mode"
+    # that's something we could do in config...
+    # via the API?
+    # OR, we skip metadata store for datasets, and return our local file
+    # but NOT for inversions?
 
   metadata-postgres:
     image: metadata-postgres

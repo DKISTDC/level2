@@ -177,24 +177,28 @@ newtype ReqType = ReqType Text
 
 sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :> es, IOE :> es) => Manager -> Service -> ReqType -> r -> Eff es (Data r)
 sendRequest mgr (Service sv) rt r = do
-  -- liftIO $ putStrLn $ "QUERY: " <> show sv
   let requestHeaders = [("Content-Type", "application/json")]
   putStrLn "REQ"
   putStrLn $ cs $ request r
   let requestBody = RequestBodyLBS $ body rt $ request r
   let req = sv{method = methodPost, requestHeaders, requestBody}
   res <- liftIO $ Http.httpLbs req mgr
-  case A.eitherDecode @(Response r) (responseBody res) of
+  parseResponse r (responseBody res)
+ where
+  body (ReqType typ) rbody =
+    -- but it isn't escaped if we do this, right?
+    [i|{#{A.encode typ}: #{A.encode rbody}}|]
+
+
+parseResponse :: forall r es. (Request r, Error GraphQLError :> es, FromJSON (Data r)) => r -> BL.ByteString -> Eff es (Data r)
+parseResponse r body = do
+  case A.eitherDecode @(Response r) body of
     Left e -> throwError $ GraphQLParseError (request r) e
     Right (Errors es) -> throwError $ GraphQLServerError (request r) es
     Right (Data v) -> do
       case A.parseEither parseJSON v of
         Left e -> throwError $ GraphQLParseError (request r) e
         Right d -> pure d
- where
-  body (ReqType typ) rbody =
-    -- but it isn't escaped if we do this, right?
-    [i|{#{A.encode typ}: #{A.encode rbody}}|]
 
 
 -- runGraphQLMock

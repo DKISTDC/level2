@@ -1,0 +1,4171 @@
+{
+  "data": {
+    "datasetInventories": [
+      {
+        "boundingBox": "(-560.16,-347.5),(-677.17,-467.21)",
+        "createDate": "2022-12-08T19:07:55.038280",
+        "datasetId": "BLKGA",
+        "endTime": "2022-06-02T17:47:30.855505",
+        "bucket": "public",
+        "exposureTime": 5.009,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.60330",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:22:50.175505",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:45:56.760476",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 169,
+        "lightLevel": {
+          "max": 403.7311878029009,
+          "med": 392.6704955071489,
+          "min": 383.8089719045894,
+          "p25": 388.5371242303513,
+          "p75": 398.77070937031095
+        },
+        "friedParameter": {
+          "max": 0.1367648948782148,
+          "med": 0.09695328367001158,
+          "min": 0.02529688520650183,
+          "p25": 0.06422450259119492,
+          "p75": 0.11041110076605445
+        }
+      },
+      {
+        "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
+        "createDate": "2022-12-08T19:08:04.089380",
+        "datasetId": "BJLKB",
+        "endTime": "2022-06-02T17:47:58.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.60330",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:21:55.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:45:57.607486",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": 1,
+          "good": 179,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 175,
+        "lightLevel": {
+          "max": 404.2557044549076,
+          "med": 393.2022300408754,
+          "min": 383.2878011762474,
+          "p25": 388.30387971921834,
+          "p75": 399.1507907762888
+        },
+        "friedParameter": {
+          "max": 0.1441648302636708,
+          "med": 0.09616403753902833,
+          "min": 0.02072476310985741,
+          "p25": 0.07941106882804685,
+          "p75": 0.10708543447403404
+        }
+      },
+      {
+        "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
+        "createDate": "2022-12-08T19:12:55.517795",
+        "datasetId": "BKJYA",
+        "endTime": "2022-06-02T17:48:25.693503",
+        "bucket": "public",
+        "exposureTime": 1.005,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.60330",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:22:22.753503",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:45:57.324781",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 176,
+        "lightLevel": {
+          "max": 405.3253824528725,
+          "med": 392.9311843534951,
+          "min": 383.4314689294769,
+          "p25": 388.74551577240817,
+          "p75": 398.8997516427795
+        },
+        "friedParameter": {
+          "max": 0.1435255645789108,
+          "med": 0.10328075462807855,
+          "min": 0.02108503478965431,
+          "p25": 0.0821935831106786,
+          "p75": 0.11496828339999768
+        }
+      },
+      {
+        "boundingBox": "(-460.16,-347.52),(-577.17,-467.2)",
+        "createDate": "2022-12-08T19:27:50.932745",
+        "datasetId": "BMLYA",
+        "endTime": "2022-06-02T18:16:45.285485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.95052",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:50:42.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:45:57.220911",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 178,
+        "lightLevel": {
+          "max": 437.9575033200531,
+          "med": 428.93805729463105,
+          "min": 425.8308411376141,
+          "p25": 427.20339852710373,
+          "p75": 431.5081104154809
+        },
+        "friedParameter": {
+          "max": 0.1419901010236211,
+          "med": 0.09618428125305237,
+          "min": 0.03434796681746045,
+          "p25": 0.07156009998224262,
+          "p75": 0.10990874717806011
+        }
+      },
+      {
+        "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
+        "createDate": "2022-12-08T19:32:48.315446",
+        "datasetId": "BONJA",
+        "endTime": "2022-06-02T18:16:17.855505",
+        "bucket": "public",
+        "exposureTime": 5.009,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.95052",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:51:37.175505",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:00.875271",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 437.9884444904365,
+          "med": 428.5729635570273,
+          "min": 424.6065607699074,
+          "p25": 427.56791880098655,
+          "p75": 429.69453786585257
+        },
+        "friedParameter": {
+          "max": 0.1469869718635097,
+          "med": 0.08848113758605021,
+          "min": 0.03350785035602855,
+          "p25": 0.06922026646561984,
+          "p75": 0.10814170841724804
+        }
+      },
+      {
+        "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
+        "createDate": "2022-12-08T19:34:42.164502",
+        "datasetId": "BNMNA",
+        "endTime": "2022-06-02T18:17:12.693521",
+        "bucket": "public",
+        "exposureTime": 1.005,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.95052",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:51:09.753502",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:00.904978",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 437.9724909884272,
+          "med": 428.75338472948044,
+          "min": 424.1605698418447,
+          "p25": 427.28333419568474,
+          "p75": 429.7588347907073
+        },
+        "friedParameter": {
+          "max": 0.1454327826910545,
+          "med": 0.0932315317806772,
+          "min": 0.03201891391096582,
+          "p25": 0.08155462120148378,
+          "p75": 0.11132117679189787
+        }
+      },
+      {
+        "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
+        "createDate": "2022-12-08T19:40:04.745388",
+        "datasetId": "AXGJB",
+        "endTime": "2022-06-02T19:15:51.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.166907",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:51:11.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:01.327142",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 461.8598161466687,
+          "med": 456.6688397923458,
+          "min": 448.3463893344372,
+          "p25": 454.41919766820166,
+          "p75": 458.9619616771011
+        },
+        "friedParameter": {
+          "max": 0.1701137279545036,
+          "med": 0.08614234551500312,
+          "min": 0.0282088337165453,
+          "p25": 0.05769474764082344,
+          "p75": 0.11720465782299205
+        }
+      },
+      {
+        "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
+        "createDate": "2022-12-08T19:40:04.748360",
+        "datasetId": "BPOWA",
+        "endTime": "2022-06-02T18:46:34.285522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.131014",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:20:31.345503",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:03.067445",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 174,
+        "lightLevel": {
+          "max": 418.3307290319242,
+          "med": 412.1923302461151,
+          "min": 408.5287939152481,
+          "p25": 409.9353020817165,
+          "p75": 414.8901321122437
+        },
+        "friedParameter": {
+          "max": 7.718696622761627,
+          "med": 0.0640029349525247,
+          "min": 0.03230820916699023,
+          "p25": 0.04884993399294407,
+          "p75": 0.0911789069632697
+        }
+      },
+      {
+        "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
+        "createDate": "2022-12-08T19:40:53.051889",
+        "datasetId": "BRQOA",
+        "endTime": "2022-06-02T18:46:06.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.131014",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:21:26.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:04.560669",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 166,
+        "lightLevel": {
+          "max": 418.2855418154223,
+          "med": 412.0697642331108,
+          "min": 407.7559372898018,
+          "p25": 410.0861144167917,
+          "p75": 415.26709611769377
+        },
+        "friedParameter": {
+          "max": 0.1464132482710662,
+          "med": 0.07141628958361732,
+          "min": 0.02278854104140082,
+          "p25": 0.05683833838836387,
+          "p75": 0.09359382927575158
+        }
+      },
+      {
+        "boundingBox": "(-451.17,-347.53),(-568.17,-467.18)",
+        "createDate": "2022-12-08T19:44:56.372900",
+        "datasetId": "AWEMA",
+        "endTime": "2022-06-02T19:16:46.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.166907",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:50:43.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:04.473455",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 462.4948000206965,
+          "med": 456.9012348872907,
+          "min": 447.8718028319622,
+          "p25": 454.1513728635243,
+          "p75": 459.4391869750435
+        },
+        "friedParameter": {
+          "max": 0.1620326484025915,
+          "med": 0.07913904986913603,
+          "min": 0.02662144052344476,
+          "p25": 0.055965613861330754,
+          "p75": 0.11584222684741252
+        }
+      },
+      {
+        "boundingBox": "(-551.18,-347.54),(-668.16,-467.17)",
+        "createDate": "2022-12-08T19:45:54.120125",
+        "datasetId": "BQPWA",
+        "endTime": "2022-06-02T18:47:01.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.131014",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:20:58.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:04.934002",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 418.469050206102,
+          "med": 412.20653317466065,
+          "min": 408.3990790086407,
+          "p25": 410.08795553715873,
+          "p75": 415.30268967420363
+        },
+        "friedParameter": {
+          "max": 0.1653167415492549,
+          "med": 0.07325639374044537,
+          "min": 0.03330153745200153,
+          "p25": 0.056356717355752706,
+          "p75": 0.09733155772648751
+        }
+      },
+      {
+        "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "createDate": "2022-12-08T19:46:03.212404",
+        "datasetId": "AZZMA",
+        "endTime": "2022-06-02T19:45:44.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.201850",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:19:41.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:07.310326",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 442.8611614149463,
+          "med": 436.4500957210121,
+          "min": 432.1143995446784,
+          "p25": 434.13235801383206,
+          "p75": 438.6823743985099
+        },
+        "friedParameter": {
+          "max": 0.1750574656090514,
+          "med": 0.07556053938346297,
+          "min": 0.02571011444085498,
+          "p25": 0.05628737748140936,
+          "p75": 0.10153704289927082
+        }
+      },
+      {
+        "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
+        "createDate": "2022-12-08T19:48:45.745088",
+        "datasetId": "AVDXA",
+        "endTime": "2022-06-02T19:16:19.285503",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.166907",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:50:16.345503",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:08.228744",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 461.9755092185371,
+          "med": 457.0790086407617,
+          "min": 446.5764474569256,
+          "p25": 454.0959797174936,
+          "p75": 459.158258739932
+        },
+        "friedParameter": {
+          "max": 0.1707826290566837,
+          "med": 0.08131447791643039,
+          "min": 0.02965029971938064,
+          "p25": 0.05482598073821216,
+          "p75": 0.12453320896210834
+        }
+      },
+      {
+        "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "createDate": "2022-12-08T19:48:46.378926",
+        "datasetId": "BDYVA",
+        "endTime": "2022-06-02T19:44:49.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.201850",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:20:09.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:08.158260",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 443.0823028233387,
+          "med": 436.4208792535485,
+          "min": 431.5885376243942,
+          "p25": 433.8369293389213,
+          "p75": 438.5238698884117
+        },
+        "friedParameter": {
+          "max": 3.797760890602786,
+          "med": 0.07432639896514168,
+          "min": 0.02714978208474162,
+          "p25": 0.05289303779283082,
+          "p75": 0.1008868748720829
+        }
+      },
+      {
+        "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
+        "createDate": "2022-12-08T19:50:55.141641",
+        "datasetId": "AJGKB",
+        "endTime": "2022-06-02T20:14:32.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.237683",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:49:52.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:08.324775",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 159,
+        "lightLevel": {
+          "max": 505.30066746003,
+          "med": 490.8999499836153,
+          "min": 477.2936996602335,
+          "p25": 484.83103947844984,
+          "p75": 498.13637225987827
+        },
+        "friedParameter": {
+          "max": 10.40415477421039,
+          "med": 0.06545448895344136,
+          "min": 0.02329212606200434,
+          "p25": 0.04831551289890812,
+          "p75": 0.07959641516349218
+        }
+      },
+      {
+        "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "createDate": "2022-12-08T19:52:51.959185",
+        "datasetId": "AMKYA",
+        "endTime": "2022-06-02T20:43:29.854999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.272616",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:18:49.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:12.081195",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 508.6420034149118,
+          "med": 484.8823752608613,
+          "min": 473.0600541556717,
+          "p25": 476.6442627757368,
+          "p75": 496.12604991290254
+        },
+        "friedParameter": {
+          "max": 26.30422726053951,
+          "med": 0.05038609529294634,
+          "min": 0.02313460572659945,
+          "p25": 0.0376259914235581,
+          "p75": 0.08103561111253096
+        }
+      },
+      {
+        "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
+        "createDate": "2022-12-08T19:52:52.272131",
+        "datasetId": "BEYYB",
+        "endTime": "2022-06-02T20:15:00.285485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.237683",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:48:57.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:11.910676",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 160,
+        "lightLevel": {
+          "max": 505.810317172867,
+          "med": 490.4668080923061,
+          "min": 475.182835756541,
+          "p25": 484.8490540004484,
+          "p75": 497.5989160242148
+        },
+        "friedParameter": {
+          "max": 10.6979131535962,
+          "med": 0.06154341300092753,
+          "min": 0.02556597299546601,
+          "p25": 0.049445277747580604,
+          "p75": 0.0878892703546833
+        }
+      },
+      {
+        "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "createDate": "2022-12-08T19:55:34.387795",
+        "datasetId": "AKGYA",
+        "endTime": "2022-06-02T20:43:57.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.272616",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:17:54.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:11.854943",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 143,
+        "lightLevel": {
+          "max": 509.7882927165796,
+          "med": 484.0777323606009,
+          "min": 472.8010210241286,
+          "p25": 476.3562115175661,
+          "p75": 496.08128093685866
+        },
+        "friedParameter": {
+          "max": 22.33301729926788,
+          "med": 0.0515026269309029,
+          "min": 0.02478332728152473,
+          "p25": 0.03799565452571331,
+          "p75": 0.07789648360225526
+        }
+      },
+      {
+        "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "createDate": "2022-12-08T19:56:53.200885",
+        "datasetId": "ALJGA",
+        "endTime": "2022-06-02T20:44:24.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.272616",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:18:21.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:11.721277",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 156,
+        "lightLevel": {
+          "max": 510.6709784239665,
+          "med": 484.9511822838516,
+          "min": 473.0762491160897,
+          "p25": 475.9390576223245,
+          "p75": 497.20432124316585
+        },
+        "friedParameter": {
+          "max": 17.21327945192066,
+          "med": 0.04464574791477664,
+          "min": 0.02137697850572445,
+          "p25": 0.03747523900426558,
+          "p75": 0.059185467901407274
+        }
+      },
+      {
+        "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "createDate": "2022-12-08T19:56:53.232141",
+        "datasetId": "AYJPB",
+        "endTime": "2022-06-02T19:45:17.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.201850",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:19:14.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:15.522364",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 442.9658681292148,
+          "med": 435.70512754178094,
+          "min": 431.9705593211569,
+          "p25": 433.97908366533864,
+          "p75": 438.426911402011
+        },
+        "friedParameter": {
+          "max": 0.1698766916289207,
+          "med": 0.0818131401812975,
+          "min": 0.02395328850557657,
+          "p25": 0.06043992772829623,
+          "p75": 0.10449232580545914
+        }
+      },
+      {
+        "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "createDate": "2022-12-08T19:56:53.358120",
+        "datasetId": "ARPOA",
+        "endTime": "2022-06-02T23:49:55.433349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.498811",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:25:14.753349",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:15.587055",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 138,
+        "lightLevel": {
+          "max": 691.3422672944586,
+          "med": 685.9181455994205,
+          "min": 671.9363584622549,
+          "p25": 679.9292095686518,
+          "p75": 688.8470705920905
+        },
+        "friedParameter": {
+          "max": 0.163706967237101,
+          "med": 0.06642446555472059,
+          "min": 0.007343576598599931,
+          "p25": 0.04877415028611956,
+          "p75": 0.0882387120856379
+        }
+      },
+      {
+        "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "createDate": "2022-12-08T19:59:06.513003",
+        "datasetId": "BVWXA",
+        "endTime": "2022-06-02T23:50:22.854999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.498811",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:25:42.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:15.603619",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 136,
+        "lightLevel": {
+          "max": 691.2849381694003,
+          "med": 685.8620410134355,
+          "min": 670.5184974388162,
+          "p25": 679.6913557889654,
+          "p75": 688.6170987047481
+        },
+        "friedParameter": {
+          "max": 0.1450921480586461,
+          "med": 0.0701023981868714,
+          "min": 0.02163525220292706,
+          "p25": 0.05268257691538006,
+          "p75": 0.08844799748653923
+        }
+      },
+      {
+        "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "createDate": "2022-12-08T19:59:06.570311",
+        "datasetId": "APNWA",
+        "endTime": "2022-06-02T22:13:01.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.381483",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:48:21.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:16.316811",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 728.2106724616684,
+          "med": 720.383867128887,
+          "min": 714.7328090236457,
+          "p25": 717.4927907417948,
+          "p75": 723.7017126299995
+        },
+        "friedParameter": {
+          "max": 8.395068905299038,
+          "med": 0.04712061430973323,
+          "min": 0.02203810409675627,
+          "p25": 0.038738261700003766,
+          "p75": 0.06026949086152383
+        }
+      },
+      {
+        "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "createDate": "2022-12-08T20:00:45.304119",
+        "datasetId": "ANLNA",
+        "endTime": "2022-06-02T22:13:29.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.381483",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:47:26.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:19.081211",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 162,
+        "lightLevel": {
+          "max": 729.066314827271,
+          "med": 720.1394853486487,
+          "min": 714.3027198565047,
+          "p25": 717.7381081733671,
+          "p75": 723.7332143288319
+        },
+        "friedParameter": {
+          "max": 8.820348840607585,
+          "med": 0.04684541472747539,
+          "min": 0.02358634850727706,
+          "p25": 0.03829718822808713,
+          "p75": 0.06544405534818934
+        }
+      },
+      {
+        "boundingBox": "(-443.18,-347.54),(-560.16,-467.17)",
+        "createDate": "2022-12-08T20:01:40.801583",
+        "datasetId": "AGYWA",
+        "endTime": "2022-06-02T20:15:27.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.237683",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:49:24.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:19.125005",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 167,
+        "lightLevel": {
+          "max": 506.1720908573498,
+          "med": 490.5445059588486,
+          "min": 476.4407133371277,
+          "p25": 484.9868965695659,
+          "p75": 498.3617564374537
+        },
+        "friedParameter": {
+          "max": 8.613893149641319,
+          "med": 0.052163197540520304,
+          "min": 0.0246852422762717,
+          "p25": 0.04132551527103537,
+          "p75": 0.07801610634278947
+        }
+      },
+      {
+        "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "createDate": "2022-12-08T20:02:46.555643",
+        "datasetId": "BYEPB",
+        "endTime": "2022-06-03T20:57:38.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.306143",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:58.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:19.412564",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 149,
+        "lightLevel": {
+          "max": 647.1616564046843,
+          "med": 594.014280540177,
+          "min": 560.4771563098257,
+          "p25": 574.116995222573,
+          "p75": 621.2449854262604
+        },
+        "friedParameter": {
+          "max": 15.18112453021114,
+          "med": 0.06897847484611046,
+          "min": 0.02789559683173313,
+          "p25": 0.04815577777321743,
+          "p75": 0.1032545378768938
+        }
+      },
+      {
+        "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "createDate": "2022-12-08T20:02:57.209116",
+        "datasetId": "AOMJA",
+        "endTime": "2022-06-02T22:13:56.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.381483",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:47:53.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:20.466490",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 154,
+        "lightLevel": {
+          "max": 729.0103482175195,
+          "med": 720.5211965988858,
+          "min": 714.4086166157879,
+          "p25": 717.6888894637899,
+          "p75": 723.8279522602231
+        },
+        "friedParameter": {
+          "max": 14.32282421014211,
+          "med": 0.04945276323619821,
+          "min": 0.0264191346905437,
+          "p25": 0.0398600132954755,
+          "p75": 0.06711664941594067
+        }
+      },
+      {
+        "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
+        "createDate": "2022-12-08T20:04:00.890398",
+        "datasetId": "AERYB",
+        "endTime": "2022-06-03T20:28:01.854999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.270410",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:03:21.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:22.884965",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 163,
+        "lightLevel": {
+          "max": 571.5054414377123,
+          "med": 542.2705196529897,
+          "min": 515.8759076249116,
+          "p25": 531.0672806609061,
+          "p75": 556.6532053603767
+        },
+        "friedParameter": {
+          "max": 7.612235337983303,
+          "med": 0.08020941409304694,
+          "min": 0.02955125578574539,
+          "p25": 0.060571569332804234,
+          "p75": 0.1129996216637345
+        }
+      },
+      {
+        "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "createDate": "2022-12-08T20:04:01.005655",
+        "datasetId": "AQOWA",
+        "endTime": "2022-06-02T23:50:50.285485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.498811",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:24:47.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:22.847946",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 150,
+        "lightLevel": {
+          "max": 691.0472913540642,
+          "med": 686.1592849381693,
+          "min": 670.2083613597558,
+          "p25": 679.5929701108985,
+          "p75": 688.4579862368706
+        },
+        "friedParameter": {
+          "max": 0.1387913701153954,
+          "med": 0.06024579517886165,
+          "min": 0.007710346098765993,
+          "p25": 0.04322495365993413,
+          "p75": 0.08026761949058894
+        }
+      },
+      {
+        "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "createDate": "2022-12-08T20:05:48.014253",
+        "datasetId": "BWZMA",
+        "endTime": "2022-06-03T20:58:06.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.306143",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:03.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:23.047163",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 158,
+        "lightLevel": {
+          "max": 648.5973336092858,
+          "med": 593.8989927734948,
+          "min": 560.3636191166072,
+          "p25": 573.3832462358359,
+          "p75": 619.6979096600611
+        },
+        "friedParameter": {
+          "max": 18.91461579610334,
+          "med": 0.070940488990044,
+          "min": 0.02671808689864855,
+          "p25": 0.04921933920604442,
+          "p75": 0.11126141095025566
+        }
+      },
+      {
+        "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
+        "createDate": "2022-12-08T20:06:47.979242",
+        "datasetId": "ADQVB",
+        "endTime": "2022-06-03T20:28:56.693349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.270410",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:02:53.753349",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:24.795846",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 175,
+        "lightLevel": {
+          "max": 573.0268191304048,
+          "med": 543.162113450958,
+          "min": 515.310015349856,
+          "p25": 529.7049895655473,
+          "p75": 558.3933486831893
+        },
+        "friedParameter": {
+          "max": 7.375711780463196,
+          "med": 0.07522752270080041,
+          "min": 0.02779084648746501,
+          "p25": 0.05756338548495081,
+          "p75": 0.11725541083066307
+        }
+      },
+      {
+        "boundingBox": "(-328.16,-318.53),(-445.18,-438.19)",
+        "createDate": "2022-12-08T20:08:00.095695",
+        "datasetId": "BGWWB",
+        "endTime": "2022-06-03T19:59:56.285485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.235977",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:33:53.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:26.410370",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 496.4771390627964,
+          "med": 481.5177903106189,
+          "min": 461.083199668857,
+          "p25": 475.20118228385155,
+          "p75": 487.3874545109605
+        },
+        "friedParameter": {
+          "max": 0.1784330955143384,
+          "med": 0.07266104146044691,
+          "min": 0.02591172915294242,
+          "p25": 0.05179457069640666,
+          "p75": 0.12138486125197578
+        }
+      },
+      {
+        "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "createDate": "2022-12-08T20:08:06.184058",
+        "datasetId": "BXZJB",
+        "endTime": "2022-06-03T20:58:33.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.306143",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:30.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:26.726491",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 140,
+        "lightLevel": {
+          "max": 649.9698176989014,
+          "med": 595.3504941273866,
+          "min": 560.3994584432832,
+          "p25": 575.8893732429589,
+          "p75": 621.8817974853832
+        },
+        "friedParameter": {
+          "max": 16.88610784196304,
+          "med": 0.06780083672742533,
+          "min": 0.02418352404476682,
+          "p25": 0.04844311951729057,
+          "p75": 0.12825469942563675
+        }
+      },
+      {
+        "boundingBox": "(-231.15,-318.52),(-348.19,-438.2)",
+        "createDate": "2022-12-08T20:09:06.925838",
+        "datasetId": "BZGMA",
+        "endTime": "2022-06-03T20:28:29.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.270410",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:02:26.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:26.978876",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 178,
+        "lightLevel": {
+          "max": 571.8900156947966,
+          "med": 542.2815318811334,
+          "min": 515.8005208602818,
+          "p25": 528.723163622566,
+          "p75": 556.0008925337611
+        },
+        "friedParameter": {
+          "max": 0.1612160396930327,
+          "med": 0.07474844267334699,
+          "min": 0.03308656898030034,
+          "p25": 0.05702672193729465,
+          "p75": 0.09375210872452093
+        }
+      },
+      {
+        "boundingBox": "(-331.16,-376.52),(-448.17,-496.19)",
+        "createDate": "2022-12-08T20:09:07.044885",
+        "datasetId": "BMQYB",
+        "endTime": "2022-06-03T19:31:42.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.201374",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:05:39.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:28.930424",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 443.6509891171246,
+          "med": 431.9229833911109,
+          "min": 423.57441230748,
+          "p25": 429.09533295389866,
+          "p75": 437.1706377951397
+        },
+        "friedParameter": {
+          "max": 0.193066605302677,
+          "med": 0.1248669828872402,
+          "min": 0.03325554980018355,
+          "p25": 0.09503865080928,
+          "p75": 0.14754447856368832
+        }
+      },
+      {
+        "boundingBox": "(-331.16,-376.53),(-448.17,-496.19)",
+        "createDate": "2022-12-08T20:09:27.648182",
+        "datasetId": "BNVNB",
+        "endTime": "2022-06-03T19:30:47.855016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.201374",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:06:07.174998",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:29.939637",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 169,
+        "lightLevel": {
+          "max": 444.2822993739329,
+          "med": 433.8223555992481,
+          "min": 425.0529311326124,
+          "p25": 430.50750245770166,
+          "p75": 436.72785912626557
+        },
+        "friedParameter": {
+          "max": 0.1739221648235942,
+          "med": 0.1139046715191153,
+          "min": 0.02977782313652283,
+          "p25": 0.08671524625075597,
+          "p75": 0.1410450670415021
+        }
+      },
+      {
+        "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
+        "createDate": "2022-12-08T20:10:34.201481",
+        "datasetId": "BJEKA",
+        "endTime": "2022-06-03T20:00:23.693349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.235977",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:34:20.753349",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:31.106667",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 498.1494800020697,
+          "med": 481.0367275486798,
+          "min": 463.2771252651731,
+          "p25": 476.8962677428813,
+          "p75": 486.45310101585
+        },
+        "friedParameter": {
+          "max": 0.1792984400455294,
+          "med": 0.08564263020874432,
+          "min": 0.02515454288605219,
+          "p25": 0.05731676728936058,
+          "p75": 0.11541180208995988
+        }
+      },
+      {
+        "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
+        "createDate": "2022-12-08T20:10:34.644024",
+        "datasetId": "BKMYB",
+        "endTime": "2022-06-03T19:59:28.854999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.235977",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:34:48.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:31.267145",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 494.3968713889033,
+          "med": 482.6214104620479,
+          "min": 462.637864127904,
+          "p25": 477.59686793949743,
+          "p75": 488.01846294475774
+        },
+        "friedParameter": {
+          "max": 0.167772739381975,
+          "med": 0.07654898708914176,
+          "min": 0.02433108946127955,
+          "p25": 0.05048710212945523,
+          "p75": 0.11949066259092656
+        }
+      },
+      {
+        "boundingBox": "(-331.16,-376.52),(-448.18,-496.19)",
+        "createDate": "2022-12-08T20:13:52.948655",
+        "datasetId": "BLOGA",
+        "endTime": "2022-06-03T19:31:15.285522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.201374",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:05:12.345503",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:33.490455",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 442.9669891861127,
+          "med": 434.8959314258119,
+          "min": 424.0012245390731,
+          "p25": 428.80231886307587,
+          "p75": 437.9361471861472
+        },
+        "friedParameter": {
+          "max": 0.1738914523467885,
+          "med": 0.1119356339403447,
+          "min": 0.02867439588018864,
+          "p25": 0.07200427004340244,
+          "p75": 0.14907735145784135
+        }
+      },
+      {
+        "boundingBox": "(-253.15,-376.51),(-370.18,-496.2)",
+        "createDate": "2022-12-08T20:14:51.431127",
+        "datasetId": "BQGWB",
+        "endTime": "2022-06-03T19:02:01.854999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.166661",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:37:21.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:33.661912",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 437.5503182076887,
+          "med": 424.7158034528553,
+          "min": 415.0721270761111,
+          "p25": 422.2102326624239,
+          "p75": 431.3010813887307
+        },
+        "friedParameter": {
+          "max": 0.1699813989223233,
+          "med": 0.1237457749515869,
+          "min": 0.03742900149844752,
+          "p25": 0.08596672919898571,
+          "p75": 0.14478563409000195
+        }
+      },
+      {
+        "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
+        "createDate": "2022-12-08T20:14:53.907311",
+        "datasetId": "BOXJA",
+        "endTime": "2022-06-03T19:02:29.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.166661",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:36:26.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:34.582264",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 442.1453234680326,
+          "med": 425.6134337110432,
+          "min": 415.8545730497922,
+          "p25": 421.8272408202687,
+          "p75": 432.40328297200807
+        },
+        "friedParameter": {
+          "max": 5.880065164768547,
+          "med": 0.12401367669864305,
+          "min": 0.03578340307273438,
+          "p25": 0.0846190211622083,
+          "p75": 0.15265566490789131
+        }
+      },
+      {
+        "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
+        "createDate": "2022-12-08T20:14:54.159698",
+        "datasetId": "BPDWB",
+        "endTime": "2022-06-03T19:02:56.693349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.166661",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:36:53.753349",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:34.951938",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 442.7565409358238,
+          "med": 426.0555009399631,
+          "min": 415.5373484417309,
+          "p25": 421.40761628809435,
+          "p75": 431.10686259291833
+        },
+        "friedParameter": {
+          "max": 0.1715517779569592,
+          "med": 0.11117922818340109,
+          "min": 0.03207022471713531,
+          "p25": 0.07942051597985325,
+          "p75": 0.14426894952673486
+        }
+      },
+      {
+        "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
+        "createDate": "2022-12-08T20:16:35.605281",
+        "datasetId": "AVVXA",
+        "endTime": "2022-06-03T18:34:11.693367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.131979",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:08:08.753348",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:37.767950",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 448.6608026767389,
+          "med": 436.99460167986064,
+          "min": 417.3851261620186,
+          "p25": 430.051745399355,
+          "p75": 438.8098040737483
+        },
+        "friedParameter": {
+          "max": 0.1860149445645692,
+          "med": 0.14588241538408564,
+          "min": 0.02870207618442895,
+          "p25": 0.12180683577645635,
+          "p75": 0.15733912200825312
+        }
+      },
+      {
+        "boundingBox": "(-251.14,-318.5),(-368.2,-438.21)",
+        "createDate": "2022-12-08T20:16:40.603318",
+        "datasetId": "BRKOA",
+        "endTime": "2022-06-03T18:33:44.285485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.131979",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:07:41.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:37.394986",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 446.4438867905004,
+          "med": 436.1906917783412,
+          "min": 417.100774391611,
+          "p25": 428.7268027457271,
+          "p75": 440.1000586398993
+        },
+        "friedParameter": {
+          "max": 0.180654350697414,
+          "med": 0.14612158471976538,
+          "min": 0.05245469536350716,
+          "p25": 0.11797573291128458,
+          "p75": 0.1612771061279658
+        }
+      },
+      {
+        "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
+        "createDate": "2022-12-08T20:17:35.001872",
+        "datasetId": "AWXMB",
+        "endTime": "2022-06-03T18:33:16.854981",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.131979",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:08:36.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:37.901950",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 445.3505976095618,
+          "med": 436.2979251823874,
+          "min": 419.1980648833239,
+          "p25": 431.382918542281,
+          "p75": 440.1978492954588
+        },
+        "friedParameter": {
+          "max": 0.1831883708166528,
+          "med": 0.1349378123483,
+          "min": 0.02896789596643993,
+          "p25": 0.10821176929964235,
+          "p75": 0.15267382635143445
+        }
+      },
+      {
+        "boundingBox": "(-348.14,-318.5),(-465.19,-438.21)",
+        "createDate": "2022-12-08T20:21:49.767936",
+        "datasetId": "AYGPA",
+        "endTime": "2022-06-03T18:05:27.693349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.97316",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:39:24.753349",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:38.705117",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 427.6638726479364,
+          "med": 402.54761904761904,
+          "min": 389.7350856315,
+          "p25": 396.85256377089047,
+          "p75": 411.77313257791343
+        },
+        "friedParameter": {
+          "max": 0.1781776830299381,
+          "med": 0.15359069192635394,
+          "min": 0.07288800893823408,
+          "p25": 0.14395878035312676,
+          "p75": 0.1624865939100411
+        }
+      },
+      {
+        "boundingBox": "(-348.15,-318.5),(-465.18,-438.21)",
+        "createDate": "2022-12-08T20:21:53.241406",
+        "datasetId": "AZKMB",
+        "endTime": "2022-06-03T18:04:32.854981",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.97316",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:39:52.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:41.082622",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 171,
+        "lightLevel": {
+          "max": 424.9921870957727,
+          "med": 402.1645194115314,
+          "min": 390.0205757058347,
+          "p25": 397.1258946896397,
+          "p75": 408.9307876718235
+        },
+        "friedParameter": {
+          "max": 0.1799077736904278,
+          "med": 0.1502379501010658,
+          "min": 0.05745587159960976,
+          "p25": 0.1370808025596857,
+          "p75": 0.15695736227564394
+        }
+      },
+      {
+        "boundingBox": "(-348.15,-318.5),(-465.19,-438.21)",
+        "createDate": "2022-12-08T20:24:04.210475",
+        "datasetId": "AXDJA",
+        "endTime": "2022-06-03T18:05:00.285504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.97316",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:38:57.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:42.228788",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 426.8806678049706,
+          "med": 401.4190855625119,
+          "min": 388.8970007416223,
+          "p25": 397.39770355806206,
+          "p75": 409.6190260602611
+        },
+        "friedParameter": {
+          "max": 0.1806732770722464,
+          "med": 0.14710285571427145,
+          "min": 0.06317867570811998,
+          "p25": 0.13235724560103432,
+          "p75": 0.1585688809091958
+        }
+      },
+      {
+        "boundingBox": "(-351.14,-376.46),(-468.2,-496.25)",
+        "createDate": "2022-12-08T20:26:47.791839",
+        "datasetId": "BDOVA",
+        "endTime": "2022-06-03T17:35:58.285485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.62284",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:09:55.345504",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:41.919184",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": 1,
+          "good": 179,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 361.536658560563,
+          "med": 351.08789086079923,
+          "min": 338.4100481192115,
+          "p25": 345.4326029216468,
+          "p75": 356.62490729721804
+        },
+        "friedParameter": {
+          "max": 0.1765739050150458,
+          "med": 0.12255246323308115,
+          "min": 0.0559364649656055,
+          "p25": 0.0908125888342229,
+          "p75": 0.14452526452549846
+        }
+      },
+      {
+        "boundingBox": "(-351.13,-376.46),(-468.2,-496.25)",
+        "createDate": "2022-12-08T20:44:55.698408",
+        "datasetId": "BEQYB",
+        "endTime": "2022-06-03T17:36:25.693349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.62284",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:10:22.753349",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:42.526089",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 178,
+        "lightLevel": {
+          "max": 363.3153446818786,
+          "med": 352.32925441092766,
+          "min": 338.788154740346,
+          "p25": 346.12339387040583,
+          "p75": 357.15874165674967
+        },
+        "friedParameter": {
+          "max": 0.1665612141041844,
+          "med": 0.12730853183289054,
+          "min": 0.0721708743582172,
+          "p25": 0.09544869466134855,
+          "p75": 0.14498975210993206
+        }
+      },
+      {
+        "boundingBox": "(-351.14,-376.46),(-468.19,-496.25)",
+        "createDate": "2022-12-08T20:53:53.466481",
+        "datasetId": "AGXWB",
+        "endTime": "2022-06-03T17:35:30.854981",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.62284",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:10:50.174999",
+        "stokesParameters": "I",
+        "updateDate": "2025-05-06T16:46:45.219710",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 171,
+        "lightLevel": {
+          "max": 362.4045635639261,
+          "med": 351.5227919490868,
+          "min": 339.7687863265552,
+          "p25": 345.68406029561413,
+          "p75": 356.6725910211965
+        },
+        "friedParameter": {
+          "max": 0.1799994212375385,
+          "med": 0.1307153877654189,
+          "min": 0.04957931424708374,
+          "p25": 0.09932075444777827,
+          "p75": 0.1474500568125168
+        }
+      },
+      {
+        "boundingBox": "(6.39,-374.42),(-124.96,-407.5)",
+        "createDate": "2023-04-21T08:48:47.844921",
+        "datasetId": "BDWQK",
+        "endTime": "2022-06-02T18:17:30.675500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.255722",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:50:42.635000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:48:53.723238",
+        "wavelengthMax": 634.3897538640359,
+        "wavelengthMin": 630.239209907831,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1940,
+        "lightLevel": {
+          "max": 438.0298028664562,
+          "med": 428.6616132871113,
+          "min": 424.1008088856694,
+          "p25": 427.3167071971853,
+          "p75": 430.0566392438902
+        },
+        "friedParameter": {
+          "max": 0.1562268636578818,
+          "med": 0.09183212140667862,
+          "min": 0.02218178658070395,
+          "p25": 0.07382250132855313,
+          "p75": 0.1104401150523422
+        }
+      },
+      {
+        "boundingBox": "(37.74,-374.42),(-93.61,-407.49)",
+        "createDate": "2023-04-21T08:55:44.824162",
+        "datasetId": "AYDEW",
+        "endTime": "2022-06-02T17:48:47.688000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.162408",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:21:59.647500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:00.722137",
+        "wavelengthMax": 634.3897538455635,
+        "wavelengthMin": 630.2392098893586,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1924,
+        "lightLevel": {
+          "max": 405.261706421069,
+          "med": 392.8785981614667,
+          "min": 383.2505648402063,
+          "p25": 388.5858988289267,
+          "p75": 398.9257515392974
+        },
+        "friedParameter": {
+          "max": 0.1473567978675118,
+          "med": 0.09736828831260333,
+          "min": 0.01695599040208593,
+          "p25": 0.07357481335557128,
+          "p75": 0.11251593498046
+        }
+      },
+      {
+        "boundingBox": "(4.04,-402.06),(-127.31,-436.49)",
+        "createDate": "2023-04-21T09:16:47.602610",
+        "datasetId": "BLGOX",
+        "endTime": "2022-06-03T19:32:00.693000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.528411",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:05:12.652500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:13.991623",
+        "wavelengthMax": 634.3897538878036,
+        "wavelengthMin": 630.2392099315987,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1960,
+        "lightLevel": {
+          "max": 444.2182956485746,
+          "med": 433.3632483054794,
+          "min": 423.729290629689,
+          "p25": 429.3279177661648,
+          "p75": 437.459271140546
+        },
+        "friedParameter": {
+          "max": 0.2091756909497408,
+          "med": 0.11512172355291536,
+          "min": 0.03051073143939641,
+          "p25": 0.08318510003417871,
+          "p75": 0.145379428322437
+        }
+      },
+      {
+        "boundingBox": "(15.39,-374.42),(-115.96,-407.49)",
+        "createDate": "2023-04-21T09:22:46.141586",
+        "datasetId": "AKNGW",
+        "endTime": "2022-06-02T19:17:04.695000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.449342",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:50:16.654500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:19.143480",
+        "wavelengthMax": 634.3897538657204,
+        "wavelengthMin": 630.2392099095155,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1956,
+        "lightLevel": {
+          "max": 462.5826563874373,
+          "med": 456.8740880633311,
+          "min": 446.8139907900864,
+          "p25": 454.1788689398251,
+          "p75": 459.0903571859747
+        },
+        "friedParameter": {
+          "max": 0.178916025244612,
+          "med": 0.08136494308885736,
+          "min": 0.02678887691508559,
+          "p25": 0.0555254251361532,
+          "p75": 0.11982257102456
+        }
+      },
+      {
+        "boundingBox": "(115.38,-402.06),(-15.96,-436.5)",
+        "createDate": "2023-04-21T09:28:46.072027",
+        "datasetId": "AWOWP",
+        "endTime": "2022-06-03T17:36:43.695500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.153697",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:09:55.655000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:22.112601",
+        "wavelengthMax": 634.3897538840633,
+        "wavelengthMin": 630.2392099278584,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1952,
+        "lightLevel": {
+          "max": 363.0877873786241,
+          "med": 351.4999310118832,
+          "min": 338.4879357030752,
+          "p25": 345.5745330366844,
+          "p75": 356.7009710077439
+        },
+        "friedParameter": {
+          "max": 0.187758605870976,
+          "med": 0.12294874562227906,
+          "min": 0.04797613950864044,
+          "p25": 0.09605367695218782,
+          "p75": 0.1465309882397844
+        }
+      },
+      {
+        "boundingBox": "(7.04,-346.79),(-124.31,-378.49)",
+        "createDate": "2023-04-21T09:33:45.024094",
+        "datasetId": "BJNKP",
+        "endTime": "2022-06-03T20:00:41.687500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.621644",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:33:53.647000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:26.282239",
+        "wavelengthMax": 634.3897538884205,
+        "wavelengthMin": 630.2392099322155,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1956,
+        "lightLevel": {
+          "max": 498.1379244925062,
+          "med": 481.6460564667736,
+          "min": 461.0287680447043,
+          "p25": 476.5015436091134,
+          "p75": 487.3906279643331
+        },
+        "friedParameter": {
+          "max": 0.1845122882141668,
+          "med": 0.07914983705413642,
+          "min": 0.02339801358700246,
+          "p25": 0.05248956949830704,
+          "p75": 0.119313781768351
+        }
+      },
+      {
+        "boundingBox": "(104.04,-346.79),(-27.31,-378.49)",
+        "createDate": "2023-04-21T09:38:45.048058",
+        "datasetId": "AEJQN",
+        "endTime": "2022-06-03T20:29:14.692000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.714418",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:02:26.651500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:38.755419",
+        "wavelengthMax": 634.3897539062962,
+        "wavelengthMin": 630.2392099500912,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1900,
+        "lightLevel": {
+          "max": 572.8772701402183,
+          "med": 542.7652765561132,
+          "min": 515.340232145013,
+          "p25": 529.5573894896604,
+          "p75": 557.2355254307446
+        },
+        "friedParameter": {
+          "max": 11.9619338118561,
+          "med": 0.07638291158287354,
+          "min": 0.02234411314412728,
+          "p25": 0.05644630771133211,
+          "p75": 0.1097705175935986
+        }
+      },
+      {
+        "boundingBox": "(46.73,-374.42),(-84.61,-407.5)",
+        "createDate": "2023-04-21T09:43:45.553483",
+        "datasetId": "AGNWO",
+        "endTime": "2022-06-02T18:47:19.673000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.352627",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:20:31.632500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:45.382024",
+        "wavelengthMax": 634.3897538472796,
+        "wavelengthMin": 630.2392098910747,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1916,
+        "lightLevel": {
+          "max": 418.526707024715,
+          "med": 412.22026180990326,
+          "min": 407.6979872716925,
+          "p25": 410.0359083147928,
+          "p75": 415.1718666459702
+        },
+        "friedParameter": {
+          "max": 7.868676832193296,
+          "med": 0.07032931933131222,
+          "min": 0.02014604426208346,
+          "p25": 0.05272928597008987,
+          "p75": 0.09556199794970585
+        }
+      },
+      {
+        "boundingBox": "(54.74,-374.42),(-76.61,-407.49)",
+        "createDate": "2023-04-21T09:50:46.634150",
+        "datasetId": "AMDKO",
+        "endTime": "2022-06-02T19:46:02.684000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.543493",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:19:14.643500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:47.092552",
+        "wavelengthMax": 634.3897538487722,
+        "wavelengthMin": 630.2392098925673,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1944,
+        "lightLevel": {
+          "max": 443.3477863438023,
+          "med": 436.03940083820567,
+          "min": 431.4910229213018,
+          "p25": 433.9489832876287,
+          "p75": 438.5181697452614
+        },
+        "friedParameter": {
+          "max": 4.923354972015686,
+          "med": 0.07535874733875823,
+          "min": 0.0253266422693095,
+          "p25": 0.05621486715299096,
+          "p75": 0.1050086203238933
+        }
+      },
+      {
+        "boundingBox": "(82.04,-402.06),(-49.31,-436.49)",
+        "createDate": "2023-04-21T09:57:46.094758",
+        "datasetId": "BNKVM",
+        "endTime": "2022-06-03T19:03:14.692000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.434881",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:36:26.652000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:49:50.943297",
+        "wavelengthMax": 634.3897539021737,
+        "wavelengthMin": 630.2392099459687,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1944,
+        "lightLevel": {
+          "max": 442.7012814542695,
+          "med": 425.4300719201118,
+          "min": 414.8211828012625,
+          "p25": 421.685051999793,
+          "p75": 431.1209534157741
+        },
+        "friedParameter": {
+          "max": 9.31400472355581,
+          "med": 0.1170398090552979,
+          "min": 0.02950942872798153,
+          "p25": 0.08198082265612791,
+          "p75": 0.1450109817861503
+        }
+      },
+      {
+        "boundingBox": "(102.04,-402.06),(-29.31,-436.49)",
+        "createDate": "2023-04-21T10:00:44.965456",
+        "datasetId": "BZWKJ",
+        "endTime": "2022-06-03T20:58:51.695000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.810702",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:03.655000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:02.621387",
+        "wavelengthMax": 634.3897539058624,
+        "wavelengthMin": 630.2392099496575,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1656,
+        "lightLevel": {
+          "max": 649.4370914609958,
+          "med": 593.8328417930012,
+          "min": 560.1187113019782,
+          "p25": 573.8781669857367,
+          "p75": 620.8891188492782
+        },
+        "friedParameter": {
+          "max": 22.20333853807283,
+          "med": 0.06883416422021323,
+          "min": 0.01612189682424351,
+          "p25": 0.04700284639858938,
+          "p75": 0.1128136604610143
+        }
+      },
+      {
+        "boundingBox": "(23.39,-374.42),(-107.96,-407.5)",
+        "createDate": "2023-04-21T10:06:45.490391",
+        "datasetId": "AODMM",
+        "endTime": "2022-06-02T20:15:45.683000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.640020",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:48:57.643000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:10.875279",
+        "wavelengthMax": 634.3897538672,
+        "wavelengthMin": 630.2392099109951,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1784,
+        "lightLevel": {
+          "max": 506.2105689794933,
+          "med": 490.59261654679983,
+          "min": 475.3316948655594,
+          "p25": 484.8223728462772,
+          "p75": 498.1507735292596
+        },
+        "friedParameter": {
+          "max": 14.23769858694226,
+          "med": 0.05981997838589687,
+          "min": 0.02255232776249588,
+          "p25": 0.04497272767956011,
+          "p75": 0.08233915561564978
+        }
+      },
+      {
+        "boundingBox": "(118.38,-346.79),(-12.96,-378.49)",
+        "createDate": "2023-04-21T10:11:44.759365",
+        "datasetId": "BRWJV",
+        "endTime": "2022-06-03T18:05:45.695000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.248037",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:38:57.654500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:11.764975",
+        "wavelengthMax": 634.3897538847037,
+        "wavelengthMin": 630.2392099284988,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1960,
+        "lightLevel": {
+          "max": 427.5966437281178,
+          "med": 401.9325727393457,
+          "min": 389.1228505889861,
+          "p25": 397.0786637001776,
+          "p75": 410.4298132146738
+        },
+        "friedParameter": {
+          "max": 0.1948181670253213,
+          "med": 0.15002534359074346,
+          "min": 0.04912848549316358,
+          "p25": 0.1329564699505167,
+          "p75": 0.161609383230101
+        }
+      },
+      {
+        "boundingBox": "(62.74,-374.42),(-68.61,-407.49)",
+        "createDate": "2023-04-21T10:16:46.026301",
+        "datasetId": "AQNGZ",
+        "endTime": "2022-06-02T20:44:42.686000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.734171",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:17:54.645000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:17.614566",
+        "wavelengthMax": 634.3897538502523,
+        "wavelengthMin": 630.2392098940473,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1644,
+        "lightLevel": {
+          "max": 510.4322795398493,
+          "med": 484.615011814215,
+          "min": 472.7506769458961,
+          "p25": 476.2842482882323,
+          "p75": 496.4043910936341
+        },
+        "friedParameter": {
+          "max": 28.19874464170374,
+          "med": 0.04878819159709937,
+          "min": 0.01316978197825354,
+          "p25": 0.0365905378108617,
+          "p75": 0.06803862138439026
+        }
+      },
+      {
+        "boundingBox": "(45.39,-374.42),(-85.95,-407.5)",
+        "createDate": "2023-04-21T10:21:46.968169",
+        "datasetId": "BVJVO",
+        "endTime": "2022-06-02T22:14:14.681000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.1029535",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:47:26.641000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:28.621564",
+        "wavelengthMax": 634.3897538688675,
+        "wavelengthMin": 630.2392099126625,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1680,
+        "lightLevel": {
+          "max": 728.8843759162485,
+          "med": 720.2697952777635,
+          "min": 714.5301564305548,
+          "p25": 717.652230903227,
+          "p75": 723.6801538435004
+        },
+        "friedParameter": {
+          "max": 12.39842177379971,
+          "med": 0.046598136322704986,
+          "min": 0.02013666176844931,
+          "p25": 0.03799493717984188,
+          "p75": 0.06234264218040652
+        }
+      },
+      {
+        "boundingBox": "(84.04,-346.79),(-47.31,-378.49)",
+        "createDate": "2023-04-21T10:26:46.093447",
+        "datasetId": "BPJDD",
+        "endTime": "2022-06-03T18:34:29.692000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.341432",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:07:41.651500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:35.521779",
+        "wavelengthMax": 634.3897539026002,
+        "wavelengthMin": 630.2392099463952,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1956,
+        "lightLevel": {
+          "max": 448.6954002173126,
+          "med": 436.4308049188528,
+          "min": 417.4179472585847,
+          "p25": 429.8305134440592,
+          "p75": 439.5259998965178
+        },
+        "friedParameter": {
+          "max": 0.1949031156216288,
+          "med": 0.1402881850293735,
+          "min": 0.02639242051914343,
+          "p25": 0.1134109386248473,
+          "p75": 0.1589323139676702
+        }
+      },
+      {
+        "boundingBox": "(91.74,-374.42),(-39.61,-407.49)",
+        "createDate": "2023-04-21T10:31:45.079315",
+        "datasetId": "BXRDY",
+        "endTime": "2022-06-02T23:51:00.682500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.1344755",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:24:12.642000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:50:34.752817",
+        "wavelengthMax": 634.3897538555977,
+        "wavelengthMin": 630.2392098993928,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1592,
+        "lightLevel": {
+          "max": 691.5325365205844,
+          "med": 686.262137596799,
+          "min": 670.445852951829,
+          "p25": 679.932650350977,
+          "p75": 688.6227902243838
+        },
+        "friedParameter": {
+          "max": 9.340536809322746,
+          "med": 0.06644402825279155,
+          "min": 0.006897280516129104,
+          "p25": 0.04669786313245382,
+          "p75": 0.08766371259668715
+        }
+      },
+      {
+        "boundingBox": "(116.98,-327.84),(-96.51,-378.51)",
+        "createDate": "2023-04-22T05:18:49.558875",
+        "datasetId": "BQKZZ",
+        "endTime": "2022-06-03T18:34:29.692000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.341432",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:07:41.651500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:52:07.054575",
+        "wavelengthMax": 856.7855075574271,
+        "wavelengthMin": 854.2489858580914,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1956,
+        "lightLevel": {
+          "max": 448.6954002173126,
+          "med": 436.4308049188528,
+          "min": 417.4179472585847,
+          "p25": 429.8305134440592,
+          "p75": 439.5259998965178
+        },
+        "friedParameter": {
+          "max": 0.1949031156216288,
+          "med": 0.1402881850293735,
+          "min": 0.02639242051914343,
+          "p25": 0.1134109386248473,
+          "p75": 0.1589323139676702
+        }
+      },
+      {
+        "boundingBox": "(160.48,-353.6),(-53.01,-407.51)",
+        "createDate": "2023-04-22T05:23:46.310302",
+        "datasetId": "BWKXP",
+        "endTime": "2022-06-02T22:14:14.681000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.1029535",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:47:26.641000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:52:12.075368",
+        "wavelengthMax": 856.7855075366739,
+        "wavelengthMin": 854.2489858373382,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1680,
+        "lightLevel": {
+          "max": 728.8843759162485,
+          "med": 720.2697952777635,
+          "min": 714.5301564305548,
+          "p25": 717.652230903227,
+          "p75": 723.6801538435004
+        },
+        "friedParameter": {
+          "max": 12.39842177379971,
+          "med": 0.046598136322704986,
+          "min": 0.02013666176844931,
+          "p25": 0.03799493717984188,
+          "p75": 0.06234264218040652
+        }
+      },
+      {
+        "boundingBox": "(136.98,-327.84),(-76.51,-378.51)",
+        "createDate": "2023-04-22T06:07:44.765552",
+        "datasetId": "BGNXO",
+        "endTime": "2022-06-03T20:29:14.692000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.714418",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:02:26.651500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:52:29.758547",
+        "wavelengthMax": 856.7855075597009,
+        "wavelengthMin": 854.2489858603652,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1900,
+        "lightLevel": {
+          "max": 572.8772701402183,
+          "med": 542.7652765561132,
+          "min": 515.340232145013,
+          "p25": 529.5573894896604,
+          "p75": 557.2355254307446
+        },
+        "friedParameter": {
+          "max": 11.9619338118561,
+          "med": 0.07638291158287354,
+          "min": 0.02234411314412728,
+          "p25": 0.05644630771133211,
+          "p75": 0.1097705175935986
+        }
+      },
+      {
+        "boundingBox": "(16.98,-379.37),(-196.51,-436.51)",
+        "createDate": "2023-04-22T06:33:49.172665",
+        "datasetId": "AXVLY",
+        "endTime": "2022-06-03T17:36:43.695500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.153697",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:09:55.655000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:52:35.047104",
+        "wavelengthMax": 856.7855075460228,
+        "wavelengthMin": 854.2489858466871,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1952,
+        "lightLevel": {
+          "max": 363.0877873786241,
+          "med": 351.4999310118832,
+          "min": 338.4879357030752,
+          "p25": 345.5745330366844,
+          "p75": 356.7009710077439
+        },
+        "friedParameter": {
+          "max": 0.187758605870976,
+          "med": 0.12294874562227906,
+          "min": 0.04797613950864044,
+          "p25": 0.09605367695218782,
+          "p75": 0.1465309882397844
+        }
+      },
+      {
+        "boundingBox": "(75.49,-353.6),(-138.01,-407.5)",
+        "createDate": "2023-04-22T06:38:44.985256",
+        "datasetId": "BYDGW",
+        "endTime": "2022-06-02T23:51:00.682500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.1344755",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:24:12.642000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:52:50.122803",
+        "wavelengthMax": 856.78550752851,
+        "wavelengthMin": 854.2489858291743,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1592,
+        "lightLevel": {
+          "max": 691.5325365205844,
+          "med": 686.262137596799,
+          "min": 670.445852951829,
+          "p25": 679.932650350977,
+          "p75": 688.6227902243838
+        },
+        "friedParameter": {
+          "max": 9.340536809322746,
+          "med": 0.06644402825279155,
+          "min": 0.006897280516129104,
+          "p25": 0.04669786313245382,
+          "p75": 0.08766371259668715
+        }
+      },
+      {
+        "boundingBox": "(38.49,-353.61),(-175.01,-407.5)",
+        "createDate": "2023-04-22T08:29:47.173395",
+        "datasetId": "ANKLM",
+        "endTime": "2022-06-02T19:46:02.684000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.543493",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:19:14.643500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:52:57.390849",
+        "wavelengthMax": 856.7855075243108,
+        "wavelengthMin": 854.2489858249751,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1944,
+        "lightLevel": {
+          "max": 443.3477863438023,
+          "med": 436.03940083820567,
+          "min": 431.4910229213018,
+          "p25": 433.9489832876287,
+          "p75": 438.5181697452614
+        },
+        "friedParameter": {
+          "max": 4.923354972015686,
+          "med": 0.07535874733875823,
+          "min": 0.0253266422693095,
+          "p25": 0.05621486715299096,
+          "p75": 0.1050086203238933
+        }
+      },
+      {
+        "boundingBox": "(138.48,-353.61),(-75.01,-407.51)",
+        "createDate": "2023-04-22T08:50:45.143450",
+        "datasetId": "APJND",
+        "endTime": "2022-06-02T20:15:45.683000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.640020",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:48:57.643000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:00.714361",
+        "wavelengthMax": 856.785507535648,
+        "wavelengthMin": 854.2489858363123,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1784,
+        "lightLevel": {
+          "max": 506.2105689794933,
+          "med": 490.59261654679983,
+          "min": 475.3316948655594,
+          "p25": 484.8223728462772,
+          "p75": 498.1507735292596
+        },
+        "friedParameter": {
+          "max": 14.23769858694226,
+          "med": 0.05981997838589687,
+          "min": 0.02255232776249588,
+          "p25": 0.04497272767956011,
+          "p75": 0.08233915561564978
+        }
+      },
+      {
+        "boundingBox": "(134.99,-379.37),(-78.51,-436.51)",
+        "createDate": "2023-04-22T08:55:44.284574",
+        "datasetId": "ADWOK",
+        "endTime": "2022-06-03T20:58:51.695000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.810702",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:03.655000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:19.756959",
+        "wavelengthMax": 856.7855075594341,
+        "wavelengthMin": 854.2489858600984,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1656,
+        "lightLevel": {
+          "max": 649.4370914609958,
+          "med": 593.8328417930012,
+          "min": 560.1187113019782,
+          "p25": 573.8781669857367,
+          "p75": 620.8891188492782
+        },
+        "friedParameter": {
+          "max": 22.20333853807283,
+          "med": 0.06883416422021323,
+          "min": 0.01612189682424351,
+          "p25": 0.04700284639858938,
+          "p75": 0.1128136604610143
+        }
+      },
+      {
+        "boundingBox": "(30.48,-353.61),(-183.01,-407.51)",
+        "createDate": "2023-04-22T09:00:46.895795",
+        "datasetId": "AJNEP",
+        "endTime": "2022-06-02T18:47:19.673000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.352627",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:20:31.632500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:21.049469",
+        "wavelengthMax": 856.7855075233925,
+        "wavelengthMin": 854.2489858240568,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1916,
+        "lightLevel": {
+          "max": 418.526707024715,
+          "med": 412.22026180990326,
+          "min": 407.6979872716925,
+          "p25": 410.0359083147928,
+          "p75": 415.1718666459702
+        },
+        "friedParameter": {
+          "max": 7.868676832193296,
+          "med": 0.07032931933131222,
+          "min": 0.02014604426208346,
+          "p25": 0.05272928597008987,
+          "p75": 0.09556199794970585
+        }
+      },
+      {
+        "boundingBox": "(46.49,-353.61),(-167.01,-407.5)",
+        "createDate": "2023-04-22T09:05:46.642884",
+        "datasetId": "ARVKV",
+        "endTime": "2022-06-02T20:44:42.686000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.734171",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:17:54.645000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:25.519655",
+        "wavelengthMax": 856.7855075252214,
+        "wavelengthMin": 854.2489858258857,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1644,
+        "lightLevel": {
+          "max": 510.4322795398493,
+          "med": 484.615011814215,
+          "min": 472.7506769458961,
+          "p25": 476.2842482882323,
+          "p75": 496.4043910936341
+        },
+        "friedParameter": {
+          "max": 28.19874464170374,
+          "med": 0.04878819159709937,
+          "min": 0.01316978197825354,
+          "p25": 0.0365905378108617,
+          "p75": 0.06803862138439026
+        }
+      },
+      {
+        "boundingBox": "(114.98,-379.37),(-98.51,-436.51)",
+        "createDate": "2023-04-22T09:12:44.669520",
+        "datasetId": "BODXM",
+        "endTime": "2022-06-03T19:03:14.692000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.434881",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:36:26.652000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:38.037052",
+        "wavelengthMax": 856.7855075571647,
+        "wavelengthMin": 854.248985857829,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1944,
+        "lightLevel": {
+          "max": 442.7012814542695,
+          "med": 425.4300719201118,
+          "min": 414.8211828012625,
+          "p25": 421.685051999793,
+          "p75": 431.1209534157741
+        },
+        "friedParameter": {
+          "max": 9.31400472355581,
+          "med": 0.1170398090552979,
+          "min": 0.02950942872798153,
+          "p25": 0.08198082265612791,
+          "p75": 0.1450109817861503
+        }
+      },
+      {
+        "boundingBox": "(39.98,-327.84),(-173.51,-378.51)",
+        "createDate": "2023-04-22T09:20:47.527844",
+        "datasetId": "BKNMW",
+        "endTime": "2022-06-03T20:00:41.687500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.621644",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:33:53.647000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:44.600776",
+        "wavelengthMax": 856.7855075487034,
+        "wavelengthMin": 854.2489858493677,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1956,
+        "lightLevel": {
+          "max": 498.1379244925062,
+          "med": 481.6460564667736,
+          "min": 461.0287680447043,
+          "p25": 476.5015436091134,
+          "p75": 487.3906279643331
+        },
+        "friedParameter": {
+          "max": 0.1845122882141668,
+          "med": 0.07914983705413642,
+          "min": 0.02339801358700246,
+          "p25": 0.05248956949830704,
+          "p75": 0.119313781768351
+        }
+      },
+      {
+        "boundingBox": "(121.48,-353.61),(-92.01,-407.51)",
+        "createDate": "2023-04-22T09:25:46.715887",
+        "datasetId": "BEJRN",
+        "endTime": "2022-06-02T18:17:30.675500",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.255722",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:50:42.635000",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:46.606814",
+        "wavelengthMax": 856.7855075337014,
+        "wavelengthMin": 854.2489858343657,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1940,
+        "lightLevel": {
+          "max": 438.0298028664562,
+          "med": 428.6616132871113,
+          "min": 424.1008088856694,
+          "p25": 427.3167071971853,
+          "p75": 430.0566392438902
+        },
+        "friedParameter": {
+          "max": 0.1562268636578818,
+          "med": 0.09183212140667862,
+          "min": 0.02218178658070395,
+          "p25": 0.07382250132855313,
+          "p75": 0.1104401150523422
+        }
+      },
+      {
+        "boundingBox": "(21.49,-353.6),(-192.01,-407.5)",
+        "createDate": "2023-04-22T09:43:45.765881",
+        "datasetId": "AZWGJ",
+        "endTime": "2022-06-02T17:48:47.688000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.162408",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:21:59.647500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:53:48.926404",
+        "wavelengthMax": 856.7855075223367,
+        "wavelengthMin": 854.248985823001,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1924,
+        "lightLevel": {
+          "max": 405.261706421069,
+          "med": 392.8785981614667,
+          "min": 383.2505648402063,
+          "p25": 388.5858988289267,
+          "p75": 398.9257515392974
+        },
+        "friedParameter": {
+          "max": 0.1473567978675118,
+          "med": 0.09736828831260333,
+          "min": 0.01695599040208593,
+          "p25": 0.07357481335557128,
+          "p75": 0.11251593498046
+        }
+      },
+      {
+        "boundingBox": "(36.98,-379.37),(-176.51,-436.51)",
+        "createDate": "2023-04-22T09:49:47.136976",
+        "datasetId": "BMDQO",
+        "endTime": "2022-06-03T19:32:00.693000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.528411",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:05:12.652500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:54:05.603293",
+        "wavelengthMax": 856.785507548324,
+        "wavelengthMin": 854.2489858489882,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1960,
+        "lightLevel": {
+          "max": 444.2182956485746,
+          "med": 433.3632483054794,
+          "min": 423.729290629689,
+          "p25": 429.3279177661648,
+          "p75": 437.459271140546
+        },
+        "friedParameter": {
+          "max": 0.2091756909497408,
+          "med": 0.11512172355291536,
+          "min": 0.03051073143939641,
+          "p25": 0.08318510003417871,
+          "p75": 0.145379428322437
+        }
+      },
+      {
+        "boundingBox": "(19.98,-327.84),(-193.51,-378.51)",
+        "createDate": "2023-04-22T10:06:44.553166",
+        "datasetId": "AVORO",
+        "endTime": "2022-06-03T18:05:45.695000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85572.248037",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:38:57.654500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:54:08.495167",
+        "wavelengthMax": 856.7855075464167,
+        "wavelengthMin": 854.248985847081,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1960,
+        "lightLevel": {
+          "max": 427.5966437281178,
+          "med": 401.9325727393457,
+          "min": 389.1228505889861,
+          "p25": 397.0786637001776,
+          "p75": 410.4298132146738
+        },
+        "friedParameter": {
+          "max": 0.1948181670253213,
+          "med": 0.15002534359074346,
+          "min": 0.04912848549316358,
+          "p25": 0.1329564699505167,
+          "p75": 0.161609383230101
+        }
+      },
+      {
+        "boundingBox": "(130.49,-353.61),(-83.01,-407.5)",
+        "createDate": "2023-04-22T10:15:46.164778",
+        "datasetId": "ALGJX",
+        "endTime": "2022-06-02T19:17:04.695000",
+        "bucket": "public",
+        "exposureTime": 48.00811267605634,
+        "frameCount": 1960,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.85415.449342",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:50:16.654500",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-05-06T16:54:10.250439",
+        "wavelengthMax": 856.7855075347377,
+        "wavelengthMin": 854.248985835402,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1960,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1960,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1956,
+        "lightLevel": {
+          "max": 462.5826563874373,
+          "med": 456.8740880633311,
+          "min": 446.8139907900864,
+          "p25": 454.1788689398251,
+          "p75": 459.0903571859747
+        },
+        "friedParameter": {
+          "max": 0.178916025244612,
+          "med": 0.08136494308885736,
+          "min": 0.02678887691508559,
+          "p25": 0.0555254251361532,
+          "p75": 0.11982257102456
+        }
+      }
+    ]
+  }
+}
