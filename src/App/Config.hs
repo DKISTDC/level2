@@ -35,6 +35,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import Network.Globus (Id' (..), Token, Token' (..), UserEmail (..))
 import Network.HTTP.Client qualified as Http
+import Network.HTTP.Client.TLS qualified as Http
 import Text.Read (readMaybe)
 import Web.Hyperbole
 
@@ -82,7 +83,7 @@ initConfig = do
   scratch <- initScratch
   auth <- initAuth globus
   numWorkers <- readEnv "NUM_WORKERS"
-  manager <- liftIO $ Http.newManager Http.defaultManagerSettings
+  manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers, manager}
 
 

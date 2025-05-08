@@ -58,8 +58,6 @@ runAuth dom r auth = interpret $ \_ -> \case
   AuthWithCode authCode -> do
     let red = redirectUri dom r
     ts <- accessTokens red authCode
-    log Debug $ dump "TS" ts
-
     u <- userInfo ts
     when (isAdmin u) $ do
       log Debug $ dump "FOUND ADMIN" u.transfer

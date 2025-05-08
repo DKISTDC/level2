@@ -131,6 +131,7 @@ library
     , hasql
     , http-api-data
     , http-client
+    , http-client-tls
     , http-types
     , hyperbole >=0.4.3
     , lens
@@ -191,6 +192,7 @@ executable level2
     , hasql
     , http-api-data
     , http-client
+    , http-client-tls
     , http-types
     , hyperbole >=0.4.3
     , lens
@@ -263,6 +265,7 @@ test-suite spec
     , hasql
     , http-api-data
     , http-client
+    , http-client-tls
     , http-types
     , hyperbole >=0.4.3
     , lens

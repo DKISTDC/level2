@@ -122,8 +122,9 @@ main = do
       . runRel8 config.db
       . runScratch config.scratch
       . runGlobus' config.globus config.manager
+      . runFetchHttp config.manager
       . runAuth config.app.domain Redirect auth
-      . runGraphQL
+      . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
       . runTime
@@ -183,7 +184,8 @@ webServer config auth fits asdf pubs sync =
       . runReader config.app
       . runGenRandom
       . runRel8 config.db
-      . runGraphQL' config.servicesIsMock
+      . runFetchHttp config.manager
+      . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
@@ -194,10 +196,10 @@ webServer config auth fits asdf pubs sync =
       . runMetadataSync sync
       . runDebugIO
 
-  runGraphQL' :: (IOE :> es, Error GraphQLError :> es) => Bool -> Eff (GraphQL : Fetch : es) a -> Eff es a
-  runGraphQL' True = runFetchMock mockMetadata . runGraphQL
-  runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
+-- runGraphQL' :: (IOE :> es, Error GraphQLError :> es) => Bool -> Eff (GraphQL : Fetch : es) a -> Eff es a
+-- runGraphQL' True = runFetchMock mockMetadata . runGraphQL
+-- runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
 runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusDev (GlobusDevConfig dkist)) _ action = runGlobusDev dkist action

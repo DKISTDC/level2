@@ -10,6 +10,8 @@ import Data.Aeson qualified as A
 import Data.Aeson.Key qualified as K
 import Data.Aeson.KeyMap qualified as KM
 import Data.Aeson.Types qualified as A
+import Data.ByteString.Lazy (ByteString)
+import Data.ByteString.Lazy.Char8 qualified as BL
 import Data.Char (toLower)
 import Data.List qualified as L
 import Data.String (fromString)
@@ -58,14 +60,23 @@ class Request a where
   request a =
     let params = parametersText (parameters a)
         fields = requestFields @(Data a)
-     in [i| #{rootField @a}#{params} { #{fields} }|]
+     in [i|{#{rootField @a}#{params} { #{fields} }}|]
 
 
 parametersText :: [(Key, A.Value)] -> Text
 parametersText [] = ""
 parametersText ps = "(" <> T.intercalate "," (fmap paramText ps) <> ")"
  where
-  paramText (k, val) = K.toText k <> ": " <> cs (A.encode val)
+  paramText (k, val) = K.toText k <> ": " <> cs (encodeGraphQL val)
+
+
+encodeGraphQL :: A.Value -> ByteString
+encodeGraphQL = \case
+  Object km ->
+    "{" <> (BL.intercalate "," $ fmap pair $ KM.toList km) <> "}"
+  val -> A.encode val
+ where
+  pair (k, v) = cs (K.toText k) <> ":" <> encodeGraphQL v
 
 
 class RequestParameters a where
@@ -113,14 +124,6 @@ instance (Request a) => FromJSON (Response a) where
       dat .: fromString (cs $ rootField @a)
 
 
--- case A.eitherDecode @(Response r) (responseBody res) of
---   Left e -> throwError $ GraphQLParseError (request r) e
---   Right (Errors es) -> throwError $ GraphQLServerError (request r) es
---   Right (Data v) -> do
---     case A.parseEither parseJSON v of
---       Left e -> throwError $ GraphQLParseError (request r) e
---       Right d -> pure d
-
 -- parseQueryErrors :: a -> Value -> Parser [ServerErrorMessage]
 -- parseQueryErrors = _
 
@@ -138,7 +141,7 @@ instance (Request a) => FromJSON (Response a) where
 --
 --   -- checkErrors :: Maybe [ServerErrorMessage] -> Parser ()
 --   -- checkErrors = \case
---   --   Nothing -> pure 
+--   --   Nothing -> pure
 --   --   Just [] -> pure ()
 --   --   Just errs -> fail $ "Server Errors: " <> mconcat (fmap (cs . (.message)) errs)
 --
@@ -160,24 +163,26 @@ service inp = do
 
 runGraphQL
   :: (Error GraphQLError :> es, IOE :> es)
-  => Eff (GraphQL : es) a
+  => Http.Manager
+  -> Eff (GraphQL : es) a
   -> Eff es a
-runGraphQL = interpret $ \_ -> \case
-  Query s q -> sendRequest s "query" q
-  Mutation s q -> sendRequest s "mutation" q
+runGraphQL mgr = interpret $ \_ -> \case
+  Query s q -> sendRequest mgr s "query" q
+  Mutation s q -> sendRequest mgr s "mutation" q
 
 
 newtype ReqType = ReqType Text
   deriving newtype (IsString)
 
 
-sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :> es, IOE :> es) => Service -> ReqType -> r -> Eff es (Data r)
-sendRequest (Service sv) (ReqType rt) r = do
+sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :> es, IOE :> es) => Manager -> Service -> ReqType -> r -> Eff es (Data r)
+sendRequest mgr (Service sv) rt r = do
   -- liftIO $ putStrLn $ "QUERY: " <> show sv
   let requestHeaders = [("Content-Type", "application/json")]
-  let requestBody = RequestBodyBS $ cs $ rt <> request r
+  putStrLn "REQ"
+  putStrLn $ cs $ request r
+  let requestBody = RequestBodyLBS $ body rt $ request r
   let req = sv{method = methodPost, requestHeaders, requestBody}
-  mgr <- liftIO $ Http.newManager defaultManagerSettings
   res <- liftIO $ Http.httpLbs req mgr
   case A.eitherDecode @(Response r) (responseBody res) of
     Left e -> throwError $ GraphQLParseError (request r) e
@@ -186,6 +191,10 @@ sendRequest (Service sv) (ReqType rt) r = do
       case A.parseEither parseJSON v of
         Left e -> throwError $ GraphQLParseError (request r) e
         Right d -> pure d
+ where
+  body (ReqType typ) rbody =
+    -- but it isn't escaped if we do this, right?
+    [i|{#{A.encode typ}: #{A.encode rbody}}|]
 
 
 -- runGraphQLMock
@@ -262,7 +271,7 @@ requestFields :: forall a. (FieldNames a) => String
 requestFields = allFields $ fieldNames @a Proxy
  where
   allFields :: [NestedFields] -> String
-  allFields = L.intercalate "\n" . fmap fields
+  allFields = L.intercalate " " . fmap fields
 
   fields :: NestedFields -> String
   fields (NestedFields nm []) = nm

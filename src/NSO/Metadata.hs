@@ -68,6 +68,7 @@ newtype DatasetsAvailable = DatasetsAvailable DatasetInventories
 instance Request DatasetsAvailable where
   type Data DatasetsAvailable = [DatasetAvailable]
   parameters (DatasetsAvailable d) = parameters d
+  rootField = "datasetInventories"
 
 
 mockMetadata :: Method -> URI -> [Header] -> RequestBody -> IO FetchResponse

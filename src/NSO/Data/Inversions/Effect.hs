@@ -6,6 +6,7 @@ import Data.Maybe (isJust)
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
+import Effectful.Fetch
 import Effectful.GenRandom
 import Effectful.Rel8 hiding (Update)
 import Effectful.Rel8 qualified as Rel8
@@ -37,7 +38,7 @@ newtype AllInversions = AllInversions {inversions :: [Inversion]}
 
 
 runDataInversions
-  :: (Concurrent :> es, IOE :> es, Rel8 :> es, Time :> es, GenRandom :> es)
+  :: (Concurrent :> es, Fetch :> es, Rel8 :> es, Time :> es, GenRandom :> es)
   => Eff (Inversions : es) a
   -> Eff es a
 runDataInversions = interpret $ \_ -> \case

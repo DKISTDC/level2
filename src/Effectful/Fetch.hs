@@ -47,3 +47,11 @@ runFetchMock
 runFetchMock mock = interpret $ \_ -> \case
   Fetch m u hs body -> do
     liftIO $ mock m u hs body
+
+
+get :: (Fetch :> es) => URI -> [Header] -> Eff es FetchResponse
+get u hs = send $ Fetch methodGet u hs ""
+
+
+post :: (Fetch :> es) => URI -> [Header] -> RequestBody -> Eff es FetchResponse
+post u hs body = send $ Fetch methodPost u hs body

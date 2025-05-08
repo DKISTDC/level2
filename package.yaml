@@ -43,6 +43,7 @@ dependencies:
   - wai-extra
   - http-types
   - http-client
+  - http-client-tls
   - casing
   - time
   - text

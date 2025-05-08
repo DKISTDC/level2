@@ -41,7 +41,7 @@ services:
   # level2 -----------------------------------------------
 
   postgres:
-    image: postgres:16
+    image: postgres:16.4
     # this makes it try to always be on, even if the container isn't running
     # restart: always
     environment:
@@ -54,7 +54,7 @@ services:
       - "5432:5432"
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1.28.0-alpine
     volumes:
       - ./deps/nginx.conf:/etc/nginx/conf.d/default.conf
       - ~/certs:/etc/nginx/certs:ro

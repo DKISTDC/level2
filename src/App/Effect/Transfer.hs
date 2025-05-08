@@ -2,7 +2,6 @@ module App.Effect.Transfer where
 
 import App.Effect.Scratch (Scratch)
 import App.Effect.Scratch qualified as Scratch
-import App.Types (AppDomain)
 import Data.List qualified as L
 import Data.Tagged
 import Effectful
@@ -14,7 +13,6 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
-import NSO.Image.Frame (L2Frame)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Common as App
@@ -216,8 +214,6 @@ initScratchDataset d = do
       , sync_level = SyncTimestamp
       , store_base_path_info = True
       }
-
-
 
 -- really, I want to just open the file manager at that location, let thme handle it.
 -- initDownloadL2Gen :: (Globus :> es, Reader (Token Access) :> es) => TransferForm -> DownloadFolder -> Inversion -> Eff es (App.Id Task)
