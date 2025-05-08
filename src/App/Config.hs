@@ -31,6 +31,7 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
+import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
 import Network.Globus (Id' (..), Token, Token' (..), UserEmail (..))
@@ -60,7 +61,7 @@ data AuthInfo = AuthInfo
 
 
 data Services = Services
-  {metadata :: Service}
+  {metadata :: MetadataService}
 
 
 data GlobusConfig
@@ -84,6 +85,8 @@ initConfig = do
   auth <- initAuth globus
   numWorkers <- readEnv "NUM_WORKERS"
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
+
+  log Debug $ dump "METADATA" services.metadata
   pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers, manager}
 
 
@@ -102,14 +105,20 @@ type IsMock = Bool
 initServices :: (Environment :> es, Fail :> es) => Eff es (Services, IsMock)
 initServices = do
   mock <- parseServices <$> lookupEnv "SERVICES"
-  meta <- parseService =<< getEnv "METADATA_API"
-  pure (Services meta, mock)
+  metaDatasets <- parseMockService <$> getEnv "METADATA_API_DATASETS"
+  metaExperiments <- parseMockService <$> getEnv "METADATA_API_EXPERIMENTS"
+  pure (Services (MetadataService metaDatasets metaExperiments), mock)
  where
   parseServices (Just "MOCK") = True
   parseServices _ = False
 
+  -- the env is still required
+  parseMockService :: String -> Maybe Service
+  parseMockService "MOCK" = Nothing
+  parseMockService s = parseService s
 
-parseService :: (Fail :> es) => String -> Eff es Service
+
+parseService :: (MonadFail m) => String -> m Service
 parseService u =
   case service (cs u) of
     Nothing -> fail $ "Could not parse service url: " <> cs u

@@ -19,6 +19,13 @@ import Network.HTTP.Types
 import Network.URI
 
 
+data MetadataService = MetadataService
+  { datasets :: Maybe Service
+  , experiments :: Maybe Service
+  }
+  deriving (Show)
+
+
 data Metadata :: Effect where
   DatasetById :: Id Dataset -> Metadata m [ParsedResult DatasetInventory]
   DatasetsByProposal :: Id Proposal -> Metadata m [ParsedResult DatasetInventory]
@@ -38,59 +45,69 @@ instance (FromJSON a) => FromJSON (ParsedResult a) where
 
 
 runMetadata
-  :: (IOE :> es, GraphQL :> es)
-  => Service
-  -> Eff (Metadata : es) a
-  -> Eff es a
-runMetadata s = interpret $ \_ -> \case
-  DatasetById did -> do
-    send $ Query s (DatasetInventories [] [did])
-  DatasetsByProposal pid -> do
-    send $ Query s (DatasetInventories [pid] [])
-  AvailableDatasets -> do
-    res <- send $ Query s $ DatasetsAvailable $ DatasetInventories [] []
-    pure res
-  AllExperiments -> do
-    send $ Query s ExperimentDescriptions
-
-
-runMetadataMock
   :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
-  => Service
+  => MetadataService
   -> Eff (Metadata : es) a
   -> Eff es a
-runMetadataMock _ = interpret $ \_ -> \case
+runMetadata ms = interpret $ \_ -> \case
   DatasetById did -> do
     let r = DatasetInventories [] [did]
-    ds <- datasetInventories r
-    pure $ filter (isDatasetId did) ds
+    case ms.datasets of
+      Just s -> send $ Query s r
+      Nothing -> mockDatasetInventories r
   DatasetsByProposal pid -> do
     let r = DatasetInventories [pid] []
-    ds <- datasetInventories r
-    pure $ filter (isProposalId pid) ds
+    case ms.datasets of
+      Just s -> send $ Query s r
+      Nothing -> mockDatasetInventories r
   AvailableDatasets -> do
     let r = DatasetsAvailable $ DatasetInventories [] []
-    datasetInventories r
+    case ms.datasets of
+      Just s -> send $ Query s r
+      Nothing -> mockDatasetsAvailable
   AllExperiments -> do
-    mockJsonFile ExperimentDescriptions "./deps/experiments.json"
- where
-  mockJsonFile r json = do
-    cnt <- liftIO $ BL.readFile json
-    parseResponse r cnt
+    let r = ExperimentDescriptions
+    case ms.experiments of
+      Just s -> send $ Query s r
+      Nothing -> mockExperiments
 
-  datasetInventories r = do
-    ds1118 <- mockJsonFile r "./deps/dataset_inventories_pid_1_118.json"
-    ds2114 <- mockJsonFile r "./deps/dataset_inventories_pid_2_114.json"
-    pure $ ds1118 <> ds2114
 
-  isDatasetId did (ParsedResult _ (A.Success d)) =
-    d.datasetId == did.fromId
-  isDatasetId _ _ = False
-
-  isProposalId pid (ParsedResult _ (A.Success d)) =
-    d.primaryProposalId == pid.fromId
-  isProposalId _ _ = False
-
+-- runMetadata'
+--   :: (IOE :> es, GraphQL :> es)
+--   => Service
+--   -> Eff (Metadata : es) a
+--   -> Eff es a
+-- runMetadata' s = interpret $ \_ -> \case
+--   DatasetById did -> do
+--     send $ Query s (DatasetInventories [] [did])
+--   DatasetsByProposal pid -> do
+--     send $ Query s (DatasetInventories [pid] [])
+--   AvailableDatasets -> do
+--     res <- send $ Query s $ DatasetsAvailable $ DatasetInventories [] []
+--     pure res
+--   AllExperiments -> do
+--     send $ Query s ExperimentDescriptions
+--
+--
+-- runMetadataMock
+--   :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
+--   => Service
+--   -> Eff (Metadata : es) a
+--   -> Eff es a
+-- runMetadataMock _ = interpret $ \_ -> \case
+--   DatasetById did -> do
+--     let r = DatasetInventories [] [did]
+--     ds <- datasetInventories r
+--     pure $ filter (isDatasetId did) ds
+--   DatasetsByProposal pid -> do
+--     let r = DatasetInventories [pid] []
+--     ds <- datasetInventories r
+--     pure $ filter (isProposalId pid) ds
+--   AvailableDatasets -> do
+--     let r = DatasetsAvailable $ DatasetInventories [] []
+--     datasetInventories r
+--   AllExperiments -> mockExperiments
+--
 
 data DatasetInventories = DatasetInventories
   { primaryProposalIds :: [Id Proposal]
@@ -198,3 +215,47 @@ data ExperimentDescription = ExperimentDescription
   , experimentDescription :: Text
   }
   deriving (Generic, Show, Eq, FromJSON, FieldNames)
+
+
+-- Mock Results --------------------------------------------------------
+
+mockExperiments :: (IOE :> es, Error GraphQLError :> es) => Eff es [ExperimentDescription]
+mockExperiments =
+  mockJsonFile ExperimentDescriptions "./deps/experiments.json"
+
+
+mockDatasetsAvailable :: (IOE :> es, Error GraphQLError :> es) => Eff es [DatasetAvailable]
+mockDatasetsAvailable = do
+  let r = DatasetsAvailable $ DatasetInventories [] []
+  datasetInventories r
+
+
+mockDatasetInventories :: (IOE :> es, Error GraphQLError :> es) => DatasetInventories -> Eff es [ParsedResult DatasetInventory]
+mockDatasetInventories r@(DatasetInventories pids dids) = do
+  ds <- datasetInventories r
+  pure $ filter (\d -> isDatasetId dids d || isProposalId pids d) ds
+
+
+mockJsonFile :: (IOE :> es, Request r, FromJSON (Data r), Error GraphQLError :> es) => r -> FilePath -> Eff es (Data r)
+mockJsonFile r json = do
+  cnt <- liftIO $ BL.readFile json
+  parseResponse r cnt
+
+
+datasetInventories :: (IOE :> es, Request r, FromJSON (Data r), Semigroup (Data r), Error GraphQLError :> es) => r -> Eff es (Data r)
+datasetInventories r = do
+  ds1118 <- mockJsonFile r "./deps/dataset_inventories_pid_1_118.json"
+  ds2114 <- mockJsonFile r "./deps/dataset_inventories_pid_2_114.json"
+  pure $ ds1118 <> ds2114
+
+
+isDatasetId :: [Id Dataset] -> ParsedResult DatasetInventory -> Bool
+isDatasetId dids (ParsedResult _ (A.Success d)) =
+  Id d.datasetId `elem` dids
+isDatasetId _ _ = False
+
+
+isProposalId :: [Id Proposal] -> ParsedResult DatasetInventory -> Bool
+isProposalId pids (ParsedResult _ (A.Success d)) =
+  Id d.primaryProposalId `elem` pids
+isProposalId _ _ = False

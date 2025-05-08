@@ -87,6 +87,7 @@ class Mutation a
 
 
 newtype Service = Service Http.Request
+  deriving (Show)
 
 
 -- data Request = Request
