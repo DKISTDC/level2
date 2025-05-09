@@ -98,7 +98,7 @@ initMetadataSync = do
 
 -- Check Available -------------------------------------------------
 
-runScanAvailable :: (Metadata :> es) => Eff es [Grouped (Id Proposal) DatasetAvailable]
+runScanAvailable :: (Metadata es) => Eff es [Grouped (Id Proposal) DatasetAvailable]
 runScanAvailable = do
   -- assume there aren't parse errors in these fields
   scanAvailable <$> send AvailableDatasets
@@ -117,7 +117,7 @@ data ScanProposal = ScanProposal
   deriving (Show)
 
 
-runScanProposals :: (Metadata :> es, Datasets :> es, Time :> es) => [Grouped (Id Proposal) DatasetAvailable] -> Eff es [ScanProposal]
+runScanProposals :: (Metadata es, Datasets :> es, Time :> es) => [Grouped (Id Proposal) DatasetAvailable] -> Eff es [ScanProposal]
 runScanProposals gds = do
   exs <- experimentDescriptions <$> send AllExperiments
   forM gds $ \gd -> do
@@ -125,13 +125,13 @@ runScanProposals gds = do
     runScanProposal' exs propId
 
 
-runScanProposal :: (Metadata :> es, Datasets :> es, Time :> es) => Id Proposal -> Eff es ScanProposal
+runScanProposal :: (Metadata es, Datasets :> es, Time :> es) => Id Proposal -> Eff es ScanProposal
 runScanProposal propId = do
   exs <- send AllExperiments
   runScanProposal' (experimentDescriptions exs) propId
 
 
-runScanProposal' :: (Metadata :> es, Datasets :> es, Time :> es) => Map (Id Experiment) Text -> Id Proposal -> Eff es ScanProposal
+runScanProposal' :: (Metadata es, Datasets :> es, Time :> es) => Map (Id Experiment) Text -> Id Proposal -> Eff es ScanProposal
 runScanProposal' exs propId = do
   now <- currentTime
   pds <- send $ DatasetsByProposal propId

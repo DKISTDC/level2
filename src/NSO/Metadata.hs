@@ -1,10 +1,12 @@
 -- {-# OPTIONS_GHC -ddump-splices #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Metadata where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, fromJSON)
 import Data.Aeson qualified as A
 import Data.ByteString.Lazy qualified as BL
+import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -14,6 +16,8 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import NSO.Types.Inversion
+import NSO.Types.Wavelength
 import Network.HTTP.Client (RequestBody)
 import Network.HTTP.Types
 import Network.URI
@@ -21,55 +25,116 @@ import Network.URI
 
 data MetadataService = MetadataService
   { datasets :: Maybe Service
-  , experiments :: Maybe Service
+  , inversions :: Service
   }
   deriving (Show)
 
 
-data Metadata :: Effect where
-  DatasetById :: Id Dataset -> Metadata m [ParsedResult DatasetInventory]
-  DatasetsByProposal :: Id Proposal -> Metadata m [ParsedResult DatasetInventory]
-  AvailableDatasets :: Metadata m [DatasetAvailable]
-  AllExperiments :: Metadata m [ExperimentDescription]
-type instance DispatchOf Metadata = 'Dynamic
+data MetadataInversions :: Effect where
+  CreateInversion :: Inversion -> MetadataInversions m [InversionInventory]
+type instance DispatchOf MetadataInversions = 'Dynamic
 
 
-data ParsedResult a = ParsedResult Value (A.Result a)
-instance (FieldNames a) => FieldNames (ParsedResult a) where
-  fieldNames _ = fieldNames (Proxy @a)
+data MetadataDatasets :: Effect where
+  DatasetById :: Id Dataset -> MetadataDatasets m [ParsedResult DatasetInventory]
+  DatasetsByProposal :: Id Proposal -> MetadataDatasets m [ParsedResult DatasetInventory]
+  AvailableDatasets :: MetadataDatasets m [DatasetAvailable]
+  AllExperiments :: MetadataDatasets m [ExperimentDescription]
+type instance DispatchOf MetadataDatasets = 'Dynamic
 
 
-instance (FromJSON a) => FromJSON (ParsedResult a) where
-  parseJSON val = do
-    pure $ ParsedResult val (fromJSON @a val)
+type Metadata es = (MetadataInversions :> es, MetadataDatasets :> es)
 
 
 runMetadata
   :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
   => MetadataService
-  -> Eff (Metadata : es) a
+  -> Eff (MetadataDatasets : MetadataInversions : es) a
   -> Eff es a
-runMetadata ms = interpret $ \_ -> \case
+runMetadata ms =
+  runMetadataInversions ms.inversions
+    . case ms.datasets of
+      Nothing -> runMetadataDatasetsMock
+      Just s -> runMetadataDatasets s
+
+
+runMetadataDatasetsMock
+  :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
+  => Eff (MetadataDatasets : es) a
+  -> Eff es a
+runMetadataDatasetsMock = interpret $ \_ -> \case
   DatasetById did -> do
-    let r = DatasetInventories [] [did]
-    case ms.datasets of
-      Just s -> send $ Query s r
-      Nothing -> mockDatasetInventories r
+    mockDatasetInventories $ DatasetInventories [] [did]
   DatasetsByProposal pid -> do
-    let r = DatasetInventories [pid] []
-    case ms.datasets of
-      Just s -> send $ Query s r
-      Nothing -> mockDatasetInventories r
+    mockDatasetInventories $ DatasetInventories [pid] []
   AvailableDatasets -> do
-    let r = DatasetsAvailable $ DatasetInventories [] []
-    case ms.datasets of
-      Just s -> send $ Query s r
-      Nothing -> mockDatasetsAvailable
+    mockDatasetsAvailable
   AllExperiments -> do
-    let r = ExperimentDescriptions
-    case ms.experiments of
-      Just s -> send $ Query s r
-      Nothing -> mockExperiments
+    mockExperiments
+
+
+runMetadataDatasets
+  :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
+  => Service
+  -> Eff (MetadataDatasets : es) a
+  -> Eff es a
+runMetadataDatasets s = interpret $ \_ -> \case
+  DatasetById did -> do
+    send $ Query s $ DatasetInventories [] [did]
+  DatasetsByProposal pid -> do
+    send $ Query s $ DatasetInventories [pid] []
+  AvailableDatasets -> do
+    send $ Query s $ DatasetsAvailable $ DatasetInventories [] []
+  AllExperiments -> do
+    send $ Query s ExperimentDescriptions
+
+
+runMetadataInversions
+  :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
+  => Service
+  -> Eff (MetadataInversions : es) a
+  -> Eff es a
+runMetadataInversions s = interpret $ \_ -> \case
+  CreateInversion inv -> do
+    let r = inversionInventory inv
+    send $ Query s r
+
+
+data InversionInventory = InversionInventory
+  { inversionId :: Id Inversion
+  , primaryProposalId :: Id Proposal
+  , instrumentProgramExecutionId :: Id InstrumentProgram
+  , datasetIds :: [Id Dataset]
+  , wavelengths :: [Wavelength Nm]
+  , bucket :: Text
+  , asdfObjectKey :: Text
+  , frameCount :: Int
+  , positionBinCount :: Int
+  , depthCount :: Int
+  }
+  deriving (Generic, FromJSON, ToJSON, FieldNames)
+instance Request InversionInventory where
+  type Data InversionInventory = [InversionInventory]
+  rootField = "l2Inversions"
+  request r =
+    let fields = requestFields @InversionInventory
+     in [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]
+
+
+inversionInventory :: Inversion -> InversionInventory
+inversionInventory inv =
+  InversionInventory
+    { inversionId = inv.inversionId
+    , primaryProposalId = inv.proposalId
+    , instrumentProgramExecutionId = inv.programId
+    , datasetIds = inv.datasets
+    , wavelengths = _ -- inv.wavelengths, from the inversion process.. Always the same?
+    , bucket = _ -- known by the object cataloger
+    , asdfObjectKey = _ -- known by the object cataloger
+    , frameCount = _
+    , positionBinCount = _
+    , depthCount = _
+    }
 
 
 -- runMetadata'
@@ -259,3 +324,11 @@ isProposalId :: [Id Proposal] -> ParsedResult DatasetInventory -> Bool
 isProposalId pids (ParsedResult _ (A.Success d)) =
   Id d.primaryProposalId `elem` pids
 isProposalId _ _ = False
+
+
+data ParsedResult a = ParsedResult Value (A.Result a)
+instance (FieldNames a) => FieldNames (ParsedResult a) where
+  fieldNames _ = fieldNames (Proxy @a)
+instance (FromJSON a) => FromJSON (ParsedResult a) where
+  parseJSON val = do
+    pure $ ParsedResult val (fromJSON @a val)

@@ -149,7 +149,7 @@ data ScanProp = ScanProp (Id Proposal)
   deriving (Show, Read, ViewId)
 
 
-instance (Datasets :> es, Time :> es, Metadata :> es) => HyperView ScanProp es where
+instance (Datasets :> es, Time :> es, Metadata es) => HyperView ScanProp es where
   data Action ScanProp
     = RunScanProposal
     deriving (Show, Read, ViewAction)
@@ -190,7 +190,7 @@ data Current = Current
   deriving (Show, Read, ViewId)
 
 
-instance (Time :> es, Datasets :> es, Metadata :> es) => HyperView Current es where
+instance (Time :> es, Datasets :> es, Metadata es) => HyperView Current es where
   data Action Current
     = LoadExisting
     deriving (Show, Read, ViewAction)

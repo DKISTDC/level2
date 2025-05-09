@@ -2,6 +2,7 @@
 
 module NSO.Types.Wavelength where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Scientific (fromFloatDigits)
 import GHC.Real (Real)
 import NSO.Prelude
@@ -13,7 +14,7 @@ data Nm
 
 
 newtype Wavelength a = Wavelength Double
-  deriving newtype (Num, Ord, Show, Floating, Fractional, RealFloat, RealFrac, Real, DBType)
+  deriving newtype (Num, Ord, Show, Floating, Fractional, RealFloat, RealFrac, Real, DBType, FromJSON, ToJSON)
 
 
 instance Eq (Wavelength a) where

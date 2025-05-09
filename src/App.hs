@@ -170,7 +170,7 @@ webServer config auth fits asdf pubs sync =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : Metadata : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runConcurrent

@@ -106,8 +106,8 @@ initServices :: (Environment :> es, Fail :> es) => Eff es (Services, IsMock)
 initServices = do
   mock <- parseServices <$> lookupEnv "SERVICES"
   metaDatasets <- parseMockService <$> getEnv "METADATA_API_DATASETS"
-  metaExperiments <- parseMockService <$> getEnv "METADATA_API_EXPERIMENTS"
-  pure (Services (MetadataService metaDatasets metaExperiments), mock)
+  metaInversions <- parseService =<< getEnv "METADATA_API_INVERSIONS"
+  pure (Services (MetadataService metaDatasets metaInversions), mock)
  where
   parseServices (Just "MOCK") = True
   parseServices _ = False

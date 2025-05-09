@@ -42,7 +42,7 @@ needsMetadataSync = do
 syncMetadataTask
   :: ( Log :> es
      , MetadataSync :> es
-     , Metadata :> es
+     , Metadata es
      , Tasks SyncProposalTask :> es
      , Tasks SyncMetadataTask :> es
      )
@@ -86,7 +86,7 @@ data SyncProgress
   | Exec [ScanError] [SyncDataset]
 
 
-syncProposalTask :: (Log :> es, Time :> es, Datasets :> es, Metadata :> es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
+syncProposalTask :: (Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
   log Info $ dump "SyncProposalTask" task.syncId
   send $ TaskSetStatus task Scan
