@@ -232,7 +232,6 @@ viewProposalDetails fs now prop progs = do
 
 tableInstrumentPrograms :: UTCTime -> [Id InstrumentProgram] -> View ProposalCard ()
 tableInstrumentPrograms _ progIds = do
-  -- TODO: sort instrument program statuses
   col id $ do
     dataRows progIds $ \progId -> do
       hyper (ProgramRow progId) $ rowInstrumentProgramLoad progId

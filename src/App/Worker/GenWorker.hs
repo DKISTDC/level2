@@ -230,8 +230,6 @@ asdfTask t = do
     inv <- loadInversion t.inversionId
     d <- requireCanonicalDataset inv.programId
 
-    -- TODO: load the L1 fits files
-    -- TODO: generate all the stuffs
     let u = Scratch.inversionUploads $ Scratch.blanca t.proposalId t.inversionId
 
     ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.quantities

@@ -244,7 +244,6 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es,
               Transfer.viewTransferFailed taskId
               View.iconButton Upload (Style.btn Primary) Icons.upTray "Select New Files"
           TaskSucceeded -> do
-            -- TODO: we need to reload
             let uploads' = filesUploaded uploads
             setQuery $ QueryState uploads' def
             pure $ viewUpload dall uploads' metadata
@@ -338,7 +337,6 @@ data MetadataForm = MetadataForm (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Show, Read, ViewId)
 
 
--- TODO: store this information in the query as well!
 instance (Log :> es, Inversions :> es, Datasets :> es) => HyperView MetadataForm es where
   data Action MetadataForm
     = SetDataset (Id Dataset) Bool

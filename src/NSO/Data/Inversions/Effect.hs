@@ -71,7 +71,6 @@ runDataInversions = interpret $ \_ -> \case
   ValidateGitCommit repo gc -> validateGitCommit repo gc
   NewId -> newInversionId
  where
-  -- TODO: only return the "latest" inversion for each instrument program
   queryAll :: (Rel8 :> es) => Eff es AllInversions
   queryAll = do
     irs <- run $ select $ each inversions

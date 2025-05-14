@@ -19,7 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
-import NSO.Types.Common (DateTime(..), Id (..))
+import NSO.Types.Common (DateTime (..), Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Header as Fits
@@ -29,37 +29,14 @@ headerSpecVersion :: Text
 headerSpecVersion = "L2." <> pack appVersion
 
 
--- DONE: automatic type-based comments
--- DONE: custom comments with custom newtype (cleaner)
--- DONE: comments for bitpix, naxes and other auto-gen keywords.
--- DONE: FILENAME - based on input filename
--- DONE: Support optional lifted L1 headers
--- DONE: WCS
--- DONE: DSETID - the inversion id?
--- DONE: TIMESYS - missing from L1 input?
-
--- DONE: HEADVERS - current version number for the spec
--- DONE: FILE_ID - UUID for this frame - where do I need to store this?
--- DONE: HEAD_URL - create a url that links to this
--- DONE: INFO_URL - what's the difference? Is there another documentation page? Does it have a different spec?
--- DONE: FRAMEVOL - estimate based on the dimensions, bitpix, and average header size. Waiting on Profile HDUs, etc
 -- NOPE: PROV_URL - create a provenance URL page
-
--- DONE: DATAMIN
--- DONE: DATAMAX
 -- LATER: DATAMEAN
 -- LATER: DATAMEDN
 -- LATER: DATARMS
 -- LATER: DATAKURT
 -- LATER: DATASKEW
 -- NOPE: DATAP<pp>
-
--- DONE: CHECKSUM - telescope
--- DONE: DATASUM - telescope
--- DONE: PCOUNT - telescope
--- DONE: GCOUNT - telescope
 -- TODO: Doubles vs Floats - fits-parse
---
 -- NOPE: CONTINUE - if a url is too long. Or make sure they aren't too long :)
 
 data Observation = Observation

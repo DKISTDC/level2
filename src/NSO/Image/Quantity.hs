@@ -468,7 +468,6 @@ fromList f qs = do
       }
 
 
--- TEST: easy to test this for the presence of all of the fields
 toList :: (forall x. f x -> a) -> Quantities f -> [a]
 toList f qs =
   [ f qs.opticalDepth

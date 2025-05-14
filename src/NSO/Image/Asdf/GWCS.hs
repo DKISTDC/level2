@@ -297,8 +297,6 @@ instance ToAsdf ProfileGWCS where
 
 
 -- Varying Celestial Transform -----------------------------------
---
--- TODO: I need a graph of L1 data that looks right, so I can see...
 
 data VaryingCelestialTransform = VaryingCelestialTransform
   { cdelt :: (Double, Double)

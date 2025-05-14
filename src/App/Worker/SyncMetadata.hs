@@ -63,7 +63,6 @@ syncMetadataTask task = do
 -- saveErrorAndCrash s e = do
 --   send $ Sync.SetError s (show e)
 --   -- doesn't matter because we crash anyway!
---   -- TEST: not sure what happens if we have an error. Test by not being connected
 --   throwM e
 
 -- SYNC PROPOSAL -------------------------------------------------------------------------------------------------------------------
