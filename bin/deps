@@ -11,5 +11,5 @@ set -euo pipefail
 
 # (cd $METADATA_STORE_API_DIR && docker-compose --profile full up --build -d)
 
-docker-compose up postgres nginx metadata-postgres metadata-mongodb metadata-store-api --build
+docker-compose up
 

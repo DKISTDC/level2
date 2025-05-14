@@ -1,20 +1,54 @@
 services:
 
-  # metadata-store-api ----------------------------------------
-  # If metadata knows how to seed itself...
-  # it might not do so in a way that satisfies everyone
-  #
-  # If level2 does it, it can seed it with exactly the data it wants
-  # but we don't want it to seed the data unless it is in "dev mode"
-    # that's something we could do in config...
-    # via the API?
-    # OR, we skip metadata store for datasets, and return our local file
-    # but NOT for inversions?
+  # -- interservice-bus ----------------------------------------
+  interservice-bus:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"    # AMQP protocol
+      - "15672:15672"  # RabbitMQ management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 7s
+      timeout: 5s
+      retries: 5
+
+  elastic-apm:
+    image: elastic/apm-server:8.13.4
+    # ports:
+    #   - "8200:8200"
+    # command: >
+    #   apm-server -e
+    #     -E apm-server.host=0.0.0.0:8200
+    #     -E apm-server.auth.anonymous.enabled=true
+    #     -E output.console.enabled=true
+
+
+  # -- workers ---------------------------------------------------
+  frame-cataloger: 
+    image: frame-cataloger
+    depends_on:
+      interservice-bus:
+        condition: service_healthy
+    build:
+      context: "${FRAME_CATALOGER_LOCAL:-../frame-cataloger}"
+
+    environment:
+      MESH_CONFIG: '{
+          "interservice-bus": { "mesh_address": "interservice-bus","mesh_port": 5672},
+          "system-monitoring-log-apm": {"mesh_address": "elastic-apm","mesh_port": 8200}
+        }'
+
+
+
+  # -- metadata-store-api ----------------------------------------
 
   metadata-postgres:
     image: metadata-postgres
     build:
-      context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
+      context: "${METADATA_STORE_API_LOCAL:-../metadata-store-api}"
       dockerfile: postgres.Dockerfile
     ports:
       - "54320:5432"
@@ -22,15 +56,18 @@ services:
   metadata-mongodb:
     image: metadata-mongodb
     build:
-      context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
+      context: "${METADATA_STORE_API_LOCAL:-../metadata-store-api}"
       dockerfile: mongodb.Dockerfile
     ports:
       - "27017:27017"
 
   metadata-store-api:
     image: metadata-store-api
+    depends_on:
+      - metadata-mongodb
+      - metadata-postgres
     build:
-      context: "${METADATA_STORE_API_DIR:-../metadata-store-api}"
+      context: "${METADATA_STORE_API_LOCAL:-../metadata-store-api}"
       dockerfile: Dockerfile
 
     environment:
@@ -82,9 +119,9 @@ services:
   #   ports:
   #     - "8080:8080"
 
-networks:
-  default:
-    driver: bridge
+# networks:
+#   default:
+#     driver: bridge
 
 volumes:
   pgdata:
