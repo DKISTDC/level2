@@ -6,7 +6,7 @@ module App.Page.Sync where
 
 import App.Colors
 import App.Effect.Auth
-import App.Route qualified as Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common
 import App.View.Layout
@@ -65,7 +65,7 @@ viewSyncProposal scan = do
 
   col (gap 5) $ do
     row (gap 10) $ do
-      route (Route.Proposal scan.proposalId Route.PropRoot) (Style.link . bold) $ text $ cs scan.proposalId.fromId
+      appRoute (Route.Proposal scan.proposalId Route.PropRoot) (Style.link . bold) $ text $ cs scan.proposalId.fromId
       el italic $ text $ (cs $ show $ length skips) <> " skipped"
 
     forM_ scan.errors $ \e -> do
@@ -77,7 +77,7 @@ viewSyncProposal scan = do
 viewSyncDataset :: SyncDataset -> View SyncDetails ()
 viewSyncDataset s = do
   row (gap 10 . pad (XY 5 0)) $ do
-    route (Route.Datasets $ Route.Dataset s.dataset.datasetId) Style.link $ text $ s.dataset.datasetId.fromId
+    appRoute (Route.Datasets $ Route.Dataset s.dataset.datasetId) Style.link $ text $ s.dataset.datasetId.fromId
     case s.sync of
       New -> el_ "New"
       Update -> el_ "Update"

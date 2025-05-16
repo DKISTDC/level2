@@ -49,7 +49,7 @@ datasetsTableUnsorted :: forall id. (ViewAction (Action id)) => (SortField -> Ac
 datasetsTableUnsorted sortBy ds = do
   -- is there a way to do alternating rows here?
   table View.table ds $ do
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ route (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d

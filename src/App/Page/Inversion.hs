@@ -58,12 +58,12 @@ page propId invId = do
 
         el_ $ do
           text "Program - "
-          route (Route.Proposal inv.proposalId $ Program inv.programId Prog) Style.link $ do
+          appRoute (Route.Proposal inv.proposalId $ Program inv.programId Prog) Style.link $ do
             text inv.programId.fromId
 
         el_ $ do
           text "Proposal - "
-          route (Route.Proposal inv.proposalId PropRoot) Style.link $ do
+          appRoute (Route.Proposal inv.proposalId PropRoot) Style.link $ do
             text inv.proposalId.fromId
 
       hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds admin gen pub
@@ -312,7 +312,7 @@ viewDatasets inv ds = do
     forM_ ds $ \d -> do
       row (gap 10) $ do
         View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets)
-        route (Route.Datasets $ Dataset d.datasetId) Style.link $ text d.datasetId.fromId
+        appRoute (Route.Datasets $ Dataset d.datasetId) Style.link $ text d.datasetId.fromId
 
 
 viewMetadata :: Inversion -> [Dataset] -> View InversionStatus ()

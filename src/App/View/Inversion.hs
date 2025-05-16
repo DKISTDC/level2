@@ -1,7 +1,7 @@
 module App.View.Inversion where
 
 import App.Colors
-import App.Route qualified as Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate)
 import App.View.DataRow (dataCell, tagCell)
@@ -9,7 +9,6 @@ import App.View.Icons qualified as Icons
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
-import Web.Hyperbole (route)
 import Web.View
 
 
@@ -56,7 +55,7 @@ viewInversionContainer' clr cnt =
 
 rowInversion :: Inversion -> View id ()
 rowInversion inv = do
-  route (Route.inversion inv.proposalId inv.inversionId) id $ do
+  appRoute (Route.inversion inv.proposalId inv.inversionId) id $ do
     row (gap 10) $ do
       inversionStepTag inv
       el (Style.link . width 100) $ text $ cs inv.inversionId.fromId

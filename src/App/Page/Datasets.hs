@@ -81,7 +81,7 @@ viewSyncs syncs = do
 viewSyncSummary :: SyncState -> View Syncs ()
 viewSyncSummary s = do
   row (gap 10) $ do
-    route (Route.Datasets (Route.Sync s.started)) Style.link $ text $ cs $ showDate s.started
+    appRoute (Route.Datasets (Route.Sync s.started)) Style.link $ text $ cs $ showDate s.started
     scanProgress s.scans s.proposals
  where
   scanProgress _ Nothing = "Loading..."
@@ -123,7 +123,7 @@ viewSyncProposal scan = do
 viewSyncDataset :: SyncDataset -> View Syncs ()
 viewSyncDataset s = do
   row (gap 10 . pad (XY 5 0)) $ do
-    route (Route.Datasets $ Route.Dataset s.dataset.datasetId) Style.link $ text $ s.dataset.datasetId.fromId
+    appRoute (Route.Datasets $ Route.Dataset s.dataset.datasetId) Style.link $ text $ s.dataset.datasetId.fromId
     case s.sync of
       New -> el_ "New"
       Update -> el_ "Update"
@@ -243,7 +243,7 @@ viewExistingDatasets _ (Just ds) = do
     forM_ gps $ \g -> do
       let pid = (sample g).primaryProposalId
       row (gap 10) $ do
-        route (Route.Proposal pid Route.PropRoot) Style.link $ text $ cs pid.fromId
+        appRoute (Route.Proposal pid Route.PropRoot) Style.link $ text $ cs pid.fromId
         text " - "
         el id $ text $ (cs $ show (length g.items)) <> " datasets"
 
@@ -340,15 +340,15 @@ instance (Datasets :> es) => HyperView DatasetRow es where
 datasetRow :: Id Dataset -> View DatasetRow ()
 datasetRow did = do
   row (onLoad Details 100) $ do
-    route (Route.Datasets $ Route.Dataset did) (Style.link . width 100) $ text $ cs did.fromId
+    appRoute (Route.Datasets $ Route.Dataset did) (Style.link . width 100) $ text $ cs did.fromId
 
 
 datasetRowDetails :: Dataset -> View DatasetRow ()
 datasetRowDetails d = do
   row id $ do
-    route (Route.Datasets $ Route.Dataset d.datasetId) (Style.link . width 100) $ text $ cs d.datasetId.fromId
-    route (Route.Proposal d.primaryProposalId Route.PropRoot) (Style.link . width 100) $ text d.primaryProposalId.fromId
-    route (Route.Proposal d.primaryProposalId $ Route.Program d.instrumentProgramId Prog) (Style.link . width 180) $ text d.instrumentProgramId.fromId
+    appRoute (Route.Datasets $ Route.Dataset d.datasetId) (Style.link . width 100) $ text $ cs d.datasetId.fromId
+    appRoute (Route.Proposal d.primaryProposalId Route.PropRoot) (Style.link . width 100) $ text d.primaryProposalId.fromId
+    appRoute (Route.Proposal d.primaryProposalId $ Route.Program d.instrumentProgramId Prog) (Style.link . width 180) $ text d.instrumentProgramId.fromId
     el cell $ text $ cs $ show d.instrument
     el (width 180) $ text $ showTimestamp d.createDate
     el cell $ text $ cs $ showFFloat (Just 1) d.wavelengthMin ""

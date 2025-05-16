@@ -8,7 +8,7 @@ import App.Effect.FileManager (FileLimit (Folders))
 import App.Effect.Transfer (DownloadFolder, TransferForm)
 import App.Effect.Transfer qualified as Transfer
 import App.Error (expectFound)
-import App.Route qualified as Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.Types (App)
 import App.View.Common as View
@@ -85,7 +85,7 @@ page propId progId = do
   experimentLink d = do
     el_ $ do
       text "Proposal - "
-      route (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
+      appRoute (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
         text d.primaryProposalId.fromId
 
 

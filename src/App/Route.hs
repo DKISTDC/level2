@@ -108,3 +108,7 @@ proposal propId =
 program :: Id Proposal -> Id InstrumentProgram -> AppRoute
 program propId progId =
   App.Route.Proposal propId $ Program progId Prog
+
+
+appRoute :: AppRoute -> Mod c -> View c () -> View c ()
+appRoute = route

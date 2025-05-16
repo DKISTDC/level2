@@ -207,7 +207,7 @@ viewProposalDetails fs now prop progs = do
     -- how many total programs?
     let ignored = length progs - length shown
     when (ignored > 0) $ do
-      route (Route.Proposal prop.proposalId PropRoot) (fontSize 14 . color Black . gap 5) $ do
+      appRoute (Route.Proposal prop.proposalId PropRoot) (fontSize 14 . color Black . gap 5) $ do
         text $ cs (show ignored)
         text " Hidden Instrument Programs"
  where
@@ -243,7 +243,7 @@ proposalCard prop content = do
     row id $ do
       el bold $ do
         text "Proposal "
-        route (Route.Proposal prop.proposalId PropRoot) Style.link $ do
+        appRoute (Route.Proposal prop.proposalId PropRoot) Style.link $ do
           text prop.proposalId.fromId
       space
       el_ $ do
@@ -284,5 +284,5 @@ rowInstrumentProgramLoad _progId = do
 rowInstrumentProgram :: UTCTime -> ProgramFamily -> View ProgramRow ()
 rowInstrumentProgram now psm = do
   let p = psm.program
-  route (Route.Proposal p.proposalId $ Program p.programId Prog) id $ do
+  appRoute (Route.Proposal p.proposalId $ Program p.programId Prog) id $ do
     viewProgramRow now psm

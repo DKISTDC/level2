@@ -10,7 +10,7 @@ import App.Effect.Scratch (Scratch)
 import App.Effect.Transfer as Transfer (TransferForm, UploadFiles (..), initUpload)
 import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
-import App.Route qualified as Route
+import App.Route as Route
 import App.Style qualified as Style
 import App.Types (App)
 import App.View.Common qualified as View
@@ -53,12 +53,12 @@ page propId progId invId = do
 
         el_ $ do
           text "Program - "
-          route (Route.program propId progId) Style.link $ do
+          appRoute (Route.program propId progId) Style.link $ do
             text progId.fromId
 
         el_ $ do
           text "Proposal - "
-          route (Route.proposal propId) Style.link $ do
+          appRoute (Route.proposal propId) Style.link $ do
             text propId.fromId
 
       col (gap 25) $ do
@@ -411,7 +411,7 @@ viewDatasets dall dsel valid = do
     forM_ dall $ \d -> do
       row (gap 10) $ do
         View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` dsel)
-        route (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text d.datasetId.fromId
+        appRoute (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text d.datasetId.fromId
     case valid of
       Invalid t -> el (color Danger) (text t)
       _ -> none

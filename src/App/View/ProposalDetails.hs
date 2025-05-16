@@ -153,7 +153,7 @@ viewProgramDetails' progRow prog gd = do
   let p = prog.program :: InstrumentProgram
 
   row (textAlign AlignCenter . pad 10) $ do
-    route (Proposal p.proposalId $ Program p.programId Prog) grow $ do
+    appRoute (Proposal p.proposalId $ Program p.programId Prog) grow $ do
       progRow prog
 
   View.hr (color Gray)
