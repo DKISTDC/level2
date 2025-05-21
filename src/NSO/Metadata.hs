@@ -121,6 +121,7 @@ instance Request InversionInventory where
      in [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]
 
 
+-- TODO: wavelengths, bucket (from object inventory), asdfObjectKey (calculate?), frameCount, positionBinCount, depthCount
 inversionInventory :: Inversion -> InversionInventory
 inversionInventory inv =
   InversionInventory
@@ -128,12 +129,12 @@ inversionInventory inv =
     , primaryProposalId = inv.proposalId
     , instrumentProgramExecutionId = inv.programId
     , datasetIds = inv.datasets
-    , wavelengths = _ -- inv.wavelengths, from the inversion process.. Always the same?
-    , bucket = _ -- known by the object cataloger
-    , asdfObjectKey = _ -- known by the object cataloger
-    , frameCount = _
-    , positionBinCount = _
-    , depthCount = _
+    , wavelengths = [] -- inv.wavelengths, from the inversion process.. Always the same?
+    , bucket = "" -- known by the object inventory
+    , asdfObjectKey = "" -- known by the object inventory
+    , frameCount = 0
+    , positionBinCount = 0
+    , depthCount = 0
     }
 
 

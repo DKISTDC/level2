@@ -17,13 +17,6 @@ services:
 
   elastic-apm:
     image: elastic/apm-server:8.13.4
-    # ports:
-    #   - "8200:8200"
-    # command: >
-    #   apm-server -e
-    #     -E apm-server.host=0.0.0.0:8200
-    #     -E apm-server.auth.anonymous.enabled=true
-    #     -E output.console.enabled=true
 
 
   # -- workers ---------------------------------------------------
@@ -35,7 +28,11 @@ services:
     build:
       context: "${FRAME_CATALOGER_LOCAL:-../frame-cataloger}"
 
+    command: ["python", "frame_cataloger/dummy.py"]
+
     environment:
+      LOGURU_LEVEL: "INFO"
+      GQL_AUTH_TOKEN: "dev"
       MESH_CONFIG: '{
           "interservice-bus": { "mesh_address": "interservice-bus","mesh_port": 5672},
           "system-monitoring-log-apm": {"mesh_address": "elastic-apm","mesh_port": 8200}

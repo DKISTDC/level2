@@ -94,6 +94,7 @@ library
       NSO.Image.Primary
       NSO.Image.Profile
       NSO.Image.Quantity
+      NSO.InterserviceBus
       NSO.Level2
       NSO.Metadata
   other-modules:
@@ -117,6 +118,7 @@ library
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       aeson
+    , amqp-worker >=2.0.1
     , base >=4.18
     , binary
     , bytestring
@@ -178,6 +180,7 @@ executable level2
   ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
+    , amqp-worker >=2.0.1
     , base >=4.18
     , binary
     , bytestring
@@ -251,6 +254,7 @@ test-suite spec
   build-depends:
       Diff >=0.5 && <1.0
     , aeson
+    , amqp-worker >=2.0.1
     , base >=4.18
     , binary
     , bytestring

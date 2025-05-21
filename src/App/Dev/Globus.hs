@@ -40,7 +40,7 @@ runGlobusDev dkistDir = interpret $ \_ -> \case
           , expires_in = 3600
           , state = State "state"
           }
-  SubmissionId _ -> do
+  GetSubmissionId _ -> do
     pure "submission"
   Transfer _ tr -> do
     forM_ tr.data_ $ \ti -> do
@@ -53,7 +53,7 @@ runGlobusDev dkistDir = interpret $ \_ -> \case
     pure $
       TransferResponse
         { task_id = "globus-dev-task"
-        , submission_id = "submission"
+        , submission_id = Tagged "submission"
         , message = "message"
         , resource = "resource"
         , request_id = "request"

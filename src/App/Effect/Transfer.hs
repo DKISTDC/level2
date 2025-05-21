@@ -105,7 +105,7 @@ transferStatus (Id ti) = do
 initTransfer :: (Globus :> es, Log :> es, Error GlobusError :> es, Reader (Token Access) :> es) => (Globus.Id Submission -> TransferRequest) -> Eff es (App.Id Task)
 initTransfer toRequest = do
   acc <- ask
-  sub <- send $ Globus.SubmissionId acc
+  sub <- send $ Globus.GetSubmissionId acc
   res <- send $ Globus.Transfer acc $ toRequest sub
   pure $ Id res.task_id.unTagged
 
