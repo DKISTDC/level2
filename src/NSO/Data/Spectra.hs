@@ -13,7 +13,7 @@ lineForWaves mn mx = find matchesLine allLines
   matchesLine :: SpectralLine -> Bool
   matchesLine s =
     let md = midPoint s
-     in mn <= md + wiggleRoom && md <= mx
+     in mn <= md + wiggleRoom && md - wiggleRoom <= mx
    where
     wiggleRoom :: Wavelength Nm
     wiggleRoom = Wavelength 1

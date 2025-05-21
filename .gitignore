@@ -2,3 +2,4 @@ dist-newstyle/
 .DS_Store
 tags
 .env
+.envrc

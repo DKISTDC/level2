@@ -34,8 +34,11 @@ spec = do
       -- Dataset: BWKXP
       lineForWaves 854.201 856.8 `shouldBe` Just (CaII CaII_854)
 
-    it "should not identify 589.1" $ do
-      lineForWaves 589.1 590.1 `shouldBe` Nothing
+    it "should not identify random wavelength" $ do
+      lineForWaves 433.0 434.0 `shouldBe` Nothing
+
+    it "should not identify if too far" $ do
+      lineForWaves 628.0 629.0 `shouldBe` Nothing
 
   describe "Qualify" $ do
     describe "bounding box near edge" $ do
