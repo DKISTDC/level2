@@ -51,17 +51,18 @@ library
       NoImplicitPrelude
       NoFieldSelectors
       StrictData
+      LambdaCase
   ghc-options: -Wall
   build-depends:
       aeson
-    , base >=4.19 && <5
+    , base >=4.18 && <5
     , bytestring
     , containers
     , data-diverse
     , effectful >=2.4 && <3
     , exceptions
     , filepath
-    , globus >=0.1.3
+    , globus >=0.2.1
     , hasql
     , http-api-data
     , http-client
@@ -78,4 +79,4 @@ library
     , telescope ==0.2.*
     , text
     , time
-  default-language: GHC2024
+  default-language: GHC2021

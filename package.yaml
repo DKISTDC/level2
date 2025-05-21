@@ -15,7 +15,7 @@ extra-doc-files:
 extra-source-files:
   - deps/metadata.graphql
 
-language: GHC2024
+language: GHC2021
 
 
 ghc-options:
@@ -34,6 +34,7 @@ default-extensions:
   - NoImplicitPrelude
   - NoFieldSelectors
   - StrictData
+  - LambdaCase
 
 dependencies:
   - base >= 4.18
@@ -68,7 +69,7 @@ dependencies:
   - bytestring
   - aeson
   - http-api-data
-  - globus >= 0.1.3
+  - globus >= 0.2.1
   - massiv
   - telescope >= 0.2 && < 0.3
   - uuid

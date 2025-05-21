@@ -11,7 +11,7 @@ category:           System, Science
 extra-doc-files:
   - README.md
 
-language: GHC2024
+language: GHC2021
 
 ghc-options:
   - -Wall
@@ -28,9 +28,10 @@ default-extensions:
   - NoImplicitPrelude
   - NoFieldSelectors
   - StrictData
+  - LambdaCase
 
 dependencies:
-  - base >=4.19 && <5
+  - base >=4.18 && <5
   - time
   - text
   - tagged
@@ -53,7 +54,7 @@ dependencies:
   - containers
   - bytestring
   - aeson
-  - globus >= 0.1.3
+  - globus >= 0.2.1
   - telescope >= 0.2 && <0.3
   - scientific
 

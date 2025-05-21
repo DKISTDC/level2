@@ -3,7 +3,7 @@
 module NSO.Image.Frame where
 
 import Data.ByteString qualified as BS
-import Data.List ((!?))
+import Data.List.Ext
 import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
