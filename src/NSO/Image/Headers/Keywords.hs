@@ -80,6 +80,10 @@ instance KeyType Bool where
 instance KeyType Float where
   typeName = "Float"
   typeComment = ""
+  typeValue = Float . realToFrac
+instance KeyType Double where
+  typeName = "Double"
+  typeComment = ""
   typeValue = Float
 instance KeyType UTCTime where
   typeName = "UTCTime"

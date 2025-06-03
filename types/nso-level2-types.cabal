@@ -76,7 +76,7 @@ library
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope ==0.2.*
+    , telescope >=0.3
     , text
     , time
   default-language: GHC2021

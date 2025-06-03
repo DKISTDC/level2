@@ -71,7 +71,7 @@ dependencies:
   - http-api-data
   - globus >= 0.2.1
   - massiv
-  - telescope >= 0.2 && < 0.3
+  - telescope >= 0.3
   - uuid
   - megaparsec
   - monad-loops

@@ -164,14 +164,14 @@ instance (KnownSymbol desc, KnownSymbol ss) => KeywordInfo (EnumKey ss desc) whe
 
 -- Key Types ---------------------------------------------------------
 
-newtype MB = MB Float
+newtype MB = MB Double
   deriving (Generic)
   deriving newtype (ToKeyword, FromKeyword)
 instance KeyType MB where
   typeValue (MB s) = Float s
 
 
-newtype Seconds = Seconds Float
+newtype Seconds = Seconds Double
   deriving (Generic)
   deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Seconds where
@@ -179,7 +179,7 @@ instance KeyType Seconds where
   typeValue (Seconds s) = Float s
 
 
-newtype Degrees = Degrees Float
+newtype Degrees = Degrees Double
   deriving (Generic)
   deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Degrees where
@@ -203,7 +203,7 @@ instance KeyType Url where
   typeComment = ""
 
 
-newtype Meters = Meters Float
+newtype Meters = Meters Double
   deriving (Generic)
   deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Meters where
@@ -211,7 +211,7 @@ instance KeyType Meters where
   typeComment = "[m]"
 
 
-newtype Mps = Mps Float
+newtype Mps = Mps Double
   deriving (Generic)
   deriving newtype (ToKeyword, FromKeyword)
 instance KeyType Mps where

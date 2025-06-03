@@ -83,7 +83,6 @@ library
       NSO.Image.Asdf
       NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable
-      NSO.Image.DataCube
       NSO.Image.Frame
       NSO.Image.Headers
       NSO.Image.Headers.Doc
@@ -149,7 +148,7 @@ library
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope ==0.2.*
+    , telescope >=0.3
     , text
     , time
     , unordered-containers
@@ -213,7 +212,7 @@ executable level2
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope ==0.2.*
+    , telescope >=0.3
     , text
     , time
     , unordered-containers
@@ -289,7 +288,7 @@ test-suite spec
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope ==0.2.*
+    , telescope >=0.3
     , text
     , time
     , unordered-containers

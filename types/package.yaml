@@ -55,7 +55,7 @@ dependencies:
   - bytestring
   - aeson
   - globus >= 0.2.1
-  - telescope >= 0.2 && <0.3
+  - telescope >= 0.3
   - scientific
 
 

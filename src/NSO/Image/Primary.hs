@@ -65,8 +65,8 @@ primaryHeader ii l1 = runParseError PrimaryParse $ do
   pure $ PrimaryHeader{observation, telescope, datacenter, dkist, adaptive, contributing}
 
 
-primaryHDU :: PrimaryHeader -> PrimaryHDU
-primaryHDU h = PrimaryHDU (toHeader h) emptyDataArray
+primaryHDU :: PrimaryHeader -> DataHDU
+primaryHDU h = DataHDU (toHeader h) emptyDataArray
 
 
 data PrimaryError

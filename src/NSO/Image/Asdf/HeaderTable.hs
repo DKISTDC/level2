@@ -1,6 +1,6 @@
 module NSO.Image.Asdf.HeaderTable where
 
-import Data.Binary.Put (putByteString, putFloatbe, putInt32be, runPut)
+import Data.Binary.Put (putByteString, putDoublebe, putInt32be, runPut)
 import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BL
 import Data.List qualified as L
@@ -10,9 +10,8 @@ import NSO.Prelude
 import Telescope.Asdf
 import Telescope.Asdf.NDArray (ByteOrder (..), DataType (..), putUcs4)
 import Telescope.Data.Axes (axesRowMajor)
+import Telescope.Fits as Fits (Header, KeywordRecord (..), LogicalConstant (..), ToHeader (..), keywords)
 import Telescope.Fits qualified as Fits
-import Telescope.Fits.Header as Fits (Header, ToHeader (..), getKeywords)
-import Telescope.Fits.Types as Fits (KeywordRecord (..), LogicalConstant (..))
 
 
 -- Data ---------------------------------------
@@ -33,7 +32,7 @@ instance (ToHeader a) => ToAsdf (HeaderTable a) where
 
     colnames vals =
       let krs = toHeader (head vals)
-       in fromValue $ Array $ fmap (toNode . String) $ L.sort $ fmap colname $ Fits.getKeywords krs
+       in fromValue $ Array $ fmap (toNode . String) $ L.sort $ fmap colname $ Fits.keywords krs
 
 
 data KeywordColumn = KeywordColumn
@@ -76,7 +75,7 @@ instance ToNDArray KeywordColumn where
     putValue = \case
       Fits.String t -> putUcs4 maxStringLength t
       Fits.Integer n -> putInt32be $ fromIntegral n
-      Fits.Float f -> putFloatbe f
+      Fits.Float d -> putDoublebe d
       Fits.Logic l ->
         putByteString $
           BS.singleton $
@@ -90,8 +89,8 @@ keywordColumns =
   mapMaybe keyColumn . keyGroups
  where
   keyGroups :: NonEmpty Header -> [[KeywordRecord]]
-  keyGroups = groupBy isSameKey . sortOn (._keyword) . mconcat . NE.toList . fmap Fits.getKeywords
-  isSameKey kr1 kr2 = kr1._keyword == kr2._keyword
+  keyGroups = groupBy isSameKey . sortOn (.keyword) . mconcat . NE.toList . fmap Fits.keywords
+  isSameKey kr1 kr2 = kr1.keyword == kr2.keyword
   keyColumn [] = Nothing
   keyColumn (k : ks) = do
-    pure $ KeywordColumn k._keyword $ fmap (._value) (k :| ks)
+    pure $ KeywordColumn k.keyword $ fmap (.value) (k :| ks)

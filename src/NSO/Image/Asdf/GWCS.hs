@@ -66,8 +66,8 @@ transformOpticalDepth :: WCSAxis 'WCSMain Depth -> Transform (Pix Depth) (Linear
 transformOpticalDepth wcsOD =
   linear (wcsIntercept wcsOD) (Scale $ factor1digit wcsOD.cdelt)
  where
-  factor1digit :: Float -> Float
-  factor1digit d = fromIntegral (round @Float @Integer (d * 10)) / 10
+  factor1digit :: Double -> Double
+  factor1digit d = fromIntegral (round @Double @Integer (d * 10)) / 10
 
 
 transformSpatial
@@ -78,7 +78,7 @@ transformSpatial
   -> Transform (Pix X, Pix Y) (Alpha, Delta)
 transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky |> sky
  where
-  pcMatrix :: Array D Ix2 Float
+  pcMatrix :: Array D Ix2 Double
   pcMatrix =
     M.delay $
       M.fromLists' @M.P
@@ -127,7 +127,7 @@ wcsToDegrees WCSAxis{ctype, cunit, crpix, crval, cdelt} =
     }
 
 
-arcsecondsToDegrees :: Float -> Float
+arcsecondsToDegrees :: Double -> Double
 arcsecondsToDegrees f = f / 3600
 
 

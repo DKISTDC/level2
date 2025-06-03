@@ -12,7 +12,6 @@ import Effectful
 import Effectful.Error.Static
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Image.DataCube
 import NSO.Image.Headers
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
@@ -22,6 +21,7 @@ import NSO.Image.Headers.WCS
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
 import Telescope.Data.Axes (Axes (..), AxisOrder (..))
+import Telescope.Data.DataCube
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..))
 import Telescope.Fits as Fits
@@ -164,8 +164,8 @@ instance (HeaderDoc info) => HeaderDoc (DataHeader info) where
 data DataCommon = DataCommon
   { bzero :: BZero
   , bscale :: BScale
-  , datamin :: Key Float "The minimum data value"
-  , datamax :: Key Float "The maximum data value"
+  , datamin :: Key Double "The minimum data value"
+  , datamax :: Key Double "The maximum data value"
   , date :: Key UTCTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
   deriving (Generic, HeaderDoc, ToHeader, FromHeader)
@@ -227,7 +227,7 @@ quantityHeaders :: Quantities Quantity -> Quantities QuantityHeader
 quantityHeaders = mapQuantities (.header)
 
 
-quantityHDUs :: Quantities Quantity -> [ImageHDU]
+quantityHDUs :: Quantities Quantity -> [DataHDU]
 quantityHDUs qs = runPureEff $ do
   opticalDepth <- dataHDU @OpticalDepth qs.opticalDepth
   temperature <- dataHDU @Temperature qs.temperature
@@ -242,7 +242,7 @@ quantityHDUs qs = runPureEff $ do
   velocity <- dataHDU @Velocity $ convertData cmsToKms qs.velocity
   pure $ toList (.hdu) $ Quantities{..}
  where
-  convertData :: (Float -> Float) -> Quantity info -> Quantity info
+  convertData :: (Double -> Double) -> Quantity info -> Quantity info
   convertData f (Quantity header da) =
     Quantity
       { header
@@ -256,26 +256,26 @@ quantityHDUs qs = runPureEff $ do
     -> Eff es (QuantityHDU info)
   dataHDU q = do
     let darr = encodeDataArray q.image.array
-    pure $ QuantityHDU $ ImageHDU{header = toHeader q.header, dataArray = addDummyAxis darr}
+    pure $ QuantityHDU $ DataHDU{header = toHeader q.header, dataArray = addDummyAxis darr}
 
 
-cmsToKms :: Float -> Float
+cmsToKms :: Double -> Double
 cmsToKms = (/ 100000)
 
 
-gcmToKgm :: Float -> Float
+gcmToKgm :: Double -> Double
 gcmToKgm = (* 1000)
 
 
-dyneCmToNm :: Float -> Float
+dyneCmToNm :: Double -> Double
 dyneCmToNm = (/ 10)
 
 
-gaussToTesla :: Float -> Float
+gaussToTesla :: Double -> Double
 gaussToTesla = (/ 10000)
 
 
-forcePositive360 :: Float -> Float
+forcePositive360 :: Double -> Double
 forcePositive360 deg = deg `mod'` 360
 
 
@@ -416,7 +416,7 @@ instance ToAsdf (Quantities Quantity)
 newtype QuantityImage as info = QuantityImage {image :: DataCube as}
 
 
-newtype QuantityHDU info = QuantityHDU {hdu :: ImageHDU}
+newtype QuantityHDU info = QuantityHDU {hdu :: DataHDU}
 
 
 data Quantity info = Quantity
@@ -511,7 +511,7 @@ decodeQuantitiesFrames inp = do
 decodeInversion :: (Error QuantityError :> es) => ByteString -> Eff es (DataCube [Quantity a, Depth, FrameY, SlitX])
 decodeInversion inp = do
   f <- Fits.decode inp
-  a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
+  a <- decodeDataArray @Ix4 @Double f.primaryHDU.dataArray
   pure $ DataCube a
 
 

@@ -12,7 +12,6 @@ import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
-import NSO.Image.DataCube
 import NSO.Image.Headers
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
@@ -22,6 +21,7 @@ import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), a
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Data.Axes (AxisOrder (..))
+import Telescope.Data.DataCube
 import Telescope.Data.KnownText
 import Telescope.Data.WCS
 import Telescope.Fits as Fits
@@ -174,7 +174,7 @@ profileHeaders ps =
 
 profileHDUs
   :: Profiles Profile
-  -> [ImageHDU]
+  -> [DataHDU]
 profileHDUs ps =
   [ profileHDU ps.orig630
   , profileHDU ps.orig854
@@ -185,10 +185,10 @@ profileHDUs ps =
   profileHDU
     :: (ToHeader info)
     => Profile info
-    -> ImageHDU
+    -> DataHDU
   profileHDU p =
     let darr = encodeDataArray p.image.array
-     in ImageHDU{header = toHeader p.header, dataArray = addDummyAxis darr}
+     in DataHDU{header = toHeader p.header, dataArray = addDummyAxis darr}
 
 
 data ProfileAxes alt = ProfileAxes
@@ -322,8 +322,8 @@ data ProfileFrame profile = ProfileFrame
 
 
 data WavProfile n = WavProfile
-  { pixel :: Float
-  , delta :: Float
+  { pixel :: Double
+  , delta :: Double
   , line :: SpectralLine
   }
   deriving (Show, Eq)
@@ -392,7 +392,7 @@ profileFrames f = do
  where
   mainProfile :: Eff es (DataCube [Stokes, Wavs, FrameY, SlitX])
   mainProfile = do
-    a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
+    a <- decodeDataArray @Ix4 @Double f.primaryHDU.dataArray
     pure $ DataCube a
 
   wavs :: (Error ProfileError :> es) => Eff es (DataCube '[Wavs])
@@ -440,7 +440,7 @@ wavProfile l da =
   toNanometers (DataCube a) = DataCube $ M.map (/ 10000) a
 
 
-avgDelta :: [Float] -> Float
+avgDelta :: [Double] -> Double
 avgDelta [] = 0
 avgDelta ws = round5 $ sum (differences ws) / fromIntegral (length ws - 1)
  where
@@ -448,12 +448,12 @@ avgDelta ws = round5 $ sum (differences ws) / fromIntegral (length ws - 1)
   differences lst = zipWith (-) (drop 1 lst) lst
 
 
-round5 :: Float -> Float
+round5 :: Double -> Double
 round5 x = fromIntegral @Int (round $ x * 10 ^ (5 :: Int)) / 10 ^ (5 :: Int)
 
 
 -- the interpolated pixel offset of a zero value
-pixel0 :: Float -> [Float] -> Float
+pixel0 :: Double -> [Double] -> Double
 pixel0 dlt as =
   let mn = minimum as
    in negate mn / dlt + 1

@@ -8,7 +8,6 @@ import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Image.DataCube (dataCubeAxes)
 import NSO.Image.Headers
 import NSO.Image.Headers.Types (Depth, Key (..), SliceXY, SlitX)
 import NSO.Image.Primary
@@ -19,7 +18,8 @@ import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf as Asdf
 import Telescope.Data.Axes (Axes (..), axesRowMajor)
-import Telescope.Data.Parser (ParseError, parseFail, runParser)
+import Telescope.Data.DataCube (dataCubeAxes)
+import Telescope.Data.Parser (ParseError, parseFail)
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
 import Telescope.Fits.Header.Class (parseKeyword)

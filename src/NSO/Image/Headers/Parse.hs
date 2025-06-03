@@ -21,10 +21,10 @@ lookupKey :: (Monad m, FromKeyword a) => Text -> Header -> m (Maybe a)
 lookupKey k h = pure $ do
   val <- lookupKeyword k h
   either (const Nothing) pure $ do
-    runPureParser $ parseKeywordValue val
+    runParserPure $ parseKeywordValue val
 
 
-requireKey :: (Error ParseError :> es, FromKeyword a) => Text -> Header -> Eff es a
+requireKey :: forall a es. (Error ParseError :> es, FromKeyword a) => Text -> Header -> Eff es a
 requireKey k h = runParser $ parseKeyword k h
 
 

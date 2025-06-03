@@ -66,6 +66,7 @@ services:
     build:
       context: "${METADATA_STORE_API_LOCAL:-../metadata-store-api}"
       dockerfile: Dockerfile
+      pull: false
 
     environment:
       MESH_CONFIG: '{

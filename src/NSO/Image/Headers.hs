@@ -90,7 +90,7 @@ instance ToHeader ContribExpProp where
 instance FromHeader ContribExpProp where
   -- TEST: is this working?
   parseHeader h =
-    pure $ ContribExpProp $ filter isPropOrExpr $ getKeywords h
+    pure $ ContribExpProp $ filter isPropOrExpr $ keywords h
 instance HeaderDoc ContribExpProp where
   -- LATER: documentation for ContribExpProp
   headerDoc = []
@@ -98,8 +98,8 @@ instance HeaderDoc ContribExpProp where
 
 isPropOrExpr :: KeywordRecord -> Bool
 isPropOrExpr kr =
-  "PROPID" `T.isPrefixOf` kr._keyword
-    || "EXPRID" `T.isPrefixOf` kr._keyword
+  "PROPID" `T.isPrefixOf` kr.keyword
+    || "EXPRID" `T.isPrefixOf` kr.keyword
 
 
 -- data StatisticsHeader = StatisticsHeader
@@ -238,7 +238,7 @@ datacenterHeader l1 i = do
 
 contribExpProp :: (Error ParseError :> es) => Header -> Eff es ContribExpProp
 contribExpProp l1 = do
-  pure $ ContribExpProp (getKeywords l1)
+  pure $ ContribExpProp (keywords l1)
 
 
 dkistHeader :: (Error ParseError :> es) => Header -> Eff es DKISTHeader

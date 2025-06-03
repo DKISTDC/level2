@@ -7,7 +7,7 @@ import Data.Text (pack)
 import GHC.Generics
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
-import Telescope.Fits.Types (Value (..))
+import Telescope.Fits (Value (..))
 import Web.View
 
 

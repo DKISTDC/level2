@@ -79,9 +79,9 @@ data WCSCommonA = WCSCommonA
 data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
   { ctype :: Key Text "A string value labeling the type of axis n"
   , cunit :: Key Text "The unit of the value contained in CDELTn"
-  , crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n"
-  , crval :: Key Float "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn"
-  , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n"
+  , crpix :: Key Double "The value field shall contain a floating point number, identifying the location of a reference point along axis n"
+  , crval :: Key Double "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn"
+  , cdelt :: Key Double "Pixel scale of the world coordinate at the reference point along axis n"
   }
   deriving (Generic, Show)
 
@@ -114,7 +114,7 @@ fromWCSAxis wcs =
 --       <> headerKeywords ax.pcs
 
 -- it's a mapping of one axis type to another
-data PC s (alt :: WCSAlt) ai aj = PC {value :: Float}
+data PC s (alt :: WCSAlt) ai aj = PC {value :: Double}
   deriving (Show, Eq)
 instance KeywordInfo (PC s alt ai aj) where
   keytype = "PCi_j"
@@ -182,8 +182,8 @@ requireCtypeAxis ctype (Header h) = runParser $ do
  where
   toCtypeN :: HeaderRecord -> Maybe Int
   toCtypeN (Keyword k) = do
-    guard (k._value == String ctype)
-    readMaybe $ drop 5 $ unpack k._keyword
+    guard (k.value == String ctype)
+    readMaybe $ drop 5 $ unpack k.keyword
   toCtypeN _ = Nothing
 
 
