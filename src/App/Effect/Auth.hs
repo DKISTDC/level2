@@ -160,7 +160,11 @@ instance Route RedirectPath where
 currentUrl :: (Hyperbole :> es) => Eff es Url
 currentUrl = do
   r <- request
-  pure $ Url "" "" r.path r.query
+  pure $ Url "" "" r.path (filter isNotHyperbole r.query)
+ where
+  isNotHyperbole (p, _) =
+    p /= "hyp-id"
+      && p /= "hyp-action"
 
 
 saveCurrentUrl :: (Hyperbole :> es) => Eff es ()
