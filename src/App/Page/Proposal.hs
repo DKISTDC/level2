@@ -8,10 +8,13 @@ import App.Error (expectFound)
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
+import App.View.Icons (skeleton)
 import App.View.Layout
+import App.View.Loading (loadingCard)
 import App.View.ProposalDetails
-import Data.Grouped (Grouped (..))
+import Data.Grouped
 import Data.List.NonEmpty qualified as NE
+import Data.Text qualified as T
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
@@ -24,10 +27,9 @@ import Web.Hyperbole
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
-  -> Eff es (Page '[ProgramSummary])
+  -> Eff es (Page '[Programs, ProgramSummary])
 page propId = do
-  ds <- Datasets.find (Datasets.DistinctPrograms propId) >>= expectFound
-
+  ds <- Datasets.find (Datasets.ByProposal propId) >>= expectFound
   appLayout Proposals $ do
     col Style.page $ do
       el Style.header $ do
@@ -38,8 +40,48 @@ page propId = do
 
       el Style.subheader $ text "Instrument Programs"
 
-      forM_ ds $ \d -> do
-        hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
+      hyper (Programs propId) $ viewPrograms (grouped (.instrumentProgramId) $ NE.toList ds)
+
+
+----------------------------------------------------
+-- Programs
+----------------------------------------------------
+
+data Programs = Programs (Id Proposal)
+  deriving (Show, Read, ViewId)
+
+
+instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView Programs es where
+  data Action Programs
+    = SearchTerm Text
+    deriving (Show, Read, ViewAction)
+
+
+  type Require Programs = '[ProgramSummary]
+
+
+  update = \case
+    SearchTerm t -> do
+      Programs propId <- viewId
+      ds <- Datasets.find (Datasets.ByProposal propId)
+      pure $ viewPrograms $ filter (isMatch t) $ grouped (.instrumentProgramId) ds
+   where
+    isMatch :: Text -> Group (Id InstrumentProgram) Dataset -> Bool
+    isMatch t gds =
+      any (\d -> t `T.isInfixOf` d.datasetId.fromId) gds.items
+
+
+-- filterProgramDatasets [dsById] _ = [dsById]
+-- filterProgramDatasets [] ds = ds
+
+viewPrograms :: [Group (Id InstrumentProgram) Dataset] -> View Programs ()
+viewPrograms gds = do
+  Programs propId <- viewId
+  col (gap 25) $ do
+    search SearchTerm 250 (Style.input . placeholder "search: BEEMM")
+    forM_ gds $ \ds -> do
+      let d = sample ds
+      hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
 
 
 ----------------------------------------------------
@@ -66,15 +108,22 @@ instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSumm
 
 viewProgramSummaryLoad :: View ProgramSummary ()
 viewProgramSummaryLoad = do
-  el (onLoad (ProgramDetails ByLatest) 100) ""
+  programCard (onLoad (ProgramDetails ByLatest) 0) $ do
+    el (pad 20 . width 600) skeleton
 
 
 viewProgramSummary :: SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
 viewProgramSummary srt now pf = do
   let ds = pf.datasets.items
-  let prog = pf.program :: InstrumentProgram
-  col Style.card $ do
-    appRoute (Route.Proposal prog.proposalId $ Program prog.programId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> prog.programId.fromId
+  programCard id $ do
     viewProgramDetails pf now pf.datasets
     col (pad (TRBL 0 15 15 15)) $ do
       DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds)
+
+
+programCard :: Mod ProgramSummary -> View ProgramSummary () -> View ProgramSummary ()
+programCard m content = do
+  ProgramSummary propId progId <- viewId
+  col (Style.card . minHeight 200 . m) $ do
+    appRoute (Route.Proposal propId $ Program progId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> progId.fromId
+    content

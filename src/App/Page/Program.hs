@@ -22,7 +22,7 @@ import App.View.ProposalDetails
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker
-import Data.Grouped (Grouped (..))
+import Data.Grouped (Group (..))
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful

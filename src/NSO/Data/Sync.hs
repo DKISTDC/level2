@@ -98,12 +98,12 @@ initMetadataSync = do
 
 -- Check Available -------------------------------------------------
 
-runScanAvailable :: (Metadata es) => Eff es [Grouped (Id Proposal) DatasetAvailable]
+runScanAvailable :: (Metadata es) => Eff es [Group (Id Proposal) DatasetAvailable]
 runScanAvailable = do
   -- assume there aren't parse errors in these fields
   scanAvailable <$> send AvailableDatasets
  where
-  scanAvailable :: [DatasetAvailable] -> [Grouped (Id Proposal) DatasetAvailable]
+  scanAvailable :: [DatasetAvailable] -> [Group (Id Proposal) DatasetAvailable]
   scanAvailable = grouped (\d -> Id d.primaryProposalId)
 
 
@@ -117,7 +117,7 @@ data ScanProposal = ScanProposal
   deriving (Show)
 
 
-runScanProposals :: (Metadata es, Datasets :> es, Time :> es) => [Grouped (Id Proposal) DatasetAvailable] -> Eff es [ScanProposal]
+runScanProposals :: (Metadata es, Datasets :> es, Time :> es) => [Group (Id Proposal) DatasetAvailable] -> Eff es [ScanProposal]
 runScanProposals gds = do
   exs <- experimentDescriptions <$> send AllExperiments
   forM gds $ \gd -> do

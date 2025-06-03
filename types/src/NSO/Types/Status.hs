@@ -19,13 +19,13 @@ data ProgramStatus
 
 data ProposalPrograms = ProposalPrograms
   { proposal :: Proposal
-  , programs :: Grouped (Id Proposal) ProgramFamily
+  , programs :: Group (Id Proposal) ProgramFamily
   }
 
 
 data ProgramFamily = ProgramFamily
   { program :: InstrumentProgram
   , status :: ProgramStatus
-  , datasets :: Grouped (Id InstrumentProgram) Dataset
+  , datasets :: Group (Id InstrumentProgram) Dataset
   , inversions :: [Inversion]
   }

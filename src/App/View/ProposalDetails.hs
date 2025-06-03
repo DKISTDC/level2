@@ -98,7 +98,7 @@ statusTag = \case
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
 -- statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
 
-viewCriteria :: ProgramFamily -> Grouped (Id InstrumentProgram) Dataset -> View c ()
+viewCriteria :: ProgramFamily -> Group (Id InstrumentProgram) Dataset -> View c ()
 viewCriteria ip gd = do
   col id $ do
     case ip.program.instrument of
@@ -106,7 +106,7 @@ viewCriteria ip gd = do
       VBI -> vbiCriteria
       CRYO_NIRSP -> cryoCriteria
  where
-  vispCriteria :: Grouped (Id InstrumentProgram) Dataset -> [SpectralLine] -> View c ()
+  vispCriteria :: Group (Id InstrumentProgram) Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
     col (gap 10) $ do
       el bold "VISP Criteria"
@@ -143,12 +143,12 @@ viewCriteria ip gd = do
           else Icons.xMark
 
 
-viewProgramDetails :: ProgramFamily -> UTCTime -> Grouped (Id InstrumentProgram) Dataset -> View c ()
+viewProgramDetails :: ProgramFamily -> UTCTime -> Group (Id InstrumentProgram) Dataset -> View c ()
 viewProgramDetails prog now ds = do
   viewProgramDetails' (viewProgramRow now) prog ds
 
 
-viewProgramDetails' :: (ProgramFamily -> View c ()) -> ProgramFamily -> Grouped (Id InstrumentProgram) Dataset -> View c ()
+viewProgramDetails' :: (ProgramFamily -> View c ()) -> ProgramFamily -> Group (Id InstrumentProgram) Dataset -> View c ()
 viewProgramDetails' progRow prog gd = do
   let p = prog.program :: InstrumentProgram
 

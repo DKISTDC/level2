@@ -54,7 +54,7 @@ data Filters = Filters
   , visp :: ShowVISP
   , vbi :: Bool
   , cryo :: Bool
-  , propSearch :: Text
+  , searchTerm :: Text
   }
   deriving (Show, Read, Generic, ToQuery, FromQuery)
 
@@ -97,7 +97,7 @@ instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
       filterProposals $ setStatus status fs
     FilterProposal term -> do
       fs <- query
-      filterProposals $ fs{propSearch = term}
+      filterProposals $ fs{searchTerm = term}
    where
     setInstrumentFilter instr b fs =
       case instr of
@@ -105,7 +105,7 @@ instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
         VISP -> fs{visp = ShowVISP b}
         CRYO_NIRSP -> fs{cryo = b}
 
-    setStatus status Filters{visp, vbi, cryo, propSearch} =
+    setStatus status Filters{visp, vbi, cryo, searchTerm} =
       Filters{..}
 
     filterProposals fs = do
@@ -116,7 +116,7 @@ instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
 
 viewProposals :: Filters -> [Proposal] -> View AllProposals ()
 viewProposals fs props = do
-  let sorted = sortOn (\p -> Down p.proposalId) $ filter (applyFilters cleanTerm) props
+  let sorted = sortOn (\p -> Down p.proposalId) $ filter (applyFilters fs.searchTerm) props
   el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
     row (big aside . gap 10) $ do
       viewFilters fs
@@ -129,9 +129,10 @@ viewProposals fs props = do
   big = media (MinWidth 1000)
   small = media (MaxWidth 1000)
 
-  cleanTerm = T.replace " " "_" fs.propSearch
+  cleanPropId = T.replace " " "_"
+
   applyFilters term prop =
-    term `T.isInfixOf` prop.proposalId.fromId
+    cleanPropId term `T.isInfixOf` prop.proposalId.fromId
 
 
 viewFilters :: Filters -> View AllProposals ()
@@ -140,7 +141,6 @@ viewFilters fs = do
     el bold "Proposal Id"
     stack id $ do
       layer id $ search FilterProposal 500 (placeholder "1 118" . border 1 . pad 10 . grow)
-  -- clearButton
 
   col (gap 10) $ do
     el bold "Instrument"
