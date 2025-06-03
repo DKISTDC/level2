@@ -30,6 +30,7 @@ page
   -> Eff es (Page '[Programs, ProgramSummary])
 page propId = do
   ds <- Datasets.find (Datasets.ByProposal propId) >>= expectFound
+  fs <- query
   appLayout Proposals $ do
     col Style.page $ do
       el Style.header $ do
@@ -40,7 +41,13 @@ page propId = do
 
       el Style.subheader $ text "Instrument Programs"
 
-      hyper (Programs propId) $ viewPrograms (grouped (.instrumentProgramId) $ NE.toList ds)
+      hyper (Programs propId) $ viewPrograms fs (grouped (.instrumentProgramId) $ NE.toList ds)
+
+
+data Filters = Filters
+  { term :: Text
+  }
+  deriving (Show, Read, Generic, ToQuery, FromQuery)
 
 
 ----------------------------------------------------
@@ -63,25 +70,27 @@ instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView Programs es
   update = \case
     SearchTerm t -> do
       Programs propId <- viewId
+      let fs = Filters t
+      setQuery fs
       ds <- Datasets.find (Datasets.ByProposal propId)
-      pure $ viewPrograms $ filter (isMatch t) $ grouped (.instrumentProgramId) ds
-   where
-    isMatch :: Text -> Group (Id InstrumentProgram) Dataset -> Bool
-    isMatch t gds =
-      any (\d -> t `T.isInfixOf` d.datasetId.fromId) gds.items
+      pure $ viewPrograms fs $ grouped (.instrumentProgramId) ds
 
 
 -- filterProgramDatasets [dsById] _ = [dsById]
 -- filterProgramDatasets [] ds = ds
 
-viewPrograms :: [Group (Id InstrumentProgram) Dataset] -> View Programs ()
-viewPrograms gds = do
+viewPrograms :: Filters -> [Group (Id InstrumentProgram) Dataset] -> View Programs ()
+viewPrograms fs gds = do
   Programs propId <- viewId
   col (gap 25) $ do
     search SearchTerm 250 (Style.input . placeholder "search: BEEMM")
-    forM_ gds $ \ds -> do
+    forM_ (filter (isMatch fs.term) gds) $ \ds -> do
       let d = sample ds
       hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
+ where
+  isMatch :: Text -> Group (Id InstrumentProgram) Dataset -> Bool
+  isMatch t g =
+    any (\d -> t `T.isInfixOf` d.datasetId.fromId) g.items
 
 
 ----------------------------------------------------
