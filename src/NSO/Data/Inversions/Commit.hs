@@ -39,4 +39,4 @@ newtype GitRepo = GitRepo URI
 
 
 vispInversionRepo :: GitRepo
-vispInversionRepo = GitRepo $ [uri|https://github.com/DKISTDC/ViSP-Inversion|]
+vispInversionRepo = GitRepo [uri|https://github.com/DKISTDC/ViSP-Inversion|]

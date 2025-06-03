@@ -79,9 +79,9 @@ data WCSCommonA = WCSCommonA
 data WCSAxisKeywords s (alt :: WCSAlt) ax = WCSAxisKeywords
   { ctype :: Key Text "A string value labeling the type of axis n"
   , cunit :: Key Text "The unit of the value contained in CDELTn"
-  , crpix :: Key Double "The value field shall contain a floating point number, identifying the location of a reference point along axis n"
-  , crval :: Key Double "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn"
-  , cdelt :: Key Double "Pixel scale of the world coordinate at the reference point along axis n"
+  , crpix :: Key Float "The value field shall contain a floating point number, identifying the location of a reference point along axis n"
+  , crval :: Key Float "The value field shall contain a floating point number, giving the value of the coordinate specified by the CTYPEn keyword at the reference point CRPIXn"
+  , cdelt :: Key Float "Pixel scale of the world coordinate at the reference point along axis n"
   }
   deriving (Generic, Show)
 
@@ -91,9 +91,9 @@ toWCSAxis keys =
   WCSAxis
     { ctype = CType keys.ctype.ktype
     , cunit = CUnit keys.cunit.ktype
-    , crpix = keys.crpix.ktype
-    , crval = keys.crval.ktype
-    , cdelt = keys.cdelt.ktype
+    , crpix = realToFrac keys.crpix.ktype
+    , crval = realToFrac keys.crval.ktype
+    , cdelt = realToFrac keys.cdelt.ktype
     }
 
 
@@ -101,7 +101,7 @@ fromWCSAxis :: WCSAxis alt ax -> WCSAxisKeywords s alt ax
 fromWCSAxis wcs =
   let CType ctype = wcs.ctype
       CUnit cunit = wcs.cunit
-   in WCSAxisKeywords{ctype = Key ctype, cunit = Key cunit, crpix = Key wcs.crpix, crval = Key wcs.crval, cdelt = Key wcs.cdelt}
+   in WCSAxisKeywords{ctype = Key ctype, cunit = Key cunit, crpix = Key (realToFrac wcs.crpix), crval = Key (realToFrac wcs.crval), cdelt = Key (realToFrac wcs.cdelt)}
 
 
 -- data WCSAxis (alt :: WCSAlt) axes (n :: Nat) = WCSAxis

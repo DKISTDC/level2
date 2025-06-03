@@ -99,8 +99,11 @@ fitsTask numWorkers task = do
     log Debug $ dump "OrigProfile" u.profileOrig
     -- log Debug $ dump "Timestamps" u.timestamps
 
+    log Debug "check..."
     quantities <- decodeQuantitiesFrames =<< readFile u.quantities
+    log Debug "Quantities"
     ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.profileFit
+    log Debug "Fits"
     profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
 
     l1 <- Gen.canonicalL1Frames (Scratch.dataset d) slice

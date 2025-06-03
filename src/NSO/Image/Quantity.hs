@@ -10,6 +10,7 @@ import Data.Fixed (mod')
 import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
 import Effectful
 import Effectful.Error.Static
+import Effectful.Log
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Image.Headers
@@ -164,8 +165,8 @@ instance (HeaderDoc info) => HeaderDoc (DataHeader info) where
 data DataCommon = DataCommon
   { bzero :: BZero
   , bscale :: BScale
-  , datamin :: Key Double "The minimum data value"
-  , datamax :: Key Double "The maximum data value"
+  , datamin :: Key Float "The minimum data value"
+  , datamax :: Key Float "The maximum data value"
   , date :: Key UTCTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
   deriving (Generic, HeaderDoc, ToHeader, FromHeader)
@@ -242,7 +243,7 @@ quantityHDUs qs = runPureEff $ do
   velocity <- dataHDU @Velocity $ convertData cmsToKms qs.velocity
   pure $ toList (.hdu) $ Quantities{..}
  where
-  convertData :: (Double -> Double) -> Quantity info -> Quantity info
+  convertData :: (Float -> Float) -> Quantity info -> Quantity info
   convertData f (Quantity header da) =
     Quantity
       { header
@@ -259,23 +260,23 @@ quantityHDUs qs = runPureEff $ do
     pure $ QuantityHDU $ DataHDU{header = toHeader q.header, dataArray = addDummyAxis darr}
 
 
-cmsToKms :: Double -> Double
+cmsToKms :: Float -> Float
 cmsToKms = (/ 100000)
 
 
-gcmToKgm :: Double -> Double
+gcmToKgm :: Float -> Float
 gcmToKgm = (* 1000)
 
 
-dyneCmToNm :: Double -> Double
+dyneCmToNm :: Float -> Float
 dyneCmToNm = (/ 10)
 
 
-gaussToTesla :: Double -> Double
+gaussToTesla :: Float -> Float
 gaussToTesla = (/ 10000)
 
 
-forcePositive360 :: Double -> Double
+forcePositive360 :: Float -> Float
 forcePositive360 deg = deg `mod'` 360
 
 
@@ -379,7 +380,7 @@ addDummyAxis DataArray{bitpix, axes, rawData} =
 
 -- addKeywords $ headerKeywords dat
 
-dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as -> m DataCommon
+dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as Float -> m DataCommon
 dataCommon now res = do
   let date = Key now
       datamax = Key $ maximum res.array
@@ -413,7 +414,7 @@ data Quantities (f :: Type -> Type) = Quantities
 instance ToAsdf (Quantities Quantity)
 
 
-newtype QuantityImage as info = QuantityImage {image :: DataCube as}
+newtype QuantityImage as info = QuantityImage {image :: DataCube as Float}
 
 
 newtype QuantityHDU info = QuantityHDU {hdu :: DataHDU}
@@ -421,7 +422,7 @@ newtype QuantityHDU info = QuantityHDU {hdu :: DataHDU}
 
 data Quantity info = Quantity
   { header :: QuantityHeader info
-  , image :: DataCube [SlitX, Depth]
+  , image :: DataCube [SlitX, Depth] Float
   }
 
 
@@ -502,32 +503,32 @@ mapQuantities f qs =
 
 
 -- | Decodes the L2 input file containing the quantities: inv_res_mod
-decodeQuantitiesFrames :: (Error QuantityError :> es) => ByteString -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
+decodeQuantitiesFrames :: (Error QuantityError :> es, Log :> es) => ByteString -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
 decodeQuantitiesFrames inp = do
   res <- decodeInversion inp
   resultsQuantities res
 
 
-decodeInversion :: (Error QuantityError :> es) => ByteString -> Eff es (DataCube [Quantity a, Depth, FrameY, SlitX])
+decodeInversion :: (Error QuantityError :> es, Log :> es) => ByteString -> Eff es (DataCube [Quantity a, Depth, FrameY, SlitX] Float)
 decodeInversion inp = do
   f <- Fits.decode inp
-  a <- decodeDataArray @Ix4 @Double f.primaryHDU.dataArray
+  a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
   pure $ DataCube a
 
 
-resultsQuantities :: (Error QuantityError :> es) => DataCube [Quantity (), Depth, FrameY, SlitX] -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
+resultsQuantities :: (Error QuantityError :> es) => DataCube [Quantity (), Depth, FrameY, SlitX] Float -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrames res
 
 
-splitQuantitiesM :: (Error QuantityError :> es) => DataCube [Quantity a, Depth, SlitX] -> Eff es (Quantities (QuantityImage [SlitX, Depth]))
+splitQuantitiesM :: (Error QuantityError :> es) => DataCube [Quantity a, Depth, SlitX] Float -> Eff es (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwError $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: DataCube [Quantity a, Depth, SlitX] -> Maybe (Quantities (QuantityImage [SlitX, Depth]))
+splitQuantities :: DataCube [Quantity a, Depth, SlitX] Float -> Maybe (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
   fromList QuantityImage qs
@@ -536,16 +537,16 @@ splitQuantities res = do
 -- Frames -----------------------------------------------------------------------
 
 -- | Splits any Data Cube into frames when it is the 3rd of 4 dimension
-splitFrames :: forall a b d. DataCube [a, b, FrameY, d] -> [DataCube [a, b, d]]
+splitFrames :: forall a b d f. DataCube [a, b, FrameY, d] f -> [DataCube [a, b, d] f]
 splitFrames res =
   fmap sliceFrame [0 .. numFrames res - 1]
  where
-  numFrames :: DataCube [a, b, FrameY, d] -> Int
+  numFrames :: DataCube [a, b, FrameY, d] f -> Int
   numFrames (DataCube arr) =
     let Sz (_ :> _ :> nf :. _) = size arr
      in nf
 
-  sliceFrame :: Int -> DataCube [a, b, d]
+  sliceFrame :: Int -> DataCube [a, b, d] f
   sliceFrame n = sliceM2 n res
 
 

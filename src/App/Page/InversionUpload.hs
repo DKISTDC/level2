@@ -32,6 +32,7 @@ import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (ParamValue (..), fromQueryData)
+import Web.Hyperbole.Data.QueryData qualified as QueryData
 
 
 page
@@ -188,9 +189,14 @@ instance ToQuery QueryState where
   toQuery qs = toQuery qs.uploads <> toQuery qs.metadata
 instance FromQuery QueryState where
   parseQuery qd = do
-    up <- parseQuery qd
+    up <- parseUploaded
     md <- parseQuery qd
     pure $ QueryState up md
+   where
+    parseUploaded =
+      case QueryData.lookup @Text "uploaded" qd of
+        Just _ -> pure $ UploadFiles Uploaded Uploaded Uploaded
+        Nothing -> parseQuery qd
 
 
 setDatasetId :: Id Dataset -> Bool -> QueryState -> QueryState
