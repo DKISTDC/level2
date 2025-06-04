@@ -231,8 +231,7 @@ adjustSlitX s l1 =
     }
  where
   scaleTranslateCrPix (Key cp) =
-    -- first, translate to remove the beginning pixels, so CRPIX of 800 becomes CRPIX of 700
-    let transX = cp - fromIntegral s.pixelBeg
+    let transX = cp -- the binning always starts at pixel 0 in the fiducial arm now
      in -- then, scale by the opposite factor
         Key $ transX / fromIntegral s.pixelsPerBin
   -- delta should be higher by the binning factor. Fewer bins = larger delta
@@ -240,13 +239,15 @@ adjustSlitX s l1 =
 
 
 adjustDummyY :: SliceXY -> WCSAxisKeywords s alt Y -> WCSAxisKeywords s alt Y
-adjustDummyY s l1 =
-  WCSAxisKeywords
-    { cunit = l1.cunit
-    , ctype = l1.ctype
-    , crval = l1.crval
-    , crpix = translateCrPix l1.crpix
-    , cdelt = l1.cdelt
-    }
- where
-  translateCrPix (Key cp) = Key $ cp - fromIntegral s.frameBeg
+adjustDummyY _ l1 = l1
+
+-- NOTE: we no longer use DESR-SC0, or drop any frames in the ficudual arm, because it has the narrowest view
+--  WCSAxisKeywords
+--    { cunit = l1.cunit
+--    , ctype = l1.ctype
+--    , crval = l1.crval
+--    , crpix = translateCrPix l1.crpix
+--    , cdelt = l1.cdelt
+--    }
+-- where
+--  translateCrPix (Key cp) = Key $ cp - fromIntegral s.frameBeg

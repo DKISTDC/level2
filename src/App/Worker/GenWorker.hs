@@ -20,11 +20,12 @@ import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets
+import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Image.Asdf as Asdf
 import NSO.Image.Frame as Frame
 import NSO.Image.Headers.Types (SliceXY (..))
-import NSO.Image.Profile (Fit, Original, ProfileFit (..), ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
+import NSO.Image.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
 import NSO.Image.Quantity (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -84,29 +85,30 @@ fitsTask numWorkers task = do
   workWithError :: Eff (Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     log Debug "START"
-
     send $ TaskSetStatus task GenStarted
 
-    inv <- loadInversion task.inversionId
-    d <- requireCanonicalDataset inv.programId
-
-    transferL1Frames task d inv
-
-    log Debug " - done, getting frames..."
+    -- Load Metadata ----------------
     let u = Scratch.inversionUploads $ Scratch.blanca task.proposalId task.inversionId
     log Debug $ dump "InvResults" u.quantities
     log Debug $ dump "InvProfile" u.profileFit
     log Debug $ dump "OrigProfile" u.profileOrig
-    -- log Debug $ dump "Timestamps" u.timestamps
+    slice <- sliceMeta u
 
-    log Debug "check..."
+    inv <- loadInversion task.inversionId
+    ds <- Datasets.find $ Datasets.ByIds inv.datasets
+
+    -- Download Canonical Dataset
+    log Debug $ dump "Meta Complete" slice
+    downloadL1Frames task inv ds
+
+    log Debug $ dump "Downloaded L1" (fmap Scratch.dataset ds)
+    dc <- requireCanonicalDataset slice ds
+
     quantities <- decodeQuantitiesFrames =<< readFile u.quantities
-    log Debug "Quantities"
-    ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.profileFit
-    log Debug "Fits"
+    profileFit <- decodeProfileFit =<< readFile u.profileFit
     profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
 
-    l1 <- Gen.canonicalL1Frames (Scratch.dataset d) slice
+    l1 <- Gen.canonicalL1Frames (Scratch.dataset dc)
     log Debug $ dump "Frames" (length quantities, length profileFit.frames, length profileOrig.frames, length l1)
 
     gfs <- Gen.collateFrames quantities profileFit.frames profileOrig.frames l1
@@ -119,19 +121,19 @@ fitsTask numWorkers task = do
     Inversions.setGeneratedFits task.inversionId
 
 
-transferL1Frames
-  :: (IOE :> es, Log :> es, Error GlobusError :> es, Inversions :> es, Concurrent :> es, Tasks GenFits :> es, Time :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
+downloadL1Frames
+  :: (IOE :> es, Log :> es, Error GlobusError :> es, Inversions :> es, Datasets :> es, Concurrent :> es, Tasks GenFits :> es, Time :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
   => GenFits
-  -> Dataset
   -> Inversion
+  -> [Dataset]
   -> Eff es ()
-transferL1Frames task d inv = do
+downloadL1Frames task inv ds = do
   case inv.generate.transfer of
     Just _ -> pure ()
     Nothing -> transfer
  where
   transfer = do
-    taskId <- Transfer.initScratchDataset d
+    taskId <- Transfer.initScratchDatasets ds
     log Debug $ dump "Task" taskId
 
     send $ TaskSetStatus task $ GenTransferring taskId
@@ -230,15 +232,18 @@ asdfTask t = do
     log Debug "ASDF!"
     log Debug $ dump "Task" t
 
-    inv <- loadInversion t.inversionId
-    d <- requireCanonicalDataset inv.programId
-
+    -- Load Metadata
     let u = Scratch.inversionUploads $ Scratch.blanca t.proposalId t.inversionId
+    slice <- sliceMeta u
 
-    ProfileFit profileFit slice <- decodeProfileFit =<< readFile u.quantities
+    inv <- loadInversion t.inversionId
+    ds <- Datasets.find $ Datasets.ByIds inv.datasets
+    dc <- requireCanonicalDataset slice ds
+
+    profileFit <- decodeProfileFit =<< readFile u.quantities
     profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
 
-    l1fits <- Gen.canonicalL1Frames (Scratch.dataset d) slice
+    l1fits <- Gen.canonicalL1Frames (Scratch.dataset dc)
 
     (metas :: NonEmpty L2FrameMeta) <- requireMetas slice profileOrig.wavProfiles profileFit.wavProfiles l1fits
 

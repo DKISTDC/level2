@@ -197,8 +197,8 @@ datasetTransferItem dest d =
   datasetSourcePath = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-initScratchDataset :: (IOE :> es, Log :> es, Globus :> es, Error GlobusError :> es, Reader (Token Access) :> es, Scratch :> es) => Dataset -> Eff es (App.Id Task)
-initScratchDataset d = do
+initScratchDatasets :: (IOE :> es, Log :> es, Globus :> es, Error GlobusError :> es, Reader (Token Access) :> es, Scratch :> es) => [Dataset] -> Eff es (App.Id Task)
+initScratchDatasets ds = do
   scratch <- Scratch.collection
   initTransfer (transfer scratch)
  where
@@ -207,10 +207,10 @@ initScratchDataset d = do
     TransferRequest
       { data_type = DataType
       , submission_id
-      , label = Just $ "Dataset " <> d.datasetId.fromId
+      , label = Just $ "Datasets: " <> cs (show (fmap (.datasetId) ds))
       , source_endpoint = dkistEndpoint
       , destination_endpoint = scratch
-      , data_ = [datasetTransferItem (Scratch.dataset d) d]
+      , data_ = fmap (\d -> datasetTransferItem (Scratch.dataset d) d) ds
       , sync_level = SyncTimestamp
       , store_base_path_info = True
       }

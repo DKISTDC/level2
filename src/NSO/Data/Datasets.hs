@@ -36,7 +36,7 @@ data Filter
   = All
   | ByProposal (Id Proposal)
   | ByProgram (Id InstrumentProgram)
-  | ById (Id Dataset)
+  | ByIds [Id Dataset]
   | DistinctProposals
   | DistinctPrograms (Id Proposal)
 
@@ -53,7 +53,11 @@ runDataDatasets = interpret $ \_ -> \case
     run $ select $ each datasets
   Find (ByProposal pid) -> queryProposal pid
   Find (ByProgram pid) -> queryProgram pid
-  Find (ById did) -> queryById did
+  Find (ByIds dids) -> do
+    run $ select $ do
+      row <- each datasets
+      where_ (row.datasetId `in_` fmap lit dids)
+      return row
   Find (DistinctPrograms pid) -> do
     run $ select $ distinctOn (.instrumentProgramId) $ do
       row <- each datasets :: Query (Dataset' Expr)
@@ -78,13 +82,6 @@ runDataDatasets = interpret $ \_ -> \case
     run $ select $ do
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit ip)
-      return row
-
-  queryById :: (Rel8 :> es) => Id Dataset -> Eff es [Dataset]
-  queryById i = do
-    run $ select $ do
-      row <- each datasets
-      where_ (row.datasetId ==. lit i)
       return row
 
   insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()

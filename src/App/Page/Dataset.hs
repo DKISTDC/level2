@@ -16,7 +16,7 @@ import Web.Hyperbole
 
 page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Eff es (Page '[])
 page di = do
-  ds <- Datasets.find (ById di)
+  ds <- Datasets.find (ByIds [di])
 
   let sorted = sortOn (Down . (.scanDate)) ds
 

@@ -333,7 +333,7 @@ instance (Datasets :> es) => HyperView DatasetRow es where
 
   update Details = do
     DatasetRow did <- viewId
-    ds <- Datasets.find (ById did)
+    ds <- Datasets.find (ByIds [did])
     pure $ mapM_ datasetRowDetails ds
 
 

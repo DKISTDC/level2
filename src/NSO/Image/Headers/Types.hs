@@ -271,8 +271,10 @@ instance KnownValue Kg_m3
 -- | Headers in inv_res_pre (Profile Fit) that describe the subsection of the canonical data we use
 data SliceXY = SliceXY
   { pixelsPerBin :: Int
-  , pixelBeg :: Int
-  , pixelEnd :: Int
-  , frameBeg :: Int
-  , frameEnd :: Int
+  , fiducialArmId :: VISPArmId
   }
+  deriving (Show, Eq)
+
+
+newtype VISPArmId = VISPArmId Int
+  deriving newtype (FromKeyword, Eq, Show)

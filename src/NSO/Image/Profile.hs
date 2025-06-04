@@ -345,26 +345,10 @@ data WavProfiles profile = WavProfiles
   deriving (Show, Eq)
 
 
-data ProfileFit = ProfileFit
-  { profile :: ProfileFrames Fit
-  , slice :: SliceXY
-  }
-
-
-decodeProfileFit :: (Error ProfileError :> es) => BS.ByteString -> Eff es ProfileFit
+decodeProfileFit :: (Error ProfileError :> es) => BS.ByteString -> Eff es (ProfileFrames Fit)
 decodeProfileFit inp = do
   f <- decode inp
-  profile <- profileFrames f
-  slice <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
-  pure $ ProfileFit{profile, slice}
- where
-  requireSlice h = do
-    pixelsPerBin <- requireKey "DESR-BIN" h
-    pixelBeg <- requireKey "DESR-BEG" h
-    pixelEnd <- requireKey "DESR-END" h
-    frameBeg <- requireKey "DESR-SC0" h
-    frameEnd <- requireKey "DESR-SCN" h
-    pure $ SliceXY{pixelsPerBin, pixelBeg, pixelEnd, frameBeg, frameEnd}
+  profileFrames f
 
 
 decodeProfileOrig :: (Error ProfileError :> es) => BS.ByteString -> Eff es (ProfileFrames Original)
@@ -481,6 +465,5 @@ swapProfileDimensions =
 data ProfileError
   = InvalidWavelengthGroups
   | MissingProfileExtensions String
-  | InvalidSliceKeys ParseError
   | InvalidWCS ParseError
   deriving (Show, Exception, Eq)
