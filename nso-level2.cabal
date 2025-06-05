@@ -91,6 +91,7 @@ library
       NSO.Image.Headers.Types
       NSO.Image.Headers.WCS
       NSO.Image.L1Input
+      NSO.Image.NDCollection
       NSO.Image.Primary
       NSO.Image.Profile
       NSO.Image.Quantity

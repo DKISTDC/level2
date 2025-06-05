@@ -19,6 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
+import NSO.Image.NDCollection (AlignedAxes)
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
 import Telescope.Data.Axes (Axes (..), AxisOrder (..))
@@ -412,6 +413,7 @@ data Quantities (f :: Type -> Type) = Quantities
   }
   deriving (Generic)
 instance ToAsdf (Quantities Quantity)
+instance ToAsdf (Quantities AlignedAxes)
 
 
 newtype QuantityImage as info = QuantityImage {image :: DataCube as Float}
@@ -483,6 +485,23 @@ toList f qs =
   , f qs.gasPressure
   , f qs.density
   ]
+
+
+quantitiesFrom :: (forall x. a -> f x) -> a -> Quantities f
+quantitiesFrom val a =
+  Quantities
+    { opticalDepth = val a
+    , temperature = val a
+    , electronPressure = val a
+    , microTurbulence = val a
+    , magStrength = val a
+    , velocity = val a
+    , magInclination = val a
+    , magAzimuth = val a
+    , geoHeight = val a
+    , gasPressure = val a
+    , density = val a
+    }
 
 
 mapQuantities :: (forall x. f x -> g x) -> Quantities f -> Quantities g

@@ -260,10 +260,8 @@ asdfTask t = do
     profileFit <- decodeProfileFit =<< readFile u.profileFit
     profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
 
-    log Debug "GOT PROFILES"
     l1fits <- Gen.canonicalL1Frames (Scratch.dataset dc)
 
-    log Debug "GOT L1"
     (metas :: NonEmpty L2FrameMeta) <- requireMetas slice profileOrig.wavProfiles profileFit.wavProfiles l1fits
 
     log Debug $ dump "metas" (length metas)

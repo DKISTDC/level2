@@ -56,7 +56,7 @@ instance Ord L2FrameMeta where
 
 data FrameQuantitiesMeta = FrameQuantitiesMeta
   { shape :: Shape Quantity
-  , quantities :: Quantities QuantityHeader
+  , items :: Quantities QuantityHeader
   }
   deriving (Generic)
 
@@ -149,7 +149,7 @@ frameMetaFromL2Fits path slice wpo wpf l1 fits = runParser $ do
     L2FrameMeta
       { path
       , primary
-      , quantities = FrameQuantitiesMeta{quantities = quants, shape = qshape}
+      , quantities = FrameQuantitiesMeta{items = quants, shape = qshape}
       , profiles = FrameProfilesMeta{profiles = profs, shape630, shape854}
       }
  where
@@ -215,7 +215,7 @@ frameMeta frame path =
  where
   quantitiesMeta qs =
     FrameQuantitiesMeta
-      { quantities = quantityHeaders qs
+      { items = quantityHeaders qs
       , shape = Shape $ addDummyY $ dataCubeAxes qs.opticalDepth.image
       }
 

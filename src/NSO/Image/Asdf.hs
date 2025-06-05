@@ -11,8 +11,10 @@ import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
 import NSO.Image.Headers.WCS (WCSHeader (..))
+import NSO.Image.NDCollection
 import NSO.Image.Primary
 import NSO.Image.Profile
+import NSO.Image.Quantity
 import NSO.Image.Quantity hiding (quantities)
 import NSO.Prelude
 import NSO.Types.Common
@@ -23,10 +25,16 @@ import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Asdf.NDArray (DataType (..))
-import Telescope.Data.Axes (Axes, Major (Row))
+import Telescope.Data.Axes (Axes (..), Axis, Major (Row))
 import Telescope.Data.KnownText
 import Telescope.Fits (ToHeader (..))
 
+
+-- DONE: move extra keys into meta.inventory
+-- TODO: support ND collection
+--  . meta
+--  . quantities
+--  . profiles
 
 data L2Asdf
 
@@ -44,16 +52,23 @@ asdfDocument inversionId datasetIds now metas =
   inversionTree =
     InversionTree
       { fileuris
-      , meta = inversionTreeMeta $ fmap (.primary) frames
-      , quantities = quantitiesSection frame.primary $ fmap (.quantities) frames
+      , meta = inversionMeta $ fmap (.primary) frames
+      , quantities = quantitiesSection (fmap (.quantities) frames) (qgwcs frame)
       , profiles = profilesSection frame.primary $ fmap (.profiles) frames
       }
 
-  inversionTreeMeta :: NonEmpty PrimaryHeader -> InversionTreeMeta
-  inversionTreeMeta headers =
-    InversionTreeMeta
-      { headers = HeaderTable headers
-      , frameCount = length headers
+  -- choose a single frame from which to calculate the GWCS
+  qgwcs :: L2FrameMeta -> QuantityGWCS
+  qgwcs m = quantityGWCS m.primary m.quantities.items.opticalDepth.wcs
+
+  inversionMeta :: NonEmpty PrimaryHeader -> InversionMeta
+  inversionMeta headers =
+    InversionMeta{headers = HeaderTable headers, inventory = inversionInventory headers}
+
+  inversionInventory :: NonEmpty PrimaryHeader -> InversionInventory
+  inversionInventory headers =
+    InversionInventory
+      { frameCount = length headers
       , inversionId
       , datasetIds
       , wavelengths = [profileWav @Orig630, profileWav @Orig854]
@@ -94,20 +109,26 @@ data Document = Document
 
 data InversionTree = InversionTree
   { fileuris :: Fileuris
-  , meta :: InversionTreeMeta
-  , quantities :: HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
+  , meta :: InversionMeta
+  , quantities :: QuantitiesSection
   , profiles :: ProfileSection
   }
   deriving (Generic, ToAsdf)
 
 
-data InversionTreeMeta = InversionTreeMeta
+data InversionMeta = InversionMeta
+  { inventory :: InversionInventory
+  , headers :: HeaderTable PrimaryHeader
+  }
+  deriving (Generic, ToAsdf)
+
+
+data InversionInventory = InversionInventory
   { inversionId :: Id Inversion
   , created :: UTCTime
   , wavelengths :: [Wavelength Nm]
   , datasetIds :: [Id Dataset]
   , frameCount :: Int
-  , headers :: HeaderTable PrimaryHeader
   }
   deriving (Generic, ToAsdf)
 
@@ -123,28 +144,18 @@ instance ToAsdf Fileuris where
     pathNode (Path fp) = fromValue $ String $ cs fp
 
 
-newtype AxisLabel = AxisLabel Text
-  deriving newtype (ToAsdf, IsString)
-
-
-data HDUSection gwcs hdus = HDUSection
-  { axes :: [AxisLabel]
-  , shape :: Axes Row
-  , wcs :: gwcs
-  , hdus :: hdus
+data QuantitiesSection = QuantitiesSection
+  { axes :: [AxisMeta] -- NDCollectionAxes Quantities
+  , items :: Quantities (DataTree QuantityMeta)
+  , gwcs :: QuantityGWCS
   }
-
-
-instance (ToAsdf hdus, ToAsdf gwcs) => ToAsdf (HDUSection gwcs hdus) where
+instance ToAsdf QuantitiesSection where
+  schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
   toValue section =
     mconcat
-      -- merge the fields from both
-      [ Object
-          [ ("axes", toNode section.axes)
-          , ("shape", toNode section.shape)
-          , ("wcs", toNode section.wcs)
-          ]
-      , toValue section.hdus
+      [ toValue (AxesMeta section.axes)
+      , Object [("gwcs", toNode section.gwcs)]
+      , toValue (NDCollection (quantitiesFrom AlignedAxes) section.axes section.items)
       ]
 
 
@@ -169,38 +180,51 @@ instance ToAsdf ProfileSection where
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: PrimaryHeader -> NonEmpty FrameQuantitiesMeta -> HDUSection QuantityGWCS (Quantities (DataTree QuantityMeta))
-quantitiesSection primary frames =
-  -- choose a single frame from which to calculate the GWCS
-  let wcs = (head frames).quantities.opticalDepth.wcs :: WCSHeader QuantityAxes
-   in HDUSection
-        { axes = ["frameY", "slitX", "opticalDepth"]
-        , shape = shape.axes
-        , wcs = quantityGWCS primary wcs
-        , hdus =
-            Quantities
-              { opticalDepth = quantity (.opticalDepth)
-              , temperature = quantity (.temperature)
-              , electronPressure = quantity (.electronPressure)
-              , microTurbulence = quantity (.microTurbulence)
-              , magStrength = quantity (.magStrength)
-              , velocity = quantity (.velocity)
-              , magInclination = quantity (.magInclination)
-              , magAzimuth = quantity (.magAzimuth)
-              , geoHeight = quantity (.geoHeight)
-              , gasPressure = quantity (.gasPressure)
-              , density = quantity (.density)
-              }
-        }
+-- quantitiesCollection :: NonEmpty FrameQuantitiesMeta -> NDCollection Quantities (DataTree QuantityMeta)
+-- quantitiesCollection frames =
+--   NDCollection (quantitiesFrom NDAlignedAxes) axes items
+
+quantitiesAxes :: NonEmpty FrameQuantitiesMeta -> [AxisMeta]
+quantitiesAxes frames =
+  zipWith
+    id
+    [ AxisMeta "frameY" True
+    , AxisMeta "slitX" True
+    , AxisMeta "opticalDepth" True
+    ]
+    (head frames).shape.axes.axes
+
+
+quantitiesSection :: NonEmpty FrameQuantitiesMeta -> QuantityGWCS -> QuantitiesSection
+quantitiesSection frames gwcs =
+  QuantitiesSection
+    { axes = quantitiesAxes frames
+    , gwcs
+    , items =
+        Quantities
+          { opticalDepth = quantity (.opticalDepth)
+          , temperature = quantity (.temperature)
+          , electronPressure = quantity (.electronPressure)
+          , microTurbulence = quantity (.microTurbulence)
+          , magStrength = quantity (.magStrength)
+          , velocity = quantity (.velocity)
+          , magInclination = quantity (.magInclination)
+          , magAzimuth = quantity (.magAzimuth)
+          , geoHeight = quantity (.geoHeight)
+          , gasPressure = quantity (.gasPressure)
+          , density = quantity (.density)
+          }
+    }
  where
   quantity
     :: forall info ext btype unit
      . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info)
     => (Quantities QuantityHeader -> QuantityHeader info)
     -> DataTree QuantityMeta info
-  quantity f = quantityTree shape $ fmap f quantities
+  quantity f = quantityTree shape $ fmap f items
 
-  quantities = fmap (.quantities) frames
+  items :: NonEmpty (Quantities QuantityHeader)
+  items = fmap (.items) frames
 
   shape = (head frames).shape
 
@@ -243,19 +267,6 @@ data QuantityMeta info = QuantityMeta
   }
   deriving (Generic, ToAsdf)
 
-
--- instance (KnownText ref) => ToAsdf (WCSTodo ref) where
---   -- wcs: !<tag:stsci.edu:gwcs/wcs-1.1.0>
---   --   name: ''
---   --   steps:
---   anchor _ = Just $ Anchor $ knownText @ref
---   schema _ = "tag:stsci.edu:gwcs/wcs-1.1.0"
---   toValue _ =
---     Object
---       [ ("name", toNode $ String "")
---       , ("steps", toNode $ Array [])
---       ]
---
 
 data Ref ref = Ref
 instance (KnownText ref) => ToAsdf (Ref ref) where
