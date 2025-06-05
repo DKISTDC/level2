@@ -3,6 +3,7 @@ module App.View.Layout where
 import App.Colors
 import App.Effect.Auth
 import App.Route
+import App.Style qualified as Style
 import Effectful
 import Effectful.Globus
 import NSO.Prelude
@@ -15,11 +16,13 @@ appLayout r content = do
   login <- loginUrl
   saveCurrentUrl
   mtok <- getAccessToken
-  pure $ layout login r mtok content
+  madmin <- send AdminToken
+
+  pure $ layout login r mtok madmin content
 
 
-layout :: Url -> AppRoute -> Maybe (Token Access) -> View c () -> View c ()
-layout login rc tok content = do
+layout :: Url -> AppRoute -> Maybe (Token Access) -> Maybe (Token Access) -> View c () -> View c ()
+layout login rc tok madmin content = do
   WebView.layout (color Black . flexCol) $ do
     nav (gap 0 . bg Primary . color White . topbar) $ do
       row (pad 15) $ do
@@ -31,6 +34,7 @@ layout login rc tok content = do
       item Inversions "Inversions"
       item (Datasets DatasetRoot) "Datasets"
       space
+      adminLink
       loginLink tok
     -- WebView.link login center "Login"
 
@@ -47,6 +51,13 @@ layout login rc tok content = do
     link login center "Login"
   loginLink (Just _) =
     route Logout center "Log Out"
+
+  adminLink = do
+    case madmin of
+      Nothing -> do
+        row (pad 10) $ do
+          link login (Style.btn Danger) "Needs Globus Login"
+      Just _ -> pure ()
 
   center = pad 20
 

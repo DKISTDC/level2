@@ -4,7 +4,7 @@
 module NSO.Data.Sync where
 
 import Data.Aeson as Aeson (Result (..), Value)
-import Data.Bifunctor (bimap)
+import Data.Bifunctor (first)
 import Data.Either (lefts, rights)
 import Data.Grouped
 import Data.List qualified as L
@@ -59,10 +59,10 @@ runMetadataSync var = interpret $ \_ -> \case
       modifyTVar var (empty now :)
     pure now
   History -> do
-    sts <- atomically $ readTVar var
+    sts <- readTVarIO var
     pure $ fmap (.started) sts
   Get t -> do
-    sts <- atomically $ readTVar var
+    sts <- readTVarIO var
     pure $ fromMaybe (empty t) $ L.find (\st -> st.started == t) sts
   SetProposals s propIds -> do
     modifySync s $ \st -> st{proposals = Just propIds}
@@ -169,7 +169,7 @@ syncDataset :: Map (Id Dataset) Dataset -> Dataset -> SyncDataset
 syncDataset m dataset =
   SyncDataset
     { dataset
-    , sync = (sync m dataset)
+    , sync = sync m dataset
     }
 
 
@@ -187,11 +187,11 @@ execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
 execSync sds = do
   -- replace all the datasets!
   let new = fmap (.dataset) $ filter (\s -> s.sync == New) sds
-  log Debug $ dump "SYNC NEW" (length new)
+  log Debug $ dump " (sync) new" (length new)
   send $ Datasets.Create new
 
   let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
-  log Debug $ dump "SYNC UPDATE" (length ups)
+  log Debug $ dump " (sync) UPDATE" (length ups)
   mapM_ (send . Datasets.Save) ups
 
 
@@ -211,7 +211,7 @@ data ScanError = ScanError String Value
 toDataset :: UTCTime -> Map (Id Experiment) Text -> ParsedResult DatasetInventory -> Either ScanError Dataset
 toDataset _ _ (ParsedResult val (Error err)) = Left $ ScanError err val
 toDataset scanDate exs (ParsedResult val (Success d)) = do
-  bimap (\err -> ScanError err val) id parseDataset
+  first (`ScanError` val) parseDataset
  where
   parseDataset = do
     ins <- parseInstrument d.instrumentName

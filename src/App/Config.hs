@@ -86,7 +86,8 @@ initConfig = do
   numWorkers <- readEnv "NUM_WORKERS"
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
 
-  log Debug $ dump "METADATA" services.metadata
+  log Debug $ dump " (config) metadata datasets" services.metadata.datasets
+  log Debug $ dump " (config) metadata inversions" services.metadata.inversions
   pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers, manager}
 
 

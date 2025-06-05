@@ -3,14 +3,12 @@ module App.Worker.Generate where
 import App.Effect.Scratch (Scratch, UploadFiles (..))
 import App.Effect.Scratch qualified as Scratch
 import Control.Exception (Exception)
-import Data.Bifunctor (first)
 import Data.List qualified as L
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Spectra (identifyLine)
 import NSO.Image.Frame as Frame
 import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (Depth, SliceXY (..), SlitX, VISPArmId (..))
@@ -19,7 +17,7 @@ import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Profile (Fit, Original, ProfileError, ProfileFrame)
 import NSO.Image.Quantity (Quantities, QuantityError, QuantityImage)
 import NSO.Prelude
-import NSO.Types.InstrumentProgram (InstrumentProgram, Proposal)
+import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import Network.Globus qualified as Globus
 import System.FilePath (takeExtensions)
@@ -28,11 +26,14 @@ import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
 
 
+-- TODO: add frame check back in!!
 collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
-collateFrames qs pfs pos ts
-  | allFramesEqual = frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
-  | otherwise = throwError $ MismatchedFrames frameSizes
+collateFrames qs pfs pos ts =
+  frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
  where
+  -- \| allFramesEqual = frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
+  -- \| otherwise = throwError $ MismatchedFrames frameSizes
+
   frames [] = throwError $ NoFrames frameSizes
   frames (f : fs) = pure $ f :| fs
 

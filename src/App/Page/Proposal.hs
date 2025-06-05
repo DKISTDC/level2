@@ -10,7 +10,6 @@ import App.Style qualified as Style
 import App.View.DatasetsTable as DatasetsTable
 import App.View.Icons (skeleton)
 import App.View.Layout
-import App.View.Loading (loadingCard)
 import App.View.ProposalDetails
 import Data.Grouped
 import Data.List.NonEmpty qualified as NE

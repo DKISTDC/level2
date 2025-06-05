@@ -112,14 +112,13 @@ generateL2Frame
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2FrameInputs
-  -> Eff es (L2Frame, UTCTime)
+  -> Eff es L2Frame
 generateL2Frame now i slice wpo wpf gf = do
   ph <- primaryHeader i gf.l1Frame.header
   qs <- quantities slice now gf.l1Frame.header gf.quantities
   ps <- profiles slice now gf.l1Frame.header wpo wpf gf.profileOrig gf.profileFit
-  let DateTime dateBeg = ph.observation.dateBeg.ktype
   let frame = L2Frame{primary = ph, quantities = qs, profiles = ps}
-  pure (frame, dateBeg)
+  pure frame
 
 
 frameMetaFromL2Fits

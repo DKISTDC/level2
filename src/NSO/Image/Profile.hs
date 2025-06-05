@@ -382,15 +382,17 @@ profileFrames f = do
   wavs :: (Error ProfileError :> es) => Eff es (DataCube '[Wavs] Float)
   wavs = do
     case f.extensions of
+      -- the first extensions
       (Image h : _) -> DataCube <$> decodeDataArray @Ix1 h.dataArray
       _ -> throwError $ MissingProfileExtensions "Wavelength Values"
 
   wavIds :: (Error ProfileError :> es) => Eff es (DataCube '[WavIds] Float)
   wavIds = do
     case f.extensions of
+      -- should be the second extension
       [_, Image h] -> do
         DataCube <$> decodeDataArray @Ix1 h.dataArray
-      _ -> throwError $ MissingProfileExtensions "Wavelength Values"
+      _ -> throwError $ MissingProfileExtensions "Wavelength Ids"
 
 
 splitWavs :: WavBreakIndex -> DataCube '[Wavs] Float -> Eff es (DataCube '[Wavelength (Center 630 MA)] Float, DataCube '[Wavelength (Center 854 MA)] Float)

@@ -87,7 +87,11 @@ class Mutation a
 
 
 newtype Service = Service Http.Request
-  deriving (Show)
+
+
+instance Show Service where
+  show (Service r) =
+    cs (Http.host r) <> cs (Http.path r)
 
 
 -- data Request = Request

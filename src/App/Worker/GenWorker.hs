@@ -8,6 +8,7 @@ import Control.Monad (zipWithM)
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.List.NonEmpty qualified as NE
+import Data.Maybe
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -24,11 +25,13 @@ import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Image.Asdf as Asdf
 import NSO.Image.Frame as Frame
+import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
 import NSO.Image.Quantity (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import Telescope.Fits (BinTableHDU (..))
 
 
 data GenFits = GenFits {proposalId :: Id Proposal, inversionId :: Id Inversion}
@@ -104,6 +107,7 @@ fitsTask numWorkers task = do
     log Debug $ dump "Downloaded L1" (fmap Scratch.dataset ds)
     dc <- requireCanonicalDataset slice ds
 
+    log Debug $ dump "Canonical Dataset:" dc.datasetId
     quantities <- decodeQuantitiesFrames =<< readFile u.quantities
     profileFit <- decodeProfileFit =<< readFile u.profileFit
     profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
@@ -117,7 +121,8 @@ fitsTask numWorkers task = do
     -- Generate them in parallel with N = available CPUs
     metas <- CPU.parallelizeN numWorkers $ fmap (workFrame task slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
 
-    log Debug $ dump "DONE: " (length metas)
+    log Debug $ dump "SKIPPED: " (length $ NE.filter isNothing metas)
+    log Debug $ dump "WRITTEN: " (length $ NE.filter isJust metas)
     Inversions.setGeneratedFits task.inversionId
 
 
@@ -165,16 +170,27 @@ workFrame
   -> WavProfiles Original
   -> WavProfiles Fit
   -> L2FrameInputs
-  -> Eff es L2FrameMeta
+  -> Eff es (Maybe L2FrameMeta)
 workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
   now <- currentTime
-  (frame, dateBeg) <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit frameInputs
-  let fits = Frame.frameToFits frame
+  DateTime dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
   let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
-  Scratch.writeFile path $ Frame.encodeL2 fits
+  alreadyExists <- Scratch.pathExists path
+
+  res <-
+    if alreadyExists
+      then do
+        log Debug $ dump "SKIP frame" path.filePath
+        pure Nothing
+      else do
+        frame <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit frameInputs
+        let fits = Frame.frameToFits frame
+        log Debug $ dump "WRITE frame" path.filePath
+        Scratch.writeFile path $ Frame.encodeL2 fits
+        pure $ Just $ Frame.frameMeta frame (filenameL2Frame t.inversionId dateBeg)
+
   send $ TaskModStatus @GenFits t updateNumFrame
-  log Debug path.filePath
-  pure $ Frame.frameMeta frame (filenameL2Frame t.inversionId dateBeg)
+  pure res
  where
   updateNumFrame :: GenFitsStatus -> GenFitsStatus
   updateNumFrame GenFrames{complete, total} = GenFrames{complete = complete + 1, total}
@@ -239,12 +255,15 @@ asdfTask t = do
     inv <- loadInversion t.inversionId
     ds <- Datasets.find $ Datasets.ByIds inv.datasets
     dc <- requireCanonicalDataset slice ds
+    log Debug $ dump "Canonical Dataset:" dc.datasetId
 
-    profileFit <- decodeProfileFit =<< readFile u.quantities
+    profileFit <- decodeProfileFit =<< readFile u.profileFit
     profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
 
+    log Debug "GOT PROFILES"
     l1fits <- Gen.canonicalL1Frames (Scratch.dataset dc)
 
+    log Debug "GOT L1"
     (metas :: NonEmpty L2FrameMeta) <- requireMetas slice profileOrig.wavProfiles profileFit.wavProfiles l1fits
 
     log Debug $ dump "metas" (length metas)
