@@ -17,9 +17,11 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
+import NSO.Image.NDCollection (AlignedAxes)
 import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
+import Telescope.Asdf (ToAsdf (..))
 import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
@@ -52,6 +54,16 @@ type Orig630 = ProfileInfo' "Original Profile 630.2nm"
 type Orig854 = ProfileInfo' "Original Profile 854.2nm"
 type Fit630 = ProfileInfo' "Fit Profile 630.2nm"
 type Fit854 = ProfileInfo' "Fit Profile 854.2nm"
+
+
+instance KnownText Orig630 where
+  knownText = "Orig630"
+instance KnownText Orig854 where
+  knownText = "Orig854"
+instance KnownText Fit630 where
+  knownText = "Fit630"
+instance KnownText Fit854 where
+  knownText = "Fit854"
 
 
 class ProfileInfo info where
@@ -91,6 +103,7 @@ data Profiles (f :: Type -> Type) = Profiles
   , fit854 :: f Fit854
   }
   deriving (Generic)
+instance ToAsdf (Profiles AlignedAxes)
 
 
 data ProfileHeader info = ProfileHeader

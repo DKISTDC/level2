@@ -50,7 +50,7 @@ asdfDocument inversionId datasetIds now metas =
       { fileuris
       , meta = inversionMeta $ fmap (.primary) frames
       , quantities = quantitiesSection (fmap (.quantities) frames) (qgwcs frame)
-      -- , profiles = profilesSection frame.primary $ fmap (.profiles) frames
+      , profiles = profilesSection frame.primary $ fmap (.profiles) frames
       }
 
   -- choose a single frame from which to calculate the GWCS
@@ -99,7 +99,7 @@ data InversionTree = InversionTree
   { fileuris :: Fileuris
   , meta :: InversionMeta
   , quantities :: QuantitiesSection
-  -- , profiles :: ProfilesSection
+  , profiles :: ProfilesSection
   }
   deriving (Generic, ToAsdf)
 
@@ -144,7 +144,6 @@ data QuantitiesSection = QuantitiesSection
 instance ToAsdf QuantitiesSection where
   schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
   toValue section =
-    -- this will flatten them all
     mconcat
       [ Object [("axes", toNode section.axes), ("gwcs", toNode section.gwcs)]
       , toValue section.items
@@ -156,25 +155,32 @@ instance ToAsdf QuantitiesSection where
 instance ToAsdf (Quantities Ref)
 
 
--- -- you can't pass it a single set of axes
--- data ProfilesSection = ProfilesSection
---   { axes :: [AxisMeta]
---   , items :: Profiles ProfileTree
---   , wcsFit :: ProfileGWCS
---   , wcsOrig :: ProfileGWCS
---   }
---
---
--- instance ToAsdf ProfilesSection where
---   toValue section =
---     mconcat
---       [ Object
---           [ ("axes", toNode section.axes)
---           , ("gwcs_fit", toNode section.wcsFit)
---           , ("gwcs_orig", toNode section.wcsOrig)
---           ]
---       , toValue (NDCollection (profilesFrom AlignedAxes) section.axes section.items)
---       ]
+-- you can't pass it a single set of axes
+data ProfilesSection = ProfilesSection
+  { axes :: [AxisMeta]
+  , items :: Profiles ProfileTree
+  , gwcsFit :: ProfileGWCS
+  , gwcsOrig :: ProfileGWCS
+  }
+
+
+instance ToAsdf ProfilesSection where
+  schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
+  toValue section =
+    mconcat
+      [ Object
+          [ ("axes", toNode section.axes)
+          , ("gwcs_fit", toNode section.gwcsFit)
+          , ("gwcs_orig", toNode section.gwcsOrig)
+          ]
+      , toValue section.items
+      , toValue (NDCollection (profilesFrom AlignedAxes) section.axes refs)
+      ]
+   where
+    refs :: Profiles Ref
+    refs = profilesFrom (const Ref) ()
+instance ToAsdf (Profiles Ref)
+
 
 -- Quantities ------------------------------------------------
 
@@ -268,27 +274,27 @@ data QuantityMeta info = QuantityMeta
 
 -- Profiles ------------------------------------------------
 
--- profilesSection :: PrimaryHeader -> NonEmpty FrameProfilesMeta -> ProfilesSection
--- profilesSection primary frames =
---   let wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
---    in ProfilesSection
---         { wcsFit = profileGWCS primary (head frames).profiles.orig854.wcs
---         , wcsOrig = profileGWCS primary (head frames).profiles.orig630.wcs
---         , axes = ["frameY", "slitX", "wavelength", "stokes"]
---         , items = profilesTree frames
---         }
---
---
--- profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
--- profilesTree frames =
---   let frame = head frames
---       ps = fmap (.profiles) frames
---    in Profiles
---         { orig630 = profileTree frame.shape630 $ fmap (.orig630) ps
---         , orig854 = profileTree frame.shape854 $ fmap (.orig854) ps
---         , fit630 = profileTree frame.shape630 $ fmap (.fit630) ps
---         , fit854 = profileTree frame.shape854 $ fmap (.fit854) ps
---         }
+profilesSection :: PrimaryHeader -> NonEmpty FrameProfilesMeta -> ProfilesSection
+profilesSection primary frames =
+  ProfilesSection
+    { gwcsFit = profileGWCS primary (head frames).profiles.orig854.wcs
+    , gwcsOrig = profileGWCS primary (head frames).profiles.orig630.wcs
+    , axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+    , items = profilesTree frames
+    }
+
+
+profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+profilesTree frames =
+  let frame = head frames
+      ps = fmap (.profiles) frames
+   in Profiles
+        { orig630 = profileTree frame.shape630 $ fmap (.orig630) ps
+        , orig854 = profileTree frame.shape854 $ fmap (.orig854) ps
+        , fit630 = profileTree frame.shape630 $ fmap (.fit630) ps
+        , fit854 = profileTree frame.shape854 $ fmap (.fit854) ps
+        }
+
 
 data ProfileTree info = ProfileTree
   { unit :: Unit
@@ -297,7 +303,8 @@ data ProfileTree info = ProfileTree
   , wcs :: Ref ProfileGWCS
   }
   deriving (Generic)
-instance (ToHeader info) => ToAsdf (ProfileTree info) where
+instance (ToHeader info, KnownText info) => ToAsdf (ProfileTree info) where
+  anchor _ = Just $ Anchor $ knownText @info
   toValue p =
     Object
       [ ("unit", toNode p.unit)
