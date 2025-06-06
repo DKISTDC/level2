@@ -28,19 +28,18 @@ import Telescope.Fits as Fits
 
 -- TODO: add frame check back in!!
 collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
-collateFrames qs pfs pos ts =
+collateFrames qs pfs pos ts = do
+  unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
   frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
  where
-  -- \| allFramesEqual = frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
-  -- \| otherwise = throwError $ MismatchedFrames frameSizes
-
   frames [] = throwError $ NoFrames frameSizes
   frames (f : fs) = pure $ f :| fs
 
   allFramesEqual :: Bool
   allFramesEqual =
-    all (== length qs) $ allSizes frameSizes
-
+    frameSizes.fit == frameSizes.quantities
+      && frameSizes.original == frameSizes.quantities
+      && (frameSizes.l1 - frameSizes.quantities <= 1) -- one frame may be dropped
   frameSizes :: FrameSizes
   frameSizes =
     FrameSizes
@@ -50,9 +49,9 @@ collateFrames qs pfs pos ts =
       , l1 = length ts
       }
 
-  allSizes :: FrameSizes -> [Int]
-  allSizes fs = [fs.quantities, fs.fit, fs.original, fs.l1]
 
+-- allSizes :: FrameSizes -> [Int]
+-- allSizes fs = [fs.quantities, fs.fit, fs.original, fs.l1]
 
 data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1 :: Int}
   deriving (Show, Eq)

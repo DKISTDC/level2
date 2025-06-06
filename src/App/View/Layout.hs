@@ -56,7 +56,7 @@ layout login rc tok madmin content = do
     case madmin of
       Nothing -> do
         row (pad 10) $ do
-          link login (Style.btn Danger) "Needs Globus Login"
+          link login (Style.btn Warning) "Needs Globus Login"
       Just _ -> pure ()
 
   center = pad 20

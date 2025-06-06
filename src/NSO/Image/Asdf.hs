@@ -10,7 +10,6 @@ import Effectful.Error.Static
 import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Frame
-import NSO.Image.Headers.WCS (WCSHeader (..))
 import NSO.Image.NDCollection
 import NSO.Image.Primary
 import NSO.Image.Profile
@@ -24,14 +23,15 @@ import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Asdf.NDArray (DataType (..))
-import Telescope.Data.Axes (Axes (..), Axis, Major (Row))
+import Telescope.Data.Axes (Axes (..), Major (Row))
 import Telescope.Data.KnownText
 import Telescope.Fits (ToHeader (..))
 
 
 -- DONE: move extra keys into meta.inventory
 -- DONE: support ND collection
--- TODO: rethink profiles completely... they may have 3 arms, etc!
+-- TODO: 3-arm profiles sodium
+-- TODO: fit/orig separate GWCS + anchors
 
 data L2Asdf
 

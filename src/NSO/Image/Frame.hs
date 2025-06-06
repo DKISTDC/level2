@@ -9,7 +9,7 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Image.Headers
-import NSO.Image.Headers.Types (Depth, Key (..), SliceXY, SlitX)
+import NSO.Image.Headers.Types (Depth, SliceXY, SlitX)
 import NSO.Image.Primary
 import NSO.Image.Profile as Profile
 import NSO.Image.Quantity as Quantity
