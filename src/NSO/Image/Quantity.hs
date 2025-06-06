@@ -35,6 +35,8 @@ type OpticalDepth =
     "Log of Optical Depth at 500nm"
     "phys.absorption.opticalDepth"
     'Dimensionless
+instance KnownText OpticalDepth where
+  knownText = "OpticalDepth"
 
 
 type Temperature =
@@ -42,6 +44,8 @@ type Temperature =
     "Temperature"
     "phys.temperature"
     'Kelvin
+instance KnownText Temperature where
+  knownText = "Temperature"
 
 
 type ElectronPressure =
@@ -49,6 +53,8 @@ type ElectronPressure =
     "Electron Pressure"
     "phys.electron;phys.pressure"
     'N_m2
+instance KnownText ElectronPressure where
+  knownText = "ElectronPressure"
 
 
 type Microturbulence =
@@ -56,6 +62,8 @@ type Microturbulence =
     "Microturbulence"
     "phys.veloc.microTurb"
     'Km_s
+instance KnownText Microturbulence where
+  knownText = "Microturbulence"
 
 
 type MagStrength =
@@ -63,6 +71,8 @@ type MagStrength =
     "Magnetic Field Strength"
     "phys.magField"
     Tesla
+instance KnownText MagStrength where
+  knownText = "MagStrength"
 
 
 type Velocity =
@@ -70,6 +80,8 @@ type Velocity =
     "Line-of-sight Velocity"
     "spect.dopplerVeloc"
     Km_s
+instance KnownText Velocity where
+  knownText = "Velocity"
 
 
 type MagInclination =
@@ -77,6 +89,8 @@ type MagInclination =
     "Magnetic Field Inclination (w.r.t. line-of-sight)"
     "phys.magField;pos.angDistance"
     Deg
+instance KnownText MagInclination where
+  knownText = "MagInclination"
 
 
 type MagAzimuth =
@@ -84,6 +98,8 @@ type MagAzimuth =
     "Magnetic Field Azimuth (w.r.t. line-of-sight)"
     "phys.magField;pos.azimuth"
     Deg
+instance KnownText MagAzimuth where
+  knownText = "MagAzimuth"
 
 
 type GeoHeight =
@@ -91,6 +107,8 @@ type GeoHeight =
     "Geometric Height above solar surface (tau ~ 1 at 500nm)"
     "phys.distance"
     Km
+instance KnownText GeoHeight where
+  knownText = "GeoHeight"
 
 
 type GasPressure =
@@ -98,6 +116,8 @@ type GasPressure =
     "Gas Pressure"
     "phys.pressure"
     N_m2
+instance KnownText GasPressure where
+  knownText = "GasPressure"
 
 
 type Density =
@@ -105,6 +125,8 @@ type Density =
     "Density"
     "phys.density"
     Kg_m3
+instance KnownText Density where
+  knownText = "Density"
 
 
 data DataHDUAxes = DataHDUAxes

@@ -162,16 +162,6 @@ wcsHeader wp slice l1 = runParseError InvalidWCS $ do
     and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
 
 
-profileHeaders :: Profiles Profile -> Profiles ProfileHeader
-profileHeaders ps =
-  Profiles
-    { orig630 = ps.orig630.header
-    , orig854 = ps.orig854.header
-    , fit630 = ps.fit630.header
-    , fit854 = ps.fit854.header
-    }
-
-
 profileHDUs
   :: Profiles Profile
   -> [DataHDU]
@@ -462,6 +452,26 @@ toProfileFrame (WavBreakIndex bx) da = do
 swapProfileDimensions :: DataCube [Stokes, Wavs, SlitX] Float -> DataCube [SlitX, Wavs, Stokes] Float
 swapProfileDimensions =
   transposeMajor . transposeMinor3 . transposeMajor
+
+
+mapProfiles :: (forall x. f x -> g x) -> Profiles f -> Profiles g
+mapProfiles f ps =
+  Profiles
+    { orig630 = f ps.orig630
+    , orig854 = f ps.orig854
+    , fit630 = f ps.fit630
+    , fit854 = f ps.fit854
+    }
+
+
+profilesFrom :: (forall x. a -> f x) -> a -> Profiles f
+profilesFrom val a =
+  Profiles
+    { orig630 = val a
+    , orig854 = val a
+    , fit630 = val a
+    , fit854 = val a
+    }
 
 
 data ProfileError

@@ -14,7 +14,6 @@ import NSO.Image.Headers.WCS (WCSHeader (..))
 import NSO.Image.NDCollection
 import NSO.Image.Primary
 import NSO.Image.Profile
-import NSO.Image.Quantity
 import NSO.Image.Quantity hiding (quantities)
 import NSO.Prelude
 import NSO.Types.Common
@@ -31,10 +30,8 @@ import Telescope.Fits (ToHeader (..))
 
 
 -- DONE: move extra keys into meta.inventory
--- TODO: support ND collection
---  . meta
---  . quantities
---  . profiles
+-- DONE: support ND collection
+-- TODO: rethink profiles completely... they may have 3 arms, etc!
 
 data L2Asdf
 
@@ -43,7 +40,6 @@ asdfDocument :: Id Inversion -> [Id Dataset] -> UTCTime -> NonEmpty L2FrameMeta 
 asdfDocument inversionId datasetIds now metas =
   Document inversionTree
  where
-  -- they need to be sorted!
   frames = NE.sort metas
 
   frame = head frames
@@ -54,7 +50,7 @@ asdfDocument inversionId datasetIds now metas =
       { fileuris
       , meta = inversionMeta $ fmap (.primary) frames
       , quantities = quantitiesSection (fmap (.quantities) frames) (qgwcs frame)
-      , profiles = profilesSection frame.primary $ fmap (.profiles) frames
+      -- , profiles = profilesSection frame.primary $ fmap (.profiles) frames
       }
 
   -- choose a single frame from which to calculate the GWCS
@@ -91,14 +87,6 @@ encodeL2 :: (Error AsdfError :> es, IOE :> es) => Document -> Eff es ByteString
 encodeL2 = Asdf.encode
 
 
--- Path $ cs (T.toUpper $ T.map toUnderscore $ ii.fromId <> "_" <> dt) <> "_L2.fits"
--- where
--- toUnderscore :: Char -> Char
--- toUnderscore '.' = '_'
--- toUnderscore ':' = '_'
--- toUnderscore '-' = '_'
--- toUnderscore c = c
-
 -- Inversion ---------------------------------------
 
 data Document = Document
@@ -111,7 +99,7 @@ data InversionTree = InversionTree
   { fileuris :: Fileuris
   , meta :: InversionMeta
   , quantities :: QuantitiesSection
-  , profiles :: ProfileSection
+  -- , profiles :: ProfilesSection
   }
   deriving (Generic, ToAsdf)
 
@@ -130,7 +118,11 @@ data InversionInventory = InversionInventory
   , datasetIds :: [Id Dataset]
   , frameCount :: Int
   }
-  deriving (Generic, ToAsdf)
+  deriving (Generic)
+instance KnownText InversionInventory where
+  knownText = "InversionInventory"
+instance ToAsdf InversionInventory where
+  anchor _ = Just $ Anchor (knownText @InversionInventory)
 
 
 newtype Fileuris = Fileuris [Path' Filename L2Frame]
@@ -145,60 +137,55 @@ instance ToAsdf Fileuris where
 
 
 data QuantitiesSection = QuantitiesSection
-  { axes :: [AxisMeta] -- NDCollectionAxes Quantities
+  { axes :: [AxisMeta]
   , items :: Quantities (DataTree QuantityMeta)
   , gwcs :: QuantityGWCS
   }
 instance ToAsdf QuantitiesSection where
   schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
   toValue section =
+    -- this will flatten them all
     mconcat
-      [ toValue (AxesMeta section.axes)
-      , Object [("gwcs", toNode section.gwcs)]
-      , toValue (NDCollection (quantitiesFrom AlignedAxes) section.axes section.items)
+      [ Object [("axes", toNode section.axes), ("gwcs", toNode section.gwcs)]
+      , toValue section.items
+      , toValue (NDCollection (quantitiesFrom AlignedAxes) section.axes refs)
       ]
+   where
+    refs :: Quantities Ref
+    refs = quantitiesFrom (const Ref) ()
+instance ToAsdf (Quantities Ref)
 
 
-data ProfileSection = ProfileSection
-  { axes :: [AxisLabel]
-  , wcs :: ProfileGWCS
-  , hdus :: Profiles ProfileTree
-  }
-
-
-instance ToAsdf ProfileSection where
-  toValue section =
-    mconcat
-      -- merge the fields from both
-      [ Object
-          [ ("axes", toNode section.axes)
-          , ("wcs", toNode section.wcs)
-          ]
-      , toValue section.hdus
-      ]
-
+-- -- you can't pass it a single set of axes
+-- data ProfilesSection = ProfilesSection
+--   { axes :: [AxisMeta]
+--   , items :: Profiles ProfileTree
+--   , wcsFit :: ProfileGWCS
+--   , wcsOrig :: ProfileGWCS
+--   }
+--
+--
+-- instance ToAsdf ProfilesSection where
+--   toValue section =
+--     mconcat
+--       [ Object
+--           [ ("axes", toNode section.axes)
+--           , ("gwcs_fit", toNode section.wcsFit)
+--           , ("gwcs_orig", toNode section.wcsOrig)
+--           ]
+--       , toValue (NDCollection (profilesFrom AlignedAxes) section.axes section.items)
+--       ]
 
 -- Quantities ------------------------------------------------
-
--- quantitiesCollection :: NonEmpty FrameQuantitiesMeta -> NDCollection Quantities (DataTree QuantityMeta)
--- quantitiesCollection frames =
---   NDCollection (quantitiesFrom NDAlignedAxes) axes items
-
-quantitiesAxes :: NonEmpty FrameQuantitiesMeta -> [AxisMeta]
-quantitiesAxes frames =
-  zipWith
-    id
-    [ AxisMeta "frameY" True
-    , AxisMeta "slitX" True
-    , AxisMeta "opticalDepth" True
-    ]
-    (head frames).shape.axes.axes
-
 
 quantitiesSection :: NonEmpty FrameQuantitiesMeta -> QuantityGWCS -> QuantitiesSection
 quantitiesSection frames gwcs =
   QuantitiesSection
-    { axes = quantitiesAxes frames
+    { axes =
+        [ AxisMeta "frameY" True
+        , AxisMeta "slitX" True
+        , AxisMeta "opticalDepth" True
+        ]
     , gwcs
     , items =
         Quantities
@@ -236,7 +223,9 @@ data DataTree meta info = DataTree
   , wcs :: Ref QuantityGWCS
   }
   deriving (Generic)
-instance (ToAsdf (meta info)) => ToAsdf (DataTree meta info) where
+instance (ToAsdf (meta info), KnownText info) => ToAsdf (DataTree meta info) where
+  schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
+  anchor _ = Just $ Anchor $ knownText @info
   toValue q =
     Object
       [ ("unit", toNode q.unit)
@@ -246,6 +235,14 @@ instance (ToAsdf (meta info)) => ToAsdf (DataTree meta info) where
       ]
 instance ToAsdf (Quantities (DataTree QuantityMeta))
 
+
+-- instance KnownText QuantityGWCS where
+--   knownText = "quantityGWCS"
+--
+-- instance ToAsdf QuantityGWCS where
+--   schema (QuantityGWCS gwcs) = schema gwcs
+--   anchor _ = Just $ Anchor $ knownText @QuantityGWCS
+--   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 quantityTree
   :: forall info ext btype unit
@@ -258,47 +255,40 @@ quantityTree shape heads =
     { unit = Pixel
     , wcs = Ref
     , data_ = fileManager @info shape.axes
-    , meta = QuantityMeta{headers = HeaderTable heads}
+    , meta = QuantityMeta{headers = HeaderTable heads, inventory = Ref}
     }
 
 
 data QuantityMeta info = QuantityMeta
   { headers :: HeaderTable (QuantityHeader info)
+  , inventory :: Ref InversionInventory
   }
   deriving (Generic, ToAsdf)
 
 
-data Ref ref = Ref
-instance (KnownText ref) => ToAsdf (Ref ref) where
-  toValue _ =
-    Alias $ Anchor $ knownText @ref
-instance (KnownText ref) => KnownText (Ref ref) where
-  knownText = knownText @ref
-
-
 -- Profiles ------------------------------------------------
 
-profilesSection :: PrimaryHeader -> NonEmpty FrameProfilesMeta -> ProfileSection
-profilesSection primary frames =
-  let wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
-   in ProfileSection
-        { wcs = profileGWCS primary wcs
-        , axes = ["frameY", "slitX", "wavelength", "stokes"]
-        , hdus = profilesTree frames
-        }
-
-
-profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree frames =
-  let frame = head frames
-      ps = fmap (.profiles) frames
-   in Profiles
-        { orig630 = profileTree frame.shape630 $ fmap (.orig630) ps
-        , orig854 = profileTree frame.shape854 $ fmap (.orig854) ps
-        , fit630 = profileTree frame.shape630 $ fmap (.fit630) ps
-        , fit854 = profileTree frame.shape854 $ fmap (.fit854) ps
-        }
-
+-- profilesSection :: PrimaryHeader -> NonEmpty FrameProfilesMeta -> ProfilesSection
+-- profilesSection primary frames =
+--   let wcs = (head frames).profiles.orig630.wcs :: WCSHeader ProfileAxes
+--    in ProfilesSection
+--         { wcsFit = profileGWCS primary (head frames).profiles.orig854.wcs
+--         , wcsOrig = profileGWCS primary (head frames).profiles.orig630.wcs
+--         , axes = ["frameY", "slitX", "wavelength", "stokes"]
+--         , items = profilesTree frames
+--         }
+--
+--
+-- profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
+-- profilesTree frames =
+--   let frame = head frames
+--       ps = fmap (.profiles) frames
+--    in Profiles
+--         { orig630 = profileTree frame.shape630 $ fmap (.orig630) ps
+--         , orig854 = profileTree frame.shape854 $ fmap (.orig854) ps
+--         , fit630 = profileTree frame.shape630 $ fmap (.fit630) ps
+--         , fit854 = profileTree frame.shape854 $ fmap (.fit854) ps
+--         }
 
 data ProfileTree info = ProfileTree
   { unit :: Unit
@@ -335,8 +325,6 @@ instance ToAsdf (Profiles ProfileTree) where
         ]
 
 
--- instance ToAsdf (Profiles ProfileTree)
-
 profileTree
   :: forall info
    . (ProfileInfo info, KnownText (ProfileType info), HDUOrder info)
@@ -365,6 +353,8 @@ data ProfileTreeMeta info = ProfileTreeMeta
   deriving (Generic, ToAsdf)
 
 
+-- File Manager ----------------------------------------------------
+
 data FileManager = FileManager
   { datatype :: DataType
   , fileuris :: Ref "fileuris"
@@ -379,3 +369,13 @@ instance ToAsdf FileManager where
 fileManager :: forall info. (HDUOrder info) => Axes Row -> FileManager
 fileManager axes =
   FileManager{datatype = Float64, fileuris = Ref, shape = axes, target = hduIndex @info}
+
+
+-- Ref --------------------------------------------------------------
+
+data Ref ref = Ref
+instance (KnownText ref) => ToAsdf (Ref ref) where
+  toValue _ =
+    Alias $ Anchor $ knownText @ref
+instance (KnownText ref) => KnownText (Ref ref) where
+  knownText = knownText @ref

@@ -213,15 +213,17 @@ frameMeta frame path =
     , path
     }
  where
+  quantitiesMeta :: Quantities Quantity -> FrameQuantitiesMeta
   quantitiesMeta qs =
     FrameQuantitiesMeta
       { items = quantityHeaders qs
       , shape = Shape $ addDummyY $ dataCubeAxes qs.opticalDepth.image
       }
 
+  profilesMeta :: Profiles Profile -> FrameProfilesMeta
   profilesMeta ps =
     FrameProfilesMeta
-      { profiles = profileHeaders ps
+      { profiles = mapProfiles (\p -> p.header) ps
       , shape630 = Shape $ addDummyY $ dataCubeAxes ps.orig630.image
       , shape854 = Shape $ addDummyY $ dataCubeAxes ps.orig854.image
       }
