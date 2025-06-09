@@ -9,11 +9,10 @@ import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Image.DataCube
+import NSO.Image.Headers
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import Telescope.Data.Parser (runPureParser)
 import NSO.Image.L1Input
 import NSO.Image.Primary as Primary
 import NSO.Image.Profile as Profile
@@ -21,10 +20,11 @@ import NSO.Image.Quantity as Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
-import NSO.Image.Headers
 import Skeletest
 import Skeletest.Predicate qualified as P
 import Telescope.Data.Axes hiding (Axis)
+import Telescope.Data.DataCube
+import Telescope.Data.Parser (runParserPure)
 import Telescope.Data.WCS
 import Telescope.Fits as Fits hiding (Axis)
 import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..), parseKeyword)
@@ -146,7 +146,8 @@ specHeader = describe "Header Keywords" $ do
     wcs <- runGen $ Profile.wcsHeader wp slice l1
     pure $ ProfileHeader @Orig630 DataHDUInfo common wcs
 
-  slice = SliceXY{pixelsPerBin = 7, pixelBeg = 100, pixelEnd = 800, frameBeg = 10, frameEnd = 20}
+  slice :: SliceXY
+  slice = SliceXY{pixelsPerBin = 7, fiducialArmId = VISPArmId 1}
 
   runGen =
     runEff . runErrorNoCallStackWith @GenerateError throwM . runGenerateError . runGenRandom
@@ -205,13 +206,13 @@ specWCS = describe "WCS" $ do
       -- should just be the pixels per bin
       w2.cdelt.ktype `shouldSatisfy` P.gt wcsX.cdelt.ktype
       w2.cdelt.ktype `shouldSatisfy` P.approx P.tol (wcsX.cdelt.ktype * fromIntegral slice.pixelsPerBin)
-      w2.cdelt.ktype `shouldBe` 7
+      w2.cdelt.ktype `shouldBe` 8
 
     it "should scale CRPIX down by pixelsPerBin, and translate it down by begPixel" $ do
       let w2 = adjustSlitX slice wcsX
       -- 800 is exactly 700 higher than starting pixel, which should be 100 bins
       w2.crpix.ktype `shouldSatisfy` P.lt wcsX.crpix.ktype
-      w2.crpix.ktype `shouldSatisfy` P.lt (wcsX.crpix.ktype / fromIntegral slice.pixelsPerBin)
+      w2.crpix.ktype `shouldSatisfy` P.lte (wcsX.crpix.ktype / fromIntegral slice.pixelsPerBin)
       w2.crpix.ktype `shouldSatisfy` P.approx within1 100
 
   describe "dummy y frame adjustment" $ do
@@ -220,15 +221,15 @@ specWCS = describe "WCS" $ do
       w2.crval `shouldBe` wcsY.crval
       w2.cdelt `shouldBe` wcsY.cdelt
 
-    it "should translate CRPIX" $ do
+    it "should not translate CRPIX, we no longer use frameBeg" $ do
       let w2 = adjustDummyY slice wcsY
-      w2.crpix.ktype `shouldBe` wcsY.crpix.ktype - fromIntegral slice.frameBeg
+      w2.crpix.ktype `shouldBe` wcsY.crpix.ktype
  where
   within1 = P.tol{P.abs = 1.0}
 
   -- sample spans 1400 pixels = 200 bins * 7 pixels, starting at 100
   -- sample assumes approx 500 frames, starting at 10 (and ending at 490, but that's not relevant to the calculation)
-  slice = SliceXY{pixelsPerBin = 7, pixelBeg = 100, pixelEnd = 1500, frameBeg = 10, frameEnd = 490}
+  slice = SliceXY{pixelsPerBin = 8, fiducialArmId = VISPArmId 1}
 
   -- sample is just 1 to 1600, with a CDELT of 1
   wcsX = WCSAxisKeywords{cunit = Key "unit", ctype = Key "type", cdelt = Key 1, crpix = Key 800, crval = Key 800}
@@ -261,7 +262,7 @@ specWavProfile = do
         px `shouldSatisfy` P.gt 3
 
 
-simple :: DataCube '[Wavelength (Center 630 MA)]
+simple :: DataCube '[Wavelength (Center 630 MA)] Float
 simple = DataCube $ M.delay @Ix1 @P $ M.fromLists' Seq simpleNums
 
 
@@ -270,7 +271,7 @@ simpleNums = [-2500, -1500, -500, 500, 1500, 2500, 3500, 4500]
 
 
 -- Actual raw data from profile. In original milliangstroms
-wav630 :: DataCube '[Wavelength (Center 630 MA)]
+wav630 :: DataCube '[Wavelength (Center 630 MA)] Float
 wav630 =
   DataCube $
     M.delay @Ix1 @P $
@@ -291,7 +292,7 @@ specDateHeaders :: Spec
 specDateHeaders = do
   describe "DateTime" $ do
     it "should parse UTCTimes without Z" $ do
-      let res :: Either ParseError DateTime = runPureParser $ parseKeywordValue (String "2023-05-01T18:53:59.504")
+      let res :: Either ParseError DateTime = runParserPure $ parseKeywordValue (String "2023-05-01T18:53:59.504")
       res `shouldSatisfy` P.right P.anything
 
 
@@ -323,10 +324,10 @@ instance Fixture WCSAxesFix where
     pure $ noCleanup $ WCSAxesFix x y
 
 
-data FrameCubeFix = FrameCubeFix {cube :: DataCube [SlitX, Depth]}
+data FrameCubeFix = FrameCubeFix {cube :: DataCube [SlitX, Depth] Float}
 instance Fixture FrameCubeFix where
   fixtureAction = do
-    let cube = DataCube $ M.delay $ M.fromLists' @P Seq [[1, 2, 3], [4, 5, 6]] :: DataCube [SlitX, Depth]
+    let cube = DataCube $ M.delay $ M.fromLists' @P Seq [[1, 2, 3], [4, 5, 6]] :: DataCube [SlitX, Depth] Float
     pure $ noCleanup $ FrameCubeFix cube
 
 

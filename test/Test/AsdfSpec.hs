@@ -16,10 +16,10 @@ import Telescope.Asdf
 import Telescope.Asdf.NDArray (DataType (..), getUcs4, putUcs4)
 import Telescope.Data.Axes
 import Telescope.Data.Binary (ByteOrder (..))
-import Telescope.Data.Parser (ParseError, expected, runParser, runPureParser)
+import Telescope.Data.Parser (ParseError, expected, runParser, runParserPure)
+import Telescope.Fits (KeywordRecord (..), ToHeader (..))
 import Telescope.Fits qualified as Fits
-import Telescope.Fits.Header (ToHeader (..))
-import Telescope.Fits.Types (Header (..), HeaderRecord (..), KeywordRecord (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
 -- import NSO.Image.Asdf
@@ -71,14 +71,14 @@ specHeaderTable = describe "Header Table" $ do
       let nda = toNDArray kc
       nda.shape `shouldBe` Axes [2]
       nda.datatype `shouldBe` Int32
-      runPureParser (fromNDArray nda) `shouldBe` Right ([11, 22] :: [Int32])
+      runParserPure (fromNDArray nda) `shouldBe` Right ([11, 22] :: [Int32])
 
     it "should encode an text column" $ do
       let kc = KeywordColumn "strings" $ NE.fromList [Fits.String "asdf", Fits.String "wahoo!"]
       let nda = toNDArray kc
       nda.shape `shouldBe` Axes [2]
       nda.datatype `shouldBe` Ucs4 6
-      runPureParser (fromNDArray nda) `shouldBe` Right (["asdf", "wahoo!"] :: [Text])
+      runParserPure (fromNDArray nda) `shouldBe` Right (["asdf", "wahoo!"] :: [Text])
 
   describe "table node" $ do
     it "should encode to Asdf" $ do
