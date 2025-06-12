@@ -9,8 +9,8 @@ import Effectful
 import Effectful.Error.Static
 import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
+import NSO.Image.Asdf.NDCollection
 import NSO.Image.Frame
-import NSO.Image.NDCollection
 import NSO.Image.Primary
 import NSO.Image.Profile
 import NSO.Image.Quantity hiding (quantities)

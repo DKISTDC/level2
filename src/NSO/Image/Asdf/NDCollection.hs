@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module NSO.Image.NDCollection where
+module NSO.Image.Asdf.NDCollection where
 
 import NSO.Prelude
 import Telescope.Asdf as Asdf

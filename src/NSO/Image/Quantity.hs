@@ -13,13 +13,13 @@ import Effectful.Error.Static
 import Effectful.Log
 import GHC.Generics
 import GHC.TypeLits
+import NSO.Image.Asdf.NDCollection (AlignedAxes)
 import NSO.Image.Headers
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import NSO.Image.NDCollection (AlignedAxes)
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
 import Telescope.Data.Axes (Axes (..), AxisOrder (..))
@@ -559,7 +559,7 @@ decodeInversion inp = do
 
 resultsQuantities :: (Error QuantityError :> es) => DataCube [Quantity (), Depth, FrameY, SlitX] Float -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
 resultsQuantities res = do
-  mapM splitQuantitiesM $ splitFrames res
+  mapM splitQuantitiesM $ splitFrameY res
 
 
 splitQuantitiesM :: (Error QuantityError :> es) => DataCube [Quantity a, Depth, SlitX] Float -> Eff es (Quantities (QuantityImage [SlitX, Depth]))
@@ -578,8 +578,8 @@ splitQuantities res = do
 -- Frames -----------------------------------------------------------------------
 
 -- | Splits any Data Cube into frames when it is the 3rd of 4 dimension
-splitFrames :: forall a b d f. DataCube [a, b, FrameY, d] f -> [DataCube [a, b, d] f]
-splitFrames res =
+splitFrameY :: forall a b d f. DataCube [a, b, FrameY, d] f -> [DataCube [a, b, d] f]
+splitFrameY res =
   fmap sliceFrame [0 .. numFrames res - 1]
  where
   numFrames :: DataCube [a, b, FrameY, d] f -> Int
