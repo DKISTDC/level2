@@ -10,7 +10,12 @@ import Rel8 (DBType)
 import Telescope.Asdf
 
 
+-- Nanometers
 data Nm
+
+
+-- Milliangstroms
+data MA
 
 
 newtype Wavelength a = Wavelength Double

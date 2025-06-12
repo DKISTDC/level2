@@ -83,6 +83,8 @@ library
       NSO.Image.Asdf
       NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable
+      NSO.Image.Asdf.NDCollection
+      NSO.Image.Blanca
       NSO.Image.Frame
       NSO.Image.Headers
       NSO.Image.Headers.Doc
@@ -91,10 +93,11 @@ library
       NSO.Image.Headers.Types
       NSO.Image.Headers.WCS
       NSO.Image.L1Input
-      NSO.Image.NDCollection
       NSO.Image.Primary
       NSO.Image.Profile
       NSO.Image.Quantity
+      NSO.Image.Types.Profile
+      NSO.Image.Types.VISPArm
       NSO.InterserviceBus
       NSO.Level2
       NSO.Metadata
