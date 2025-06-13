@@ -16,7 +16,7 @@ data A -- angstroms
 data MA -- milli-angstroms
 
 
-newtype Wavelength a = Wavelength Double
+newtype Wavelength a = Wavelength {value :: Double}
   deriving newtype (Num, Ord, Show, Floating, Fractional, RealFloat, RealFrac, Real, DBType, FromJSON, ToJSON)
 
 

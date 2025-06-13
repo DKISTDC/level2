@@ -20,7 +20,8 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrames)
+import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrameY)
+import NSO.Image.Types.Profile (ProfileType)
 import NSO.Image.Types.VISPArm
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
@@ -30,7 +31,7 @@ import Telescope.Data.DataCube
 import Telescope.Data.KnownText
 import Telescope.Data.WCS
 import Telescope.Fits as Fits
-import Telescope.Fits.Header (Header (..), HeaderRecord (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..), ToKeyword (..))
 
 
 -- BUG: PC self_self is wrong
@@ -38,17 +39,27 @@ import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 -- Generating Profiles -------------------------------------------------------------------------------
 
-type ProfileInfo' ext = DataHDUInfo ext "spect.line.profile" Dimensionless
+instance (KnownText fit) => ToHeader (WavMeta fit) where
+  toHeader meta =
+    Header $
+      fmap
+        Keyword
+        -- TODO: ext name based on.... the dynamic info of the profile info
+        [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
+        , keywordRecord @(BType "spect.line.profile") BType
+        , keywordRecord @(BUnit Dimensionless) BUnit
+        ]
+   where
+    extName = knownText @fit <> " Profile " <> cs (show meta.line)
 
 
-type family ProfileInfo arm fit where
-  ProfileInfo ArmFeI Original = ProfileInfo' "Original Profile FeI"
-  ProfileInfo ArmFeI Fit = ProfileInfo' "Fit Profile FeI"
-  ProfileInfo ArmCa854 Original = ProfileInfo' "Original Profile CaII 854"
-  ProfileInfo ArmCa854 Fit = ProfileInfo' "Fit Profile CaII 854"
-  ProfileInfo ArmNaD Original = ProfileInfo' "Original Profile NaD"
-  ProfileInfo ArmNaD Fit = ProfileInfo' "Fit Profile NaD"
-
+-- type family ProfileInfo arm fit where
+--   ProfileInfo ArmFeI Original = ProfileInfo' "Original Profile FeI"
+--   ProfileInfo ArmFeI Fit = ProfileInfo' "Fit Profile FeI"
+--   ProfileInfo ArmCa854 Original = ProfileInfo' "Original Profile CaII 854"
+--   ProfileInfo ArmCa854 Fit = ProfileInfo' "Fit Profile CaII 854"
+--   ProfileInfo ArmNaD Original = ProfileInfo' "Original Profile NaD"
+--   ProfileInfo ArmNaD Fit = ProfileInfo' "Fit Profile NaD"
 
 -- type Orig854 = ProfileInfo' "Original Profile 854.2nm"
 -- type Fit630 = ProfileInfo' "Fit Profile 630.2nm"
@@ -98,29 +109,27 @@ type family ProfileInfo arm fit where
 --   deriving (Generic)
 -- instance ToAsdf (Profiles AlignedAxes)
 
-data ArmProfiles arm = ArmProfiles
-  { fit :: Profile arm Fit
-  , orig :: Profile arm Original
-  }
+-- data ArmProfiles arm = ArmProfiles
+--   { fit :: Profile arm Fit
+--   , orig :: Profile arm Original
+--   }
 
+-- -- a single profile, fit or original
+-- data Profile arm fit = Profile
+--   { image :: DataCube [SlitX, Wavelength arm, Stokes] Float
+--   , header :: ProfileHeader arm
+--   }
 
--- a single profile, fit or original
-data Profile arm fit = Profile
-  { image :: DataCube [SlitX, Wavelength arm, Stokes] Float
-  , header :: ProfileHeader arm
-  }
-
-
-data ProfileHeader info = ProfileHeader
-  { info :: info
+data ProfileHeader (fit :: ProfileType) = ProfileHeader
+  { meta :: WavMeta fit
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
   deriving (Generic)
-instance (ToHeader info) => ToHeader (ProfileHeader info) where
+instance (KnownText fit) => ToHeader (ProfileHeader fit) where
   toHeader h = writeHeader $ do
     sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-    addKeywords $ DataHeader{common = h.common, info = h.info}
+    addKeywords $ DataHeader{common = h.common, info = h.meta}
 
     sectionHeader "WCS" "WCS Related Keywords"
     addKeywords h.wcs.common
@@ -130,40 +139,39 @@ instance (ToHeader info) => ToHeader (ProfileHeader info) where
     addKeywords h.wcs.axesA
 
 
-armProfiles
-  :: (Error ProfileError :> es)
-  => SliceXY
-  -> UTCTime
-  -> Header
-  -> VISPArms (WavProfile Original)
-  -> VISPArms (WavProfile Fit)
-  -> ProfileFrame Original
-  -> ProfileFrame Fit
-  -> Eff es (VISPArms ArmProfiles)
-armProfiles slice now l1 wpo wpf po pf = do
-  -- orig630 <- profile @Orig630 DataHDUInfo wpo.wav630 po.wav630
-  -- orig854 <- profile @Orig854 DataHDUInfo wpo.wav854 po.wav854
-  -- fit630 <- profile @Fit630 DataHDUInfo wpf.wav630 pf.wav630
-  -- fit854 <- profile @Fit854 DataHDUInfo wpf.wav854 pf.wav854
-  -- pure $ Profiles{orig630, orig854, fit630, fit854}
-  pure _
- where
-  armProfiles info = _
+-- armProfiles
+--   :: (Error ProfileError :> es)
+--   => SliceXY
+--   -> UTCTime
+--   -> Header
+--   -> VISPArms (WavProfile Original)
+--   -> VISPArms (WavProfile Fit)
+--   -> ProfileFrame Original
+--   -> ProfileFrame Fit
+--   -> Eff es (VISPArms ArmProfiles)
+-- armProfiles slice now l1 wpo wpf po pf = do
+--   -- orig630 <- profile @Orig630 DataHDUInfo wpo.wav630 po.wav630
+--   -- orig854 <- profile @Orig854 DataHDUInfo wpo.wav854 po.wav854
+--   -- fit630 <- profile @Fit630 DataHDUInfo wpf.wav630 pf.wav630
+--   -- fit854 <- profile @Fit854 DataHDUInfo wpf.wav854 pf.wav854
+--   -- pure $ Profiles{orig630, orig854, fit630, fit854}
+--   pure _
+--  where
+--   armProfiles info = _
+--
+--   armProfile
+--     :: forall arm fit hduInfo es
+--      . (hduInfo ~ ProfileInfo arm fit, ToHeader hduInfo, Error ProfileError :> es)
+--     => hduInfo
+--     -> WavProfile arm
+--     -> DataCube [SlitX, Wavelength arm, Stokes] Float
+--     -> Eff es (Profile arm fit)
+--   armProfile info wprofile image = do
+--     common <- dataCommon now image
+--     wcs <- wcsHeader wprofile slice l1
+--     pure $ Profile image $ ProfileHeader{common, wcs, info}
 
-  armProfile
-    :: forall arm fit hduInfo es
-     . (hduInfo ~ ProfileInfo arm fit, ToHeader hduInfo, Error ProfileError :> es)
-    => hduInfo
-    -> WavProfile arm
-    -> DataCube [SlitX, Wavelength arm, Stokes] Float
-    -> Eff es (Profile arm fit)
-  armProfile info wprofile image = do
-    common <- dataCommon now image
-    wcs <- wcsHeader wprofile slice l1
-    pure $ Profile image $ ProfileHeader{common, wcs, info}
-
-
-wcsHeader :: (Error ProfileError :> es) => WavProfile wav -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
+wcsHeader :: (Error ProfileError :> es) => WavMeta fit -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
 wcsHeader wp slice l1 = runParseError InvalidWCS $ do
   wm <- wcsAxes @WCSMain slice wp l1
   wc <- wcsCommon (isWcsValid wm) l1
@@ -178,22 +186,30 @@ wcsHeader wp slice l1 = runParseError InvalidWCS $ do
 
 
 profileHDUs
-  :: VISPArms Profile
-  -> [DataHDU]
-profileHDUs ps =
-  [ profileHDU ps.orig630
-  , profileHDU ps.orig854
-  , profileHDU ps.fit630
-  , profileHDU ps.fit854
-  ]
+  :: forall (fit :: ProfileType) es
+   . (KnownText fit, Error ProfileError :> es)
+  => UTCTime
+  -> Header
+  -> SliceXY
+  -> Arms (ProfileFrame fit)
+  -> Eff es [DataHDU]
+profileHDUs now l1 slice (Arms arms) = do
+  mapM profileHDU arms
  where
-  profileHDU
-    :: (ToHeader info)
-    => Profile info
-    -> DataHDU
-  profileHDU p =
+  profileHDU :: ProfileFrame fit -> Eff es DataHDU
+  profileHDU p = do
     let darr = encodeDataArray p.image.array
-     in DataHDU{header = toHeader p.header, dataArray = addDummyAxis darr}
+    header <- toHeader <$> profileHeader p
+    pure $ DataHDU{header, dataArray = addDummyAxis darr}
+
+  profileHeader
+    :: (Error ProfileError :> es)
+    => ProfileFrame fit
+    -> Eff es (ProfileHeader fit)
+  profileHeader frame = do
+    common <- dataCommon now frame.image
+    wcs <- wcsHeader frame.meta slice l1
+    pure $ ProfileHeader{common, wcs, meta = frame.meta}
 
 
 data ProfileAxes alt = ProfileAxes
@@ -243,10 +259,10 @@ instance (KnownText alt, AxisOrder (HDUAxis ProfileAxes ax)) => ToHeader (Profil
 
 
 wcsAxes
-  :: forall alt w es
+  :: forall alt fit es
    . (Error ParseError :> es, KnownText alt)
   => SliceXY
-  -> WavProfile w
+  -> WavMeta fit
   -> Header
   -> Eff es (ProfileAxes alt)
 wcsAxes s wp h = do
@@ -292,12 +308,12 @@ wcsStokes = do
   pure $ ProfileAxis{keys, pcs = Just pcs}
 
 
-wcsWavelength :: (Monad m) => WavProfile w -> m (ProfileAxis alt n)
+wcsWavelength :: (Monad m) => WavMeta fit -> m (ProfileAxis alt n)
 wcsWavelength wp = do
   let Wavelength w = midPoint wp.line
-  let crpix = Key wp.pixel
+  let crpix = Key $ realToFrac wp.pixel
       crval = Key (realToFrac w)
-      cdelt = Key wp.delta
+      cdelt = Key $ realToFrac wp.delta
       cunit = Key "nm"
       ctype = Key "AWAV"
   let keys = WCSAxisKeywords{..}

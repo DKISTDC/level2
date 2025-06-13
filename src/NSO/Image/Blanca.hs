@@ -7,7 +7,7 @@ import Data.ByteString qualified as BS
 import Data.List (foldl', mapAccumL)
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
-import Data.Massiv.Array (Ix2 (..), IxN (..), P (..), Sz (..))
+import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Data.Maybe (isJust)
 import Effectful
@@ -37,30 +37,26 @@ import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 -- The wavelength data is combined into a single axis, containing both 630 and 854 sections
 -- these are both in milliangstroms
-data WavOffset unit
-data Combined
+
+newtype Arms a = Arms {arms :: [a]}
+  deriving (Foldable)
 
 
--- A single arm for a single profile (fit or original)
-data ProfileArm fit = ProfileArm
+data ProfileArm (fit :: ProfileType) = ProfileArm
   { meta :: WavMeta fit
   , frames :: [DataCube [SlitX, Wavelength Nm, Stokes] Float]
   }
 
 
--- Metadata for an arm profile
-data WavMeta (fit :: ProfileType) = WavMeta
-  { pixel :: Float
-  , delta :: Float
-  , length :: Int
-  , line :: SpectralLine
+-- first, divide by frame, then by arm in each frame
+newtype ProfileArms (fit :: ProfileType) = ProfileArms
+  { frames :: [Arms (ProfileFrame fit)]
   }
-  deriving (Show, Eq)
 
 
-data WavBreak = WavBreak
-  { length :: Int
-  , line :: SpectralLine
+data ProfileFrame (fit :: ProfileType) = ProfileFrame
+  { meta :: WavMeta fit
+  , image :: DataCube [SlitX, Wavelength Nm, Stokes] Float
   }
 
 
@@ -79,145 +75,133 @@ decodeProfileOrig inp = do
 decodeProfileArms :: (Error BlancaError :> es) => Fits -> Eff es [ProfileArm fit]
 decodeProfileArms f = do
   hdus <- readProfileHDUs f
-  metas <- profileWavMetas hdus.wavs hdus.offsets
+  metas <- profileWavMetas hdus.lineIds hdus.offsets
   let frames = profilesByFrame hdus.array
   framesByArms <- mapM (splitFrameIntoArms metas) frames
   profileArms metas framesByArms
 
 
+profileArms :: (Error BlancaError :> es) => [WavMeta fit] -> [Arms (DataCube [SlitX, Wavelength Nm, Stokes] Float)] -> Eff es [ProfileArm fit]
+profileArms metas framesArms = do
+  let armsFrames = L.transpose $ fmap (.arms) framesArms
+  pure $ zipWith ProfileArm metas armsFrames
+
+
 splitFrameIntoArms
-  :: forall es profile fit
-   . (Error BlancaError :> es, profile ~ [SlitX, Wavelength Nm, Stokes])
+  :: forall es combined arm fit
+   . (Error BlancaError :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
   => [WavMeta fit]
-  -> DataCube profile Float
-  -> Eff es (DataCube (ProfileArm fit : profile) Float)
+  -> DataCube combined Float
+  -> Eff es (Arms (DataCube arm Float))
 splitFrameIntoArms metas wavs = do
-  arms :: [DataCube profile Float] <- snd <$> foldM splitNext (wavs, []) metas
-  sz3 <- frameSize arms
-  let sz4 = frameArmSize arms sz3
-  let cube :: Array D Ix4 Float = M.makeArray M.Par sz4 (toElement $ fmap (M.computeAs P . (.array)) arms)
-  pure $ DataCube cube
+  Arms . snd <$> foldM splitNext (wavs, []) metas
  where
-  frameArmSize :: [DataCube profile Float] -> Sz Ix3 -> Sz Ix4
-  frameArmSize arms (Sz ix) = Sz $ length arms :> ix
-
-  frameSize :: [DataCube profile Float] -> Eff es (Sz Ix3)
-  frameSize [] = throwError EmptySplit
-  frameSize (DataCube a : _) = do
-    pure $ M.size a
-
-  toElement :: [Array P Ix3 Float] -> Ix4 -> Float
-  toElement arms (armIx :> ix3) =
-    let arr = arms L.!! armIx
-     in arr M.! ix3
-
-  splitNext :: (DataCube profile Float, [DataCube profile Float]) -> WavMeta fit -> Eff es (DataCube profile Float, [DataCube profile Float])
+  splitNext :: (DataCube combined Float, [DataCube arm Float]) -> WavMeta fit -> Eff es (DataCube combined Float, [DataCube arm Float])
   splitNext (combo, arms) meta = catchSplit "Profile Data" $ do
     (arm, rest) <- DC.splitM1 meta.length combo
-    pure (rest, arm : arms)
-
-
-profilesByFrame :: DataCube [Stokes, Wavelength Combined, FrameY, SlitX] Float -> [DataCube [SlitX, Wavelength Nm, Stokes] Float]
-profilesByFrame = fmap (toNanos . swapProfileDimensions) . splitFrameY
- where
-  swapProfileDimensions :: DataCube [Stokes, Wavelength Combined, SlitX] Float -> DataCube [SlitX, Wavelength Combined, Stokes] Float
-  swapProfileDimensions =
-    transposeMajor . transposeMinor3 . transposeMajor
+    pure (rest, toNanos arm : arms)
 
   -- no conversion needed, only a type cast
   -- the wavelengths aren't encoded into the data cube, it's simply indexed by wavelength, as described in the WavMeta
-  -- TODO: throw if non monotonically increasing?
-  toNanos :: DataCube [SlitX, Wavelength Combined, Stokes] Float -> DataCube [SlitX, Wavelength Nm, Stokes] Float
+  -- TODO: throw if non monotonically increasing
+  toNanos :: DataCube combined Float -> DataCube arm Float
   toNanos (DataCube arr) = DataCube arr
 
 
--- I would much rather get it right here...
-profileArms :: (Error BlancaError :> es) => [WavMeta fit] -> DataCube [ProfileArm a, SlitX, Wavelength Nm, Stokes] Float -> Eff es [ProfileArm fit]
-profileArms metas profiles = do
-  let arms :: [[DataCube [SlitX, Wavelength Nm, Stokes] Float]] = DC.outerList profiles
-  pure $ zipWith ProfileArm metas arms
-
-
-data ProfileHDUs = ProfileHDUs
-  { array :: DataCube '[Stokes, Wavelength Combined, FrameY, SlitX] Float
-  , wavs :: DataCube '[WavIds] Int
-  , offsets :: DataCube '[WavOffset MA] Float
-  }
-
-
-readProfileHDUs :: (Error BlancaError :> es) => Fits -> Eff es ProfileHDUs
-readProfileHDUs f = do
-  array <- readProfileArray
-  wavs <- readWavIds
-  offsets <- readWavOffsets
-  pure $ ProfileHDUs{array, wavs, offsets}
+-- | Split 4D data into list of frames of 3D data corresponding to each scan position (FrameY)
+profilesByFrame :: DataCube [Stokes, CombinedArms (Wavelength MA), FrameY, SlitX] Float -> [DataCube [SlitX, CombinedArms (Wavelength MA), Stokes] Float]
+profilesByFrame = fmap swapProfileDimensions . splitFrameY
  where
-  readProfileArray :: Eff es (DataCube [Stokes, Wavelength Combined, FrameY, SlitX] Float)
-  readProfileArray = do
-    a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
-    pure $ DataCube a
-
-  readWavOffsets :: (Error BlancaError :> es) => Eff es (DataCube '[WavOffset MA] Float)
-  readWavOffsets = do
-    case f.extensions of
-      -- the first extension
-      (Image h : _) -> DataCube <$> decodeDataArray @Ix1 h.dataArray
-      _ -> throwError $ MissingProfileExtensions "Wavelength Offsets"
-
-  readWavIds :: (Error BlancaError :> es) => Eff es (DataCube '[WavIds] Int)
-  readWavIds = do
-    case f.extensions of
-      -- second extension
-      [_, Image h] -> do
-        DataCube <$> decodeDataArray @Ix1 h.dataArray
-      _ -> throwError $ MissingProfileExtensions "Wavelength Ids"
+  swapProfileDimensions :: DataCube [Stokes, CombinedArms (Wavelength MA), SlitX] Float -> DataCube [SlitX, CombinedArms (Wavelength MA), Stokes] Float
+  swapProfileDimensions =
+    transposeMajor . transposeMinor3 . transposeMajor
 
 
 ---------------------------------------------------------------
 -- Wav Profiles
 ---------------------------------------------------------------
 
-profileWavMetas :: (Error BlancaError :> es) => DataCube '[WavIds] Int -> DataCube '[WavOffset MA] Float -> Eff es [WavMeta fit]
-profileWavMetas wids wavs = do
-  breaks <- wavBreaks wids
-  datas <- splitWavs breaks wavs
-  pure $ zipWith wavMeta breaks datas
+-- BLANCA encodes wavelength information in the 2nd two HDUs. The information for each arm is encoded into one 1D array
+--  1. Spectral Line Ids [23, 23, 23, 23, 4, 4] - ids describing which line was used
+--  2. Wavelength Offsets [-0.1, 0.0, 0.1, 0.2, 0, 0.1] - how far from the center of the spectral line this index is in milliangstroms
+
+newtype WavOffset unit = WavOffset Float
+data CombinedArms a
 
 
-splitWavs :: (Error BlancaError :> es) => [WavBreak] -> DataCube '[WavOffset MA] Float -> Eff es [DataCube '[Wavelength Nm] Float]
-splitWavs breaks wavs = do
-  snd <$> foldM splitNextWav (wavs, []) breaks
+newtype LineId = LineId Int
+  deriving (Eq, Show)
+
+
+-- Metadata for an arm profile
+data WavMeta (fit :: ProfileType) = WavMeta
+  { pixel :: Double
+  , delta :: Wavelength Nm
+  , length :: Int -- number of indices in the combined arms
+  , line :: SpectralLine
+  }
+  deriving (Show, Eq)
+
+
+data WavBreak = WavBreak
+  { length :: Int -- number of indices in the combined arms
+  , line :: SpectralLine
+  }
+
+
+profileWavMetas :: (Error BlancaError :> es) => [LineId] -> [WavOffset MA] -> Eff es [WavMeta fit]
+profileWavMetas lids wavs = do
+  breaks <- either (throwError . UnknownLineId) pure $ wavBreaks lids
+  let datas = splitWavs breaks wavs
+  pure $ zipWith wavMeta breaks.arms datas.arms
+
+
+wavBreaks :: [LineId] -> Either LineId (Arms WavBreak)
+wavBreaks lids = do
+  fromGroups $ NE.group lids
  where
-  splitNextWav (ws, wss) wb = catchSplit "Wav Offsets" $ do
-    (wav, rest) <- DC.splitM0 wb.length ws
-    pure (rest, offsetsToWavelengths wb.line wav : wss)
+  fromGroups :: [NonEmpty LineId] -> Either LineId (Arms WavBreak)
+  fromGroups gs = Arms <$> foldM addBreak [] gs
 
+  addBreak :: [WavBreak] -> NonEmpty LineId -> Either LineId [WavBreak]
+  addBreak breaks ls = do
+    let lineId = NE.head ls
+    line <- blancaWavLine lineId
+    pure $ WavBreak{length = length lids, line} : breaks
 
-wavBreaks :: forall es. (Error BlancaError :> es) => DataCube '[WavIds] Int -> Eff es [WavBreak]
-wavBreaks wds = do
-  fromGroups $ NE.group (M.toList wds.array)
- where
-  fromGroups :: [NonEmpty Int] -> Eff es [WavBreak]
-  fromGroups = foldM addBreak []
-
-  addBreak :: [WavBreak] -> NonEmpty Int -> Eff es [WavBreak]
-  addBreak breaks wavs = do
-    let wavId = NE.head wavs
-    line <- blancaWavLine wavId
-    pure $ WavBreak{length = length wavs, line} : breaks
-
-  blancaWavLine :: Int -> Eff es SpectralLine
+  blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
-    23 -> pure FeI
-    9 -> pure NaD
-    4 -> pure (CaII CaII_854)
-    n -> throwError $ UnknownWaveId n
+    LineId 23 -> pure FeI
+    LineId 9 -> pure NaD
+    LineId 4 -> pure (CaII CaII_854)
+    n -> Left n
 
 
-wavMeta :: WavBreak -> DataCube '[Wavelength Nm] Float -> WavMeta fit
-wavMeta bk (DataCube arr) =
-  let ws = M.toList arr
-      delta = avgDelta ws
+splitWavs :: Arms WavBreak -> [WavOffset MA] -> Arms [Wavelength Nm]
+splitWavs breaks wavs =
+  let (_, arms) = foldl' splitNextWav (wavs, []) breaks :: ([WavOffset MA], [[Wavelength Nm]])
+   in Arms arms
+ where
+  splitNextWav :: ([WavOffset MA], [[Wavelength Nm]]) -> WavBreak -> ([WavOffset MA], [[Wavelength Nm]])
+  splitNextWav (wos, wvs) wb =
+    let wav = take wb.length wos
+        rest = drop wb.length wos
+     in (rest, offsetsToWavelengths wb.line wav : wvs)
+
+  offsetsToWavelengths :: SpectralLine -> [WavOffset MA] -> [Wavelength Nm]
+  offsetsToWavelengths line offs =
+    let Wavelength mid = midPoint line
+     in fmap (offsetToWavelength $ realToFrac mid) offs
+
+  -- offset in milliangstroms
+  offsetToWavelength :: Wavelength Nm -> WavOffset MA -> Wavelength Nm
+  offsetToWavelength (Wavelength mid) (WavOffset offset) =
+    Wavelength $ mid + realToFrac offset / 10000
+
+
+wavMeta :: WavBreak -> [Wavelength Nm] -> WavMeta fit
+wavMeta bk ws =
+  let delta = avgDelta ws
    in WavMeta
         { delta
         , length = bk.length
@@ -226,38 +210,65 @@ wavMeta bk (DataCube arr) =
         }
 
 
-offsetsToWavelengths :: SpectralLine -> DataCube '[WavOffset MA] Float -> DataCube '[Wavelength Nm] Float
-offsetsToWavelengths line (DataCube a) =
-  let Wavelength mid = midPoint line
-   in DataCube $ M.map (offsetToWavelength $ realToFrac mid) a
-
-
--- offset in milliangstroms
-offsetToWavelength :: Float -> Float -> Float
-offsetToWavelength mid offset =
-  mid + offset / 10000
-
-
-avgDelta :: [Float] -> Float
+avgDelta :: [Wavelength Nm] -> Wavelength Nm
 avgDelta [] = 0
-avgDelta ws = roundDigits 5 $ sum (differences ws) / fromIntegral (length ws - 1)
+avgDelta ws = Wavelength $ roundDigits 5 $ sum (differences (fmap (.value) ws)) / fromIntegral (length ws - 1)
  where
   differences :: (Num a) => [a] -> [a]
   differences lst = zipWith (-) (drop 1 lst) lst
 
 
-roundDigits :: Int -> Float -> Float
+roundDigits :: (RealFrac n) => Int -> n -> n
 roundDigits d x = fromIntegral @Int (round $ x * 10 ^ (d :: Int)) / 10 ^ (d :: Int)
 
 
--- the interpolated pixel offset of a zero value
-pixel0 :: Float -> [Float] -> Float
-pixel0 dlt as =
+-- the interpolated pixel offset of the value 0 in a monotonically increasing list
+pixel0 :: Wavelength Nm -> [Wavelength Nm] -> Double
+pixel0 (Wavelength dlt) as =
   let mn = minimum as
-   in negate mn / dlt + 1
+   in negate mn.value / dlt + 1
 
 
----------------------------------------------------------------
+---------------------------------------------------------------------
+-- BLANCA Fits Profile Output
+---------------------------------------------------------------------
+
+data ProfileHDUs = ProfileHDUs
+  { array :: DataCube '[Stokes, CombinedArms (Wavelength MA), FrameY, SlitX] Float
+  , lineIds :: [LineId] -- combined  arms spectral line ids
+  , offsets :: [WavOffset MA] -- combined arms wavelength offsets
+  }
+
+
+readProfileHDUs :: (Error BlancaError :> es) => Fits -> Eff es ProfileHDUs
+readProfileHDUs f = do
+  array <- readProfileArray
+  lineIds <- readLineIds
+  offsets <- readWavOffsets
+  pure $ ProfileHDUs{array, lineIds, offsets}
+ where
+  readProfileArray :: Eff es (DataCube [Stokes, CombinedArms (Wavelength MA), FrameY, SlitX] Float)
+  readProfileArray = do
+    a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
+    pure $ DataCube a
+
+  readWavOffsets :: (Error BlancaError :> es) => Eff es [WavOffset MA]
+  readWavOffsets = do
+    case f.extensions of
+      -- the first extension
+      (Image h : _) -> fmap WavOffset . M.toLists <$> decodeDataArray @Ix1 h.dataArray
+      _ -> throwError $ MissingProfileExtensions "Wavelength Offsets"
+
+  readLineIds :: (Error BlancaError :> es) => Eff es [LineId]
+  readLineIds = do
+    case f.extensions of
+      -- second extension
+      [_, Image h] -> do
+        fmap LineId . M.toLists <$> decodeDataArray @Ix1 h.dataArray
+      _ -> throwError $ MissingProfileExtensions "Wavelength Ids"
+
+
+-- Errors ------------------------------------------------------------------
 
 catchSplit :: (Error BlancaError :> es) => String -> Eff es a -> Eff es a
 catchSplit msg eff =
@@ -269,9 +280,8 @@ catchSplit msg eff =
 
 data BlancaError
   = MissingProfileExtensions String
-  | UnknownWaveId Int
+  | UnknownLineId LineId
   | BadSplit String MassivSplitError
-  | EmptySplit
   deriving (Show, Exception, Eq)
 
 
