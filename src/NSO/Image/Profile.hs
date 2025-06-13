@@ -21,7 +21,7 @@ import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrameY)
-import NSO.Image.Types.Profile (ProfileType)
+import NSO.Image.Types.Profile
 import NSO.Image.Types.VISPArm
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
@@ -52,73 +52,6 @@ instance (KnownText fit) => ToHeader (WavMeta fit) where
    where
     extName = knownText @fit <> " Profile " <> cs (show meta.line)
 
-
--- type family ProfileInfo arm fit where
---   ProfileInfo ArmFeI Original = ProfileInfo' "Original Profile FeI"
---   ProfileInfo ArmFeI Fit = ProfileInfo' "Fit Profile FeI"
---   ProfileInfo ArmCa854 Original = ProfileInfo' "Original Profile CaII 854"
---   ProfileInfo ArmCa854 Fit = ProfileInfo' "Fit Profile CaII 854"
---   ProfileInfo ArmNaD Original = ProfileInfo' "Original Profile NaD"
---   ProfileInfo ArmNaD Fit = ProfileInfo' "Fit Profile NaD"
-
--- type Orig854 = ProfileInfo' "Original Profile 854.2nm"
--- type Fit630 = ProfileInfo' "Fit Profile 630.2nm"
--- type Fit854 = ProfileInfo' "Fit Profile 854.2nm"
-
--- instance KnownText Orig630 where
---   knownText = "Orig630"
--- instance KnownText Orig854 where
---   knownText = "Orig854"
--- instance KnownText Fit630 where
---   knownText = "Fit630"
--- instance KnownText Fit854 where
---   knownText = "Fit854"
-
--- class ProfileInfo wav origFit where
---   profileWav :: Wavelength Nm
---   profileInfo :: DataHDUInfo
---
---
--- instance ProfileInfo Wav630 Original where
---   profileWav = Wavelength 630.2
---   profileInfo =
---
---
--- instance ProfileInfo Wav630 Fit where
---   profileWav = Wavelength 630.2
---   profileInfo = ProfileInfo' "Fit Profile 630.2nm"
---
---
--- instance ProfileInfo Orig854 where
---   profileWav = Wavelength 854.2
-
---
---
---
--- instance ProfileInfo Fit854 where
---   type ProfileWav Fit854 = Wav854
---   type ProfileType Fit854 = Fit
---   profileWav = Wavelength 854.2
-
--- data Profiles (f :: Type -> Type) = Profiles
---   { orig630 :: f Orig630
---   , orig854 :: f Orig854
---   , fit630 :: f Fit630
---   , fit854 :: f Fit854
---   }
---   deriving (Generic)
--- instance ToAsdf (Profiles AlignedAxes)
-
--- data ArmProfiles arm = ArmProfiles
---   { fit :: Profile arm Fit
---   , orig :: Profile arm Original
---   }
-
--- -- a single profile, fit or original
--- data Profile arm fit = Profile
---   { image :: DataCube [SlitX, Wavelength arm, Stokes] Float
---   , header :: ProfileHeader arm
---   }
 
 data ProfileHeader (fit :: ProfileType) = ProfileHeader
   { meta :: WavMeta fit

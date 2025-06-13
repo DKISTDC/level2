@@ -20,6 +20,7 @@ import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrameY)
+import NSO.Image.Types.Profile
 import NSO.Image.Types.Profile (ProfileType (Fit, Original))
 import NSO.Image.Types.VISPArm
 import NSO.Prelude
@@ -37,28 +38,6 @@ import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 -- The wavelength data is combined into a single axis, containing both 630 and 854 sections
 -- these are both in milliangstroms
-
-newtype Arms a = Arms {arms :: [a]}
-  deriving (Foldable)
-
-
-data ProfileArm (fit :: ProfileType) = ProfileArm
-  { meta :: WavMeta fit
-  , frames :: [DataCube [SlitX, Wavelength Nm, Stokes] Float]
-  }
-
-
--- first, divide by frame, then by arm in each frame
-newtype ProfileArms (fit :: ProfileType) = ProfileArms
-  { frames :: [Arms (ProfileFrame fit)]
-  }
-
-
-data ProfileFrame (fit :: ProfileType) = ProfileFrame
-  { meta :: WavMeta fit
-  , image :: DataCube [SlitX, Wavelength Nm, Stokes] Float
-  }
-
 
 decodeProfileFit :: (Error BlancaError :> es) => BS.ByteString -> Eff es [ProfileArm Fit]
 decodeProfileFit inp = do
@@ -131,16 +110,6 @@ data CombinedArms a
 
 newtype LineId = LineId Int
   deriving (Eq, Show)
-
-
--- Metadata for an arm profile
-data WavMeta (fit :: ProfileType) = WavMeta
-  { pixel :: Double
-  , delta :: Wavelength Nm
-  , length :: Int -- number of indices in the combined arms
-  , line :: SpectralLine
-  }
-  deriving (Show, Eq)
 
 
 data WavBreak = WavBreak
