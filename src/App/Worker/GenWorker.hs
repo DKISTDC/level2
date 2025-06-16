@@ -24,10 +24,10 @@ import NSO.Data.Datasets
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Image.Asdf as Asdf
-import NSO.Image.Frame as Frame
+import NSO.Image.Fits as Fits
+import NSO.Image.Fits.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
 import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
-import NSO.Image.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
 import NSO.Image.Quantity (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -174,7 +174,7 @@ workFrame
 workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
   now <- currentTime
   DateTime dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
-  let path = Scratch.outputL2Frame t.proposalId t.inversionId dateBeg
+  let path = Scratch.outputL2Fits t.proposalId t.inversionId dateBeg
   alreadyExists <- Scratch.pathExists path
 
   res <-
@@ -183,11 +183,11 @@ workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
         log Debug $ dump "SKIP frame" path.filePath
         pure Nothing
       else do
-        frame <- Frame.generateL2Frame now t.inversionId slice wavOrig wavFit frameInputs
-        let fits = Frame.frameToFits frame
+        frame <- Fits.generateL2Fits now t.inversionId slice wavOrig wavFit frameInputs
+        let fits = Fits.frameToFits frame
         log Debug $ dump "WRITE frame" path.filePath
         Scratch.writeFile path $ Frame.encodeL2 fits
-        pure $ Just $ Frame.frameMeta frame (filenameL2Frame t.inversionId dateBeg)
+        pure $ Just $ Frame.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
 
   send $ TaskModStatus @GenFits t updateNumFrame
   pure res
@@ -267,7 +267,7 @@ asdfTask t = do
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let tree = asdfDocument inv.inversionId inv.datasets now $ NE.sort metas
+    let tree = asdfDocument inv.inversionId ds now $ NE.sort metas
     let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output

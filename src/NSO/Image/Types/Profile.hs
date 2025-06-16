@@ -3,6 +3,7 @@ module NSO.Image.Types.Profile where
 import NSO.Image.Headers.Types
 import NSO.Prelude
 import NSO.Types.Wavelength
+import Telescope.Asdf (ToAsdf (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
 
@@ -18,30 +19,31 @@ instance KnownText Fit where
   knownText = "Fit"
 
 
+-- | A list with one entry per VISP arm
 newtype Arms a = Arms {arms :: [a]}
-  deriving (Foldable)
+  deriving (Foldable, Functor, Traversable)
 
 
-data ProfileArm (fit :: ProfileType) = ProfileArm
-  { meta :: WavMeta fit
-  , frames :: [DataCube [SlitX, Wavelength Nm, Stokes] Float]
+instance (ToAsdf a) => ToAsdf (Arms a) where
+  toValue (Arms as) = toValue as
+
+
+-- | Profile Data for a single FrameY (Scan Position), either Original or Fit
+data ProfileImage (fit :: ProfileType) = ProfileImage
+  { arm :: ArmWavMeta fit
+  , data_ :: DataCube [SlitX, Wavelength Nm, Stokes] Float
   }
 
 
--- first, divide by frame, then by arm in each frame
-newtype ProfileArms (fit :: ProfileType) = ProfileArms
-  { frames :: [Arms (ProfileFrame fit)]
+data Profile (f :: ProfileType -> Type) = Profile
+  { fit :: f Fit
+  , original :: f Original
   }
-
-
-data ProfileFrame (fit :: ProfileType) = ProfileFrame
-  { meta :: WavMeta fit
-  , image :: DataCube [SlitX, Wavelength Nm, Stokes] Float
-  }
+  deriving (Generic)
 
 
 -- Metadata for an arm profile
-data WavMeta (fit :: ProfileType) = WavMeta
+data ArmWavMeta (fit :: ProfileType) = ArmWavMeta
   { pixel :: Double
   , delta :: Wavelength Nm
   , length :: Int -- number of indices in the combined arms

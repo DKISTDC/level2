@@ -85,7 +85,10 @@ library
       NSO.Image.Asdf.HeaderTable
       NSO.Image.Asdf.NDCollection
       NSO.Image.Blanca
-      NSO.Image.Frame
+      NSO.Image.Fits
+      NSO.Image.Fits.Frame
+      NSO.Image.Fits.Meta
+      NSO.Image.Fits.Profile
       NSO.Image.Headers
       NSO.Image.Headers.Doc
       NSO.Image.Headers.Keywords
@@ -94,7 +97,6 @@ library
       NSO.Image.Headers.WCS
       NSO.Image.L1Input
       NSO.Image.Primary
-      NSO.Image.Profile
       NSO.Image.Quantity
       NSO.Image.Types.Profile
       NSO.Image.Types.VISPArm

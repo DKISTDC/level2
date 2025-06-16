@@ -7,16 +7,18 @@ import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
+import NSO.Data.Spectra qualified as Spectra
 import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
-import NSO.Image.Frame
+import NSO.Image.Fits
+import NSO.Image.Fits.Profile
 import NSO.Image.Primary
-import NSO.Image.Profile
 import NSO.Image.Quantity hiding (quantities)
+import NSO.Image.Types.Profile
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset (Dataset)
+import NSO.Types.Dataset (Dataset, Dataset' (datasetId))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, Wavelength (..))
@@ -36,8 +38,8 @@ import Telescope.Fits (ToHeader (..))
 data L2Asdf
 
 
-asdfDocument :: Id Inversion -> [Id Dataset] -> UTCTime -> NonEmpty L2FrameMeta -> Document
-asdfDocument inversionId datasetIds now metas =
+asdfDocument :: Id Inversion -> [Dataset] -> UTCTime -> NonEmpty L2FitsMeta -> Document
+asdfDocument inversionId dsets now metas =
   Document inversionTree
  where
   frames = NE.sort metas
@@ -54,7 +56,7 @@ asdfDocument inversionId datasetIds now metas =
       }
 
   -- choose a single frame from which to calculate the GWCS
-  qgwcs :: L2FrameMeta -> QuantityGWCS
+  qgwcs :: L2FitsMeta -> QuantityGWCS
   qgwcs m = quantityGWCS m.primary m.quantities.items.opticalDepth.wcs
 
   inversionMeta :: NonEmpty PrimaryHeader -> InversionMeta
@@ -66,8 +68,8 @@ asdfDocument inversionId datasetIds now metas =
     InversionInventory
       { frameCount = length headers
       , inversionId
-      , datasetIds
-      , wavelengths = [profileWav @Orig630, profileWav @Orig854]
+      , datasetIds = fmap (.datasetId) dsets
+      , wavelengths = fmap Spectra.midPoint $ Spectra.identifyLines dsets
       , created = now
       }
 
@@ -125,7 +127,7 @@ instance ToAsdf InversionInventory where
   anchor _ = Just $ Anchor (knownText @InversionInventory)
 
 
-newtype Fileuris = Fileuris [Path' Filename L2Frame]
+newtype Fileuris = Fileuris [Path' Filename L2FrameFits]
 
 
 instance ToAsdf Fileuris where
@@ -153,33 +155,6 @@ instance ToAsdf QuantitiesSection where
     refs :: Quantities Ref
     refs = quantitiesFrom (const Ref) ()
 instance ToAsdf (Quantities Ref)
-
-
--- you can't pass it a single set of axes
-data ProfilesSection = ProfilesSection
-  { axes :: [AxisMeta]
-  , items :: Profiles ProfileTree
-  , gwcsFit :: ProfileGWCS
-  , gwcsOrig :: ProfileGWCS
-  }
-
-
-instance ToAsdf ProfilesSection where
-  schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
-  toValue section =
-    mconcat
-      [ Object
-          [ ("axes", toNode section.axes)
-          , ("gwcs_fit", toNode section.gwcsFit)
-          , ("gwcs_orig", toNode section.gwcsOrig)
-          ]
-      , toValue section.items
-      , toValue (NDCollection (profilesFrom AlignedAxes) section.axes refs)
-      ]
-   where
-    refs :: Profiles Ref
-    refs = profilesFrom (const Ref) ()
-instance ToAsdf (Profiles Ref)
 
 
 -- Quantities ------------------------------------------------
@@ -260,7 +235,7 @@ quantityTree shape heads =
   DataTree
     { unit = Pixel
     , wcs = Ref
-    , data_ = fileManager @info shape.axes
+    , data_ = fileManager shape.axes (hduIndex @info)
     , meta = QuantityMeta{headers = HeaderTable heads, inventory = Ref}
     }
 
@@ -274,86 +249,90 @@ data QuantityMeta info = QuantityMeta
 
 -- Profiles ------------------------------------------------
 
-profilesSection :: PrimaryHeader -> NonEmpty FrameProfilesMeta -> ProfilesSection
+-- you can't pass it a single set of axes
+data ProfilesSection = ProfilesSection
+  { axes :: [AxisMeta]
+  , arms :: Arms (Profile ProfileTree)
+  -- , gwcsFit :: ProfileGWCS Fit
+  -- , gwcsOrig :: ProfileGWCS Original
+  }
+
+
+instance ToAsdf ProfilesSection where
+  schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
+  toValue section =
+    mconcat
+      [ Object
+          [ ("axes", toNode section.axes)
+          -- , ("gwcs_fit", toNode section.gwcsFit)
+          -- , ("gwcs_orig", toNode section.gwcsOrig)
+          ]
+          -- , toValue section.arms
+          -- , toValue (NDCollection (profilesFrom AlignedAxes) section.axes refs)
+      ]
+
+
+-- we need a whole object of keys...
+-- refs :: Profiles Ref
+-- refs = profilesFrom (const Ref) ()
+-- instance ToAsdf (Profiles Ref)
+
+profilesSection :: PrimaryHeader -> NonEmpty (Arms ProfileMeta) -> ProfilesSection
 profilesSection primary frames =
   ProfilesSection
-    { gwcsFit = profileGWCS primary (head frames).profiles.orig854.wcs
-    , gwcsOrig = profileGWCS primary (head frames).profiles.orig630.wcs
-    , axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-    , items = profilesTree frames
+    { -- { gwcsFit = profileGWCS primary (head frames).profiles.orig854.wcs
+      -- , gwcsOrig = profileGWCS primary (head frames).profiles.orig630.wcs
+      axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+    , arms = profilesArmsTree frames
     }
 
 
-profilesTree :: NonEmpty FrameProfilesMeta -> Profiles ProfileTree
-profilesTree frames =
+profilesArmsTree :: NonEmpty (Arms ProfileMeta) -> Arms (Profile ProfileTree)
+profilesArmsTree frames =
   let frame = head frames
-      ps = fmap (.profiles) frames
-   in Profiles
-        { orig630 = profileTree frame.shape630 $ fmap (.orig630) ps
-        , orig854 = profileTree frame.shape854 $ fmap (.orig854) ps
-        , fit630 = profileTree frame.shape630 $ fmap (.fit630) ps
-        , fit854 = profileTree frame.shape854 $ fmap (.fit854) ps
-        }
+   in -- ps = fmap (.profiles) frames
+      Arms []
 
 
-data ProfileTree info = ProfileTree
+data ProfileTree fit = ProfileTree
   { unit :: Unit
   , data_ :: FileManager
-  , meta :: ProfileTreeMeta info
-  , wcs :: Ref ProfileGWCS
+  , meta :: ProfileTreeMeta fit
+  , wcs :: Ref (ProfileGWCS fit)
   }
   deriving (Generic)
-instance (ToHeader info, KnownText info) => ToAsdf (ProfileTree info) where
-  anchor _ = Just $ Anchor $ knownText @info
+instance (KnownText fit) => ToAsdf (ProfileTree fit) where
+  -- anchor _ = Just $ Anchor $ knownText @fit
   toValue p =
     Object
       [ ("unit", toNode p.unit)
       , ("data", toNode p.data_)
       , ("meta", toNode p.meta)
-      , ("wcs", toNode p.wcs)
+      -- , ("wcs", toNode p.wcs)
       ]
-instance ToAsdf (Profiles ProfileTree) where
-  -- split into .original and .fit
-  toValue ps =
-    Object
-      [ ("original", toNode original)
-      , ("fit", toNode fit)
-      ]
-   where
-    original =
-      Object
-        [ ("wav6302", toNode ps.orig630)
-        , ("wav8542", toNode ps.orig854)
-        ]
-    fit =
-      Object
-        [ ("wav6302", toNode ps.fit630)
-        , ("wav8542", toNode ps.fit854)
-        ]
 
 
-profileTree
-  :: forall info
-   . (ProfileInfo info, KnownText (ProfileType info), HDUOrder info)
-  => Shape Profile
-  -> NonEmpty (ProfileHeader info)
-  -> ProfileTree info
-profileTree shape heads =
-  ProfileTree
-    { unit = Count
-    , wcs = Ref
-    , data_ = fileManager @info shape.axes
-    , meta =
-        ProfileTreeMeta
-          { headers = HeaderTable heads
-          , wavelength = profileWav @info
-          , profile = T.toLower $ knownText @(ProfileType info)
-          }
-    }
+-- profileTree
+--   :: forall fit
+--    . (ProfileInfo fit, KnownText fit)
+--   => Shape Profile
+--   -> NonEmpty (ProfileHeader info)
+--   -> ProfileTree info
+-- profileTree shape heads =
+--   ProfileTree
+--     { unit = Count
+--     , wcs = Ref
+--     , data_ = fileManager shape.axes
+--     , meta =
+--         ProfileTreeMeta
+--           { headers = HeaderTable heads
+--           , wavelength = profileWav @fit
+--           , profile = T.toLower $ knownText @fit
+--           }
+--     }
 
-
-data ProfileTreeMeta info = ProfileTreeMeta
-  { headers :: HeaderTable (ProfileHeader info)
+data ProfileTreeMeta fit = ProfileTreeMeta
+  { headers :: HeaderTable (ProfileHeader fit)
   , wavelength :: Wavelength Nm
   , profile :: Text
   }
@@ -373,9 +352,9 @@ instance ToAsdf FileManager where
   schema _ = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
 
 
-fileManager :: forall info. (HDUOrder info) => Axes Row -> FileManager
-fileManager axes =
-  FileManager{datatype = Float64, fileuris = Ref, shape = axes, target = hduIndex @info}
+fileManager :: Axes Row -> HDUIndex -> FileManager
+fileManager axes hduIndex =
+  FileManager{datatype = Float64, fileuris = Ref, shape = axes, target = hduIndex}
 
 
 -- Ref --------------------------------------------------------------

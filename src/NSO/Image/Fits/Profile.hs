@@ -3,7 +3,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module NSO.Image.Profile where
+module NSO.Image.Fits.Profile where
 
 import Control.Exception (Exception)
 import Data.ByteString qualified as BS
@@ -34,27 +34,66 @@ import Telescope.Fits as Fits
 import Telescope.Fits.Header (Header (..), HeaderRecord (..), ToKeyword (..))
 
 
--- BUG: PC self_self is wrong
---  ?? Is this still an issue?
+-- Profile FITS Generation -----------------------------------------------------------
 
--- Generating Profiles -------------------------------------------------------------------------------
+data ProfileFrameFits (fit :: ProfileType) = ProfileFrameFits
+  { header :: ProfileHeader fit
+  , image :: ProfileImage fit
+  }
 
-instance (KnownText fit) => ToHeader (WavMeta fit) where
-  toHeader meta =
-    Header $
-      fmap
-        Keyword
-        -- TODO: ext name based on.... the dynamic info of the profile info
-        [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
-        , keywordRecord @(BType "spect.line.profile") BType
-        , keywordRecord @(BUnit Dimensionless) BUnit
-        ]
-   where
-    extName = knownText @fit <> " Profile " <> cs (show meta.line)
+
+profiles
+  :: forall es
+   . (Error ProfileError :> es)
+  => SliceXY
+  -> UTCTime
+  -> Header
+  -> Arms (Profile ProfileImage)
+  -> Eff es (Arms (Profile ProfileFrameFits))
+profiles slice now l1 = mapM profile
+ where
+  profile pair = do
+    fit <- profileFrameFits pair.fit
+    original <- profileFrameFits pair.original
+    pure $ Profile{fit, original}
+
+  profileFrameFits :: ProfileImage fit -> Eff es (ProfileFrameFits fit)
+  profileFrameFits frame = do
+    h <- profileHeader now slice l1 frame
+    pure $ ProfileFrameFits h frame
+
+
+profileHDUs :: Arms (Profile ProfileFrameFits) -> [DataHDU]
+profileHDUs (Arms arms) = mconcat $ fmap pairHDUs arms
+ where
+  pairHDUs :: Profile ProfileFrameFits -> [DataHDU]
+  pairHDUs pair =
+    [ profileHDU pair.original
+    , profileHDU pair.fit
+    ]
+
+  profileHDU :: (KnownText fit) => ProfileFrameFits fit -> DataHDU
+  profileHDU p =
+    let darr = encodeDataArray p.image.data_.array
+        header = toHeader p.header
+     in DataHDU{header, dataArray = addDummyAxis darr}
+
+
+profileHeader
+  :: (Error ProfileError :> es)
+  => UTCTime
+  -> SliceXY
+  -> Header
+  -> ProfileImage fit
+  -> Eff es (ProfileHeader fit)
+profileHeader now slice l1 frame = do
+  common <- dataCommon now frame.data_
+  wcs <- wcsHeader frame.arm slice l1
+  pure $ ProfileHeader{common, wcs, meta = frame.arm}
 
 
 data ProfileHeader (fit :: ProfileType) = ProfileHeader
-  { meta :: WavMeta fit
+  { meta :: ArmWavMeta fit
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
@@ -72,39 +111,21 @@ instance (KnownText fit) => ToHeader (ProfileHeader fit) where
     addKeywords h.wcs.axesA
 
 
--- armProfiles
---   :: (Error ProfileError :> es)
---   => SliceXY
---   -> UTCTime
---   -> Header
---   -> VISPArms (WavProfile Original)
---   -> VISPArms (WavProfile Fit)
---   -> ProfileFrame Original
---   -> ProfileFrame Fit
---   -> Eff es (VISPArms ArmProfiles)
--- armProfiles slice now l1 wpo wpf po pf = do
---   -- orig630 <- profile @Orig630 DataHDUInfo wpo.wav630 po.wav630
---   -- orig854 <- profile @Orig854 DataHDUInfo wpo.wav854 po.wav854
---   -- fit630 <- profile @Fit630 DataHDUInfo wpf.wav630 pf.wav630
---   -- fit854 <- profile @Fit854 DataHDUInfo wpf.wav854 pf.wav854
---   -- pure $ Profiles{orig630, orig854, fit630, fit854}
---   pure _
---  where
---   armProfiles info = _
---
---   armProfile
---     :: forall arm fit hduInfo es
---      . (hduInfo ~ ProfileInfo arm fit, ToHeader hduInfo, Error ProfileError :> es)
---     => hduInfo
---     -> WavProfile arm
---     -> DataCube [SlitX, Wavelength arm, Stokes] Float
---     -> Eff es (Profile arm fit)
---   armProfile info wprofile image = do
---     common <- dataCommon now image
---     wcs <- wcsHeader wprofile slice l1
---     pure $ Profile image $ ProfileHeader{common, wcs, info}
+instance (KnownText fit) => ToHeader (ArmWavMeta fit) where
+  toHeader meta =
+    Header $
+      fmap
+        Keyword
+        [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
+        , keywordRecord @(BType "spect.line.profile") BType
+        , keywordRecord @(BUnit Dimensionless) BUnit
+        ]
+   where
+    extName :: Text
+    extName = knownText @fit <> " Profile " <> cs (show meta.line)
 
-wcsHeader :: (Error ProfileError :> es) => WavMeta fit -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
+
+wcsHeader :: (Error ProfileError :> es) => ArmWavMeta fit -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
 wcsHeader wp slice l1 = runParseError InvalidWCS $ do
   wm <- wcsAxes @WCSMain slice wp l1
   wc <- wcsCommon (isWcsValid wm) l1
@@ -116,33 +137,6 @@ wcsHeader wp slice l1 = runParseError InvalidWCS $ do
   isWcsValid :: ProfileAxes alt -> Bool
   isWcsValid axs =
     and [isJust axs.dummyY.pcs, isJust axs.slitX.pcs, isJust axs.wavelength.pcs, isJust axs.stokes.pcs]
-
-
-profileHDUs
-  :: forall (fit :: ProfileType) es
-   . (KnownText fit, Error ProfileError :> es)
-  => UTCTime
-  -> Header
-  -> SliceXY
-  -> Arms (ProfileFrame fit)
-  -> Eff es [DataHDU]
-profileHDUs now l1 slice (Arms arms) = do
-  mapM profileHDU arms
- where
-  profileHDU :: ProfileFrame fit -> Eff es DataHDU
-  profileHDU p = do
-    let darr = encodeDataArray p.image.array
-    header <- toHeader <$> profileHeader p
-    pure $ DataHDU{header, dataArray = addDummyAxis darr}
-
-  profileHeader
-    :: (Error ProfileError :> es)
-    => ProfileFrame fit
-    -> Eff es (ProfileHeader fit)
-  profileHeader frame = do
-    common <- dataCommon now frame.image
-    wcs <- wcsHeader frame.meta slice l1
-    pure $ ProfileHeader{common, wcs, meta = frame.meta}
 
 
 data ProfileAxes alt = ProfileAxes
@@ -195,7 +189,7 @@ wcsAxes
   :: forall alt fit es
    . (Error ParseError :> es, KnownText alt)
   => SliceXY
-  -> WavMeta fit
+  -> ArmWavMeta fit
   -> Header
   -> Eff es (ProfileAxes alt)
 wcsAxes s wp h = do
@@ -224,11 +218,6 @@ wcsAxes s wp h = do
     pure $ ProfilePCs{dummyY = p.xy, slitX = p.xx, wavelength = PC 0, stokes = PC 0}
 
 
--- lengthSlitX :: DataCube [SlitX, Wavelength w, Stokes] Float -> Int
--- lengthSlitX res =
---   let Sz (x :> _ :. _) = size res.array
---    in x
-
 wcsStokes :: (Monad m) => m (ProfileAxis alt n)
 wcsStokes = do
   let crpix = Key 1
@@ -241,7 +230,7 @@ wcsStokes = do
   pure $ ProfileAxis{keys, pcs = Just pcs}
 
 
-wcsWavelength :: (Monad m) => WavMeta fit -> m (ProfileAxis alt n)
+wcsWavelength :: (Monad m) => ArmWavMeta fit -> m (ProfileAxis alt n)
 wcsWavelength wp = do
   let Wavelength w = midPoint wp.line
   let crpix = Key $ realToFrac wp.pixel
@@ -253,25 +242,6 @@ wcsWavelength wp = do
   let pcs = ProfilePCs{stokes = PC 0.0, dummyY = PC 0, slitX = PC 0, wavelength = PC 1.0}
   pure $ ProfileAxis{keys, pcs = Just pcs}
 
-
--- mapProfiles :: (forall x. f x -> g x) -> Profiles f -> Profiles g
--- mapProfiles f ps =
---   Profiles
---     { orig630 = f ps.orig630
---     , orig854 = f ps.orig854
---     , fit630 = f ps.fit630
---     , fit854 = f ps.fit854
---     }
---
---
--- profilesFrom :: (forall x. a -> f x) -> a -> Profiles f
--- profilesFrom val a =
---   Profiles
---     { orig630 = val a
---     , orig854 = val a
---     , fit630 = val a
---     , fit854 = val a
---     }
 
 data ProfileError
   = InvalidWavelengthGroups

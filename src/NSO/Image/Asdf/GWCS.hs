@@ -5,11 +5,11 @@ module NSO.Image.Asdf.GWCS where
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
+import NSO.Image.Fits.Profile
 import NSO.Image.Headers (Observation (..), Telescope (..))
 import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Meters (..), Stokes)
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
-import NSO.Image.Profile
 import NSO.Image.Quantity
 import NSO.Prelude as Prelude
 import NSO.Types.Common (DateTime (..))
@@ -243,7 +243,7 @@ instance ToAsdf QuantityGWCS where
   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
-profileGWCS :: PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS
+profileGWCS :: PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS fit
 profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
   inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
@@ -281,7 +281,7 @@ profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) out
         }
 
 
-newtype ProfileGWCS
+newtype ProfileGWCS fit
   = ProfileGWCS
       (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame)))
 
@@ -290,9 +290,9 @@ instance KnownText ProfileGWCS where
   knownText = "profileGWCS"
 
 
-instance ToAsdf ProfileGWCS where
+instance (KnownText fit) => ToAsdf (ProfileGWCS fit) where
   schema (ProfileGWCS gwcs) = schema gwcs
-  anchor _ = Just $ Anchor $ knownText @ProfileGWCS
+  anchor _ = Just $ Anchor $ "ProfileGWCS" <> knownText @fit
   toValue (ProfileGWCS gwcs) = toValue gwcs
 
 

@@ -9,12 +9,12 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
-import NSO.Image.Frame as Frame
+import NSO.Image.Blanca as Blanca (collateFramesArms)
+import NSO.Image.Fits as Fits
 import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (Depth, SliceXY (..), SlitX, VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Image.Primary (PrimaryError)
-import NSO.Image.Profile (Fit, Original, ProfileError, ProfileFrame)
 import NSO.Image.Quantity (Quantities, QuantityError, QuantityImage)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
@@ -27,10 +27,11 @@ import Telescope.Fits as Fits
 
 
 -- TODO: add frame check back in!!
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> [ProfileFrame Fit] -> [ProfileFrame Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
 collateFrames qs pfs pos ts = do
   unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
-  frames $ L.zipWith4 L2FrameInputs qs pfs pos ts
+  let frameArms :: [Arms (Profile ProfileImage)] = Blanca.collateFramesArms pfs pos
+  frames $ L.zipWith3 L2FrameInputs qs frameArms ts
  where
   frames [] = throwError $ NoFrames frameSizes
   frames (f : fs) = pure $ f :| fs
@@ -111,14 +112,14 @@ readLevel1File dir frame = do
     _ -> throwError $ MissingL1HDU frame.file.filePath
 
 
-readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path' Filename L2Frame -> Eff es Fits
+readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path' Filename L2FrameFits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Scratch.outputL2Dir pid iid
   inp <- send $ Scratch.ReadFile $ filePath dir path
   Fits.decode inp
 
 
-l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2Frame]
+l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]
 l2FramePaths pid iid = do
   let dir = Scratch.outputL2Dir pid iid
   filter isFits <$> Scratch.listDirectory dir

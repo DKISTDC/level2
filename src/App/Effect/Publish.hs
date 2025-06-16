@@ -9,7 +9,7 @@ import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError, Task, Token, Token' (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
-import NSO.Image.Frame (L2Frame)
+import NSO.Image.Fits (L2FrameFits)
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.InstrumentProgram
@@ -62,7 +62,7 @@ transferSoftPublish propId invId = do
           }
 
 
-inversionTransferItem :: Path' Dir L2Frame -> Path' Dir (Published Inversion) -> TransferItem
+inversionTransferItem :: Path' Dir L2FrameFits -> Path' Dir (Published Inversion) -> TransferItem
 inversionTransferItem src dest =
   TransferItem
     { data_type = DataType

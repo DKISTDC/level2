@@ -157,7 +157,7 @@ instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (Da
   headerDoc =
     [ docKey @(ExtName ext)
     , docKey @(BType btype)
-    , docKey @(BUnit bunit)
+, docKey @(BUnit bunit)
     ]
 
 

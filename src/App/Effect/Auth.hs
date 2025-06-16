@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module App.Effect.Auth where
 
 import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
 import App.Types
 import Control.Monad (void)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), withText)
 import Data.ByteString.Char8 qualified as BC
 import Data.Tagged
 import Effectful
@@ -21,6 +23,7 @@ import Network.HTTP.Types qualified as HTTP
 import Network.URI
 import Web.Hyperbole
 import Web.View as WebView
+import Web.View.Types.Url qualified as Url
 
 
 -- Authentication!
@@ -35,11 +38,20 @@ data GlobusAuth = GlobusAuth
   { token :: Maybe (Token Access)
   , currentUrl :: Maybe Url
   }
-  deriving (Generic, Show, Read, FromParam, ToParam)
+  deriving (Generic, Show, Read, FromParam, ToParam, ToJSON, FromJSON)
 instance Session GlobusAuth where
   cookiePath = Just []
-instance DefaultParam GlobusAuth where
-  defaultParam = GlobusAuth mempty mempty
+
+
+-- instance DefaultParam GlobusAuth where
+--   defaultParam = GlobusAuth mempty mempty
+instance Default GlobusAuth where
+  def = GlobusAuth mempty mempty
+instance ToJSON Url where
+  toJSON u = String $ renderUrl u
+instance FromJSON Url where
+  parseJSON = withText "Url" $ \t -> do
+    pure $ Url.url t
 
 
 type instance DispatchOf Auth = 'Dynamic

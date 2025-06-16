@@ -1,81 +1,77 @@
 module NSO.Image.Blanca where
 
 import Control.Exception (Exception)
-import Control.Monad (foldM, zipWithM)
-import Control.Monad.Catch (Handler (..), catch, catches)
+import Control.Monad (foldM)
+import Control.Monad.Catch (Handler (..), catches)
 import Data.ByteString qualified as BS
-import Data.List (foldl', mapAccumL)
+import Data.List (foldl')
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
-import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
-import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
-import NSO.Image.Asdf.NDCollection (AlignedAxes)
-import NSO.Image.Headers
-import NSO.Image.Headers.Keywords
-import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
-import NSO.Image.Headers.WCS
-import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrameY)
+import NSO.Image.Quantity (splitFrameY)
 import NSO.Image.Types.Profile
-import NSO.Image.Types.Profile (ProfileType (Fit, Original))
-import NSO.Image.Types.VISPArm
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), MA, Nm, SpectralLine (..), Wavelength (..))
-import Telescope.Asdf (ToAsdf (..))
-import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube as DC
-import Telescope.Data.KnownText
-import Telescope.Data.WCS
 import Telescope.Fits as Fits
-import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
 -- Decoding Profiles ---------------------------------------------------------------------------------------
 
--- The wavelength data is combined into a single axis, containing both 630 and 854 sections
--- these are both in milliangstroms
+-- Given the decoded blanca profiles by arm-frame, return list of frames of profiles by arm
+collateFramesArms :: Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [Arms (Profile ProfileImage)]
+collateFramesArms (Arms fss) (Arms oss) =
+  zipWith (\fs os -> Arms $ zipWith Profile fs os) fss oss
 
-decodeProfileFit :: (Error BlancaError :> es) => BS.ByteString -> Eff es [ProfileArm Fit]
+
+-- Decode the BLANCA output for fit profiles: inv_res_pro.fits
+decodeProfileFit :: (Error BlancaError :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Fit])
 decodeProfileFit inp = do
   f <- decode inp
   decodeProfileArms f
 
 
-decodeProfileOrig :: (Error BlancaError :> es) => BS.ByteString -> Eff es [ProfileArm Original]
+-- Decode the BLANCA output for original profiles: per_ori.fits
+decodeProfileOrig :: (Error BlancaError :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Original])
 decodeProfileOrig inp = do
   f <- decode inp
   decodeProfileArms f
 
 
-decodeProfileArms :: (Error BlancaError :> es) => Fits -> Eff es [ProfileArm fit]
+decodeProfileArms :: (Error BlancaError :> es) => Fits -> Eff es (Arms [ProfileImage fit])
 decodeProfileArms f = do
   hdus <- readProfileHDUs f
   metas <- profileWavMetas hdus.lineIds hdus.offsets
   let frames = profilesByFrame hdus.array
   framesByArms <- mapM (splitFrameIntoArms metas) frames
-  profileArms metas framesByArms
+  profileArmsFrames metas framesByArms
 
 
-profileArms :: (Error BlancaError :> es) => [WavMeta fit] -> [Arms (DataCube [SlitX, Wavelength Nm, Stokes] Float)] -> Eff es [ProfileArm fit]
-profileArms metas framesArms = do
+-- Given arm meta and a list of frames, subdivided by arm, create an Arms (list of arms), split by frames
+profileArmsFrames :: (Error BlancaError :> es) => Arms (ArmWavMeta fit) -> [Arms (DataCube [SlitX, Wavelength Nm, Stokes] Float)] -> Eff es (Arms [ProfileImage fit])
+profileArmsFrames metas framesArms = do
   let armsFrames = L.transpose $ fmap (.arms) framesArms
-  pure $ zipWith ProfileArm metas armsFrames
+  pure $ Arms $ zipWith profileArmFrames metas.arms armsFrames
+ where
+  profileArmFrames :: ArmWavMeta fit -> [DataCube [SlitX, Wavelength Nm, Stokes] Float] -> [ProfileImage fit]
+  profileArmFrames armMeta = fmap (ProfileImage armMeta)
 
 
+-- Split a single profile frame (one scan position) into N arms given N arm WavMetas
 splitFrameIntoArms
   :: forall es combined arm fit
    . (Error BlancaError :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
-  => [WavMeta fit]
+  => Arms (ArmWavMeta fit)
   -> DataCube combined Float
   -> Eff es (Arms (DataCube arm Float))
 splitFrameIntoArms metas wavs = do
   Arms . snd <$> foldM splitNext (wavs, []) metas
  where
-  splitNext :: (DataCube combined Float, [DataCube arm Float]) -> WavMeta fit -> Eff es (DataCube combined Float, [DataCube arm Float])
+  splitNext :: (DataCube combined Float, [DataCube arm Float]) -> ArmWavMeta fit -> Eff es (DataCube combined Float, [DataCube arm Float])
   splitNext (combo, arms) meta = catchSplit "Profile Data" $ do
     (arm, rest) <- DC.splitM1 meta.length combo
     pure (rest, toNanos arm : arms)
@@ -105,6 +101,8 @@ profilesByFrame = fmap swapProfileDimensions . splitFrameY
 --  2. Wavelength Offsets [-0.1, 0.0, 0.1, 0.2, 0, 0.1] - how far from the center of the spectral line this index is in milliangstroms
 
 newtype WavOffset unit = WavOffset Float
+
+
 data CombinedArms a
 
 
@@ -112,31 +110,31 @@ newtype LineId = LineId Int
   deriving (Eq, Show)
 
 
-data WavBreak = WavBreak
+data ArmWavBreak = ArmWavBreak
   { length :: Int -- number of indices in the combined arms
   , line :: SpectralLine
   }
 
 
-profileWavMetas :: (Error BlancaError :> es) => [LineId] -> [WavOffset MA] -> Eff es [WavMeta fit]
+profileWavMetas :: (Error BlancaError :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms (ArmWavMeta fit))
 profileWavMetas lids wavs = do
   breaks <- either (throwError . UnknownLineId) pure $ wavBreaks lids
   let datas = splitWavs breaks wavs
-  pure $ zipWith wavMeta breaks.arms datas.arms
+  pure $ Arms $ zipWith armWavMeta breaks.arms datas.arms
 
 
-wavBreaks :: [LineId] -> Either LineId (Arms WavBreak)
+wavBreaks :: [LineId] -> Either LineId (Arms ArmWavBreak)
 wavBreaks lids = do
   fromGroups $ NE.group lids
  where
-  fromGroups :: [NonEmpty LineId] -> Either LineId (Arms WavBreak)
+  fromGroups :: [NonEmpty LineId] -> Either LineId (Arms ArmWavBreak)
   fromGroups gs = Arms <$> foldM addBreak [] gs
 
-  addBreak :: [WavBreak] -> NonEmpty LineId -> Either LineId [WavBreak]
+  addBreak :: [ArmWavBreak] -> NonEmpty LineId -> Either LineId [ArmWavBreak]
   addBreak breaks ls = do
     let lineId = NE.head ls
     line <- blancaWavLine lineId
-    pure $ WavBreak{length = length lids, line} : breaks
+    pure $ ArmWavBreak{length = length lids, line} : breaks
 
   blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
@@ -146,12 +144,12 @@ wavBreaks lids = do
     n -> Left n
 
 
-splitWavs :: Arms WavBreak -> [WavOffset MA] -> Arms [Wavelength Nm]
+splitWavs :: Arms ArmWavBreak -> [WavOffset MA] -> Arms [Wavelength Nm]
 splitWavs breaks wavs =
   let (_, arms) = foldl' splitNextWav (wavs, []) breaks :: ([WavOffset MA], [[Wavelength Nm]])
    in Arms arms
  where
-  splitNextWav :: ([WavOffset MA], [[Wavelength Nm]]) -> WavBreak -> ([WavOffset MA], [[Wavelength Nm]])
+  splitNextWav :: ([WavOffset MA], [[Wavelength Nm]]) -> ArmWavBreak -> ([WavOffset MA], [[Wavelength Nm]])
   splitNextWav (wos, wvs) wb =
     let wav = take wb.length wos
         rest = drop wb.length wos
@@ -168,10 +166,10 @@ splitWavs breaks wavs =
     Wavelength $ mid + realToFrac offset / 10000
 
 
-wavMeta :: WavBreak -> [Wavelength Nm] -> WavMeta fit
-wavMeta bk ws =
+armWavMeta :: ArmWavBreak -> [Wavelength Nm] -> ArmWavMeta fit
+armWavMeta bk ws =
   let delta = avgDelta ws
-   in WavMeta
+   in ArmWavMeta
         { delta
         , length = bk.length
         , pixel = pixel0 delta ws

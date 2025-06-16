@@ -3,7 +3,7 @@ module App.Effect.FileManager where
 import App.Types (AppDomain)
 import Data.Tagged
 import Effectful.Globus hiding (Id)
-import NSO.Image.Frame (L2Frame)
+import NSO.Image.Fits (L2FrameFits)
 import NSO.Prelude
 import NSO.Types.Common
 import Web.View.Types.Url
@@ -48,7 +48,7 @@ fileManagerSelectUrl lmt lbl domain submitUrl cancelUrl =
 
 
 -- DEBUG ONLY: hard coded aasgard
-fileManagerOpenInv :: Path' Dir L2Frame -> Url
+fileManagerOpenInv :: Path' Dir L2FrameFits -> Url
 fileManagerOpenInv = fileManagerOpenDir (Id "20fa4840-366a-494c-b009-063280ecf70d")
 
 
