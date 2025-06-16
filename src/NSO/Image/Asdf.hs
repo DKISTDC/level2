@@ -15,7 +15,7 @@ import NSO.Image.Fits
 import NSO.Image.Fits.Profile
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Primary
-import NSO.Image.Quantity hiding (quantities)
+import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude

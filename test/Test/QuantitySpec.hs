@@ -1,7 +1,7 @@
 module Test.QuantitySpec where
 
 import Data.Massiv.Array as M
-import NSO.Image.Quantity (forcePositive360)
+import NSO.Image.Fits.Quantity (forcePositive360)
 import NSO.Prelude
 import Skeletest
 

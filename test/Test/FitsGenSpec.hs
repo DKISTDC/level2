@@ -16,7 +16,7 @@ import NSO.Image.Headers.WCS
 import NSO.Image.L1Input
 import NSO.Image.Primary as Primary
 import NSO.Image.Fits.Profile as Profile
-import NSO.Image.Quantity as Quantity
+import NSO.Image.Fits.Quantity as Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength

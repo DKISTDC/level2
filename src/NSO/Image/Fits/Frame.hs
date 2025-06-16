@@ -9,10 +9,10 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Image.Fits.Profile as Profile
+import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers
 import NSO.Image.Headers.Types (Depth, SliceXY, SlitX)
 import NSO.Image.Primary
-import NSO.Image.Quantity as Quantity
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude

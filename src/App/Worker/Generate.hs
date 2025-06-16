@@ -11,11 +11,12 @@ import Effectful.Log
 import NSO.Data.Datasets as Datasets
 import NSO.Image.Blanca as Blanca (collateFramesArms)
 import NSO.Image.Fits as Fits
+import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
 import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (Depth, SliceXY (..), SlitX, VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Image.Primary (PrimaryError)
-import NSO.Image.Quantity (Quantities, QuantityError, QuantityImage)
+import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)

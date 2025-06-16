@@ -1,8 +1,8 @@
 module Test.FrameSpec where
 
 import Data.Massiv.Array as M
+import NSO.Image.Fits.Quantity (splitFrames)
 import NSO.Image.Headers.Types
-import NSO.Image.Quantity (splitFrames)
 import NSO.Prelude
 import Skeletest
 import Telescope.Data.DataCube
@@ -20,7 +20,7 @@ spec = do
         length frames `shouldBe` 3
         [f0, _, _] <- pure frames
 
-        M.toLists (computeAs P f0.array) `shouldBe` ([[[0, 1, 2, 3], [1, 2, 3, 4]]] :: [[[Float]]])
+        M.toLists (computeAs P f0 . array) `shouldBe` ([[[0, 1, 2, 3], [1, 2, 3, 4]]] :: [[[Float]]])
 
 
 sample4D :: DataCube [Q, Depth, FrameY, SlitX] Float

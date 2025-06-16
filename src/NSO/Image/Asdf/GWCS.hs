@@ -6,11 +6,11 @@ import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Fits.Profile
+import NSO.Image.Fits.Quantity
 import NSO.Image.Headers (Observation (..), Telescope (..))
 import NSO.Image.Headers.Types (Degrees (..), Depth, Key (..), Meters (..), Stokes)
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
-import NSO.Image.Quantity
 import NSO.Prelude as Prelude
 import NSO.Types.Common (DateTime (..))
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))

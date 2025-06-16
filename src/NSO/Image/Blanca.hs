@@ -7,12 +7,12 @@ import Data.ByteString qualified as BS
 import Data.List (foldl')
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
+import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
 import Data.Massiv.Array qualified as M
 import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
 import NSO.Image.Headers.Types
-import NSO.Image.Quantity (splitFrameY)
 import NSO.Image.Types.Profile
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), MA, Nm, SpectralLine (..), Wavelength (..))
@@ -233,6 +233,20 @@ readProfileHDUs f = do
       [_, Image h] -> do
         fmap LineId . M.toLists <$> decodeDataArray @Ix1 h.dataArray
       _ -> throwError $ MissingProfileExtensions "Wavelength Ids"
+
+
+-- | Splits any Data Cube into frames when it is the 3rd of 4 dimension
+splitFrameY :: forall a b d f. DataCube [a, b, FrameY, d] f -> [DataCube [a, b, d] f]
+splitFrameY res =
+  fmap sliceFrame [0 .. numFrames res - 1]
+ where
+  numFrames :: DataCube [a, b, FrameY, d] f -> Int
+  numFrames (DataCube arr) =
+    let Sz (_ :> _ :> nf :. _) = size arr
+     in nf
+
+  sliceFrame :: Int -> DataCube [a, b, d] f
+  sliceFrame n = sliceM2 n res
 
 
 -- Errors ------------------------------------------------------------------

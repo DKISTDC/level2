@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module NSO.Image.Quantity where
+module NSO.Image.Fits.Quantity where
 
 import Control.Exception (Exception)
 import Data.ByteString (ByteString)
@@ -14,6 +14,7 @@ import Effectful.Log
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Image.Asdf.NDCollection (AlignedAxes)
+import NSO.Image.Blanca (splitFrameY)
 import NSO.Image.Headers
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Doc as Doc
@@ -394,20 +395,6 @@ splitQuantities res = do
 
 
 -- Frames -----------------------------------------------------------------------
-
--- | Splits any Data Cube into frames when it is the 3rd of 4 dimension
-splitFrameY :: forall a b d f. DataCube [a, b, FrameY, d] f -> [DataCube [a, b, d] f]
-splitFrameY res =
-  fmap sliceFrame [0 .. numFrames res - 1]
- where
-  numFrames :: DataCube [a, b, FrameY, d] f -> Int
-  numFrames (DataCube arr) =
-    let Sz (_ :> _ :> nf :. _) = size arr
-     in nf
-
-  sliceFrame :: Int -> DataCube [a, b, d] f
-  sliceFrame n = sliceM2 n res
-
 
 data QuantityError
   = InvalidFrameShape (Sz Ix3)

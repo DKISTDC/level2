@@ -89,6 +89,7 @@ library
       NSO.Image.Fits.Frame
       NSO.Image.Fits.Meta
       NSO.Image.Fits.Profile
+      NSO.Image.Fits.Quantity
       NSO.Image.Headers
       NSO.Image.Headers.DataCommon
       NSO.Image.Headers.Doc
@@ -98,7 +99,6 @@ library
       NSO.Image.Headers.WCS
       NSO.Image.L1Input
       NSO.Image.Primary
-      NSO.Image.Quantity
       NSO.Image.Types.Profile
       NSO.Image.Types.Quantity
       NSO.Image.Types.VISPArm

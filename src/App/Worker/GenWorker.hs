@@ -26,9 +26,9 @@ import NSO.Data.Inversions as Inversions
 import NSO.Image.Asdf as Asdf
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
+import NSO.Image.Fits.Quantity (decodeQuantitiesFrames)
 import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
-import NSO.Image.Quantity (decodeQuantitiesFrames)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Telescope.Fits (BinTableHDU (..))
