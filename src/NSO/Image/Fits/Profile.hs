@@ -16,11 +16,12 @@ import NSO.Data.Spectra (midPoint)
 import NSO.Image.Asdf.NDCollection (AlignedAxes)
 import NSO.Image.Blanca
 import NSO.Image.Headers
+import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import NSO.Image.Quantity (DataCommon (..), DataHDUInfo (..), DataHeader (..), addDummyAxis, dataCommon, splitFrameY)
+import NSO.Image.Quantity (addDummyAxis, dataCommon, splitFrameY)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.VISPArm
 import NSO.Prelude

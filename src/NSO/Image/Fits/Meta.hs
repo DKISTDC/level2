@@ -13,6 +13,7 @@ import NSO.Image.Headers.Types (Depth, SliceXY, SlitX)
 import NSO.Image.Primary
 import NSO.Image.Quantity as Quantity
 import NSO.Image.Types.Profile
+import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
@@ -173,7 +174,7 @@ frameMeta frame path =
     , path
     }
  where
-  quantitiesMeta :: Quantities Quantity -> FrameQuantitiesMeta
+  quantitiesMeta :: Quantities QuantityFrameFits -> FrameQuantitiesMeta
   quantitiesMeta qs =
     FrameQuantitiesMeta
       { items = quantityHeaders qs

@@ -15,11 +15,13 @@ import GHC.Generics
 import GHC.TypeLits
 import NSO.Image.Asdf.NDCollection (AlignedAxes)
 import NSO.Image.Headers
+import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
+import NSO.Image.Types.Quantity
 import NSO.Prelude
 import Telescope.Asdf hiding (Key)
 import Telescope.Data.Axes (Axes (..), AxisOrder (..))
@@ -30,172 +32,7 @@ import Telescope.Fits as Fits
 import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
-type OpticalDepth =
-  DataHDUInfo
-    "Log of Optical Depth at 500nm"
-    "phys.absorption.opticalDepth"
-    'Dimensionless
-instance KnownText OpticalDepth where
-  knownText = "OpticalDepth"
-
-
-type Temperature =
-  DataHDUInfo
-    "Temperature"
-    "phys.temperature"
-    'Kelvin
-instance KnownText Temperature where
-  knownText = "Temperature"
-
-
-type ElectronPressure =
-  DataHDUInfo
-    "Electron Pressure"
-    "phys.electron;phys.pressure"
-    'N_m2
-instance KnownText ElectronPressure where
-  knownText = "ElectronPressure"
-
-
-type Microturbulence =
-  DataHDUInfo
-    "Microturbulence"
-    "phys.veloc.microTurb"
-    'Km_s
-instance KnownText Microturbulence where
-  knownText = "Microturbulence"
-
-
-type MagStrength =
-  DataHDUInfo
-    "Magnetic Field Strength"
-    "phys.magField"
-    Tesla
-instance KnownText MagStrength where
-  knownText = "MagStrength"
-
-
-type Velocity =
-  DataHDUInfo
-    "Line-of-sight Velocity"
-    "spect.dopplerVeloc"
-    Km_s
-instance KnownText Velocity where
-  knownText = "Velocity"
-
-
-type MagInclination =
-  DataHDUInfo
-    "Magnetic Field Inclination (w.r.t. line-of-sight)"
-    "phys.magField;pos.angDistance"
-    Deg
-instance KnownText MagInclination where
-  knownText = "MagInclination"
-
-
-type MagAzimuth =
-  DataHDUInfo
-    "Magnetic Field Azimuth (w.r.t. line-of-sight)"
-    "phys.magField;pos.azimuth"
-    Deg
-instance KnownText MagAzimuth where
-  knownText = "MagAzimuth"
-
-
-type GeoHeight =
-  DataHDUInfo
-    "Geometric Height above solar surface (tau ~ 1 at 500nm)"
-    "phys.distance"
-    Km
-instance KnownText GeoHeight where
-  knownText = "GeoHeight"
-
-
-type GasPressure =
-  DataHDUInfo
-    "Gas Pressure"
-    "phys.pressure"
-    N_m2
-instance KnownText GasPressure where
-  knownText = "GasPressure"
-
-
-type Density =
-  DataHDUInfo
-    "Density"
-    "phys.density"
-    Kg_m3
-instance KnownText Density where
-  knownText = "Density"
-
-
-data DataHDUAxes = DataHDUAxes
-  { naxis :: Key (Constant "3") "Data HDUs have the shape (y, x, depth)"
-  , naxis1 :: Naxis "Optical Depth"
-  , naxis2 :: Naxis "Slit X"
-  , naxis3 :: NaxisY
-  }
-  deriving (Generic, HeaderDoc)
-
-
--- The DataHDUInfo contains static headers EXTNAME, BTYPE and BUNIT
-data DataHDUInfo (extName :: Symbol) (btype :: Symbol) (bunit :: Unit) = DataHDUInfo
-
-
-instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => ToHeader (DataHDUInfo ext btype bunit) where
-  toHeader _ =
-    Header $
-      fmap
-        Keyword
-        [ keywordRecord @(ExtName ext) ExtName
-        , keywordRecord @(BType btype) BType
-        , keywordRecord @(BUnit bunit) BUnit
-        ]
-
-
-instance (KnownSymbol ext, KnownSymbol btype, KnownValue bunit) => HeaderDoc (DataHDUInfo ext btype bunit) where
-  headerDoc =
-    [ docKey @(ExtName ext)
-    , docKey @(BType btype)
-, docKey @(BUnit bunit)
-    ]
-
-
-instance FromHeader (DataHDUInfo ext btye bunit) where
-  parseHeader _ = pure DataHDUInfo
-
-
-data DataHeader info = DataHeader
-  { info :: info
-  , common :: DataCommon
-  }
-
-
--- The library already inserts the NAXIS headers. No need to write them manually
-instance (ToHeader info) => ToHeader (DataHeader info) where
-  toHeader (DataHeader info common) =
-    toHeader info <> toHeader common
-
-
--- The Header Docs need to contain info, axes, and common
-instance (HeaderDoc info) => HeaderDoc (DataHeader info) where
-  headerDoc =
-    headerDoc @info
-      <> (headerDoc @DataHDUAxes)
-      <> (headerDoc @DataCommon)
-
-
-data DataCommon = DataCommon
-  { bzero :: BZero
-  , bscale :: BScale
-  , datamin :: Key Float "The minimum data value"
-  , datamax :: Key Float "The maximum data value"
-  , date :: Key UTCTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
-  }
-  deriving (Generic, HeaderDoc, ToHeader, FromHeader)
-
-
-quantities :: (Error QuantityError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities Quantity)
+quantities :: (Error QuantityError :> es) => SliceXY -> UTCTime -> Header -> Quantities (QuantityImage [SlitX, Depth]) -> Eff es (Quantities QuantityFrameFits)
 quantities slice now l1 q = do
   opticalDepth <- quantity @OpticalDepth DataHDUInfo q.opticalDepth
   temperature <- quantity @Temperature DataHDUInfo q.temperature
@@ -210,10 +47,10 @@ quantities slice now l1 q = do
   density <- quantity @Density DataHDUInfo q.density
   pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
  where
-  quantity :: forall info es. (Error QuantityError :> es, ToHeader info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (Quantity info)
+  quantity :: forall info es. (Error QuantityError :> es, ToHeader info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (QuantityFrameFits info)
   quantity info d = do
     h <- quantityHeader info d
-    pure $ Quantity{header = h, image = d.image}
+    pure $ QuantityFrameFits{header = h, image = d.image}
 
   quantityHeader
     :: forall info es
@@ -247,11 +84,11 @@ toPCXY pcx pcy =
   PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
 
 
-quantityHeaders :: Quantities Quantity -> Quantities QuantityHeader
+quantityHeaders :: Quantities QuantityFrameFits -> Quantities QuantityHeader
 quantityHeaders = mapQuantities (.header)
 
 
-quantityHDUs :: Quantities Quantity -> [DataHDU]
+quantityHDUs :: Quantities QuantityFrameFits -> [DataHDU]
 quantityHDUs qs = runPureEff $ do
   opticalDepth <- dataHDU @OpticalDepth qs.opticalDepth
   temperature <- dataHDU @Temperature qs.temperature
@@ -266,9 +103,9 @@ quantityHDUs qs = runPureEff $ do
   velocity <- dataHDU @Velocity $ convertData cmsToKms qs.velocity
   pure $ toList (.hdu) $ Quantities{..}
  where
-  convertData :: (Float -> Float) -> Quantity info -> Quantity info
-  convertData f (Quantity header da) =
-    Quantity
+  convertData :: (Float -> Float) -> QuantityFrameFits info -> QuantityFrameFits info
+  convertData f (QuantityFrameFits header da) =
+    QuantityFrameFits
       { header
       , image = DataCube $ M.map f da.array
       }
@@ -276,7 +113,7 @@ quantityHDUs qs = runPureEff $ do
   dataHDU
     :: forall info es
      . (ToHeader info)
-    => Quantity info
+    => QuantityFrameFits info
     -> Eff es (QuantityHDU info)
   dataHDU q = do
     let darr = encodeDataArray q.image.array
@@ -420,23 +257,8 @@ dataCommon now res = do
 
 -- Decode Quantities ----------------------------------------------------------------------------------
 
-data Quantities (f :: Type -> Type) = Quantities
-  { opticalDepth :: f OpticalDepth
-  , temperature :: f Temperature
-  , electronPressure :: f ElectronPressure
-  , microTurbulence :: f Microturbulence
-  , magStrength :: f MagStrength
-  , velocity :: f Velocity
-  , magInclination :: f MagInclination
-  , magAzimuth :: f MagAzimuth
-  , geoHeight :: f GeoHeight
-  , gasPressure :: f GasPressure
-  , density :: f Density
-  }
-  deriving (Generic)
-instance ToAsdf (Quantities Quantity)
-instance ToAsdf (Quantities AlignedAxes)
-
+-- instance ToAsdf (Quantities Quantity)
+-- instance ToAsdf (Quantities AlignedAxes)
 
 newtype QuantityImage as info = QuantityImage {image :: DataCube as Float}
 
@@ -444,14 +266,10 @@ newtype QuantityImage as info = QuantityImage {image :: DataCube as Float}
 newtype QuantityHDU info = QuantityHDU {hdu :: DataHDU}
 
 
-data Quantity info = Quantity
+data QuantityFrameFits info = QuantityFrameFits
   { header :: QuantityHeader info
   , image :: DataCube [SlitX, Depth] Float
   }
-
-
-instance ToAsdf (Quantity x) where
-  toValue _ = Null
 
 
 data QuantityHeader info = QuantityHeader
@@ -550,26 +368,26 @@ decodeQuantitiesFrames inp = do
   resultsQuantities res
 
 
-decodeInversion :: (Error QuantityError :> es, Log :> es) => ByteString -> Eff es (DataCube [Quantity a, Depth, FrameY, SlitX] Float)
+decodeInversion :: (Error QuantityError :> es, Log :> es) => ByteString -> Eff es (DataCube [Quantity, Depth, FrameY, SlitX] Float)
 decodeInversion inp = do
   f <- Fits.decode inp
   a <- decodeDataArray @Ix4 @Float f.primaryHDU.dataArray
   pure $ DataCube a
 
 
-resultsQuantities :: (Error QuantityError :> es) => DataCube [Quantity (), Depth, FrameY, SlitX] Float -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
+resultsQuantities :: (Error QuantityError :> es) => DataCube [Quantity, Depth, FrameY, SlitX] Float -> Eff es [Quantities (QuantityImage [SlitX, Depth])]
 resultsQuantities res = do
   mapM splitQuantitiesM $ splitFrameY res
 
 
-splitQuantitiesM :: (Error QuantityError :> es) => DataCube [Quantity a, Depth, SlitX] Float -> Eff es (Quantities (QuantityImage [SlitX, Depth]))
+splitQuantitiesM :: (Error QuantityError :> es) => DataCube [Quantity, Depth, SlitX] Float -> Eff es (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantitiesM rbf =
   case splitQuantities rbf of
     Nothing -> throwError $ InvalidFrameShape (size rbf.array)
     Just qs -> pure qs
 
 
-splitQuantities :: DataCube [Quantity a, Depth, SlitX] Float -> Maybe (Quantities (QuantityImage [SlitX, Depth]))
+splitQuantities :: DataCube [Quantity, Depth, SlitX] Float -> Maybe (Quantities (QuantityImage [SlitX, Depth]))
 splitQuantities res = do
   let qs = fmap transposeMajor $ outerList res
   fromList QuantityImage qs

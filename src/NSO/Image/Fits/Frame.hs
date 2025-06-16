@@ -14,6 +14,7 @@ import NSO.Image.Headers.Types (Depth, SliceXY, SlitX)
 import NSO.Image.Primary
 import NSO.Image.Quantity as Quantity
 import NSO.Image.Types.Profile
+import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
@@ -29,7 +30,7 @@ import Telescope.Fits.Header.Class (parseKeyword)
 -- we need to be able to get to a fits output
 data L2FrameFits = L2FrameFits
   { primary :: PrimaryHeader
-  , quantities :: Quantities Quantity
+  , quantities :: Quantities QuantityFrameFits
   , profiles :: Arms (Profile ProfileFrameFits)
   }
   deriving (Generic)
@@ -110,16 +111,3 @@ instance HDUOrder GasPressure where
   hduIndex = 10
 instance HDUOrder Density where
   hduIndex = 11
-
--- | Splits any Data Cube into frames when it is the 3rd of 4 dimension
-splitFrameY :: forall a b d f. DataCube [a, b, FrameY, d] f -> [DataCube [a, b, d] f]
-splitFrameY res =
-  fmap sliceFrame [0 .. numFrames res - 1]
- where
-  numFrames :: DataCube [a, b, FrameY, d] f -> Int
-  numFrames (DataCube arr) =
-    let Sz (_ :> _ :> nf :. _) = size arr
-     in nf
-
-  sliceFrame :: Int -> DataCube [a, b, d] f
-  sliceFrame n = sliceM2 n res

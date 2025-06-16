@@ -13,9 +13,11 @@ import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Fits
 import NSO.Image.Fits.Profile
+import NSO.Image.Headers.DataCommon
 import NSO.Image.Primary
 import NSO.Image.Quantity hiding (quantities)
 import NSO.Image.Types.Profile
+import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (datasetId))
