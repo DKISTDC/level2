@@ -39,13 +39,13 @@ redirectTo = do
 
 
 data AuthRed = AuthRed
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Globus :> es, Auth :> es, Log :> es) => HyperView AuthRed es where
   data Action AuthRed
     = LazyAuth (Token Exchange)
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update (LazyAuth authCode) = do

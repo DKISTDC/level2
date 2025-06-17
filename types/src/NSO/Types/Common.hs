@@ -20,6 +20,7 @@ import Telescope.Asdf
 import Telescope.Data.Parser (expected)
 import Telescope.Fits as Telescope
 import Text.Read (readMaybe)
+import Web.HttpApiData (FromHttpApiData)
 import Web.Hyperbole (FromParam (..), Route, ToParam (..))
 
 
@@ -107,7 +108,7 @@ data Instrument
   = VBI
   | VISP
   | CRYO_NIRSP
-  deriving (Show, Ord, Eq, Read, Generic)
+  deriving (Show, Read, Ord, Eq, Generic, ToJSON, FromJSON)
   deriving (DBType) via ReadShow Instrument
 
 
@@ -117,7 +118,7 @@ instrumentFromName t = readMaybe . cs $ t
 
 
 newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
-  deriving newtype (Show, Read, Eq, Ord, IsString, DBType)
+  deriving newtype (Show, Read, Eq, Ord, IsString, DBType, FromHttpApiData)
 type Path = Path' File
 
 

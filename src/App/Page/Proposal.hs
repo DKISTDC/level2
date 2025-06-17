@@ -46,7 +46,7 @@ page propId = do
 data Filters = Filters
   { term :: Text
   }
-  deriving (Show, Read, Generic, ToQuery, FromQuery)
+  deriving (Generic, ToQuery, FromQuery)
 
 
 ----------------------------------------------------
@@ -54,13 +54,13 @@ data Filters = Filters
 ----------------------------------------------------
 
 data Programs = Programs (Id Proposal)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView Programs es where
   data Action Programs
     = SearchTerm Text
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require Programs = '[ProgramSummary]
@@ -82,7 +82,7 @@ viewPrograms :: Filters -> [Group (Id InstrumentProgram) Dataset] -> View Progra
 viewPrograms fs gds = do
   Programs propId <- viewId
   col (gap 25) $ do
-    search SearchTerm 250 (Style.input . placeholder "search: BEEMM")
+    search SearchTerm 250 (Style.input . att "placeholder" "search: BEEMM")
     forM_ (filter (isMatch fs.term) gds) $ \ds -> do
       let d = sample ds
       hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
@@ -97,13 +97,13 @@ viewPrograms fs gds = do
 ----------------------------------------------------
 
 data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
     = ProgramDetails SortField
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update = \case

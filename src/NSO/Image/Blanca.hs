@@ -1,7 +1,7 @@
 module NSO.Image.Blanca where
 
 import Control.Exception (Exception)
-import Control.Monad (foldM)
+import Control.Monad (foldM, zipWithM)
 import Control.Monad.Catch (Handler (..), catches)
 import Data.ByteString qualified as BS
 import Data.List (foldl')
@@ -27,6 +27,16 @@ collateFramesArms :: Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> 
 collateFramesArms (Arms fss) (Arms oss) =
   zipWith (\fs os -> Arms $ zipWith Profile fs os) fss oss
 
+armsMeta :: Error BlancaError :> es => Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> Eff es (Arms (Profile ArmWavMeta))
+armsMeta (Arms fs) (Arms os) =
+  case Arms <$> zipWithM armMeta fs os of
+    Nothing -> throwError ArmsMetaEmptyProfile
+    Just arms -> pure arms
+
+armMeta :: [ProfileImage Fit] -> [ProfileImage Original] -> Maybe (Profile ArmWavMeta)
+armMeta [] _ = Nothing
+armMeta _ [] = Nothing
+armMeta (f:_) (o:_) = pure $ Profile {fit = f.arm, original = o.arm}
 
 -- Decode the BLANCA output for fit profiles: inv_res_pro.fits
 decodeProfileFit :: (Error BlancaError :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Fit])
@@ -58,7 +68,7 @@ profileArmsFrames metas framesArms = do
   pure $ Arms $ zipWith profileArmFrames metas.arms armsFrames
  where
   profileArmFrames :: ArmWavMeta fit -> [DataCube [SlitX, Wavelength Nm, Stokes] Float] -> [ProfileImage fit]
-  profileArmFrames armMeta = fmap (ProfileImage armMeta)
+  profileArmFrames meta = fmap (ProfileImage meta)
 
 
 -- Split a single profile frame (one scan position) into N arms given N arm WavMetas
@@ -263,6 +273,7 @@ data BlancaError
   = MissingProfileExtensions String
   | UnknownLineId LineId
   | BadSplit String MassivSplitError
+  | ArmsMetaEmptyProfile
   deriving (Show, Exception, Eq)
 
 

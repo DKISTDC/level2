@@ -14,13 +14,12 @@ import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
-import NSO.Types.Common
 import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.FormUrlEncoded qualified as FUE
 import Web.Hyperbole
-import Web.Hyperbole.View.Forms (formLookup)
+import Web.Hyperbole.View.Forms
 
 
 -- data Status = Status
@@ -59,7 +58,7 @@ data DownloadFolder = DownloadFolder
   deriving (Generic)
 instance FromForm DownloadFolder where
   fromForm f = do
-    DownloadFolder <$> formLookup "folder[0]" f
+    DownloadFolder <$> FUE.parseUnique "folder[0]" f
 
 
 data UploadFiles t f = UploadFiles
@@ -81,10 +80,10 @@ instance FromForm (UploadFiles Filename Maybe) where
    where
     files :: FUE.Form -> Either Text [Path' Filename ()]
     files frm = do
-      f0 <- formLookup "file[0]" frm
-      f1 <- formLookup "file[1]" frm
-      f2 <- formLookup "file[2]" frm
-      f3 <- formLookup "file[3]" frm
+      f0 <- FUE.parseUnique "file[0]" frm
+      f1 <- FUE.parseUnique "file[1]" frm
+      f2 <- FUE.parseUnique "file[2]" frm
+      f3 <- FUE.parseUnique "file[3]" frm
       pure $ catMaybes [f0, f1, f2, f3]
 
     findFile :: Path' Filename a -> [Path' Filename ()] -> Maybe (Path' Filename a)

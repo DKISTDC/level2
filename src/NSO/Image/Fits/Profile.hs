@@ -6,15 +6,10 @@
 module NSO.Image.Fits.Profile where
 
 import Control.Exception (Exception)
-import Data.ByteString qualified as BS
-import Data.Massiv.Array (Ix2 (..), IxN (..), Sz (..))
-import Data.Massiv.Array qualified as M
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra (midPoint)
-import NSO.Image.Asdf.NDCollection (AlignedAxes)
-import NSO.Image.Blanca
 import NSO.Image.Fits.Quantity (addDummyAxis, dataCommon)
 import NSO.Image.Headers
 import NSO.Image.Headers.DataCommon
@@ -23,16 +18,14 @@ import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.Types.Profile
-import NSO.Image.Types.VISPArm
 import NSO.Prelude
-import NSO.Types.Wavelength (CaIILine (..), Nm, SpectralLine (..), Wavelength (..))
-import Telescope.Asdf (ToAsdf (..))
+import NSO.Types.Wavelength (Wavelength (..))
 import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
 import Telescope.Data.WCS
 import Telescope.Fits as Fits
-import Telescope.Fits.Header (Header (..), HeaderRecord (..), ToKeyword (..))
+import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
 -- Profile FITS Generation -----------------------------------------------------------

@@ -12,6 +12,7 @@ import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import Effectful
@@ -44,9 +45,9 @@ page = do
 -----------------------------------------------------
 
 newtype ShowVISP = ShowVISP {value :: Bool}
-  deriving newtype (ToParam, FromParam, Eq, Read, Show)
-instance DefaultParam ShowVISP where
-  defaultParam = ShowVISP True
+  deriving newtype (ToParam, FromParam, Eq, Read, Show, ToJSON, FromJSON)
+instance Default ShowVISP where
+  def = ShowVISP True
 
 
 data Filters = Filters
@@ -56,7 +57,7 @@ data Filters = Filters
   , cryo :: Bool
   , searchTerm :: Text
   }
-  deriving (Show, Read, Generic, ToQuery, FromQuery)
+  deriving (Generic, Show, ToQuery, FromQuery, ToJSON, FromJSON)
 
 
 data InversionFilter
@@ -64,9 +65,9 @@ data InversionFilter
   | Qualified
   | Active
   | Complete
-  deriving (Show, Read, Eq, ToParam, FromParam)
-instance DefaultParam InversionFilter where
-  defaultParam = Any
+  deriving (Show, Eq, ToParam, FromParam, Generic, ToJSON, FromJSON)
+instance Default InversionFilter where
+  def = Any
 
 
 -----------------------------------------------------
@@ -74,7 +75,7 @@ instance DefaultParam InversionFilter where
 -----------------------------------------------------
 
 data AllProposals = AllProposals
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
@@ -82,7 +83,7 @@ instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
     = FilterInstrument Instrument Bool
     | FilterStatus InversionFilter
     | FilterProposal Text
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require AllProposals = '[ProposalCard]
@@ -140,7 +141,7 @@ viewFilters fs = do
   col (gap 10) $ do
     el bold "Proposal Id"
     stack id $ do
-      layer id $ search FilterProposal 500 (placeholder "1 118" . border 1 . pad 10 . grow)
+      layer id $ search FilterProposal 500 (att "placehodler" "1 118" . border 1 . pad 10 . grow)
 
   col (gap 10) $ do
     el bold "Instrument"
@@ -171,12 +172,12 @@ viewFilters fs = do
 -----------------------------------------------------
 
 data ProposalCard = ProposalCard (Id Proposal)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView ProposalCard es where
   data Action ProposalCard = ProposalDetails Filters
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require ProposalCard = '[ProgramRow]
@@ -261,12 +262,12 @@ proposalCard prop content = do
 -----------------------------------------------------
 
 data ProgramRow = ProgramRow (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView ProgramRow es where
   data Action ProgramRow = ProgramDetails
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update ProgramDetails = do

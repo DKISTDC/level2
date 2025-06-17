@@ -1,0 +1,28 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:nso-level2"
+
+    - path: "./app/Main.hs"
+      component: "nso-level2:exe:level2"
+
+    - path: "./test/"
+      component: "nso-level2:test:spec"
+
+    - path: "./types/src"
+      component: "lib:nso-level2-types"
+
+    - path: "../atomic-css/src"
+      component: "lib:web-view"
+
+    - path: "../atomic-css/test/"
+      component: "web-view:test:test"
+
+    - path: "../hyperbole/src"
+      component: "lib:hyperbole"
+
+    - path: "../telescope.hs/src"
+      component: "lib:telescope"
+
+    - path: "../telescope.hs/test/"
+      component: "telescope:test:test"

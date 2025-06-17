@@ -9,6 +9,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
+import NSO.Image.Blanca (BlancaError (..))
 import NSO.Image.Blanca as Blanca (collateFramesArms)
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
@@ -195,6 +196,7 @@ data GenerateError
   | PrimaryError PrimaryError
   | ParseError ParseError
   | AsdfError AsdfError
+  | BlancaError BlancaError
   | MismatchedFrames FrameSizes
   | NoFrames FrameSizes
   | GenIOError IOError
@@ -202,13 +204,15 @@ data GenerateError
   | InvalidSliceKeys ParseError
   deriving (Show, Eq, Exception)
 
+type GenerateErrors es = (Error ParseError : Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : Error BlancaError : es)
 
 runGenerateError
   :: (Error GenerateError :> es)
-  => Eff (Error ParseError : Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : es) a
+  => Eff (GenerateErrors es) a
   -> Eff es a
 runGenerateError =
-  runErrorNoCallStackWith @AsdfError (throwError . AsdfError)
+  runErrorNoCallStackWith @BlancaError (throwError . BlancaError)
+    . runErrorNoCallStackWith @AsdfError (throwError . AsdfError)
     . runErrorNoCallStackWith @PrimaryError (throwError . PrimaryError)
     . runErrorNoCallStackWith @FetchError (throwError . L1FetchError)
     . runErrorNoCallStackWith @QuantityError (throwError . QuantityError)

@@ -8,6 +8,7 @@ import App.Types
 import Control.Monad (void)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), withText)
 import Data.ByteString.Char8 qualified as BC
+import Data.Default (Default (..))
 import Data.Tagged
 import Effectful
 import Effectful.Concurrent.STM
@@ -43,8 +44,6 @@ instance Session GlobusAuth where
   cookiePath = Just []
 
 
--- instance DefaultParam GlobusAuth where
---   defaultParam = GlobusAuth mempty mempty
 instance Default GlobusAuth where
   def = GlobusAuth mempty mempty
 instance ToJSON Url where

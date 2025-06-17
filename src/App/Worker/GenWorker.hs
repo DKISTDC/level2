@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module App.Worker.GenWorker where
 
 import App.Effect.Scratch as Scratch
@@ -24,13 +26,15 @@ import NSO.Data.Datasets
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Image.Asdf as Asdf
+import NSO.Image.Blanca qualified as Blanca
 import NSO.Image.Fits as Fits
-import NSO.Image.Fits.Profile (Fit, Original, ProfileFrames (..), WavProfiles, decodeProfileFit, decodeProfileOrig)
-import NSO.Image.Fits.Quantity (decodeQuantitiesFrames)
+import NSO.Image.Fits.Meta qualified as Meta
+import NSO.Image.Fits.Quantity (QuantityError, decodeQuantitiesFrames)
 import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
+import Telescope.Data.Parser (ParseError)
 import Telescope.Fits (BinTableHDU (..))
 
 
@@ -109,17 +113,17 @@ fitsTask numWorkers task = do
 
     log Debug $ dump "Canonical Dataset:" dc.datasetId
     quantities <- decodeQuantitiesFrames =<< readFile u.quantities
-    profileFit <- decodeProfileFit =<< readFile u.profileFit
-    profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
+    profileFit <- Blanca.decodeProfileFit =<< readFile u.profileFit
+    profileOrig <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
 
     l1 <- Gen.canonicalL1Frames (Scratch.dataset dc)
-    log Debug $ dump "Frames" (length quantities, length profileFit.frames, length profileOrig.frames, length l1)
+    log Debug $ dump "Frames" (length quantities, length profileFit.arms, length profileOrig.arms, length l1)
 
-    gfs <- Gen.collateFrames quantities profileFit.frames profileOrig.frames l1
+    gfs <- Gen.collateFrames quantities profileFit profileOrig l1
     send $ TaskSetStatus task $ GenFrames{complete = 0, total = NE.length gfs}
 
     -- Generate them in parallel with N = available CPUs
-    metas <- CPU.parallelizeN numWorkers $ fmap (workFrame task slice profileOrig.wavProfiles profileFit.wavProfiles) gfs
+    metas <- CPU.parallelizeN numWorkers $ fmap (workFrame task slice) gfs
 
     log Debug $ dump "SKIPPED: " (length $ NE.filter isNothing metas)
     log Debug $ dump "WRITTEN: " (length $ NE.filter isJust metas)
@@ -167,11 +171,9 @@ workFrame
      )
   => GenFits
   -> SliceXY
-  -> WavProfiles Original
-  -> WavProfiles Fit
   -> L2FrameInputs
-  -> Eff es (Maybe L2FrameMeta)
-workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
+  -> Eff es (Maybe L2FitsMeta)
+workFrame t slice frameInputs = runGenerateError $ do
   now <- currentTime
   DateTime dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
   let path = Scratch.outputL2Fits t.proposalId t.inversionId dateBeg
@@ -183,11 +185,11 @@ workFrame t slice wavOrig wavFit frameInputs = runGenerateError $ do
         log Debug $ dump "SKIP frame" path.filePath
         pure Nothing
       else do
-        frame <- Fits.generateL2Fits now t.inversionId slice wavOrig wavFit frameInputs
+        frame <- Fits.generateL2FrameFits now t.inversionId slice frameInputs
         let fits = Fits.frameToFits frame
         log Debug $ dump "WRITE frame" path.filePath
-        Scratch.writeFile path $ Frame.encodeL2 fits
-        pure $ Just $ Frame.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
+        Scratch.writeFile path $ Fits.encodeL2 fits
+        pure $ Just $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
 
   send $ TaskModStatus @GenFits t updateNumFrame
   pure res
@@ -257,12 +259,13 @@ asdfTask t = do
     dc <- requireCanonicalDataset slice ds
     log Debug $ dump "Canonical Dataset:" dc.datasetId
 
-    profileFit <- decodeProfileFit =<< readFile u.profileFit
-    profileOrig <- decodeProfileOrig =<< readFile u.profileOrig
+    profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileFit =<< readFile u.profileFit
+    profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
+    arms <- Blanca.armsMeta profileFit profileOrig
 
     l1fits <- Gen.canonicalL1Frames (Scratch.dataset dc)
 
-    (metas :: NonEmpty L2FrameMeta) <- requireMetas slice profileOrig.wavProfiles profileFit.wavProfiles l1fits
+    (metas :: NonEmpty L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
 
     log Debug $ dump "metas" (length metas)
 
@@ -276,19 +279,25 @@ asdfTask t = do
     log Debug " - done"
     Inversions.setGeneratedAsdf t.inversionId
 
-  requireMetas slice wpo wpf l1fits = do
-    metas <- loadMetas slice wpo wpf l1fits
-    case metas of
-      (m : ms) -> pure (m :| ms)
-      _ -> throwError MissingL2Fits
 
-  loadMetas slice wpo wpf l1fits = do
-    paths <- l2FramePaths t.proposalId t.inversionId
-    zipWithM loadL2FrameMeta paths l1fits
-   where
-    loadL2FrameMeta path l1 = do
-      fits <- readLevel2Fits t.proposalId t.inversionId path
-      Frame.frameMetaFromL2Fits path slice wpo wpf l1 fits
+requireMetas
+  :: forall es. (Error GenerateError :> es, Scratch :> es, Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
+  => Id Proposal -> Id Inversion -> SliceXY -> Arms (Profile ArmWavMeta) -> [BinTableHDU] -> Eff es (NonEmpty L2FitsMeta)
+requireMetas propId invId slice arms l1fits = do
+  metas <- loadMetas
+  case metas of
+    (m : ms) -> pure (m :| ms)
+    _ -> throwError MissingL2Fits
+ where
+  loadMetas :: Eff es [L2FitsMeta]
+  loadMetas = do
+    paths <- l2FramePaths propId invId
+    zipWithM loadL2FitsMeta paths l1fits
+
+  loadL2FitsMeta :: Path' Filename L2FrameFits -> BinTableHDU -> Eff es L2FitsMeta
+  loadL2FitsMeta path l1 = do
+    fits <- readLevel2Fits propId invId path
+    Meta.frameMetaFromL2Fits path slice arms l1 fits
 
 
 failed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()

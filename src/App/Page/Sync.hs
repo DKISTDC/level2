@@ -30,13 +30,13 @@ page syncId = do
 -- Scan --------------------------------------------------
 
 data SyncDetails = SyncDetails SyncId
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (MetadataSync :> es) => HyperView SyncDetails es where
   data Action SyncDetails
     = Refresh
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update Refresh = do

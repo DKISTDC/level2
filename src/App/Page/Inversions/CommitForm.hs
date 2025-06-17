@@ -32,7 +32,7 @@ commitForm :: (ViewAction (Action id)) => (GitCommit -> Action id) -> Maybe GitC
 commitForm saveCommit gc vf = do
   col (gap 5) $ do
     link "https://github.com/DKISTDC/ViSP-Inversion" (att "target" "_blank" . Style.link . bold) $ text "ViSP-Inversion Git Commit"
-    liveInput (saveCommit . GitCommit) (valStyle vf . inputValue gc . Style.input . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
+    liveInput (saveCommit . GitCommit) (valStyle vf . inputValue gc . Style.input . att "placeholder" "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
     invalidMessage vf
  where
   inputValue Nothing = id

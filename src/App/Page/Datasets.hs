@@ -43,13 +43,13 @@ page = do
 -- Scan --------------------------------------------------
 
 data Syncs = Syncs
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (MetadataSync :> es) => HyperView Syncs es where
   data Action Syncs
     = SyncsRefresh
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require Syncs = '[DatasetRow, ScanProp]
@@ -146,13 +146,13 @@ viewSyncDataset s = do
 -- Proposal Scan ----------------------------------------------------
 
 data ScanProp = ScanProp (Id Proposal)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es, Time :> es, Metadata es) => HyperView ScanProp es where
   data Action ScanProp
     = RunScanProposal
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update RunScanProposal = do
@@ -187,13 +187,13 @@ viewPropScan scan = do
 -- Current Datasets --------------------------------------------------
 
 data Current = Current
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Time :> es, Datasets :> es, Metadata es) => HyperView Current es where
   data Action Current
     = LoadExisting
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require Current = '[DatasetRow]
@@ -323,12 +323,12 @@ section = Style.card . gap 15 . pad 15
 -----------------------------------------------------
 
 data DatasetRow = DatasetRow (Id Dataset)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Datasets :> es) => HyperView DatasetRow es where
   data Action DatasetRow = Details
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update Details = do

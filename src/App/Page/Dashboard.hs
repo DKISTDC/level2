@@ -59,12 +59,12 @@ data AdminLogin = AdminLogin
 
 
 data Work = Work
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Concurrent :> es, Tasks GenFits :> es) => HyperView Work es where
   data Action Work = Refresh
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update Refresh = do

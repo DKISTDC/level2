@@ -1,28 +1,23 @@
 module NSO.Image.Fits.Meta where
 
-import Data.ByteString qualified as BS
 import Data.List.Ext
 import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
-import Effectful.GenRandom
 import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
-import NSO.Image.Headers
-import NSO.Image.Headers.Types (Depth, SliceXY, SlitX)
+import NSO.Image.Headers.Types (SliceXY)
 import NSO.Image.Primary
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf as Asdf
 import Telescope.Data.Axes (Axes (..), axesRowMajor)
 import Telescope.Data.DataCube (dataCubeAxes)
 import Telescope.Data.Parser (ParseError, parseFail)
 import Telescope.Fits as Fits
-import Telescope.Fits.Encoding (replaceKeywordLine)
 import Telescope.Fits.Header.Class (parseKeyword)
 
 
@@ -92,7 +87,7 @@ frameMetaFromL2Fits
   -> BinTableHDU
   -> Fits
   -> Eff es L2FitsMeta
-frameMetaFromL2Fits path slice metas l1 fits = runParser $ do
+frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
   primary <- parseHeader @PrimaryHeader fits.primaryHDU.header
 
   -- no, we have to look up the appropriate hdu

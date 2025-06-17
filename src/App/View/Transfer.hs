@@ -26,7 +26,7 @@ data TransferAction
   = CheckTransfer
   | TaskFailed
   | TaskSucceeded
-  deriving (Show, Read, ViewAction)
+  deriving (Generic, ViewAction, ToJSON, FromJSON)
 
 
 -- I want it to reload itself and call these when necessary

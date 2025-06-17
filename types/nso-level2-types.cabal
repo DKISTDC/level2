@@ -67,7 +67,7 @@ library
     , http-api-data
     , http-client
     , http-types
-    , hyperbole >=0.4.3
+    , hyperbole ==0.4.3
     , lens
     , modern-uri
     , random

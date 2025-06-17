@@ -124,13 +124,13 @@ submitDownload propId progId = do
 ----------------------------------------------------
 
 data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require ProgramInversions = '[]
@@ -223,14 +223,14 @@ viewProgramInversions prog =
 -- ----------------------------------------------------------------
 
 data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
     = GoDownload
     | SortDatasets SortField
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require ProgramDatasets = '[DownloadTransfer]
@@ -265,13 +265,13 @@ viewDatasets ds srt xfer = do
 -- ----------------------------------------------------------------
 
 data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (Id Task)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView DownloadTransfer es where
   data Action DownloadTransfer
     = DwnTransfer TransferAction
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require DownloadTransfer = '[ProgramDatasets]

@@ -8,9 +8,11 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import NSO.Data.Spectra qualified as Spectra
+import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
+import NSO.Image.Asdf.Ref
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.Headers.DataCommon
@@ -24,11 +26,8 @@ import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
-import Telescope.Asdf.NDArray (DataType (..))
 import Telescope.Data.Axes (Axes (..), Major (Row))
-import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import Telescope.Data.KnownText
-import NSO.Image.Asdf.Ref
 
 
 -- DONE: move extra keys into meta.inventory
@@ -337,9 +336,3 @@ data ProfileTreeMeta fit = ProfileTreeMeta
   , profile :: Text
   }
   deriving (Generic, ToAsdf)
-
-
-
-
-
-

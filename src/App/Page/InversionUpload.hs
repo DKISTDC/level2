@@ -19,7 +19,6 @@ import App.View.Inversion qualified as Inversion
 import App.View.Layout
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import Data.Default (Default (..))
 import Effectful
 import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError, Task)
@@ -31,7 +30,8 @@ import NSO.Data.Programs hiding (programInversions)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole
-import Web.Hyperbole.Data.QueryData (ParamValue (..), fromQueryData)
+import Web.Hyperbole.Data.Param (ParamValue (..))
+import Web.Hyperbole.Data.QueryData (fromQueryData)
 import Web.Hyperbole.Data.QueryData qualified as QueryData
 
 
@@ -222,14 +222,14 @@ setDatasetId dsetId set QueryState{metadata, uploads} =
 -----------------------------------------------------------------
 
 data Uploads = Uploads (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es, Reader App :> es) => HyperView Uploads es where
   data Action Uploads
     = Upload
     | UpTransfer (Id Task) TransferAction
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require Uploads = '[MetadataForm]
@@ -340,7 +340,7 @@ instance Default (Metadata Identity) where
 
 
 data MetadataForm = MetadataForm (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Log :> es, Inversions :> es, Datasets :> es) => HyperView MetadataForm es where
@@ -348,7 +348,7 @@ instance (Log :> es, Inversions :> es, Datasets :> es) => HyperView MetadataForm
     = SetDataset (Id Dataset) Bool
     | SaveCommit GitCommit
     | Submit
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update action = do
@@ -448,13 +448,13 @@ validateMetadata meta =
 -----------------------------------------------------------------
 
 data Manage = Manage (Id Proposal) (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance HyperView Manage es where
   data Action Manage
     = Cancel
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update Cancel = do

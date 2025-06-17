@@ -86,13 +86,13 @@ redirectHome = do
 -------------------------------------------------------------------
 
 data MoreInversions = MoreInversions (Id Proposal) (Id InstrumentProgram)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView MoreInversions es where
   data Action MoreInversions
     = CreateInversion
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update = \case
@@ -114,7 +114,7 @@ type InversionViews = '[Metadata, GenerateStep, GenerateTransfer, PublishStep, I
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
@@ -122,7 +122,7 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
     = Reload
     | SetDataset (Id Dataset) Bool
     | Restore
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require InversionStatus = InversionViews
@@ -196,14 +196,14 @@ viewUpload _ = none
 -------------------------------------------------------------------
 
 data InversionMeta = InversionMeta (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Inversions :> es) => HyperView InversionMeta es where
   data Action InversionMeta
     = SetNotes Text
     | Delete
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require InversionMeta = '[InversionStatus]
@@ -264,13 +264,13 @@ viewCannotDelete = do
 -------------------------------------------------------------------
 
 data Metadata = Metadata (Id Proposal) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Log :> es, Inversions :> es, Globus :> es, Time :> es) => HyperView Metadata es where
   data Action Metadata
     = SaveCommit GitCommit
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update (SaveCommit commit) = do
@@ -337,7 +337,7 @@ viewMetadata inv ds = do
 -- ----------------------------------------------------------------
 
 data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => HyperView GenerateStep es where
@@ -346,7 +346,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
     | RegenError
     | RegenFits
     | RegenAsdf
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   type Require GenerateStep = '[GenerateTransfer, InversionStatus]
@@ -470,14 +470,14 @@ viewGenerate' inv admin status =
 -- GenerateTransfer ---------------------------------------------
 
 data GenerateTransfer = GenerateTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView GenerateTransfer es where
   type Require GenerateTransfer = '[GenerateStep]
   data Action GenerateTransfer
     = GenTransfer TransferAction
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update (GenTransfer action) = do
@@ -514,7 +514,7 @@ publishStep inv
 
 
 data PublishStep = PublishStep (Id Proposal) (Id InstrumentProgram) (Id Inversion)
-  deriving (Show, Read, ViewId)
+  deriving (Generic, ViewId)
 
 
 instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es) => HyperView PublishStep es where
@@ -525,7 +525,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
     = StartSoftPublish
     | CheckPublish
     | PublishTransfer (Id Task) TransferAction
-    deriving (Show, Read, ViewAction)
+    deriving (Generic, ViewAction)
 
 
   update action = do
