@@ -81,9 +81,11 @@ library
       NSO.Data.Spectra
       NSO.Data.Sync
       NSO.Image.Asdf
+      NSO.Image.Asdf.FileManager
       NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable
       NSO.Image.Asdf.NDCollection
+      NSO.Image.Asdf.Ref
       NSO.Image.Blanca
       NSO.Image.Fits
       NSO.Image.Fits.Frame

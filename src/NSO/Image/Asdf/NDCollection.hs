@@ -4,6 +4,7 @@ module NSO.Image.Asdf.NDCollection where
 
 import NSO.Prelude
 import Telescope.Asdf as Asdf
+import NSO.Image.Types.Quantity
 
 
 -- always uses references!
@@ -48,6 +49,8 @@ instance ToAsdf AxisMeta where
 newtype AlignedAxes a = AlignedAxes [Int]
 instance ToAsdf (AlignedAxes a) where
   toValue (AlignedAxes as) = toValue as
+
+instance ToAsdf (Quantities AlignedAxes)
 
 
 newtype AxisLabel = AxisLabel Text

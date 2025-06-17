@@ -7,7 +7,7 @@ import Data.ByteString qualified as BS
 import Data.List (foldl')
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
-import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
+import Data.Massiv.Array as M (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Effectful
 import Effectful.Error.Static

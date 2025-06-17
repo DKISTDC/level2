@@ -1,27 +1,11 @@
 module NSO.Image.Headers.DataCommon where
 
-import Control.Exception (Exception)
-import Data.ByteString (ByteString)
-import Data.Fixed (mod')
-import Data.Massiv.Array as M (Index, Ix2 (..), IxN (..), Sz (..), map)
-import Effectful
-import Effectful.Error.Static
-import Effectful.Log
 import GHC.Generics
 import GHC.TypeLits
-import NSO.Image.Asdf.NDCollection (AlignedAxes)
-import NSO.Image.Headers
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
-import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
-import NSO.Image.Headers.WCS
 import NSO.Prelude
-import Telescope.Asdf hiding (Key)
-import Telescope.Data.Axes (Axes (..), AxisOrder (..))
-import Telescope.Data.DataCube
-import Telescope.Data.KnownText
-import Telescope.Data.WCS (WCSAlt (..))
 import Telescope.Fits as Fits
 import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 

@@ -3,7 +3,6 @@
 module NSO.Image.Fits.Frame where
 
 import Data.ByteString qualified as BS
-import Data.List.Ext
 import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
@@ -19,12 +18,8 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf as Asdf
-import Telescope.Data.Axes (Axes (..), axesRowMajor)
-import Telescope.Data.DataCube (dataCubeAxes)
-import Telescope.Data.Parser (ParseError, parseFail)
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)
-import Telescope.Fits.Header.Class (parseKeyword)
 
 
 -- we need to be able to get to a fits output

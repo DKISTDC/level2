@@ -12,11 +12,9 @@ import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Fits
-import NSO.Image.Fits.Profile
+import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Primary
-import NSO.Image.Fits.Quantity hiding (quantities)
-import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
@@ -28,13 +26,14 @@ import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Asdf.NDArray (DataType (..))
 import Telescope.Data.Axes (Axes (..), Major (Row))
+import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import Telescope.Data.KnownText
-import Telescope.Fits (ToHeader (..))
+import NSO.Image.Asdf.Ref
 
 
 -- DONE: move extra keys into meta.inventory
 -- DONE: support ND collection
--- TODO: 3-arm profiles sodium
+-- DOING: 3-arm profiles sodium
 -- TODO: fit/orig separate GWCS + anchors
 
 data L2Asdf
@@ -156,7 +155,6 @@ instance ToAsdf QuantitiesSection where
    where
     refs :: Quantities Ref
     refs = quantitiesFrom (const Ref) ()
-instance ToAsdf (Quantities Ref)
 
 
 -- Quantities ------------------------------------------------
@@ -341,29 +339,7 @@ data ProfileTreeMeta fit = ProfileTreeMeta
   deriving (Generic, ToAsdf)
 
 
--- File Manager ----------------------------------------------------
-
-data FileManager = FileManager
-  { datatype :: DataType
-  , fileuris :: Ref "fileuris"
-  , shape :: Axes Row
-  , target :: HDUIndex
-  }
-  deriving (Generic)
-instance ToAsdf FileManager where
-  schema _ = "asdf://dkist.nso.edu/tags/file_manager-1.0.0"
 
 
-fileManager :: Axes Row -> HDUIndex -> FileManager
-fileManager axes hduIndex =
-  FileManager{datatype = Float64, fileuris = Ref, shape = axes, target = hduIndex}
 
 
--- Ref --------------------------------------------------------------
-
-data Ref ref = Ref
-instance (KnownText ref) => ToAsdf (Ref ref) where
-  toValue _ =
-    Alias $ Anchor $ knownText @ref
-instance (KnownText ref) => KnownText (Ref ref) where
-  knownText = knownText @ref
