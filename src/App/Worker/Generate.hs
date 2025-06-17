@@ -202,9 +202,11 @@ data GenerateError
   | GenIOError IOError
   | MissingL2Fits
   | InvalidSliceKeys ParseError
-  deriving (Show, Eq, Exception)
+  deriving (Show, Exception)
+
 
 type GenerateErrors es = (Error ParseError : Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : Error BlancaError : es)
+
 
 runGenerateError
   :: (Error GenerateError :> es)

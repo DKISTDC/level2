@@ -21,7 +21,7 @@ instance KnownText Fit where
 
 -- | A list with one entry per VISP arm
 newtype Arms a = Arms {arms :: [a]}
-  deriving (Foldable, Functor, Traversable)
+  deriving (Foldable, Functor, Traversable, Show)
 
 
 instance (ToAsdf a) => ToAsdf (Arms a) where
@@ -44,9 +44,9 @@ data Profile (f :: ProfileType -> Type) = Profile
 
 -- Metadata for an arm profile
 data ArmWavMeta (fit :: ProfileType) = ArmWavMeta
-  { pixel :: Double
-  , delta :: Wavelength Nm
-  , length :: Int -- number of indices in the combined arms
-  , line :: SpectralLine
+  { pixel :: !Double
+  , delta :: !(Wavelength Nm)
+  , length :: !Int -- number of indices in the combined arms
+  , line :: !SpectralLine
   }
   deriving (Show, Eq)

@@ -5,6 +5,7 @@ module App.View.ProposalDetails
   , viewProgramDetails
   , viewProgramDetails'
   , viewProgramStats
+  , spectralLineTag
   ) where
 
 import App.Colors
@@ -58,7 +59,7 @@ viewProgramStats now prog = viewDataRow $ do
   row (dataCell . gap 5 . fontSize 14) $ do
     maybe none embargoTag ip.embargo
     if ip.onDisk then diskTag else none
-    mapM_ lineTag $ L.sort ip.spectralLines
+    mapM_ spectralLineTag $ L.sort ip.spectralLines
     mapM_ midTag $ sortOn id ip.otherWavelengths
 
   space
@@ -67,9 +68,6 @@ viewProgramStats now prog = viewDataRow $ do
  where
   cellData = fontSize 14 . pad 2
   cell = dataCell . cellData
-
-  lineTag :: SpectralLine -> View c ()
-  lineTag s = tag "pre" (dataTag . Style.tagOutline (light Secondary)) $ text $ cs $ show s
 
   diskTag = el (dataTag . Style.tagOutline (light Primary)) "On Disk"
 
@@ -81,8 +79,13 @@ viewProgramStats now prog = viewDataRow $ do
   midTag mid =
     code (pad 2 . color (light Secondary)) $ cs (show (round mid :: Integer) <> "nm")
 
-  dataTag :: Mod c
-  dataTag = pad (XY 6 1)
+
+spectralLineTag :: SpectralLine -> View c ()
+spectralLineTag s = tag "pre" (dataTag . Style.tagOutline (light Secondary)) $ text $ cs $ show s
+
+
+dataTag :: Mod c
+dataTag = pad (XY 6 1)
 
 
 statusTag :: ProgramStatus -> View c ()

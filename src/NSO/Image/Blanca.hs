@@ -1,8 +1,7 @@
 module NSO.Image.Blanca where
 
-import Control.Exception (Exception)
 import Control.Monad (foldM, zipWithM)
-import Control.Monad.Catch (Handler (..), catches)
+import Control.Monad.Catch (Exception, Handler (..), catches)
 import Data.ByteString qualified as BS
 import Data.List (foldl')
 import Data.List qualified as L
@@ -11,11 +10,13 @@ import Data.Massiv.Array as M (Ix2 (..), IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Effectful
 import Effectful.Error.Static
+import Effectful.Log
 import NSO.Data.Spectra (midPoint)
 import NSO.Image.Headers.Types
 import NSO.Image.Types.Profile
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), MA, Nm, SpectralLine (..), Wavelength (..))
+import Telescope.Data.Array (ArrayError)
 import Telescope.Data.DataCube as DC
 import Telescope.Fits as Fits
 
@@ -27,32 +28,35 @@ collateFramesArms :: Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> 
 collateFramesArms (Arms fss) (Arms oss) =
   zipWith (\fs os -> Arms $ zipWith Profile fs os) fss oss
 
-armsMeta :: Error BlancaError :> es => Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> Eff es (Arms (Profile ArmWavMeta))
+
+armsMeta :: (Error BlancaError :> es) => Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> Eff es (Arms (Profile ArmWavMeta))
 armsMeta (Arms fs) (Arms os) =
   case Arms <$> zipWithM armMeta fs os of
     Nothing -> throwError ArmsMetaEmptyProfile
     Just arms -> pure arms
 
+
 armMeta :: [ProfileImage Fit] -> [ProfileImage Original] -> Maybe (Profile ArmWavMeta)
 armMeta [] _ = Nothing
 armMeta _ [] = Nothing
-armMeta (f:_) (o:_) = pure $ Profile {fit = f.arm, original = o.arm}
+armMeta (f : _) (o : _) = pure $ Profile{fit = f.arm, original = o.arm}
+
 
 -- Decode the BLANCA output for fit profiles: inv_res_pro.fits
-decodeProfileFit :: (Error BlancaError :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Fit])
+decodeProfileFit :: (Error BlancaError :> es, Log :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Fit])
 decodeProfileFit inp = do
   f <- decode inp
   decodeProfileArms f
 
 
 -- Decode the BLANCA output for original profiles: per_ori.fits
-decodeProfileOrig :: (Error BlancaError :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Original])
+decodeProfileOrig :: (Error BlancaError :> es, Log :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Original])
 decodeProfileOrig inp = do
   f <- decode inp
   decodeProfileArms f
 
 
-decodeProfileArms :: (Error BlancaError :> es) => Fits -> Eff es (Arms [ProfileImage fit])
+decodeProfileArms :: (Error BlancaError :> es, Log :> es) => Fits -> Eff es (Arms [ProfileImage fit])
 decodeProfileArms f = do
   hdus <- readProfileHDUs f
   metas <- profileWavMetas hdus.lineIds hdus.offsets
@@ -74,7 +78,7 @@ profileArmsFrames metas framesArms = do
 -- Split a single profile frame (one scan position) into N arms given N arm WavMetas
 splitFrameIntoArms
   :: forall es combined arm fit
-   . (Error BlancaError :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
+   . (Error BlancaError :> es, Log :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
   => Arms (ArmWavMeta fit)
   -> DataCube combined Float
   -> Eff es (Arms (DataCube arm Float))
@@ -111,26 +115,36 @@ profilesByFrame = fmap swapProfileDimensions . splitFrameY
 --  2. Wavelength Offsets [-0.1, 0.0, 0.1, 0.2, 0, 0.1] - how far from the center of the spectral line this index is in milliangstroms
 
 newtype WavOffset unit = WavOffset Float
+  deriving newtype (Show)
 
 
 data CombinedArms a
 
 
 newtype LineId = LineId Int
-  deriving (Eq, Show)
+  deriving newtype (Eq, Show)
 
 
 data ArmWavBreak = ArmWavBreak
   { length :: Int -- number of indices in the combined arms
   , line :: SpectralLine
   }
+  deriving (Eq, Show)
 
 
-profileWavMetas :: (Error BlancaError :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms (ArmWavMeta fit))
+profileWavMetas :: forall es fit. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms (ArmWavMeta fit))
 profileWavMetas lids wavs = do
+  log Debug $ dump "profileWavMetas" (length lids, length wavs)
   breaks <- either (throwError . UnknownLineId) pure $ wavBreaks lids
-  let datas = splitWavs breaks wavs
+  log Debug $ dump " - breaks" breaks
+  datas <- checkWavs breaks $ splitWavs breaks wavs
   pure $ Arms $ zipWith armWavMeta breaks.arms datas.arms
+ where
+  checkWavs :: Arms ArmWavBreak -> Arms [Wavelength Nm] -> Eff es (Arms [Wavelength Nm])
+  checkWavs breaks aws = do
+    when (any null aws.arms) $ do
+      throwError $ MetaArmEmpty (length lids) (length wavs) breaks
+    pure aws
 
 
 wavBreaks :: [LineId] -> Either LineId (Arms ArmWavBreak)
@@ -217,8 +231,8 @@ data ProfileHDUs = ProfileHDUs
   }
 
 
-readProfileHDUs :: (Error BlancaError :> es) => Fits -> Eff es ProfileHDUs
-readProfileHDUs f = do
+readProfileHDUs :: (Error BlancaError :> es, Log :> es) => Fits -> Eff es ProfileHDUs
+readProfileHDUs f = catchSplit "readProfileHDUs" $ do
   array <- readProfileArray
   lineIds <- readLineIds
   offsets <- readWavOffsets
@@ -241,7 +255,7 @@ readProfileHDUs f = do
     case f.extensions of
       -- second extension
       [_, Image h] -> do
-        fmap LineId . M.toLists <$> decodeDataArray @Ix1 h.dataArray
+        fmap (LineId . round) . M.toLists <$> decodeDataArray @Ix1 @Float h.dataArray
       _ -> throwError $ MissingProfileExtensions "Wavelength Ids"
 
 
@@ -264,8 +278,9 @@ splitFrameY res =
 catchSplit :: (Error BlancaError :> es) => String -> Eff es a -> Eff es a
 catchSplit msg eff =
   eff
-    `catches` [ Handler $ \e -> throwError $ BadSplit msg (BadIndex e)
-              , Handler $ \e -> throwError $ BadSplit msg (BadSize e)
+    `catches` [ Handler $ \(e :: M.IndexException) -> throwError $ BadSplit msg (BadIndex e)
+              , Handler $ \(e :: M.SizeException) -> throwError $ BadSplit msg (BadSize e)
+              , Handler $ \(e :: ArrayError) -> throwError $ TelescopeArrayError msg e
               ]
 
 
@@ -273,8 +288,10 @@ data BlancaError
   = MissingProfileExtensions String
   | UnknownLineId LineId
   | BadSplit String MassivSplitError
+  | TelescopeArrayError String ArrayError
+  | MetaArmEmpty {lineIds :: Int, wavOffsets :: Int, breaks :: Arms ArmWavBreak}
   | ArmsMetaEmptyProfile
-  deriving (Show, Exception, Eq)
+  deriving (Show, Exception)
 
 
 data MassivSplitError

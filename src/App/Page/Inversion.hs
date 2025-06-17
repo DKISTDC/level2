@@ -18,6 +18,7 @@ import App.View.Icons qualified as Icons
 import App.View.Inversion (Step (..), stepGenerate, stepMetadata, stepPublish, stepUpload, viewInversionContainer)
 import App.View.Layout
 import App.View.LiveInput (liveTextArea)
+import App.View.ProposalDetails (spectralLineTag)
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
@@ -31,6 +32,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
@@ -313,6 +315,8 @@ viewDatasets inv ds = do
       row (gap 10) $ do
         View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets)
         appRoute (Route.Datasets $ Dataset d.datasetId) Style.link $ text d.datasetId.fromId
+        -- maybe none (\l -> text $ "(" <> cs (show l) <> ")") $ Spectra.identifyLine d
+        el (fontSize 12) $ maybe none spectralLineTag $ Spectra.identifyLine d
 
 
 viewMetadata :: Inversion -> [Dataset] -> View InversionStatus ()

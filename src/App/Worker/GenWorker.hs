@@ -113,8 +113,11 @@ fitsTask numWorkers task = do
 
     log Debug $ dump "Canonical Dataset:" dc.datasetId
     quantities <- decodeQuantitiesFrames =<< readFile u.quantities
+    log Debug "Quantities √"
     profileFit <- Blanca.decodeProfileFit =<< readFile u.profileFit
+    log Debug "Profile Fit √"
     profileOrig <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
+    log Debug "Profile Orig √"
 
     l1 <- Gen.canonicalL1Frames (Scratch.dataset dc)
     log Debug $ dump "Frames" (length quantities, length profileFit.arms, length profileOrig.arms, length l1)
@@ -281,8 +284,14 @@ asdfTask t = do
 
 
 requireMetas
-  :: forall es. (Error GenerateError :> es, Scratch :> es, Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
-  => Id Proposal -> Id Inversion -> SliceXY -> Arms (Profile ArmWavMeta) -> [BinTableHDU] -> Eff es (NonEmpty L2FitsMeta)
+  :: forall es
+   . (Error GenerateError :> es, Scratch :> es, Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
+  => Id Proposal
+  -> Id Inversion
+  -> SliceXY
+  -> Arms (Profile ArmWavMeta)
+  -> [BinTableHDU]
+  -> Eff es (NonEmpty L2FitsMeta)
 requireMetas propId invId slice arms l1fits = do
   metas <- loadMetas
   case metas of
