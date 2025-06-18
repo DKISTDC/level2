@@ -65,7 +65,7 @@ runDataInversions = interpret $ \_ -> \case
     pure $ fromRow row
   Deleted iid b -> do
     now <- currentTime
-    let val = if b then (Just now) else Nothing
+    let val = if b then Just now else Nothing
     updateInversion iid $ \InversionRow{..} -> InversionRow{deleted = lit val, ..}
   Update iid f -> updateInversion iid f
   ValidateGitCommit repo gc -> validateGitCommit repo gc
@@ -192,3 +192,4 @@ generate row =
     , asdf = row.generateAsdf
     , transfer = row.generateTransfer
     }
+

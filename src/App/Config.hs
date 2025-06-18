@@ -17,7 +17,6 @@ module App.Config
   ) where
 
 import App.Dev.Globus (DKIST)
-import App.Effect.Scratch qualified as Scratch
 import App.Types
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
@@ -31,6 +30,7 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
+import NSO.Data.Scratch qualified as Scratch
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common

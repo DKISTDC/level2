@@ -6,8 +6,6 @@ import App.Colors
 import App.Effect.Auth
 import App.Effect.FileManager (fileManagerOpenInv)
 import App.Effect.Publish qualified as Publish
-import App.Effect.Scratch (Scratch)
-import App.Effect.Scratch qualified as Scratch
 import App.Error (expectFound)
 import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
@@ -32,6 +30,8 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Data.Scratch (Scratch (..))
+import NSO.Data.Scratch qualified as Scratch
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
@@ -160,7 +160,7 @@ viewInversion inv ds admin gen pub = do
     if inv.deleted
       then restoreButton
       else none
-    col (disableIfDeleted) $ do
+    col disableIfDeleted $ do
       viewInversionContainer inv $ do
         stepUpload (uploadStep inv) $ do
           viewUpload inv
@@ -344,7 +344,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es) => HyperView GenerateStep es where
+instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Scratch :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = ReloadGen
     | RegenError
@@ -365,7 +365,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
         Inversions.clearError invId
         refreshInversion
       RegenFits -> do
-        Inversions.resetGenerating invId
+        Inversions.resetGeneratingFits invId
         refreshInversion
       RegenAsdf -> do
         Inversions.resetGeneratingAsdf invId
@@ -390,6 +390,9 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
     refreshInversion = do
       GenerateStep propId progId invId <- viewId
       pure $ target (InversionStatus propId progId invId) $ el (onLoad Reload 0) "RELOAD?"
+
+    deleteGenerateInversion :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es ()
+    deleteGenerateInversion propId invId = do
 
 
 generateStep :: Inversion -> Step

@@ -2,7 +2,6 @@
 
 module App.Worker.GenWorker where
 
-import App.Effect.Scratch as Scratch
 import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate as Gen
@@ -25,6 +24,7 @@ import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Data.Scratch as Scratch
 import NSO.Image.Asdf as Asdf
 import NSO.Image.Blanca qualified as Blanca
 import NSO.Image.Fits as Fits
@@ -120,7 +120,7 @@ fitsTask numWorkers task = do
     log Debug "Profile Orig √"
 
     l1 <- Gen.canonicalL1Frames (Scratch.dataset dc)
-    log Debug $ dump "Frames" (length quantities, length profileFit.arms, length profileOrig.arms, length l1)
+    log Debug $ dump "Frames" (length quantities, armFramesLength profileFit, armFramesLength profileOrig, length l1)
 
     gfs <- Gen.collateFrames quantities profileFit profileOrig l1
     send $ TaskSetStatus task $ GenFrames{complete = 0, total = NE.length gfs}

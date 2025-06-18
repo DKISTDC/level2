@@ -1,7 +1,5 @@
 module App.Worker.Generate where
 
-import App.Effect.Scratch (Scratch, UploadFiles (..))
-import App.Effect.Scratch qualified as Scratch
 import Control.Exception (Exception)
 import Data.List qualified as L
 import Effectful
@@ -9,6 +7,8 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
+import NSO.Data.Scratch (Scratch, UploadFiles (..))
+import NSO.Data.Scratch qualified as Scratch
 import NSO.Image.Blanca (BlancaError (..))
 import NSO.Image.Blanca as Blanca (collateFramesArms)
 import NSO.Image.Fits as Fits
@@ -47,14 +47,16 @@ collateFrames qs pfs pos ts = do
   frameSizes =
     FrameSizes
       { quantities = length qs
-      , fit = length pfs.arms
-      , original = length pos.arms
+      , fit = armFramesLength pfs
+      , original = armFramesLength pos
       , l1 = length ts
       }
 
 
--- allSizes :: FrameSizes -> [Int]
--- allSizes fs = [fs.quantities, fs.fit, fs.original, fs.l1]
+armFramesLength :: Arms [a] -> Int
+armFramesLength (Arms (as : _)) = length as
+armFramesLength _ = 0
+
 
 data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1 :: Int}
   deriving (Show, Eq)

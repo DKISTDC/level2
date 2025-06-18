@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedLists #-}
+
 module Test.BlancaSpec where
 
 import Data.Massiv.Array (Comp (..), D, Ix2 (..), Ix3, IxN (..), Sz (..))

@@ -1,7 +1,6 @@
 module App.Worker.Publish where
 
 import App.Effect.Publish (transferSoftPublish)
-import App.Effect.Scratch as Scratch
 import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception)
 import Control.Monad.Loops
@@ -16,6 +15,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Data.Scratch as Scratch
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Network.Globus (taskPercentComplete)

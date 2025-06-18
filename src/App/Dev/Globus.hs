@@ -1,12 +1,12 @@
 module App.Dev.Globus where
 
-import App.Effect.Scratch as Scratch
 import App.Effect.Transfer
 import Data.List.NonEmpty
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus
 import Effectful.Log
+import NSO.Data.Scratch as Scratch
 import NSO.Prelude
 import NSO.Types.Common (Path' (..), PathType (..), (</>))
 import Network.Globus.Auth

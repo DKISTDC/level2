@@ -1,14 +1,14 @@
 module App.Effect.Publish where
 
 import App.Effect.FileManager (fileManagerOpenDir)
-import App.Effect.Scratch (Scratch, outputL2Dir)
-import App.Effect.Scratch qualified as Scratch
 import App.Effect.Transfer (dkistEndpoint, initTransfer)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError, Task, Token, Token' (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
+import NSO.Data.Scratch (Scratch, outputL2Dir)
+import NSO.Data.Scratch qualified as Scratch
 import NSO.Image.Fits (L2FrameFits)
 import NSO.Prelude
 import NSO.Types.Common as App

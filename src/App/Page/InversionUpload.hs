@@ -6,7 +6,6 @@ module App.Page.InversionUpload where
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager, requireLogin)
 import App.Effect.FileManager (FileLimit (Files))
-import App.Effect.Scratch (Scratch)
 import App.Effect.Transfer as Transfer (TransferForm, UploadFiles (..), initUpload)
 import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
@@ -27,6 +26,7 @@ import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
+import NSO.Data.Scratch (Scratch)
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Hyperbole

@@ -1,4 +1,4 @@
-module App.Effect.Scratch where
+module NSO.Data.Scratch where
 
 import Data.ByteString (ByteString)
 import Effectful
@@ -7,8 +7,6 @@ import Effectful.FileSystem (FileSystem)
 import Effectful.FileSystem qualified as FS
 import Effectful.FileSystem.IO.ByteString qualified as FS
 import Effectful.Log
-import NSO.Image.Asdf (L2Asdf, filenameL2Asdf)
-import NSO.Image.Fits (L2FrameFits, filenameL2Fits)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -25,6 +23,9 @@ data Config = Config
   }
 
 
+-- this definitely feels like an app thing
+-- but really, the implementation is, not the effect itself
+
 data Scratch :: Effect where
   ListDirectory :: Path' Dir a -> Scratch m [Path' Filename a]
   ReadFile :: Path a -> Scratch es ByteString
@@ -33,9 +34,9 @@ data Scratch :: Effect where
   PathExists :: Path a -> Scratch es Bool
   DirExists :: Path a -> Scratch es Bool
   CreateDirectoryLink :: Path' Dir a -> Path' Dir b -> Scratch es ()
+  RemoveDir :: Path' Dir a -> Scratch es ()
   Globus :: Scratch es (Id Collection)
 type instance DispatchOf Scratch = 'Dynamic
-
 
 runScratch
   :: (FileSystem :> es, Log :> es)
@@ -64,6 +65,8 @@ runScratch cfg = interpret $ \_ -> \case
     FS.doesPathExist (mounted src)
   DirExists src -> do
     FS.doesDirectoryExist (mounted src)
+  RemoveDir dir -> do
+    FS.removeDirectoryRecursive (mounted dir)
   Globus -> pure $ Id cfg.collection.unTagged
  where
   mounted :: Path' x a -> FilePath
@@ -98,37 +101,12 @@ baseDir :: Path' Dir Scratch
 baseDir = Path "level2"
 
 
-input :: Path' Dir Input
-input = baseDir </> "input"
 
 
-generated :: Path' Dir Generate
-generated = baseDir </> "generated"
 
 
-dataset :: Dataset -> Path' Dir Dataset
-dataset d =
-  input </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
 
 
-blanca :: Id Proposal -> Id Inversion -> Path' Dir BLANCA
-blanca ip ii =
-  input </> Path (cs ip.fromId) </> Path (cs ii.fromId)
-
-
-outputL2Dir :: Id Proposal -> Id Inversion -> Path' Dir L2FrameFits
-outputL2Dir ip ii =
-  generated </> Path (cs ip.fromId) </> Path (cs ii.fromId)
-
-
-outputL2Fits :: Id Proposal -> Id Inversion -> UTCTime -> Path L2FrameFits
-outputL2Fits ip ii dt =
-  filePath (outputL2Dir ip ii) $ filenameL2Fits ii dt
-
-
-outputL2Asdf :: Id Proposal -> Id Inversion -> Path L2Asdf
-outputL2Asdf ip ii =
-  filePath (outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
 collection :: (Scratch :> es) => Eff es (Globus.Id Collection)
@@ -137,42 +115,12 @@ collection = do
   pure $ Tagged c
 
 
-data Input
 
 
--- data Timestamps
-data BLANCA
 
 
-data UploadFiles t = UploadFiles
-  { profileFit :: Path' t InvProfileFit
-  , profileOrig :: Path' t InvProfileOrig
-  , quantities :: Path' t InvQuantities
-  -- , timestamps :: Path' t Timestamps
-  }
-  deriving (Generic, Show)
 
 
-inversionUploads :: Path' Dir BLANCA -> UploadFiles File
-inversionUploads bdir =
-  let quantities = bdir </> fileQuantities
-      profileFit = bdir </> fileProfileFit
-      profileOrig = bdir </> fileProfileOrig
-   in UploadFiles{quantities, profileFit, profileOrig}
-
-
--- timestamps = bdir </> fileTimestamps
-
-fileQuantities :: Path' Filename InvQuantities
-fileQuantities = Path "inv_res_mod.fits"
-
-
-fileProfileFit :: Path' Filename InvProfileFit
-fileProfileFit = Path "inv_res_pre.fits"
-
-
-fileProfileOrig :: Path' Filename InvProfileOrig
-fileProfileOrig = Path "per_ori.fits"
 
 -- fileTimestamps :: Path' Filename Timestamps
 -- fileTimestamps = Path "timestamps.tsv"

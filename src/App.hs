@@ -3,7 +3,6 @@ module App where
 import App.Config
 import App.Dev.Globus (globusDevAuth, runGlobusDev)
 import App.Effect.Auth as Auth
-import App.Effect.Scratch (Scratch, runScratch)
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
@@ -43,6 +42,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
+import NSO.Data.Scratch (Scratch, runScratch)
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
 import NSO.Metadata as Metadata
 import NSO.Prelude
