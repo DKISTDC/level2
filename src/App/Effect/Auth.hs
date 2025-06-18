@@ -8,7 +8,6 @@ import App.Types
 import Control.Monad (void)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), withText)
 import Data.ByteString.Char8 qualified as BC
-import Data.Default (Default (..))
 import Data.Tagged
 import Effectful
 import Effectful.Concurrent.STM

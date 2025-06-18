@@ -44,7 +44,7 @@ profiles
   -> Header
   -> Arms (Profile ProfileImage)
   -> Eff es (Arms (Profile ProfileFrameFits))
-profiles slice now l1 = mapM profile
+profiles slice now l1 (Arms armProfiles) = Arms <$> mapM profile armProfiles
  where
   profile pair = do
     fit <- profileFrameFits pair.fit

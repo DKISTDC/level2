@@ -12,7 +12,6 @@ import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.Layout
 import App.View.ProposalDetails (viewProgramRow)
-import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import Effectful

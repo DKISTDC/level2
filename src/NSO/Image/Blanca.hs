@@ -78,12 +78,12 @@ profileArmsFrames metas framesArms = do
 -- Split a single profile frame (one scan position) into N arms given N arm WavMetas
 splitFrameIntoArms
   :: forall es combined arm fit
-   . (Error BlancaError :> es, Log :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
+   . (Error BlancaError :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
   => Arms (ArmWavMeta fit)
   -> DataCube combined Float
   -> Eff es (Arms (DataCube arm Float))
-splitFrameIntoArms metas wavs = do
-  Arms . snd <$> foldM splitNext (wavs, []) metas
+splitFrameIntoArms (Arms metas) wavs = do
+  Arms . L.reverse . snd <$> foldM splitNext (wavs, []) metas
  where
   splitNext :: (DataCube combined Float, [DataCube arm Float]) -> ArmWavMeta fit -> Eff es (DataCube combined Float, [DataCube arm Float])
   splitNext (combo, arms) meta = catchSplit "Profile Data" $ do
@@ -122,17 +122,15 @@ newtype LineId = LineId Int
 
 
 data ArmWavBreak = ArmWavBreak
-  { length :: Int -- number of indices in the combined arms
-  , line :: SpectralLine
+  { line :: SpectralLine
+  , length :: Int -- number of indices in the combined arms
   }
   deriving (Eq, Show)
 
 
 profileWavMetas :: forall es fit. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms (ArmWavMeta fit))
 profileWavMetas lids wavs = do
-  log Debug $ dump "profileWavMetas" (length lids, length wavs)
   breaks <- either (throwError . UnknownLineId) pure $ wavBreaks lids
-  log Debug $ dump " - breaks" breaks
   datas <- checkWavs breaks $ splitWavs breaks wavs
   pure $ Arms $ zipWith armWavMeta breaks.arms datas.arms
  where
@@ -148,13 +146,13 @@ wavBreaks lids = do
   fromGroups $ NE.group lids
  where
   fromGroups :: [NonEmpty LineId] -> Either LineId (Arms ArmWavBreak)
-  fromGroups gs = Arms <$> foldM addBreak [] gs
+  fromGroups gs = Arms . L.reverse <$> foldM addBreak [] gs
 
   addBreak :: [ArmWavBreak] -> NonEmpty LineId -> Either LineId [ArmWavBreak]
   addBreak breaks ls = do
     let lineId = NE.head ls
     line <- blancaWavLine lineId
-    pure $ ArmWavBreak{length = length lids, line} : breaks
+    pure $ ArmWavBreak{length = length ls, line} : breaks
 
   blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
@@ -165,9 +163,9 @@ wavBreaks lids = do
 
 
 splitWavs :: Arms ArmWavBreak -> [WavOffset MA] -> Arms [WavOffset MA]
-splitWavs breaks wavs =
+splitWavs (Arms breaks) wavs =
   let (_, arms) = foldl' splitNextWav (wavs, []) breaks :: ([WavOffset MA], [[WavOffset MA]])
-   in Arms arms
+   in Arms $ L.reverse arms
  where
   splitNextWav :: ([WavOffset MA], [[WavOffset MA]]) -> ArmWavBreak -> ([WavOffset MA], [[WavOffset MA]])
   splitNextWav (wos, wvs) wb =

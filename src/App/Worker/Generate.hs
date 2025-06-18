@@ -47,8 +47,8 @@ collateFrames qs pfs pos ts = do
   frameSizes =
     FrameSizes
       { quantities = length qs
-      , fit = length pfs
-      , original = length pos
+      , fit = length pfs.arms
+      , original = length pos.arms
       , l1 = length ts
       }
 

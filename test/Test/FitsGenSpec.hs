@@ -247,21 +247,21 @@ specWavProfile = do
         avgDelta simpleOffsets `shouldBe` WavOffset 1000
 
       it "meta offset in nm" $ do
-        (armWavMeta (ArmWavBreak 5 FeI) simpleOffsets).delta `shouldBe` WavOffset 0.1
+        (armWavMeta (ArmWavBreak FeI 5) simpleOffsets).delta `shouldBe` WavOffset 0.1
 
       it "real world offset" $ do
-        roundDigits 5 (armWavMeta (ArmWavBreak 5 FeI) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
+        roundDigits 5 (armWavMeta (ArmWavBreak FeI 5) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
 
     describe "pixel" $ do
       it "should be exactly center in simple" $ do
         pixel0 (WavOffset 1000) simpleOffsets `shouldBe` 3.5
 
       it "< positive index in wav630" $ do
-        let m = armWavMeta (ArmWavBreak 5 FeI) wav630
+        let m = armWavMeta (ArmWavBreak FeI 5) wav630
         m.pixel `shouldSatisfy` P.lt 4
 
       it "> last negative index in wav630" $ do
-        let m = armWavMeta (ArmWavBreak 5 FeI) wav630
+        let m = armWavMeta (ArmWavBreak FeI 5) wav630
         m.pixel `shouldSatisfy` P.gt 3
 
 

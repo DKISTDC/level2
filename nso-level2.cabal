@@ -237,6 +237,7 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       Test.AsdfSpec
+      Test.BlancaSpec
       Test.FitsGenSpec
       Test.FrameSpec
       Test.ParseSpec
