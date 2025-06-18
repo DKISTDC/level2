@@ -114,10 +114,6 @@ profilesByFrame = fmap swapProfileDimensions . splitFrameY
 --  1. Spectral Line Ids [23, 23, 23, 23, 4, 4] - ids describing which line was used
 --  2. Wavelength Offsets [-0.1, 0.0, 0.1, 0.2, 0, 0.1] - how far from the center of the spectral line this index is in milliangstroms
 
-newtype WavOffset unit = WavOffset Float
-  deriving newtype (Show)
-
-
 data CombinedArms a
 
 
@@ -140,7 +136,7 @@ profileWavMetas lids wavs = do
   datas <- checkWavs breaks $ splitWavs breaks wavs
   pure $ Arms $ zipWith armWavMeta breaks.arms datas.arms
  where
-  checkWavs :: Arms ArmWavBreak -> Arms [Wavelength Nm] -> Eff es (Arms [Wavelength Nm])
+  checkWavs :: Arms ArmWavBreak -> Arms [WavOffset MA] -> Eff es (Arms [WavOffset MA])
   checkWavs breaks aws = do
     when (any null aws.arms) $ do
       throwError $ MetaArmEmpty (length lids) (length wavs) breaks
@@ -168,42 +164,48 @@ wavBreaks lids = do
     n -> Left n
 
 
-splitWavs :: Arms ArmWavBreak -> [WavOffset MA] -> Arms [Wavelength Nm]
+splitWavs :: Arms ArmWavBreak -> [WavOffset MA] -> Arms [WavOffset MA]
 splitWavs breaks wavs =
-  let (_, arms) = foldl' splitNextWav (wavs, []) breaks :: ([WavOffset MA], [[Wavelength Nm]])
+  let (_, arms) = foldl' splitNextWav (wavs, []) breaks :: ([WavOffset MA], [[WavOffset MA]])
    in Arms arms
  where
-  splitNextWav :: ([WavOffset MA], [[Wavelength Nm]]) -> ArmWavBreak -> ([WavOffset MA], [[Wavelength Nm]])
+  splitNextWav :: ([WavOffset MA], [[WavOffset MA]]) -> ArmWavBreak -> ([WavOffset MA], [[WavOffset MA]])
   splitNextWav (wos, wvs) wb =
     let wav = take wb.length wos
         rest = drop wb.length wos
-     in (rest, offsetsToWavelengths wb.line wav : wvs)
-
-  offsetsToWavelengths :: SpectralLine -> [WavOffset MA] -> [Wavelength Nm]
-  offsetsToWavelengths line offs =
-    let Wavelength mid = midPoint line
-     in fmap (offsetToWavelength $ realToFrac mid) offs
-
-  -- offset in milliangstroms
-  offsetToWavelength :: Wavelength Nm -> WavOffset MA -> Wavelength Nm
-  offsetToWavelength (Wavelength mid) (WavOffset offset) =
-    Wavelength $ mid + realToFrac offset / 10000
+     in (rest, wav : wvs)
 
 
-armWavMeta :: ArmWavBreak -> [Wavelength Nm] -> ArmWavMeta fit
+offsetsToWavelengths :: SpectralLine -> [WavOffset MA] -> [Wavelength Nm]
+offsetsToWavelengths line offs =
+  let Wavelength mid = midPoint line
+   in fmap (offsetToWavelength $ realToFrac mid) offs
+
+
+offsetToWavelength :: Wavelength Nm -> WavOffset MA -> Wavelength Nm
+offsetToWavelength (Wavelength mid) offset =
+  let WavOffset offNm = toNanometers offset
+   in Wavelength $ mid + realToFrac offNm / 10000
+
+
+toNanometers :: WavOffset MA -> WavOffset Nm
+toNanometers (WavOffset w) = WavOffset (w / 10000)
+
+
+armWavMeta :: ArmWavBreak -> [WavOffset MA] -> ArmWavMeta fit
 armWavMeta bk ws =
   let delta = avgDelta ws
    in ArmWavMeta
-        { delta
+        { delta = toNanometers delta
         , length = bk.length
         , pixel = pixel0 delta ws
         , line = bk.line
         }
 
 
-avgDelta :: [Wavelength Nm] -> Wavelength Nm
-avgDelta [] = 0
-avgDelta ws = Wavelength $ roundDigits 5 $ sum (differences (fmap (.value) ws)) / fromIntegral (length ws - 1)
+avgDelta :: [WavOffset MA] -> WavOffset MA
+avgDelta [] = WavOffset 0
+avgDelta ws = WavOffset $ roundDigits 5 $ sum (differences (fmap (.value) ws)) / fromIntegral (length ws - 1)
  where
   differences :: (Num a) => [a] -> [a]
   differences lst = zipWith (-) (drop 1 lst) lst
@@ -214,8 +216,8 @@ roundDigits d x = fromIntegral @Int (round $ x * 10 ^ (d :: Int)) / 10 ^ (d :: I
 
 
 -- the interpolated pixel offset of the value 0 in a monotonically increasing list
-pixel0 :: Wavelength Nm -> [Wavelength Nm] -> Double
-pixel0 (Wavelength dlt) as =
+pixel0 :: WavOffset MA -> [WavOffset MA] -> Float
+pixel0 (WavOffset dlt) as =
   let mn = minimum as
    in negate mn.value / dlt + 1
 

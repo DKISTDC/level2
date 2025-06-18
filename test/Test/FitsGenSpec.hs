@@ -9,14 +9,17 @@ import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Image.Headers
+import NSO.Image.Blanca
+import NSO.Image.Fits.Profile as Profile
+import NSO.Image.Fits.Quantity as Quantity
+import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.L1Input
 import NSO.Image.Primary as Primary
-import NSO.Image.Fits.Profile as Profile
-import NSO.Image.Fits.Quantity as Quantity
+import NSO.Image.Types.Profile
+import NSO.Image.Types.Quantity as Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
@@ -27,7 +30,7 @@ import Telescope.Data.DataCube
 import Telescope.Data.Parser (runParserPure)
 import Telescope.Data.WCS
 import Telescope.Fits as Fits hiding (Axis)
-import Telescope.Fits.Header (Header (..), HeaderRecord (..), KeywordRecord (..), parseKeyword)
+import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 
 spec :: Spec
@@ -88,7 +91,7 @@ specHeader = describe "Header Keywords" $ do
       lookupKeyword "PC2_2" hx `shouldSatisfy` P.just P.anything
       lookupKeyword "PC2_3" hx `shouldSatisfy` P.just P.anything
 
-      let hya = toHeader $ QuantityPCs @A @Y (PC 1) (PC 2) (PC 3)
+      let hya = toHeader $ QuantityPCs @'A @Y (PC 1) (PC 2) (PC 3)
       axisN @(HDUAxis QuantityAxes Y) `shouldBe` 3
       lookupKeyword "PC3_1A" hya `shouldSatisfy` P.just P.anything
       lookupKeyword "PC3_2A" hya `shouldSatisfy` P.just P.anything
@@ -138,13 +141,13 @@ specHeader = describe "Header Keywords" $ do
     wcs <- runGen $ Quantity.wcsHeader slice l1 :: IO (WCSHeader QuantityAxes)
     pure $ QuantityHeader @Temperature DataHDUInfo common wcs
 
-  genProfile :: IO (ProfileHeader Orig630)
+  genProfile :: IO (ProfileHeader Original)
   genProfile = do
     DataCommonFix common <- getFixture
     L1HeaderFix l1 <- getFixture
-    let wp = WavProfile 0 1 FeI
+    let wp = ArmWavMeta{pixel = 0, delta = WavOffset 1, length = 10, line = FeI}
     wcs <- runGen $ Profile.wcsHeader wp slice l1
-    pure $ ProfileHeader @Orig630 DataHDUInfo common wcs
+    pure $ ProfileHeader @Original wp common wcs
 
   slice :: SliceXY
   slice = SliceXY{pixelsPerBin = 7, fiducialArmId = VISPArmId 1}
@@ -238,46 +241,57 @@ specWCS = describe "WCS" $ do
 
 specWavProfile :: Spec
 specWavProfile = do
-  describe "wavProfile" $ do
+  describe "armWavMeta" $ do
     describe "delta" $ do
       it "avgDelta should calc simple" $ do
-        avgDelta simpleNums `shouldBe` 1000
+        avgDelta simpleOffsets `shouldBe` WavOffset 1000
 
-      it "should calc simple delta" $ do
-        (wavProfile FeI simple).delta `shouldBe` 0.1
+      it "meta offset in nm" $ do
+        (armWavMeta (ArmWavBreak 5 FeI) simpleOffsets).delta `shouldBe` WavOffset 0.1
 
-      it "should calc regular delta" $ do
-        round5 (wavProfile FeI wav630).delta `shouldBe` round5 (0.00128 * 10)
+      it "real world offset" $ do
+        roundDigits 5 (armWavMeta (ArmWavBreak 5 FeI) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
 
     describe "pixel" $ do
       it "should be exactly center in simple" $ do
-        pixel0 1000 simpleNums `shouldBe` 3.5
+        pixel0 (WavOffset 1000) simpleOffsets `shouldBe` 3.5
 
       it "< positive index in wav630" $ do
-        let p = wavProfile FeI wav630
-        p.pixel `shouldSatisfy` P.lt 4
+        let m = armWavMeta (ArmWavBreak 5 FeI) wav630
+        m.pixel `shouldSatisfy` P.lt 4
 
       it "> last negative index in wav630" $ do
-        let px = (wavProfile FeI wav630).pixel
-        px `shouldSatisfy` P.gt 3
+        let m = armWavMeta (ArmWavBreak 5 FeI) wav630
+        m.pixel `shouldSatisfy` P.gt 3
 
 
-simple :: DataCube '[Wavelength (Center 630 MA)] Float
-simple = DataCube $ M.delay @Ix1 @P $ M.fromLists' Seq simpleNums
+simple :: DataCube '[Wavelength Nm] Double
+simple = DataCube $ M.delay @Ix1 @P $ M.fromLists' Seq $ fmap (.value) simpleNums
 
 
-simpleNums :: [Float]
-simpleNums = [-2500, -1500, -500, 500, 1500, 2500, 3500, 4500]
+simpleNums :: [Wavelength Nm]
+simpleNums = offsetsToWavelengths FeI simpleOffsets
+
+
+simpleOffsets :: [WavOffset MA]
+simpleOffsets = fmap WavOffset [-2500, -1500, -500, 500, 1500, 2500, 3500, 4500]
+
+
+wav630 :: [WavOffset MA]
+wav630 =
+  fmap
+    WavOffset
+    [-288.79998779, -160.80000305, -32.79999924, 95.19999695, 223.19999695, 351.20001221, 479.20001221, 607.20001221, 735.20001221, 863.20001221, 991.20001221, 1119.19995117, 1247.19995117, 1375.19995117, 1503.19995117]
 
 
 -- Actual raw data from profile. In original milliangstroms
-wav630 :: DataCube '[Wavelength (Center 630 MA)] Float
-wav630 =
-  DataCube $
-    M.delay @Ix1 @P $
-      M.fromLists'
-        Seq
-        [-288.79998779, -160.80000305, -32.79999924, 95.19999695, 223.19999695, 351.20001221, 479.20001221, 607.20001221, 735.20001221, 863.20001221, 991.20001221, 1119.19995117, 1247.19995117, 1375.19995117, 1503.19995117]
+wav630Array :: DataCube '[WavOffset MA] Float
+wav630Array =
+  DataCube
+    $ M.delay @Ix1 @P
+    $ M.fromLists'
+      Seq
+    $ fmap (.value) wav630
 
 
 runErrorIO :: Eff [Error ParseError, IOE] a -> IO a

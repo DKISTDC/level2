@@ -42,10 +42,14 @@ data Profile (f :: ProfileType -> Type) = Profile
   deriving (Generic)
 
 
+newtype WavOffset unit = WavOffset {value :: Float}
+  deriving newtype (Show, Ord, Eq)
+
+
 -- Metadata for an arm profile
 data ArmWavMeta (fit :: ProfileType) = ArmWavMeta
-  { pixel :: !Double
-  , delta :: !(Wavelength Nm)
+  { pixel :: !Float
+  , delta :: !(WavOffset Nm)
   , length :: !Int -- number of indices in the combined arms
   , line :: !SpectralLine
   }

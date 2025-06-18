@@ -1,7 +1,7 @@
 module Test.FrameSpec where
 
 import Data.Massiv.Array as M
-import NSO.Image.Fits.Quantity (splitFrames)
+import NSO.Image.Blanca (splitFrameY)
 import NSO.Image.Headers.Types
 import NSO.Prelude
 import Skeletest
@@ -14,13 +14,13 @@ data Q
 spec :: Spec
 spec = do
   describe "Frames" $ do
-    describe "splitFrames" $ do
+    describe "splitFrameY" $ do
       it "should split frames on 3rd dimension" $ do
-        let frames = splitFrames sample4D
+        let frames = splitFrameY sample4D
         length frames `shouldBe` 3
         [f0, _, _] <- pure frames
 
-        M.toLists (computeAs P f0 . array) `shouldBe` ([[[0, 1, 2, 3], [1, 2, 3, 4]]] :: [[[Float]]])
+        M.toLists (computeAs P f0.array) `shouldBe` ([[[0, 1, 2, 3], [1, 2, 3, 4]]] :: [[[Float]]])
 
 
 sample4D :: DataCube [Q, Depth, FrameY, SlitX] Float
