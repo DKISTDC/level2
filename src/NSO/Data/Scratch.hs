@@ -9,9 +9,6 @@ import Effectful.FileSystem.IO.ByteString qualified as FS
 import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset
-import NSO.Types.InstrumentProgram
-import NSO.Types.Inversion
 import Network.Globus (Id' (Collection))
 import Network.Globus qualified as Globus
 import System.FilePath (takeDirectory)
@@ -37,6 +34,7 @@ data Scratch :: Effect where
   RemoveDir :: Path' Dir a -> Scratch es ()
   Globus :: Scratch es (Id Collection)
 type instance DispatchOf Scratch = 'Dynamic
+
 
 runScratch
   :: (FileSystem :> es, Log :> es)
@@ -101,26 +99,10 @@ baseDir :: Path' Dir Scratch
 baseDir = Path "level2"
 
 
-
-
-
-
-
-
-
-
 collection :: (Scratch :> es) => Eff es (Globus.Id Collection)
 collection = do
   Id c <- send Globus
   pure $ Tagged c
-
-
-
-
-
-
-
-
 
 -- fileTimestamps :: Path' Filename Timestamps
 -- fileTimestamps = Path "timestamps.tsv"

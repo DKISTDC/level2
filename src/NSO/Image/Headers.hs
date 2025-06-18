@@ -148,8 +148,6 @@ data AdaptiveOptics = AdaptiveOptics
   deriving (Generic, ToHeader, FromHeader)
 
 
-
-
 newtype Teltrack = Teltrack Text
   deriving newtype (ToKeyword, FromKeyword)
 instance KeywordInfo Teltrack where
@@ -220,7 +218,7 @@ datacenterHeader l1 i = do
       { dsetid = Key i
       , framevol = Key $ MB 0
       , proctype = Key Constant
-      , filename = Key $ frameFilename dateBeg i
+      , filename = Key $ fitsFrameFilename dateBeg i
       , level = Key Constant
       , headvers = Key headerSpecVersion
       , headUrl = Key (Url $ "https://docs.dkist.nso.edu/projects/data-products/en/" <> headerSpecVersion)
@@ -298,8 +296,8 @@ telescopeHeader l1 = do
 --   pure $ StatisticsHeader{..}
 
 -- 2023_10_16T23_55_59_513_00589600_inv_290834_L2.fits
-frameFilename :: UTCTime -> Id Inversion -> Text
-frameFilename start iv =
+fitsFrameFilename :: UTCTime -> Id Inversion -> Text
+fitsFrameFilename start iv =
   addExtension . T.toUpper . T.map toUnderscore $
     T.intercalate
       "_"

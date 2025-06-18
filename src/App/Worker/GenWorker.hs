@@ -27,6 +27,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Scratch as Scratch
 import NSO.Image.Asdf as Asdf
 import NSO.Image.Blanca qualified as Blanca
+import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Meta qualified as Meta
 import NSO.Image.Fits.Quantity (QuantityError, decodeQuantitiesFrames)
@@ -95,7 +96,7 @@ fitsTask numWorkers task = do
     send $ TaskSetStatus task GenStarted
 
     -- Load Metadata ----------------
-    let u = Scratch.inversionUploads $ Scratch.blanca task.proposalId task.inversionId
+    let u = Files.inversionUploads $ Files.blanca task.proposalId task.inversionId
     log Debug $ dump "InvResults" u.quantities
     log Debug $ dump "InvProfile" u.profileFit
     log Debug $ dump "OrigProfile" u.profileOrig
@@ -108,7 +109,7 @@ fitsTask numWorkers task = do
     log Debug $ dump "Meta Complete" slice
     downloadL1Frames task inv ds
 
-    log Debug $ dump "Downloaded L1" (fmap Scratch.dataset ds)
+    log Debug $ dump "Downloaded L1" (fmap Files.dataset ds)
     dc <- requireCanonicalDataset slice ds
 
     log Debug $ dump "Canonical Dataset:" dc.datasetId
@@ -119,7 +120,7 @@ fitsTask numWorkers task = do
     profileOrig <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
     log Debug "Profile Orig √"
 
-    l1 <- Gen.canonicalL1Frames (Scratch.dataset dc)
+    l1 <- Gen.canonicalL1Frames (Files.dataset dc)
     log Debug $ dump "Frames" (length quantities, armFramesLength profileFit, armFramesLength profileOrig, length l1)
 
     gfs <- Gen.collateFrames quantities profileFit profileOrig l1
@@ -179,7 +180,7 @@ workFrame
 workFrame t slice frameInputs = runGenerateError $ do
   now <- currentTime
   DateTime dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
-  let path = Scratch.outputL2Fits t.proposalId t.inversionId dateBeg
+  let path = Fits.outputL2Fits t.proposalId t.inversionId dateBeg
   alreadyExists <- Scratch.pathExists path
 
   res <-
@@ -254,7 +255,7 @@ asdfTask t = do
     log Debug $ dump "Task" t
 
     -- Load Metadata
-    let u = Scratch.inversionUploads $ Scratch.blanca t.proposalId t.inversionId
+    let u = Files.inversionUploads $ Files.blanca t.proposalId t.inversionId
     slice <- sliceMeta u
 
     inv <- loadInversion t.inversionId
@@ -266,7 +267,7 @@ asdfTask t = do
     profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
     arms <- Blanca.armsMeta profileFit profileOrig
 
-    l1fits <- Gen.canonicalL1Frames (Scratch.dataset dc)
+    l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
 
     (metas :: NonEmpty L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
 
@@ -274,7 +275,7 @@ asdfTask t = do
 
     now <- currentTime
     let tree = asdfDocument inv.inversionId ds now $ NE.sort metas
-    let path = Scratch.outputL2Asdf inv.proposalId inv.inversionId
+    let path = Asdf.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output
 

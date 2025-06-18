@@ -58,8 +58,8 @@ clearError iid = do
   send $ Update iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, ..}
 
 
-resetGenerating :: (Inversions :> es) => Id Inversion -> Eff es ()
-resetGenerating iid = do
+resetGeneratingFits :: (Inversions :> es) => Id Inversion -> Eff es ()
+resetGeneratingFits iid = do
   -- updateInversion iid $ \r -> r{generateTaskId = lit Nothing, generateL1FrameDir = lit Nothing, generateTaskCompleted = lit Nothing, invError = lit Nothing}
   send $ Update iid $ \InversionRow{..} -> InversionRow{invError = lit Nothing, generateFits = lit Nothing, generateAsdf = lit Nothing, published = lit Nothing, ..}
 

@@ -7,9 +7,9 @@ import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError, Task, Token, Token' (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
-import NSO.Data.Scratch (Scratch, outputL2Dir)
+import NSO.Data.Scratch (Scratch)
 import NSO.Data.Scratch qualified as Scratch
-import NSO.Image.Fits (L2FrameFits)
+import NSO.Image.Files qualified as Files
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.InstrumentProgram
@@ -48,7 +48,7 @@ transferSoftPublish propId invId = do
  where
   transfer :: Globus.Id Collection -> Globus.Id Submission -> TransferRequest
   transfer scratch submission_id =
-    let src = outputL2Dir propId invId
+    let src = Files.outputL2Dir propId invId
         dst = publishedDir propId invId
      in TransferRequest
           { data_type = DataType
@@ -62,7 +62,7 @@ transferSoftPublish propId invId = do
           }
 
 
-inversionTransferItem :: Path' Dir L2FrameFits -> Path' Dir (Published Inversion) -> TransferItem
+inversionTransferItem :: Path' Dir Inversion -> Path' Dir (Published Inversion) -> TransferItem
 inversionTransferItem src dest =
   TransferItem
     { data_type = DataType

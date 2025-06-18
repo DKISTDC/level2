@@ -7,10 +7,12 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Scratch (Scratch, UploadFiles (..))
+import NSO.Data.Scratch (Scratch)
 import NSO.Data.Scratch qualified as Scratch
 import NSO.Image.Blanca (BlancaError (..))
 import NSO.Image.Blanca as Blanca (collateFramesArms)
+import NSO.Image.Files (UploadFiles (..))
+import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
 import NSO.Image.Headers.Parse (requireKey, runParseError)
@@ -75,13 +77,13 @@ datasetVISPArmId d = do
   frameArmId f
  where
   sampleIntensityFrame d' = do
-    fs <- allL1IntensityFrames (Scratch.dataset d')
+    fs <- allL1IntensityFrames (Files.dataset d')
     case fs of
       [] -> throwError (MissingFrames d'.datasetId)
       (f : _) -> pure f
 
   frameArmId f = do
-    hdu :: BinTableHDU <- readLevel1File (Scratch.dataset d) f
+    hdu :: BinTableHDU <- readLevel1File (Files.dataset d) f
     res <- runErrorNoCallStack @ParseError $ requireKey "VSPARMID" hdu.header
     case res of
       Left err -> throwError (FetchParse err)
@@ -118,15 +120,15 @@ readLevel1File dir frame = do
 
 readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path' Filename L2FrameFits -> Eff es Fits
 readLevel2Fits pid iid path = do
-  let dir = Scratch.outputL2Dir pid iid
+  let dir = Files.outputL2Dir pid iid
   inp <- send $ Scratch.ReadFile $ filePath dir path
   Fits.decode inp
 
 
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]
 l2FramePaths pid iid = do
-  let dir = Scratch.outputL2Dir pid iid
-  filter isFits <$> Scratch.listDirectory dir
+  let dir = Files.outputL2Dir pid iid
+  fmap (fmap (\p -> Path p.filePath)) $ filter isFits <$> Scratch.listDirectory dir
 
 
 data FetchError

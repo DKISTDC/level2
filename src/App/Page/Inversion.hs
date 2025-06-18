@@ -31,8 +31,9 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Scratch (Scratch (..))
-import NSO.Data.Scratch qualified as Scratch
 import NSO.Data.Spectra qualified as Spectra
+import NSO.Image.Files qualified as Files
+import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Web.Hyperbole
@@ -357,7 +358,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
 
 
   update action = do
-    GenerateStep _ _ invId <- viewId
+    GenerateStep propId _ invId <- viewId
     case action of
       ReloadGen ->
         refresh
@@ -365,6 +366,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
         Inversions.clearError invId
         refreshInversion
       RegenFits -> do
+        Fits.deleteL2FramesFits propId invId
         Inversions.resetGeneratingFits invId
         refreshInversion
       RegenAsdf -> do
@@ -390,9 +392,6 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
     refreshInversion = do
       GenerateStep propId progId invId <- viewId
       pure $ target (InversionStatus propId progId invId) $ el (onLoad Reload 0) "RELOAD?"
-
-    deleteGenerateInversion :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es ()
-    deleteGenerateInversion propId invId = do
 
 
 generateStep :: Inversion -> Step
@@ -506,7 +505,7 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
 
 viewGeneratedFiles :: Inversion -> View c ()
 viewGeneratedFiles inv =
-  link (fileManagerOpenInv $ Scratch.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
+  link (fileManagerOpenInv $ Files.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
 
 
 -- ----------------------------------------------------------------

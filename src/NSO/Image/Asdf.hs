@@ -13,6 +13,7 @@ import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
+import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.Headers.DataCommon
@@ -26,7 +27,6 @@ import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
-import Telescope.Data.Axes (Axes (..), Major (Row))
 import Telescope.Data.KnownText
 
 
@@ -36,6 +36,11 @@ import Telescope.Data.KnownText
 -- TODO: fit/orig separate GWCS + anchors
 
 data L2Asdf
+
+
+outputL2AsdfPath :: Id Proposal -> Id Inversion -> Path L2Asdf
+outputL2AsdfPath ip ii =
+  filePath (Files.outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
 asdfDocument :: Id Inversion -> [Dataset] -> UTCTime -> NonEmpty L2FitsMeta -> Document

@@ -7,6 +7,8 @@ import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
+import NSO.Data.Scratch (Scratch (..))
+import NSO.Image.Files qualified as Files
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers
@@ -16,6 +18,7 @@ import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import Telescope.Asdf as Asdf
 import Telescope.Fits as Fits
@@ -38,8 +41,18 @@ data L2FrameInputs = L2FrameInputs
   }
 
 
+outputL2Fits :: Id Proposal -> Id Inversion -> UTCTime -> Path L2FrameFits
+outputL2Fits ip ii dt =
+  filePath (Files.outputL2Dir ip ii) $ filenameL2Fits ii dt
+
+
 filenameL2Fits :: Id Inversion -> UTCTime -> Path' Filename L2FrameFits
-filenameL2Fits ii dt = Path $ cs $ frameFilename dt ii
+filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
+
+
+deleteL2FramesFits :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es ()
+deleteL2FramesFits propId invId = do
+  send $ RemoveDir $ Files.outputL2Dir propId invId
 
 
 generateL2FrameFits

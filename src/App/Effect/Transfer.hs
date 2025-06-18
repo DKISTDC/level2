@@ -1,7 +1,5 @@
 module App.Effect.Transfer where
 
-import App.Effect.Scratch (Scratch)
-import App.Effect.Scratch qualified as Scratch
 import Data.List qualified as L
 import Data.Tagged
 import Effectful
@@ -13,6 +11,9 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import GHC.Generics
 import NSO.Data.Inversions as Inversions
+import NSO.Data.Scratch (Scratch)
+import NSO.Data.Scratch qualified as Scratch
+import NSO.Image.Files qualified as Files
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
@@ -73,9 +74,9 @@ instance Show (UploadFiles Filename Maybe) where
 instance FromForm (UploadFiles Filename Maybe) where
   fromForm f = do
     fs <- files f
-    let quantities = findFile Scratch.fileQuantities fs
-    let profileFit = findFile Scratch.fileProfileFit fs
-    let profileOrig = findFile Scratch.fileProfileOrig fs
+    let quantities = findFile Files.fileQuantities fs
+    let profileFit = findFile Files.fileProfileFit fs
+    let profileOrig = findFile Files.fileProfileOrig fs
     pure UploadFiles{quantities, profileFit, profileOrig}
    where
     files :: FUE.Form -> Either Text [Path' Filename ()]
@@ -143,7 +144,7 @@ initUpload tform up ip ii = do
         }
 
     dest :: Path' Filename a -> Path' File a
-    dest fn = Scratch.blanca ip ii </> fn
+    dest fn = Files.blanca ip ii </> fn
 
     source :: Path' Dir TransferForm -> Path' Filename a -> Path' File a
     source t fn = t </> fn
@@ -209,7 +210,7 @@ initScratchDatasets ds = do
       , label = Just $ "Datasets: " <> cs (show (fmap (.datasetId) ds))
       , source_endpoint = dkistEndpoint
       , destination_endpoint = scratch
-      , data_ = fmap (\d -> datasetTransferItem (Scratch.dataset d) d) ds
+      , data_ = fmap (\d -> datasetTransferItem (Files.dataset d) d) ds
       , sync_level = SyncTimestamp
       , store_base_path_info = True
       }

@@ -28,7 +28,6 @@ library
       App.Effect.Auth
       App.Effect.FileManager
       App.Effect.Publish
-      App.Effect.Scratch
       App.Effect.Transfer
       App.Error
       App.Mock
@@ -78,6 +77,7 @@ library
       NSO.Data.Inversions.Update
       NSO.Data.Programs
       NSO.Data.Qualify
+      NSO.Data.Scratch
       NSO.Data.Spectra
       NSO.Data.Sync
       NSO.Image.Asdf
@@ -87,6 +87,7 @@ library
       NSO.Image.Asdf.NDCollection
       NSO.Image.Asdf.Ref
       NSO.Image.Blanca
+      NSO.Image.Files
       NSO.Image.Fits
       NSO.Image.Fits.Frame
       NSO.Image.Fits.Meta
