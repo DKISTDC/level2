@@ -30,11 +30,10 @@ import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
 
 
--- TODO: add frame check back in!!
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
-collateFrames qs pfs pos ts = do
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
+collateFrames qs metas pfs pos ts = do
   unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
-  let frameArms :: [Arms (Profile ProfileImage)] = Blanca.collateFramesArms pfs pos
+  let frameArms :: [Arms (Profile ProfileImage)] = Blanca.collateFramesArms metas pfs pos
   frames $ L.zipWith3 L2FrameInputs qs frameArms ts
  where
   frames [] = throwError $ NoFrames frameSizes
@@ -55,7 +54,7 @@ collateFrames qs pfs pos ts = do
       }
 
 
-armFramesLength :: Arms [a] -> Int
+armFramesLength :: Arms [ProfileImage fit] -> Int
 armFramesLength (Arms (as : _)) = length as
 armFramesLength _ = 0
 

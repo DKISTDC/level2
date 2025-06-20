@@ -113,17 +113,26 @@ fitsTask numWorkers task = do
     dc <- requireCanonicalDataset slice ds
 
     log Debug $ dump "Canonical Dataset:" dc.datasetId
+
     quantities <- decodeQuantitiesFrames =<< readFile u.quantities
-    log Debug "Quantities √"
-    profileFit <- Blanca.decodeProfileFit =<< readFile u.profileFit
-    log Debug "Profile Fit √"
-    profileOrig <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
-    log Debug "Profile Orig √"
+    log Debug $ dump "Quantities" ()
+
+    fitHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileFit
+    arms <- Blanca.decodeArmWavMeta fitHDUs
+    log Debug $ dump "Profile Arms " arms
+
+    profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileArms arms fitHDUs
+    log Debug $ dump "Profile Fit " profileFit
+
+    origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
+    profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
+    log Debug $ dump "Profile Orig" profileOrig
 
     l1 <- Gen.canonicalL1Frames (Files.dataset dc)
     log Debug $ dump "Frames" (length quantities, armFramesLength profileFit, armFramesLength profileOrig, length l1)
 
-    gfs <- Gen.collateFrames quantities profileFit profileOrig l1
+    gfs <- Gen.collateFrames quantities arms profileFit profileOrig l1
+
     send $ TaskSetStatus task $ GenFrames{complete = 0, total = NE.length gfs}
 
     -- Generate them in parallel with N = available CPUs
@@ -189,10 +198,13 @@ workFrame t slice frameInputs = runGenerateError $ do
         log Debug $ dump "SKIP frame" path.filePath
         pure Nothing
       else do
+        log Debug $ dump "FRAME start" path.filePath
+        log Debug $ dump " - inputs.profiles.arms" (length frameInputs.profiles.arms)
         frame <- Fits.generateL2FrameFits now t.inversionId slice frameInputs
         let fits = Fits.frameToFits frame
-        log Debug $ dump "WRITE frame" path.filePath
+        log Debug $ dump " - fits" fits
         Scratch.writeFile path $ Fits.encodeL2 fits
+        log Debug $ dump " - wroteframe" path.filePath
         pure $ Just $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
 
   send $ TaskModStatus @GenFits t updateNumFrame
@@ -263,9 +275,12 @@ asdfTask t = do
     dc <- requireCanonicalDataset slice ds
     log Debug $ dump "Canonical Dataset:" dc.datasetId
 
-    profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileFit =<< readFile u.profileFit
-    profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileOrig =<< readFile u.profileOrig
-    arms <- Blanca.armsMeta profileFit profileOrig
+    fitHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileFit
+    -- origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
+
+    arms <- Blanca.decodeArmWavMeta fitHDUs
+    -- profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileArms arms fitHDUs
+    -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
 
     l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
 
@@ -290,7 +305,7 @@ requireMetas
   => Id Proposal
   -> Id Inversion
   -> SliceXY
-  -> Arms (Profile ArmWavMeta)
+  -> Arms ArmWavMeta
   -> [BinTableHDU]
   -> Eff es (NonEmpty L2FitsMeta)
 requireMetas propId invId slice arms l1fits = do

@@ -17,7 +17,7 @@ import Telescope.Data.DataCube
 
 spec :: Spec
 spec = describe "NSO.Image.Blanca" $ do
-  describe "wavBreaks" $ withMarkers ["focus"] $ do
+  describe "wavBreaks" $ do
     it "identifies a line" $ do
       wavBreaks [LineId 23] `shouldBe` Right (Arms [ArmWavBreak FeI 1])
 
@@ -39,7 +39,7 @@ spec = describe "NSO.Image.Blanca" $ do
           c.length `shouldBe` 1
         Right arms -> failTest $ "Wrong number of arms: " <> show arms
 
-  describe "splitWavs" $ withMarkers ["focus"] $ do
+  describe "splitWavs" $ do
     it "breaks 1 arm" $ do
       let breaks = Arms [ArmWavBreak FeI 3]
       let offs = fmap WavOffset [1, 2, 3]
@@ -53,7 +53,7 @@ spec = describe "NSO.Image.Blanca" $ do
       let offs = fmap WavOffset [1, 2, 3, 4, 5]
       splitWavs breaks offs `shouldBe` Arms [[WavOffset 1, WavOffset 2, WavOffset 3], [WavOffset 4, WavOffset 5]]
 
-  describe "splitFrameIntoArms" $ withMarkers ["focus"] $ do
+  describe "splitFrameIntoArms" $ do
     it "splits" $ do
       -- only 1 wav belongs to FeI
       -- two wavs belong to NaD
@@ -65,6 +65,27 @@ spec = describe "NSO.Image.Blanca" $ do
           M.toLists armFeI.array `shouldBe` [[[0]]]
           M.toLists armNaD.array `shouldBe` [[[1], [2]]]
         Right arms -> failTest $ "Wrong Arms: " <> show arms
+
+  describe "collate" $ withMarkers ["focus"] $ do
+    it "armsFrames" $ do
+      let framesArms = replicate 10 $ Arms [ArmWavMeta FeI 1 0 (WavOffset 1), ArmWavMeta NaD 1 0 (WavOffset 1)]
+      let metasByArm = armsFrames framesArms
+      length metasByArm.arms `shouldBe` 2
+      Arms [framesFeI, _] <- pure metasByArm
+      length framesFeI `shouldBe` 10
+
+    it "frameArms" $ do
+      let arms = Arms [[1, 2, 3], [10, 20, 30]] :: Arms [Int]
+      length (frameArms arms) `shouldBe` 3
+
+    it "collates arm-frames into frame-arms" $ do
+      let metas = Arms [ArmWavMeta FeI 1 0 (WavOffset 1)]
+          fitFrames = Arms [replicate 10 $ ProfileImage undefined]
+          origFrames = Arms [replicate 10 $ ProfileImage undefined]
+          frames = collateFramesArms metas fitFrames origFrames
+      length frames `shouldBe` 10
+      (frame1 : _) <- pure frames
+      length frame1.arms `shouldBe` 1
 
 
 -- 1 pixels, 3 wavs, 1 stokes

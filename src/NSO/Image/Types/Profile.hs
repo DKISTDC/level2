@@ -1,5 +1,6 @@
 module NSO.Image.Types.Profile where
 
+import Data.List qualified as L
 import NSO.Image.Headers.Types
 import NSO.Prelude
 import NSO.Types.Wavelength
@@ -21,33 +22,44 @@ instance KnownText Fit where
 
 -- | A list with one entry per VISP arm
 newtype Arms a = Arms {arms :: [a]}
-  deriving newtype (Show, Eq)
+  deriving newtype (Eq)
+
+
+instance {-# OVERLAPS #-} Show (Arms [a]) where
+  show (Arms as) = "Arms [" <> L.intercalate "," (fmap (\bs -> show (length bs) <> " items") as) <> "]"
+instance (Show a) => Show (Arms a) where
+  show (Arms as) = "Arms " <> show as
 
 
 instance (ToAsdf a) => ToAsdf (Arms a) where
   toValue (Arms as) = toValue as
 
 
--- | Profile Data for a single FrameY (Scan Position), either Original or Fit
-data ProfileImage (fit :: ProfileType) = ProfileImage
-  { arm :: ArmWavMeta fit
-  , data_ :: DataCube [SlitX, Wavelength Nm, Stokes] Float
+newtype ProfileImage fit = ProfileImage
+  { data_ :: DataCube [SlitX, Wavelength Nm, Stokes] Float
   }
+
+
+instance Show (ProfileImage fit) where
+  show p = "ProfileImage " <> show (dataCubeAxes p.data_)
 
 
 data Profile (f :: ProfileType -> Type) = Profile
-  { fit :: f Fit
+  { arm :: ArmWavMeta
+  , fit :: f Fit
   , original :: f Original
   }
   deriving (Generic)
+instance Show (Profile f) where
+  show p = "Profile " <> show p.arm.line
 
 
 newtype WavOffset unit = WavOffset {value :: Float}
   deriving newtype (Show, Ord, Eq)
 
 
--- Metadata for an arm profile
-data ArmWavMeta (fit :: ProfileType) = ArmWavMeta
+-- Metadata for an arm profile. Independent of Fit or Original (the wav meta is equal for both)
+data ArmWavMeta = ArmWavMeta
   { line :: !SpectralLine
   , length :: !Int -- number of indices in the combined arms
   , pixel :: !Float

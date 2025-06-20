@@ -23,69 +23,61 @@ import Telescope.Fits as Fits
 
 -- Decoding Profiles ---------------------------------------------------------------------------------------
 
--- Given the decoded blanca profiles by arm-frame, return list of frames of profiles by arm
-collateFramesArms :: Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [Arms (Profile ProfileImage)]
-collateFramesArms (Arms fss) (Arms oss) =
-  zipWith (\fs os -> Arms $ zipWith Profile fs os) fss oss
+-- Given the decoded blanca profiles by arm-frames, return list of frames each split into arms
+collateFramesArms :: Arms ArmWavMeta -> Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [Arms (Profile ProfileImage)]
+collateFramesArms metas fits origs =
+  let fitFrames = frameArms fits :: [Arms (ProfileImage Fit)]
+      orgFrames = frameArms origs :: [Arms (ProfileImage Original)]
+  in zipWith profile fitFrames orgFrames
+  where
+    profile fitArms origArms =
+      Arms $ zipWith3 Profile metas.arms fitArms.arms origArms.arms
 
 
-armsMeta :: (Error BlancaError :> es) => Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> Eff es (Arms (Profile ArmWavMeta))
-armsMeta (Arms fs) (Arms os) =
-  case Arms <$> zipWithM armMeta fs os of
-    Nothing -> throwError ArmsMetaEmptyProfile
-    Just arms -> pure arms
 
 
-armMeta :: [ProfileImage Fit] -> [ProfileImage Original] -> Maybe (Profile ArmWavMeta)
-armMeta [] _ = Nothing
-armMeta _ [] = Nothing
-armMeta (f : _) (o : _) = pure $ Profile{fit = f.arm, original = o.arm}
+decodeProfileHDUs :: (Error BlancaError :> es, Log :> es) => BS.ByteString -> Eff es ProfileHDUs
+decodeProfileHDUs inp = do
+  fits <- Fits.decode inp
+  readProfileHDUs fits
 
 
--- Decode the BLANCA output for fit profiles: inv_res_pro.fits
-decodeProfileFit :: (Error BlancaError :> es, Log :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Fit])
-decodeProfileFit inp = do
-  f <- decode inp
-  decodeProfileArms f
+
+-- using the contents of either profile, decode the arm wav meta
+decodeArmWavMeta :: (Error BlancaError :> es, Log :> es) => ProfileHDUs -> Eff es (Arms ArmWavMeta)
+decodeArmWavMeta hdus = profileWavMetas hdus.lineIds hdus.offsets
 
 
--- Decode the BLANCA output for original profiles: per_ori.fits
-decodeProfileOrig :: (Error BlancaError :> es, Log :> es) => BS.ByteString -> Eff es (Arms [ProfileImage Original])
-decodeProfileOrig inp = do
-  f <- decode inp
-  decodeProfileArms f
-
-
-decodeProfileArms :: (Error BlancaError :> es, Log :> es) => Fits -> Eff es (Arms [ProfileImage fit])
-decodeProfileArms f = do
-  hdus <- readProfileHDUs f
-  metas <- profileWavMetas hdus.lineIds hdus.offsets
+-- decode a fit or original profile 
+decodeProfileArms :: forall fit es. (Error BlancaError :> es, Log :> es) => Arms ArmWavMeta -> ProfileHDUs -> Eff es (Arms [ProfileImage fit])
+decodeProfileArms arms hdus = do
   let frames = profilesByFrame hdus.array
-  framesByArms <- mapM (splitFrameIntoArms metas) frames
-  profileArmsFrames metas framesByArms
+  framesByArms :: [Arms (DataCube [SlitX, Wavelength Nm, Stokes] Float)] <- mapM (splitFrameIntoArms arms) frames
+  let imagesByArms :: [Arms (ProfileImage fit)] = fmap (\(Arms as) -> Arms $ fmap ProfileImage as) framesByArms
+  pure $ armsFrames imagesByArms
 
 
--- Given arm meta and a list of frames, subdivided by arm, create an Arms (list of arms), split by frames
-profileArmsFrames :: (Error BlancaError :> es) => Arms (ArmWavMeta fit) -> [Arms (DataCube [SlitX, Wavelength Nm, Stokes] Float)] -> Eff es (Arms [ProfileImage fit])
-profileArmsFrames metas framesArms = do
-  let armsFrames = L.transpose $ fmap (.arms) framesArms
-  pure $ Arms $ zipWith profileArmFrames metas.arms armsFrames
- where
-  profileArmFrames :: ArmWavMeta fit -> [DataCube [SlitX, Wavelength Nm, Stokes] Float] -> [ProfileImage fit]
-  profileArmFrames meta = fmap (ProfileImage meta)
+-- Given a list of frames, subdivided by arm, create an Arms (list of arms), split by frames
+armsFrames ::  [Arms a] -> Arms [a]
+armsFrames frames =
+  Arms $ L.transpose $ fmap (.arms) frames
+
+frameArms ::  Arms [a] -> [Arms a]
+frameArms (Arms arms) =
+  fmap Arms $ L.transpose arms
 
 
 -- Split a single profile frame (one scan position) into N arms given N arm WavMetas
 splitFrameIntoArms
-  :: forall es combined arm fit
+  :: forall es combined arm
    . (Error BlancaError :> es, combined ~ [SlitX, CombinedArms (Wavelength MA), Stokes], arm ~ [SlitX, Wavelength Nm, Stokes])
-  => Arms (ArmWavMeta fit)
+  => Arms ArmWavMeta
   -> DataCube combined Float
   -> Eff es (Arms (DataCube arm Float))
 splitFrameIntoArms (Arms metas) wavs = do
   Arms . L.reverse . snd <$> foldM splitNext (wavs, []) metas
  where
-  splitNext :: (DataCube combined Float, [DataCube arm Float]) -> ArmWavMeta fit -> Eff es (DataCube combined Float, [DataCube arm Float])
+  splitNext :: (DataCube combined Float, [DataCube arm Float]) -> ArmWavMeta -> Eff es (DataCube combined Float, [DataCube arm Float])
   splitNext (combo, arms) meta = catchSplit "Profile Data" $ do
     (arm, rest) <- DC.splitM1 meta.length combo
     pure (rest, toNanos arm : arms)
@@ -128,7 +120,7 @@ data ArmWavBreak = ArmWavBreak
   deriving (Eq, Show)
 
 
-profileWavMetas :: forall es fit. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms (ArmWavMeta fit))
+profileWavMetas :: forall es fit. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms ArmWavMeta)
 profileWavMetas lids wavs = do
   breaks <- either (throwError . UnknownLineId) pure $ wavBreaks lids
   datas <- checkWavs breaks $ splitWavs breaks wavs
@@ -190,7 +182,7 @@ toNanometers :: WavOffset MA -> WavOffset Nm
 toNanometers (WavOffset w) = WavOffset (w / 10000)
 
 
-armWavMeta :: ArmWavBreak -> [WavOffset MA] -> ArmWavMeta fit
+armWavMeta :: ArmWavBreak -> [WavOffset MA] -> ArmWavMeta
 armWavMeta bk ws =
   let delta = avgDelta ws
    in ArmWavMeta
@@ -290,7 +282,7 @@ data BlancaError
   | BadSplit String MassivSplitError
   | TelescopeArrayError String ArrayError
   | MetaArmEmpty {lineIds :: Int, wavOffsets :: Int, breaks :: Arms ArmWavBreak}
-  | ArmsMetaEmptyProfile
+  -- | ArmsMetaEmptyProfile
   deriving (Show, Exception)
 
 

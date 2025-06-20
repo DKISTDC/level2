@@ -83,7 +83,7 @@ frameMetaFromL2Fits
   :: (Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
   => Path' Filename L2FrameFits
   -> SliceXY
-  -> Arms (Profile ArmWavMeta)
+  -> Arms ArmWavMeta
   -> BinTableHDU
   -> Fits
   -> Eff es L2FitsMeta

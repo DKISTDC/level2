@@ -4,6 +4,7 @@ module NSO.Image.Fits.Frame where
 
 import Data.ByteString qualified as BS
 import Data.Massiv.Array ()
+import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
@@ -39,6 +40,11 @@ data L2FrameInputs = L2FrameInputs
   , profiles :: Arms (Profile ProfileImage)
   , l1Frame :: BinTableHDU
   }
+instance Show L2FrameInputs where
+  show inp =
+    let ks = keywords inp.l1Frame.header
+        ps = inp.profiles
+     in [i| L2FrameInputs { quantities = , profiles = #{ps}, l1Frame = #{length ks}} |]
 
 
 outputL2Fits :: Id Proposal -> Id Inversion -> UTCTime -> Path L2FrameFits
@@ -62,10 +68,10 @@ generateL2FrameFits
   -> SliceXY
   -> L2FrameInputs
   -> Eff es L2FrameFits
-generateL2FrameFits now i slice gf = do
-  ph <- primaryHeader i gf.l1Frame.header
+generateL2FrameFits now invId slice gf = do
+  ph <- primaryHeader invId gf.l1Frame.header
   qs <- quantities slice now gf.l1Frame.header gf.quantities
-  ps <- profiles slice now gf.l1Frame.header gf.profiles
+  ps <- profilesForFrame slice now gf.l1Frame.header gf.profiles
   pure $
     L2FrameFits
       { primary = ph

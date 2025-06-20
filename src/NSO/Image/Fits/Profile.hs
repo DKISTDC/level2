@@ -9,6 +9,7 @@ import Control.Exception (Exception)
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
+import Effectful.Writer.Static.Local
 import NSO.Data.Spectra (midPoint)
 import NSO.Image.Fits.Quantity (addDummyAxis, dataCommon)
 import NSO.Image.Headers
@@ -19,7 +20,7 @@ import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.Types.Profile
 import NSO.Prelude
-import NSO.Types.Wavelength (Wavelength (..))
+import NSO.Types.Wavelength (Nm, Wavelength (..))
 import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
@@ -36,7 +37,7 @@ data ProfileFrameFits (fit :: ProfileType) = ProfileFrameFits
   }
 
 
-profiles
+profilesForFrame
   :: forall es
    . (Error ProfileError :> es)
   => SliceXY
@@ -44,17 +45,18 @@ profiles
   -> Header
   -> Arms (Profile ProfileImage)
   -> Eff es (Arms (Profile ProfileFrameFits))
-profiles slice now l1 (Arms armProfiles) = Arms <$> mapM profile armProfiles
+profilesForFrame slice now l1 pros = Arms <$> mapM profileArm pros.arms
  where
-  profile pair = do
-    fit <- profileFrameFits pair.fit
-    original <- profileFrameFits pair.original
-    pure $ Profile{fit, original}
+  profileArm :: Profile ProfileImage -> Eff es (Profile ProfileFrameFits)
+  profileArm p = do
+    fit <- profileFrameFits @Fit p.arm p.fit
+    original <- profileFrameFits @Original p.arm p.original
+    pure $ Profile{arm = p.arm, fit, original}
 
-  profileFrameFits :: ProfileImage fit -> Eff es (ProfileFrameFits fit)
-  profileFrameFits frame = do
-    h <- profileHeader now slice l1 frame
-    pure $ ProfileFrameFits h frame
+  profileFrameFits :: ArmWavMeta -> ProfileImage fit -> Eff es (ProfileFrameFits fit)
+  profileFrameFits arm image = do
+    h <- profileHeader now slice l1 arm image
+    pure $ ProfileFrameFits h image
 
 
 profileHDUs :: Arms (Profile ProfileFrameFits) -> [DataHDU]
@@ -78,16 +80,17 @@ profileHeader
   => UTCTime
   -> SliceXY
   -> Header
+  -> ArmWavMeta
   -> ProfileImage fit
   -> Eff es (ProfileHeader fit)
-profileHeader now slice l1 frame = do
-  common <- dataCommon now frame.data_
-  wcs <- wcsHeader frame.arm slice l1
-  pure $ ProfileHeader{common, wcs, meta = frame.arm}
+profileHeader now slice l1 arm img = do
+  common <- dataCommon now img.data_
+  wcs <- wcsHeader arm slice l1
+  pure $ ProfileHeader{common, wcs, meta = arm}
 
 
 data ProfileHeader (fit :: ProfileType) = ProfileHeader
-  { meta :: ArmWavMeta fit
+  { meta :: ArmWavMeta
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
@@ -95,7 +98,8 @@ data ProfileHeader (fit :: ProfileType) = ProfileHeader
 instance (KnownText fit) => ToHeader (ProfileHeader fit) where
   toHeader h = writeHeader $ do
     sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-    addKeywords $ DataHeader{common = h.common, info = h.meta}
+    tell info
+    addKeywords h.common
 
     sectionHeader "WCS" "WCS Related Keywords"
     addKeywords h.wcs.common
@@ -103,23 +107,21 @@ instance (KnownText fit) => ToHeader (ProfileHeader fit) where
 
     addKeywords h.wcs.commonA
     addKeywords h.wcs.axesA
-
-
-instance (KnownText fit) => ToHeader (ArmWavMeta fit) where
-  toHeader meta =
-    Header $
-      fmap
-        Keyword
-        [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
-        , keywordRecord @(BType "spect.line.profile") BType
-        , keywordRecord @(BUnit Dimensionless) BUnit
-        ]
    where
+    info =
+      Header $
+        fmap
+          Keyword
+          [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
+          , keywordRecord @(BType "spect.line.profile") BType
+          , keywordRecord @(BUnit Dimensionless) BUnit
+          ]
+
     extName :: Text
-    extName = knownText @fit <> " Profile " <> cs (show meta.line)
+    extName = knownText @fit <> " Profile " <> cs (show h.meta.line)
 
 
-wcsHeader :: (Error ProfileError :> es) => ArmWavMeta fit -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
+wcsHeader :: (Error ProfileError :> es) => ArmWavMeta -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
 wcsHeader wp slice l1 = runParseError InvalidWCS $ do
   wm <- wcsAxes @WCSMain slice wp l1
   wc <- wcsCommon (isWcsValid wm) l1
@@ -180,10 +182,10 @@ instance (KnownText alt, AxisOrder (HDUAxis ProfileAxes ax)) => ToHeader (Profil
 
 
 wcsAxes
-  :: forall alt fit es
+  :: forall alt es
    . (Error ParseError :> es, KnownText alt)
   => SliceXY
-  -> ArmWavMeta fit
+  -> ArmWavMeta
   -> Header
   -> Eff es (ProfileAxes alt)
 wcsAxes s wp h = do
@@ -224,7 +226,7 @@ wcsStokes = do
   pure $ ProfileAxis{keys, pcs = Just pcs}
 
 
-wcsWavelength :: (Monad m) => ArmWavMeta fit -> m (ProfileAxis alt n)
+wcsWavelength :: (Monad m) => ArmWavMeta -> m (ProfileAxis alt n)
 wcsWavelength wp = do
   let Wavelength w = midPoint wp.line
   let crpix = Key $ realToFrac wp.pixel
