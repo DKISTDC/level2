@@ -2,6 +2,7 @@
 
 module Test.BlancaSpec where
 
+import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Comp (..), D, Ix2 (..), Ix3, IxN (..), Sz (..))
 import Data.Massiv.Array qualified as M
 import Effectful
@@ -43,15 +44,24 @@ spec = describe "NSO.Image.Blanca" $ do
     it "breaks 1 arm" $ do
       let breaks = Arms [ArmWavBreak FeI 3]
       let offs = fmap WavOffset [1, 2, 3]
-      splitWavs breaks offs `shouldBe` Arms [offs]
+      res <- runEff $ runErrorNoCallStack @BlancaError $ splitWavs breaks offs
+      case res of
+        Left err -> failTest $ show err
+        Right a -> a `shouldBe` Arms [NE.fromList offs]
 
       let long = fmap WavOffset [1, 2, 3, 4]
-      splitWavs breaks long `shouldBe` Arms [offs]
+      res2 <- runEff $ runErrorNoCallStack @BlancaError $ splitWavs breaks long
+      case res2 of
+        Left err -> failTest $ show err
+        Right a -> a `shouldBe` Arms [NE.fromList offs]
 
     it "breaks 2 arms" $ do
       let breaks = Arms [ArmWavBreak FeI 3, ArmWavBreak NaD 2]
       let offs = fmap WavOffset [1, 2, 3, 4, 5]
-      splitWavs breaks offs `shouldBe` Arms [[WavOffset 1, WavOffset 2, WavOffset 3], [WavOffset 4, WavOffset 5]]
+      res <- runEff $ runErrorNoCallStack @BlancaError $ splitWavs breaks offs
+      case res of
+        Left err -> failTest $ show err
+        Right a -> a `shouldBe` Arms [[WavOffset 1, WavOffset 2, WavOffset 3], [WavOffset 4, WavOffset 5]]
 
   describe "splitFrameIntoArms" $ do
     it "splits" $ do
@@ -66,25 +76,25 @@ spec = describe "NSO.Image.Blanca" $ do
           M.toLists armNaD.array `shouldBe` [[[1], [2]]]
         Right arms -> failTest $ "Wrong Arms: " <> show arms
 
-  describe "collate" $ withMarkers ["focus"] $ do
+  describe "collate" $ do
     it "armsFrames" $ do
-      let framesArms = replicate 10 $ Arms [ArmWavMeta FeI 1 0 (WavOffset 1), ArmWavMeta NaD 1 0 (WavOffset 1)]
+      let framesArms = NE.fromList $ replicate 10 $ Arms [ArmWavMeta FeI 1 0 (WavOffset 1), ArmWavMeta NaD 1 0 (WavOffset 1)]
       let metasByArm = armsFrames framesArms
       length metasByArm.arms `shouldBe` 2
       Arms [framesFeI, _] <- pure metasByArm
       length framesFeI `shouldBe` 10
 
     it "frameArms" $ do
-      let arms = Arms [[1, 2, 3], [10, 20, 30]] :: Arms [Int]
+      let arms = Arms [[1, 2, 3], [10, 20, 30]] :: Arms (NonEmpty Int)
       length (frameArms arms) `shouldBe` 3
 
     it "collates arm-frames into frame-arms" $ do
       let metas = Arms [ArmWavMeta FeI 1 0 (WavOffset 1)]
-          fitFrames = Arms [replicate 10 $ ProfileImage undefined]
-          origFrames = Arms [replicate 10 $ ProfileImage undefined]
+          fitFrames = Arms [NE.fromList $ replicate 10 $ ProfileImage undefined]
+          origFrames = Arms [NE.fromList $ replicate 10 $ ProfileImage undefined]
           frames = collateFramesArms metas fitFrames origFrames
       length frames `shouldBe` 10
-      (frame1 : _) <- pure frames
+      (frame1 :| _) <- pure frames
       length frame1.arms `shouldBe` 1
 
 

@@ -6,6 +6,7 @@
 module NSO.Image.Fits.Profile where
 
 import Control.Exception (Exception)
+import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
@@ -20,7 +21,7 @@ import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.Types.Profile
 import NSO.Prelude
-import NSO.Types.Wavelength (Nm, Wavelength (..))
+import NSO.Types.Wavelength (Wavelength (..))
 import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
@@ -60,7 +61,7 @@ profilesForFrame slice now l1 pros = Arms <$> mapM profileArm pros.arms
 
 
 profileHDUs :: Arms (Profile ProfileFrameFits) -> [DataHDU]
-profileHDUs (Arms arms) = mconcat $ fmap pairHDUs arms
+profileHDUs (Arms arms) = mconcat $ fmap pairHDUs $ NE.toList arms
  where
   pairHDUs :: Profile ProfileFrameFits -> [DataHDU]
   pairHDUs pair =

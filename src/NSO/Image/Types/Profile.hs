@@ -1,6 +1,7 @@
 module NSO.Image.Types.Profile where
 
 import Data.List qualified as L
+import Data.List.NonEmpty qualified as NE
 import NSO.Image.Headers.Types
 import NSO.Prelude
 import NSO.Types.Wavelength
@@ -21,12 +22,12 @@ instance KnownText Fit where
 
 
 -- | A list with one entry per VISP arm
-newtype Arms a = Arms {arms :: [a]}
+newtype Arms a = Arms {arms :: NonEmpty a}
   deriving newtype (Eq)
 
 
 instance {-# OVERLAPS #-} Show (Arms [a]) where
-  show (Arms as) = "Arms [" <> L.intercalate "," (fmap (\bs -> show (length bs) <> " items") as) <> "]"
+  show (Arms as) = "Arms [" <> L.intercalate "," (NE.toList $ fmap (\bs -> show (length bs) <> " items") as) <> "]"
 instance (Show a) => Show (Arms a) where
   show (Arms as) = "Arms " <> show as
 

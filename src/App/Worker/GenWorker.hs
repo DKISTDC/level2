@@ -123,11 +123,11 @@ fitsTask task = do
     arms <- Blanca.decodeArmWavMeta fitHDUs
     log Debug $ dump "Profile Arms " arms
 
-    profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileArms arms fitHDUs
+    profileFit <- Blanca.decodeProfileArms arms fitHDUs
     log Debug $ dump "Profile Fit " profileFit
 
     origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
-    profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
+    profileOrig <- Blanca.decodeProfileArms arms origHDUs
     log Debug $ dump "Profile Orig" profileOrig
 
     l1 <- Gen.canonicalL1Frames (Files.dataset dc)

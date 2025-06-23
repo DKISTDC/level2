@@ -107,7 +107,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
       { path
       , primary
       , quantities = FrameQuantitiesMeta{items = quants, shape = qshape}
-      , profiles = Arms [] -- FrameProfilesMeta{profiles = profs, shape630, shape854}
+      , profiles = undefined -- Arms [] -- FrameProfilesMeta{profiles = profs, shape630, shape854}
       }
  where
   headerAt :: forall es. (Parser :> es) => HDUIndex -> Eff es Header
@@ -165,7 +165,7 @@ frameMeta frame path =
   L2FitsMeta
     { primary = frame.primary
     , quantities = quantitiesMeta frame.quantities
-    , profiles = Arms [] -- profilesMeta frame.profiles
+    , profiles = undefined -- Arms [] -- profilesMeta frame.profiles
     , path
     }
  where

@@ -2,6 +2,7 @@ module App.Worker.Generate where
 
 import Control.Exception (Exception)
 import Data.List qualified as L
+import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -30,11 +31,11 @@ import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (NonEmpty (ProfileImage Fit)) -> Arms (NonEmpty (ProfileImage Original)) -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
 collateFrames qs metas pfs pos ts = do
   unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
-  let frameArms :: [Arms (Profile ProfileImage)] = Blanca.collateFramesArms metas pfs pos
-  frames $ L.zipWith3 L2FrameInputs qs frameArms ts
+  let frameArms :: NonEmpty (Arms (Profile ProfileImage)) = Blanca.collateFramesArms metas pfs pos
+  frames $ L.zipWith3 L2FrameInputs qs (NE.toList frameArms) ts
  where
   frames [] = throwError $ NoFrames frameSizes
   frames (f : fs) = pure $ f :| fs
@@ -54,9 +55,8 @@ collateFrames qs metas pfs pos ts = do
       }
 
 
-armFramesLength :: Arms [ProfileImage fit] -> Int
-armFramesLength (Arms (as : _)) = length as
-armFramesLength _ = 0
+armFramesLength :: Arms (NonEmpty (ProfileImage fit)) -> Int
+armFramesLength as = length . head $ as.arms
 
 
 data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1 :: Int}

@@ -14,6 +14,7 @@ import Effectful.Log
 import NSO.Data.Spectra (midPoint)
 import NSO.Image.Headers.Types
 import NSO.Image.Types.Profile
+import Effectful.State.Static.Local
 import NSO.Prelude
 import NSO.Types.Wavelength (CaIILine (..), MA, Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Data.Array (ArrayError)
@@ -24,14 +25,23 @@ import Telescope.Fits as Fits
 -- Decoding Profiles ---------------------------------------------------------------------------------------
 
 -- Given the decoded blanca profiles by arm-frames, return list of frames each split into arms
-collateFramesArms :: Arms ArmWavMeta -> Arms [ProfileImage Fit] -> Arms [ProfileImage Original] -> [Arms (Profile ProfileImage)]
+collateFramesArms :: Arms ArmWavMeta -> Arms (NonEmpty (ProfileImage Fit)) -> Arms (NonEmpty (ProfileImage Original)) -> NonEmpty (Arms (Profile ProfileImage))
 collateFramesArms metas fits origs =
-  let fitFrames = frameArms fits :: [Arms (ProfileImage Fit)]
-      orgFrames = frameArms origs :: [Arms (ProfileImage Original)]
-  in zipWith profile fitFrames orgFrames
+  let fitFrames = frameArms fits :: NonEmpty (Arms (ProfileImage Fit))
+      orgFrames = frameArms origs :: NonEmpty (Arms (ProfileImage Original))
+  in NE.zipWith profile fitFrames orgFrames
   where
+    profile :: Arms (ProfileImage Fit) -> Arms (ProfileImage Original) -> Arms (Profile ProfileImage)
     profile fitArms origArms =
-      Arms $ zipWith3 Profile metas.arms fitArms.arms origArms.arms
+      Arms $ zipWithNE Profile metas.arms fitArms.arms origArms.arms
+
+    -- they MUST all be the same length
+    zipWithNE :: (a->b->c->d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
+    zipWithNE f (a :| []) (b :| _) (c :| _) = NE.singleton (f a b c)
+    zipWithNE f (a :| _) (b :| []) (c :| _) = NE.singleton (f a b c)
+    zipWithNE f (a :| _) (b :| _) (c :| []) = NE.singleton (f a b c)
+    zipWithNE f (a :| a2 : as) (b :| b2 : bs) (c :| c2 : _cs) =
+      NE.singleton (f a b c) <> zipWithNE f (a2 :| as) (b2 :| bs) (c2 :| _cs)
 
 
 
@@ -49,22 +59,25 @@ decodeArmWavMeta hdus = profileWavMetas hdus.lineIds hdus.offsets
 
 
 -- decode a fit or original profile 
-decodeProfileArms :: forall fit es. (Error BlancaError :> es, Log :> es) => Arms ArmWavMeta -> ProfileHDUs -> Eff es (Arms [ProfileImage fit])
+decodeProfileArms :: forall fit es. (Error BlancaError :> es, Log :> es) => Arms ArmWavMeta -> ProfileHDUs -> Eff es (Arms (NonEmpty (ProfileImage fit)))
 decodeProfileArms arms hdus = do
   let frames = profilesByFrame hdus.array
-  framesByArms :: [Arms (DataCube [SlitX, Wavelength Nm, Stokes] Float)] <- mapM (splitFrameIntoArms arms) frames
-  let imagesByArms :: [Arms (ProfileImage fit)] = fmap (\(Arms as) -> Arms $ fmap ProfileImage as) framesByArms
-  pure $ armsFrames imagesByArms
+  case frames of
+    [] -> throwError $ NoProfileFrames arms
+    (f : fs) -> do
+      framesByArms <- mapM (splitFrameIntoArms arms) (f :| fs)
+      let imagesByArms :: NonEmpty (Arms (ProfileImage fit)) = fmap (\(Arms as) -> Arms $ fmap ProfileImage as) framesByArms
+      pure $ armsFrames imagesByArms
 
 
 -- Given a list of frames, subdivided by arm, create an Arms (list of arms), split by frames
-armsFrames ::  [Arms a] -> Arms [a]
+armsFrames ::  NonEmpty (Arms a) -> Arms (NonEmpty a)
 armsFrames frames =
-  Arms $ L.transpose $ fmap (.arms) frames
+  Arms $ NE.transpose $ fmap (.arms) frames
 
-frameArms ::  Arms [a] -> [Arms a]
+frameArms ::  Arms (NonEmpty a) -> NonEmpty (Arms a)
 frameArms (Arms arms) =
-  fmap Arms $ L.transpose arms
+  fmap Arms $ NE.transpose arms
 
 
 -- Split a single profile frame (one scan position) into N arms given N arm WavMetas
@@ -75,7 +88,10 @@ splitFrameIntoArms
   -> DataCube combined Float
   -> Eff es (Arms (DataCube arm Float))
 splitFrameIntoArms (Arms metas) wavs = do
-  Arms . L.reverse . snd <$> foldM splitNext (wavs, []) metas
+  arms <- L.reverse . snd <$> foldM splitNext (wavs, []) metas
+  case arms of
+    [] -> throwError $ SplitNoArms (Arms metas)
+    as -> pure $ Arms $ NE.fromList as
  where
   splitNext :: (DataCube combined Float, [DataCube arm Float]) -> ArmWavMeta -> Eff es (DataCube combined Float, [DataCube arm Float])
   splitNext (combo, arms) meta = catchSplit "Profile Data" $ do
@@ -120,31 +136,29 @@ data ArmWavBreak = ArmWavBreak
   deriving (Eq, Show)
 
 
-profileWavMetas :: forall es fit. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms ArmWavMeta)
-profileWavMetas lids wavs = do
-  breaks <- either (throwError . UnknownLineId) pure $ wavBreaks lids
-  datas <- checkWavs breaks $ splitWavs breaks wavs
-  pure $ Arms $ zipWith armWavMeta breaks.arms datas.arms
- where
-  checkWavs :: Arms ArmWavBreak -> Arms [WavOffset MA] -> Eff es (Arms [WavOffset MA])
-  checkWavs breaks aws = do
-    when (any null aws.arms) $ do
-      throwError $ MetaArmEmpty (length lids) (length wavs) breaks
-    pure aws
+profileWavMetas :: forall es. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms ArmWavMeta)
+profileWavMetas [] _ = throwError NoLineIds
+profileWavMetas _ [] = throwError NoWavOffsets
+profileWavMetas (l : ls) wavs = do
+  breaks <- either (throwError . UnknownLineId) pure $ wavBreaks (l :| ls)
+  datas :: Arms (NonEmpty (WavOffset MA)) <- splitWavs breaks wavs
+  pure $ Arms $ NE.zipWith armWavMeta breaks.arms (fmap NE.toList datas.arms)
 
 
-wavBreaks :: [LineId] -> Either LineId (Arms ArmWavBreak)
+wavBreaks :: NonEmpty LineId -> Either LineId (Arms ArmWavBreak)
 wavBreaks lids = do
-  fromGroups $ NE.group lids
+  fromGroups $ NE.group1 lids
  where
-  fromGroups :: [NonEmpty LineId] -> Either LineId (Arms ArmWavBreak)
-  fromGroups gs = Arms . L.reverse <$> foldM addBreak [] gs
+  fromGroups :: NonEmpty (NonEmpty LineId) -> Either LineId (Arms ArmWavBreak)
+  fromGroups gs = do
+    bs <- mapM wavBreak gs :: Either LineId (NonEmpty ArmWavBreak)
+    pure $ Arms bs
 
-  addBreak :: [ArmWavBreak] -> NonEmpty LineId -> Either LineId [ArmWavBreak]
-  addBreak breaks ls = do
+  wavBreak :: NonEmpty LineId -> Either LineId ArmWavBreak
+  wavBreak ls = do
     let lineId = NE.head ls
     line <- blancaWavLine lineId
-    pure $ ArmWavBreak{length = length ls, line} : breaks
+    pure $ ArmWavBreak{ length = length ls, line}
 
   blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
@@ -154,16 +168,19 @@ wavBreaks lids = do
     n -> Left n
 
 
-splitWavs :: Arms ArmWavBreak -> [WavOffset MA] -> Arms [WavOffset MA]
-splitWavs (Arms breaks) wavs =
-  let (_, arms) = foldl' splitNextWav (wavs, []) breaks :: ([WavOffset MA], [[WavOffset MA]])
-   in Arms $ L.reverse arms
+splitWavs :: Error BlancaError :> es => Arms ArmWavBreak -> [WavOffset MA] -> Eff es (Arms (NonEmpty (WavOffset MA)))
+splitWavs breaks wavs = do
+  as <- evalState wavs $ mapM (\brk -> nextWavsN brk.length) breaks.arms
+  pure $ Arms as
  where
-  splitNextWav :: ([WavOffset MA], [[WavOffset MA]]) -> ArmWavBreak -> ([WavOffset MA], [[WavOffset MA]])
-  splitNextWav (wos, wvs) wb =
-    let wav = take wb.length wos
-        rest = drop wb.length wos
-     in (rest, wav : wvs)
+  nextWavsN :: (State [WavOffset MA] :> es, Error BlancaError :> es) => Int -> Eff es (NonEmpty (WavOffset MA))
+  nextWavsN n = do
+    wos <- get @[WavOffset MA]
+    case splitAt n wos of
+      ([], _) -> throwError $ ShortWavs breaks wavs
+      (w : ws, rest) -> do
+        put rest
+        pure $ w :| ws
 
 
 offsetsToWavelengths :: SpectralLine -> [WavOffset MA] -> [Wavelength Nm]
@@ -206,7 +223,7 @@ roundDigits d x = fromIntegral @Int (round $ x * 10 ^ (d :: Int)) / 10 ^ (d :: I
 
 
 -- the interpolated pixel offset of the value 0 in a monotonically increasing list
-pixel0 :: WavOffset MA -> [WavOffset MA] -> Float
+pixel0 :: Foldable t => WavOffset MA -> t (WavOffset MA) -> Float
 pixel0 (WavOffset dlt) as =
   let mn = minimum as
    in negate mn.value / dlt + 1
@@ -281,7 +298,11 @@ data BlancaError
   | UnknownLineId LineId
   | BadSplit String MassivSplitError
   | TelescopeArrayError String ArrayError
-  | MetaArmEmpty {lineIds :: Int, wavOffsets :: Int, breaks :: Arms ArmWavBreak}
+  | SplitNoArms (Arms ArmWavMeta)
+  | ShortWavs (Arms ArmWavBreak) [WavOffset MA]
+  | NoLineIds
+  | NoWavOffsets
+  | NoProfileFrames (Arms ArmWavMeta)
   -- | ArmsMetaEmptyProfile
   deriving (Show, Exception)
 

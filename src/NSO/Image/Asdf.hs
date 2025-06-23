@@ -257,8 +257,7 @@ data QuantityMeta info = QuantityMeta
 data ProfilesSection = ProfilesSection
   { axes :: [AxisMeta]
   , arms :: Arms (Profile ProfileTree)
-  -- , gwcsFit :: ProfileGWCS Fit
-  -- , gwcsOrig :: ProfileGWCS Original
+  , meta :: ProfilesMeta
   }
 
 
@@ -276,6 +275,13 @@ instance ToAsdf ProfilesSection where
       ]
 
 
+data ProfilesMeta = ProfilesMeta
+  { gwcsFit :: ProfileGWCS Fit
+  , gwcsOrig :: ProfileGWCS Original
+  }
+  deriving (Generic, ToAsdf)
+
+
 -- we need a whole object of keys...
 -- refs :: Profiles Ref
 -- refs = profilesFrom (const Ref) ()
@@ -283,19 +289,23 @@ instance ToAsdf ProfilesSection where
 
 profilesSection :: PrimaryHeader -> NonEmpty (Arms ProfileMeta) -> ProfilesSection
 profilesSection primary frames =
-  ProfilesSection
-    { -- { gwcsFit = profileGWCS primary (head frames).profiles.orig854.wcs
-      -- , gwcsOrig = profileGWCS primary (head frames).profiles.orig630.wcs
-      axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-    , arms = profilesArmsTree frames
-    }
+  let meta =
+        ProfilesMeta
+          { gwcsFit = _ -- profileGWCS primary (head frames).profiles.orig854.wcs
+          , gwcsOrig = _ -- profileGWCS primary (head frames).profiles.orig630.wcs
+          }
+   in ProfilesSection
+        { meta = meta
+        , axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+        , arms = profilesArmsTree frames
+        }
 
 
 profilesArmsTree :: NonEmpty (Arms ProfileMeta) -> Arms (Profile ProfileTree)
 profilesArmsTree frames =
   let frame = head frames
    in -- ps = fmap (.profiles) frames
-      Arms []
+      _ -- Arms []
 
 
 data ProfileTree fit = ProfileTree
