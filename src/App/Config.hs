@@ -18,11 +18,13 @@ module App.Config
 
 import App.Dev.Globus (DKIST)
 import App.Types
+import App.Worker.CPU
 import Data.ByteString.Lazy qualified as BL
 import Data.String.Interpolate (i)
 import Data.Tagged
 import Data.Text
 import Effectful
+import Effectful.Concurrent
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
@@ -49,7 +51,7 @@ data Config = Config
   , scratch :: Scratch.Config
   , auth :: AuthInfo
   , db :: Rel8.Connection
-  , numWorkers :: Int
+  , cpuWorkers :: CPUWorkers
   , manager :: Http.Manager
   }
 
@@ -75,7 +77,7 @@ data GlobusDevConfig = GlobusDevConfig
   deriving (Show)
 
 
-initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es) => Eff es Config
+initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
 initConfig = do
   app <- initApp
   db <- initDb
@@ -83,12 +85,12 @@ initConfig = do
   globus <- initGlobus
   scratch <- initScratch
   auth <- initAuth globus
-  numWorkers <- readEnv "NUM_WORKERS"
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
+  cpus <- initCPUWorkers
 
   log Debug $ dump " (config) metadata datasets" services.metadata.datasets
   log Debug $ dump " (config) metadata inversions" services.metadata.inversions
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, numWorkers, manager}
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, cpuWorkers = cpus, manager}
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
@@ -117,6 +119,12 @@ initServices = do
   parseMockService :: String -> Maybe Service
   parseMockService "MOCK" = Nothing
   parseMockService s = parseService s
+
+
+initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es) => Eff es CPUWorkers
+initCPUWorkers = do
+  num <- readEnv "CPU_WORKERS"
+  cpuWorkers num
 
 
 parseService :: (MonadFail m) => String -> m Service

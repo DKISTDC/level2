@@ -62,20 +62,19 @@ main = do
     log Info "NSO Level 2"
     config <- initConfig
 
-    runConcurrent $ do
-      fits <- atomically taskChanNew
-      asdf <- atomically taskChanNew
-      pubs <- atomically taskChanNew
-      metas <- atomically taskChanNew
-      props <- atomically taskChanNew
-      sync <- initMetadataSync
-      auth <- initAuth config.auth.admins config.auth.adminToken
+    fits <- atomically taskChanNew
+    asdf <- atomically taskChanNew
+    pubs <- atomically taskChanNew
+    metas <- atomically taskChanNew
+    props <- atomically taskChanNew
+    sync <- initMetadataSync
+    auth <- initAuth config.auth.admins config.auth.adminToken
 
-      concurrently_
-        (startWebServer config auth fits asdf pubs sync)
-        (runWorkers config auth fits asdf pubs sync metas props (startWorkers config))
+    concurrently_
+      (startWebServer config auth fits asdf pubs sync)
+      (runWorkers config auth fits asdf pubs sync metas props (startWorkers config))
 
-      pure ()
+    pure ()
  where
   startPuppetMaster =
     runLogger "Puppet" $
@@ -97,7 +96,7 @@ main = do
       waitForGlobusAccess $ do
         mapConcurrently_
           id
-          [startWorker (Gen.fitsTask cfg.numWorkers), startWorker Gen.asdfTask]
+          [startWorker Gen.fitsTask, startWorker Gen.asdfTask]
 
   startWorkers cfg =
     mapConcurrently_
@@ -115,10 +114,12 @@ main = do
       . runErrorWith @GraphQLError crashWithError
       . runFailIO
       . runEnvironment
+      . runConcurrent
 
   runWorkers config auth fits asdf pubs sync metas props =
     runFileSystem
       . runReader config.scratch
+      . runReader config.cpuWorkers
       . runRel8 config.db
       . runScratch config.scratch
       . runGlobus' config.globus config.manager
@@ -170,10 +171,9 @@ webServer config auth fits asdf pubs sync =
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
 
-  runApp :: (IOE :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Concurrent : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
-      . runConcurrent
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @GlobusError crashWithError

@@ -3,6 +3,7 @@
 module App.Worker.GenWorker where
 
 import App.Effect.Transfer qualified as Transfer
+import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate as Gen
 import Control.Monad (zipWithM)
@@ -10,6 +11,7 @@ import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe
+import Data.Time.Clock (NominalDiffTime, diffUTCTime)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -56,7 +58,7 @@ data GenFitsStatus
   = GenWaiting
   | GenStarted
   | GenTransferring (Id Task)
-  | GenFrames {complete :: Int, total :: Int}
+  | GenFrames {complete :: [Maybe NominalDiffTime], total :: Int}
   deriving (Eq, Ord)
 
 
@@ -70,6 +72,7 @@ instance Show GenFitsStatus where
 fitsTask
   :: forall es
    . ( Reader (Token Access) :> es
+     , Reader CPUWorkers :> es
      , Globus :> es
      , Error GlobusError :> es
      , Datasets :> es
@@ -83,10 +86,9 @@ fitsTask
      , GenRandom :> es
      , IOE :> es
      )
-  => Int
-  -> GenFits
+  => GenFits
   -> Eff es ()
-fitsTask numWorkers task = do
+fitsTask task = do
   res <- runErrorNoCallStack $ catch workWithError onCaughtError
   either (failed task.inversionId) pure res
  where
@@ -133,10 +135,10 @@ fitsTask numWorkers task = do
 
     gfs <- Gen.collateFrames quantities arms profileFit profileOrig l1
 
-    send $ TaskSetStatus task $ GenFrames{complete = 0, total = NE.length gfs}
+    send $ TaskSetStatus task $ GenFrames{complete = [], total = NE.length gfs}
 
     -- Generate them in parallel with N = available CPUs
-    metas <- CPU.parallelizeN numWorkers $ fmap (workFrame task slice) gfs
+    metas <- CPU.parallelize $ fmap (workFrame task slice) gfs
 
     log Debug $ dump "SKIPPED: " (length $ NE.filter isNothing metas)
     log Debug $ dump "WRITTEN: " (length $ NE.filter isJust metas)
@@ -192,27 +194,30 @@ workFrame t slice frameInputs = runGenerateError $ do
   let path = Fits.outputL2Fits t.proposalId t.inversionId dateBeg
   alreadyExists <- Scratch.pathExists path
 
-  res <-
-    if alreadyExists
-      then do
-        log Debug $ dump "SKIP frame" path.filePath
-        pure Nothing
-      else do
-        log Debug $ dump "FRAME start" path.filePath
-        log Debug $ dump " - inputs.profiles.arms" (length frameInputs.profiles.arms)
-        frame <- Fits.generateL2FrameFits now t.inversionId slice frameInputs
-        let fits = Fits.frameToFits frame
-        -- log Debug $ dump " - fits" fits
-        Scratch.writeFile path $ Fits.encodeL2 fits
-        log Debug $ dump " - wroteframe" path.filePath
-        pure $ Just $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
+  if alreadyExists
+    then do
+      log Debug $ dump "SKIP frame" path.filePath
+      send $ TaskModStatus @GenFits t (addComplete Nothing)
+      pure Nothing
+    else do
+      log Debug $ dump "FRAME start" path.filePath
+      log Debug $ dump " - inputs.profiles.arms" (length frameInputs.profiles.arms)
+      frame <- Fits.generateL2FrameFits now t.inversionId slice frameInputs
+      let fits = Fits.frameToFits frame
+      -- log Debug $ dump " - fits" fits
+      Scratch.writeFile path $ Fits.encodeL2 fits
+      log Debug $ dump " - wroteframe" path.filePath
 
-  send $ TaskModStatus @GenFits t updateNumFrame
-  pure res
+      done <- currentTime
+      let duration = diffUTCTime done now
+      send $ TaskModStatus @GenFits t (addComplete (Just duration))
+
+      pure $ Just $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
  where
-  updateNumFrame :: GenFitsStatus -> GenFitsStatus
-  updateNumFrame GenFrames{complete, total} = GenFrames{complete = complete + 1, total}
-  updateNumFrame gs = gs
+  addComplete :: Maybe NominalDiffTime -> GenFitsStatus -> GenFitsStatus
+  addComplete duration GenFrames{complete, total} =
+    GenFrames{complete = duration : complete, total}
+  addComplete _ gs = gs
 
 
 loadInversion :: (Inversions :> es, Error GenerateError :> es) => Id Inversion -> Eff es Inversion

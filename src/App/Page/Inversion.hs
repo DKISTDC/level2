@@ -21,6 +21,7 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
+import Data.Time.Clock (NominalDiffTime)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -458,11 +459,20 @@ viewGenerate' inv admin status =
         loadingMessage "Generating FITS"
         col (onLoad ReloadGen 1000) $ do
           row (gap 5) $ do
+            speedMessage gen.complete
             space
-            el_ $ text $ cs $ show gen.complete
+            el_ $ text $ cs $ show (length gen.complete)
             el_ " / "
             el_ $ text $ cs $ show gen.total
-          View.progress (fromIntegral gen.complete / fromIntegral gen.total)
+          View.progress (fromIntegral (length gen.complete) / fromIntegral gen.total)
+
+  speedMessage durations =
+    case averageDuration durations of
+      Nothing -> pure ()
+      Just a ->
+        el_ $ do
+          text $ cs $ show (round (realToFrac a :: Float) :: Int)
+          text "s / frame"
 
   loadingMessage msg =
     row (gap 5) $ do
@@ -471,6 +481,12 @@ viewGenerate' inv admin status =
         space
         el_ $ text msg
         space
+
+  averageDuration :: [Maybe NominalDiffTime] -> Maybe NominalDiffTime
+  averageDuration durations =
+    case catMaybes durations of
+      [] -> Nothing
+      ds -> Just $ sum ds / fromIntegral (length ds)
 
 
 -- GenerateTransfer ---------------------------------------------
