@@ -11,7 +11,7 @@ import Control.Monad.Catch (catch)
 import Control.Monad.Loops
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe
-import Data.Time.Clock (NominalDiffTime, diffUTCTime)
+import Data.Time.Clock (diffUTCTime)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -58,7 +58,7 @@ data GenFitsStatus
   = GenWaiting
   | GenStarted
   | GenTransferring (Id Task)
-  | GenFrames {complete :: [Maybe NominalDiffTime], total :: Int}
+  | GenFrames {started :: UTCTime, skipped :: Int, complete :: Int, total :: Int, throughput :: Float}
   deriving (Eq, Ord)
 
 
@@ -135,7 +135,8 @@ fitsTask task = do
 
     gfs <- Gen.collateFrames quantities arms profileFit profileOrig l1
 
-    send $ TaskSetStatus task $ GenFrames{complete = [], total = NE.length gfs}
+    now <- currentTime
+    send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = NE.length gfs, throughput = 0}
 
     -- Generate them in parallel with N = available CPUs
     metas <- CPU.parallelize $ fmap (workFrame task slice) gfs
@@ -189,7 +190,7 @@ workFrame
   -> L2FrameInputs
   -> Eff es (Maybe L2FitsMeta)
 workFrame t slice frameInputs = runGenerateError $ do
-  now <- currentTime
+  start <- currentTime
   DateTime dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
   let path = Fits.outputL2Fits t.proposalId t.inversionId dateBeg
   alreadyExists <- Scratch.pathExists path
@@ -197,27 +198,37 @@ workFrame t slice frameInputs = runGenerateError $ do
   if alreadyExists
     then do
       log Debug $ dump "SKIP frame" path.filePath
-      send $ TaskModStatus @GenFits t (addComplete Nothing)
+      send $ TaskModStatus @GenFits t addSkipped
       pure Nothing
     else do
       log Debug $ dump "FRAME start" path.filePath
       log Debug $ dump " - inputs.profiles.arms" (length frameInputs.profiles.arms)
-      frame <- Fits.generateL2FrameFits now t.inversionId slice frameInputs
+      frame <- Fits.generateL2FrameFits start t.inversionId slice frameInputs
       let fits = Fits.frameToFits frame
       -- log Debug $ dump " - fits" fits
       Scratch.writeFile path $ Fits.encodeL2 fits
       log Debug $ dump " - wroteframe" path.filePath
 
-      done <- currentTime
-      let duration = diffUTCTime done now
-      send $ TaskModStatus @GenFits t (addComplete (Just duration))
+      now <- currentTime
+      send $ TaskModStatus @GenFits t (addComplete now)
 
       pure $ Just $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
  where
-  addComplete :: Maybe NominalDiffTime -> GenFitsStatus -> GenFitsStatus
-  addComplete duration GenFrames{complete, total} =
-    GenFrames{complete = duration : complete, total}
-  addComplete _ gs = gs
+  addComplete :: UTCTime -> GenFitsStatus -> GenFitsStatus
+  addComplete now = \case
+    GenFrames{started, skipped, complete, total} ->
+      GenFrames{started, skipped, complete = complete + 1, total, throughput = throughputPerSecond (complete + 1) now started}
+    gs -> gs
+
+  addSkipped :: GenFitsStatus -> GenFitsStatus
+  addSkipped = \case
+    GenFrames{started, skipped, complete, total, throughput} ->
+      GenFrames{started, skipped = skipped + 1, complete, total, throughput}
+    gs -> gs
+
+  throughputPerSecond :: Int -> UTCTime -> UTCTime -> Float
+  throughputPerSecond complete now started =
+    fromIntegral complete / realToFrac (diffUTCTime now started)
 
 
 loadInversion :: (Inversions :> es, Error GenerateError :> es) => Id Inversion -> Eff es Inversion
