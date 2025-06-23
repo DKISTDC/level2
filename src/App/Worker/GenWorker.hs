@@ -202,7 +202,7 @@ workFrame t slice frameInputs = runGenerateError $ do
         log Debug $ dump " - inputs.profiles.arms" (length frameInputs.profiles.arms)
         frame <- Fits.generateL2FrameFits now t.inversionId slice frameInputs
         let fits = Fits.frameToFits frame
-        log Debug $ dump " - fits" fits
+        -- log Debug $ dump " - fits" fits
         Scratch.writeFile path $ Fits.encodeL2 fits
         log Debug $ dump " - wroteframe" path.filePath
         pure $ Just $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)

@@ -118,7 +118,7 @@ instance (KnownText fit) => ToHeader (ProfileHeader fit) where
           ]
 
     extName :: Text
-    extName = knownText @fit <> " Profile " <> cs (show h.meta.line)
+    extName = cs (show h.meta.line) <> " Profile " <> knownText @fit
 
 
 wcsHeader :: (Error ProfileError :> es) => ArmWavMeta -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
