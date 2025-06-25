@@ -16,7 +16,7 @@ import NSO.Image.Headers.Types
 import NSO.Image.Types.Profile
 import Effectful.State.Static.Local
 import NSO.Prelude
-import NSO.Types.Wavelength (CaIILine (..), MA, Nm, SpectralLine (..), Wavelength (..))
+import NSO.Types.Wavelength (MA, Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Data.Array (ArrayError)
 import Telescope.Data.DataCube as DC
 import Telescope.Fits as Fits
@@ -165,9 +165,9 @@ wavBreaks lids = do
 
   blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
-    LineId 23 -> pure FeI
-    LineId 9 -> pure NaD
-    LineId 4 -> pure (CaII CaII_854)
+    LineId 23 -> pure FeI630
+    LineId 9 -> pure NaID
+    LineId 4 -> pure CaII854
     n -> Left n
 
 

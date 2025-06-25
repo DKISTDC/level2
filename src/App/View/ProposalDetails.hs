@@ -116,8 +116,8 @@ viewCriteria ip gd = do
       row (gap 10 . Style.flexWrap) $ do
         criteria "Stokes IQUV" $ qualifyStokes ds
         criteria "On Disk" $ qualifyOnDisk ds
-        criteria "Spectra: FeI" $ qualifyLine FeI sls
-        criteria "Spectra: CaII 854" $ qualifyLine (CaII CaII_854) sls
+        criteria "Spectra: FeI" $ qualifyLine FeI630 sls
+        criteria "Spectra: CaII 854" $ qualifyLine CaII854 sls
         criteria "Health" $ qualifyHealth ds
         criteria "GOS Status" $ qualifyGOS ds
         criteria "AO Lock" $ qualifyAO ds

@@ -8,7 +8,7 @@ import NSO.Prelude
 lineForWaves :: Wavelength Nm -> Wavelength Nm -> Maybe SpectralLine
 lineForWaves mn mx = find matchesLine allLines
  where
-  allLines = [HeI, Ha, FeI, NaD] <> fmap CaII [minBound .. maxBound]
+  allLines = [minBound .. maxBound]
 
   matchesLine :: SpectralLine -> Bool
   matchesLine s =
@@ -28,10 +28,6 @@ identifyLine d = lineForWaves d.wavelengthMin d.wavelengthMax
 
 
 midPoint :: SpectralLine -> Wavelength Nm
-midPoint NaD = Wavelength 589.29
-midPoint FeI = Wavelength 630.149
-midPoint Ha = Wavelength 656.2
-midPoint (CaII CaII_849) = Wavelength 849.8
-midPoint (CaII CaII_854) = Wavelength 854.2
-midPoint (CaII CaII_866) = Wavelength 866.2
-midPoint HeI = Wavelength 1083.0
+midPoint NaID = Wavelength 589.3
+midPoint FeI630 = Wavelength 630.2
+midPoint CaII854 = Wavelength 854.2

@@ -29,6 +29,8 @@ newtype Arms a = Arms {arms :: NonEmpty a}
 
 instance {-# OVERLAPS #-} Show (Arms [a]) where
   show (Arms as) = "Arms [" <> L.intercalate "," (NE.toList $ fmap (\bs -> show (length bs) <> " items") as) <> "]"
+instance {-# OVERLAPS #-} Show (Arms (NonEmpty a)) where
+  show (Arms as) = "Arms [" <> L.intercalate "," (NE.toList $ fmap (\bs -> show (length bs) <> " items") as) <> "]"
 instance (Show a) => Show (Arms a) where
   show (Arms as) = "Arms " <> show as
 

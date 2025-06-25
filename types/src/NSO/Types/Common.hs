@@ -17,6 +17,7 @@ import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation,
 import System.FilePath (takeDirectory, takeFileName)
 import System.FilePath qualified as FP
 import Telescope.Asdf
+import Telescope.Asdf.GWCS (ToAxes)
 import Telescope.Data.Parser (expected)
 import Telescope.Fits as Telescope
 import Text.Read (readMaybe)
@@ -76,7 +77,7 @@ jsonTypeInfo = parseTypeInformation (parseEither parseJSON) toJSON typeInformati
 
 
 data Stokes = I | Q | U | V
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic, ToAxes)
   deriving (DBType) via ReadShow Stokes
 
 

@@ -10,7 +10,6 @@ import Data.Grouped
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
-import Debug.Trace
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
@@ -134,11 +133,10 @@ runScanProposal propId = do
 
 runScanProposal' :: (Metadata es, Datasets :> es, Time :> es, Log :> es) => Map (Id Experiment) Text -> Id Proposal -> Eff es ScanProposal
 runScanProposal' exs propId = do
-  log Debug $ dump "RunScanProposal" propId
   now <- currentTime
   pds <- send $ DatasetsByProposal propId
   ds <- indexed <$> Datasets.find (Datasets.ByProposal propId)
-  log Debug $ dump "Datasets" $ M.keys ds
+  log Debug $ dump " (sync) Datasets:" $ length ds
   pure $ scanProposal $ scanResult now exs ds pds
  where
   scanProposal ScanResult{..} = ScanProposal{proposalId = propId, datasets, errors}
@@ -155,11 +153,10 @@ data ScanResult = ScanResult
 scanResult :: UTCTime -> Map (Id Experiment) Text -> Map (Id Dataset) Dataset -> [ParsedResult DatasetInventory] -> ScanResult
 scanResult now exs m res =
   let ds = fmap (toDataset now exs) res
-   in trace ("ScanResult: " <> show now <> " - " <> show (length res)) $
-        ScanResult
-          { errors = lefts ds
-          , datasets = fmap (syncDataset m) $ rights ds
-          }
+   in ScanResult
+        { errors = lefts ds
+        , datasets = fmap (syncDataset m) $ rights ds
+        }
 
 
 data SyncDataset = SyncDataset
@@ -179,7 +176,6 @@ syncDataset m dataset =
 
 sync :: Map (Id Dataset) Dataset -> Dataset -> Sync
 sync old d = fromMaybe New $ do
-  traceM $ "SYNC " <> show d.datasetId <> " - " <> show ((.datasetId) <$> M.lookup d.datasetId old)
   dold <- M.lookup d.datasetId old
   if d == dold{scanDate = d.scanDate}
     then pure Skip

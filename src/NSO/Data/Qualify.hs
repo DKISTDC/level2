@@ -46,8 +46,8 @@ qualifyVISP g = do
   -- let ds = NE.toList ip.datasets
   let sls = identifyLines (NE.toList g.items)
   check "On Disk" $ qualifyOnDisk g
-  check "FeI" $ qualifyLine FeI sls
-  check "CaII 854" $ qualifyLine (CaII CaII_854) sls
+  check "FeI 630" $ qualifyLine FeI630 sls
+  check "CaII 854" $ qualifyLine CaII854 sls
   check "Stokes" $ qualifyStokes g
   check "Health" $ qualifyHealth g
   check "GOS" $ qualifyGOS g

@@ -87,7 +87,7 @@ data SyncProgress
 
 syncProposalTask :: (Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
-  log Info $ dump "SyncProposalTask" task.syncId
+  log Info $ dump "SyncProposalTask" (task.proposalId, task.syncId)
   send $ TaskSetStatus task Scan
   scan <- Sync.runScanProposal task.proposalId
 
