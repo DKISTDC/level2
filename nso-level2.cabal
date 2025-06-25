@@ -105,7 +105,6 @@ library
       NSO.Image.Types.Axes
       NSO.Image.Types.Profile
       NSO.Image.Types.Quantity
-      NSO.Image.Types.VISPArm
       NSO.InterserviceBus
       NSO.Level2
       NSO.Metadata

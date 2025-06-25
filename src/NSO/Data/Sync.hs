@@ -245,6 +245,7 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
         , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
         , lightLevel = d.lightLevel
         , embargo = emb
+        , spectralLines = fromMaybe [] d.spectralLines
         }
 
   parseExperiment :: Id Experiment -> Either String Text
