@@ -20,6 +20,9 @@ import NSO.Types.Wavelength (CaIILine (..), MA, Nm, SpectralLine (..), Wavelengt
 import Telescope.Data.Array (ArrayError)
 import Telescope.Data.DataCube as DC
 import Telescope.Fits as Fits
+import NSO.Image.Types.Axes (Depth, SlitX, FrameY, Stokes)
+
+
 
 
 -- Decoding Profiles ---------------------------------------------------------------------------------------

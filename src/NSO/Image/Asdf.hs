@@ -150,15 +150,19 @@ data QuantitiesSection = QuantitiesSection
   }
 instance ToAsdf QuantitiesSection where
   schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
+
+
+  -- where
+  --  refs :: Quantities Ref
+  --  refs = quantitiesFrom (const Ref) ()
   toValue section =
     mconcat
-      [ Object [("axes", toNode section.axes), ("gwcs", toNode section.gwcs)]
-      , toValue section.items
-      , toValue (NDCollection (quantitiesFrom AlignedAxes) section.axes refs)
+      [ Object
+          [ ("axes", toNode section.axes)
+          , ("meta", toNode $ Object [("gwcs", toNode section.gwcs)])
+          ]
+      , toValue (NDCollection (quantitiesFrom AlignedAxes) section.axes section.items)
       ]
-   where
-    refs :: Quantities Ref
-    refs = quantitiesFrom (const Ref) ()
 
 
 -- Quantities ------------------------------------------------
@@ -257,7 +261,8 @@ data QuantityMeta info = QuantityMeta
 data ProfilesSection = ProfilesSection
   { axes :: [AxisMeta]
   , arms :: Arms (Profile ProfileTree)
-  , meta :: ProfilesMeta
+  , gwcsFit :: ProfileGWCS Fit
+  , gwcsOrig :: ProfileGWCS Original
   }
 
 
@@ -267,46 +272,38 @@ instance ToAsdf ProfilesSection where
     mconcat
       [ Object
           [ ("axes", toNode section.axes)
-          -- , ("gwcs_fit", toNode section.gwcsFit)
-          -- , ("gwcs_orig", toNode section.gwcsOrig)
+          , ("meta", toNode meta)
           ]
+          -- , toValue (NDCollection (_ AlignedAxes) section.axes section.arms)
           -- , toValue section.arms
-          -- , toValue (NDCollection (profilesFrom AlignedAxes) section.axes refs)
       ]
+   where
+    meta =
+      Object
+        [ ("gwcs_fit", toNode section.gwcsFit)
+        , ("gwcs_orig", toNode section.gwcsOrig)
+        ]
 
 
-data ProfilesMeta = ProfilesMeta
-  { gwcsFit :: ProfileGWCS Fit
-  , gwcsOrig :: ProfileGWCS Original
-  }
-  deriving (Generic, ToAsdf)
-
-
--- we need a whole object of keys...
--- refs :: Profiles Ref
--- refs = profilesFrom (const Ref) ()
--- instance ToAsdf (Profiles Ref)
-
+-- we need one ProfileMeta for each arm
 profilesSection :: PrimaryHeader -> NonEmpty (Arms ProfileMeta) -> ProfilesSection
 profilesSection primary frames =
-  let meta =
-        ProfilesMeta
-          { gwcsFit = _ -- profileGWCS primary (head frames).profiles.orig854.wcs
-          , gwcsOrig = _ -- profileGWCS primary (head frames).profiles.orig630.wcs
-          }
+  let sampleArm = head (head frames).arms
+      fit = sampleArm.profile.fit
+      orig = sampleArm.profile.original
    in ProfilesSection
-        { meta = meta
-        , axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-        , arms = profilesArmsTree frames
+        { axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+        , arms = _ -- profilesArmsTree frames
+        , gwcsFit = profileGWCS primary fit.wcs
+        , gwcsOrig = profileGWCS primary orig.wcs
         }
 
 
-profilesArmsTree :: NonEmpty (Arms ProfileMeta) -> Arms (Profile ProfileTree)
-profilesArmsTree frames =
-  let frame = head frames
-   in -- ps = fmap (.profiles) frames
-      _ -- Arms []
-
+-- profilesArmsTree :: NonEmpty (Arms ProfileMeta) -> Arms (Profile ProfileTree)
+-- profilesArmsTree frames =
+--   let frame = head frames
+--    in -- ps = fmap (.profiles) frames
+--       _ -- Arms []
 
 data ProfileTree fit = ProfileTree
   { unit :: Unit

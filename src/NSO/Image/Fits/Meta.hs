@@ -7,12 +7,13 @@ import Effectful.Error.Static
 import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
-import NSO.Image.Headers.Types (SliceXY)
+import NSO.Image.Headers.Types (SliceXY, SpecLnProfile (..), SpecLns (..))
 import NSO.Image.Primary
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Wavelength (SpectralLine (..))
 import Telescope.Asdf as Asdf
 import Telescope.Data.Axes (Axes (..), axesRowMajor)
 import Telescope.Data.DataCube (dataCubeAxes)
@@ -29,7 +30,7 @@ data L2FitsMeta = L2FitsMeta
   { path :: Path' Filename L2FrameFits
   , primary :: PrimaryHeader
   , quantities :: FrameQuantitiesMeta
-  , profiles :: Arms ProfileMeta -- how do we know if it is a fit or original profile?
+  , profiles :: Arms ProfileMeta
   }
 
 
@@ -90,10 +91,13 @@ frameMetaFromL2Fits
 frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
   primary <- parseHeader @PrimaryHeader fits.primaryHDU.header
 
-  -- no, we have to look up the appropriate hdu
   qh <- headerAt $ hduIndex @OpticalDepth
   qshape <- parseHeader @(Shape Quantity) qh
   quants <- parseQuantities
+
+  -- we need to read one for each
+  -- oh! I already have all my arms!
+  let ps = _ -- profileFitsHeaders fits
 
   -- p630 <- headerFor @Orig630
   -- shape630 <- parseHeader @(Shape Profile) p630
@@ -107,7 +111,8 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
       { path
       , primary
       , quantities = FrameQuantitiesMeta{items = quants, shape = qshape}
-      , profiles = undefined -- Arms [] -- FrameProfilesMeta{profiles = profs, shape630, shape854}
+      , -- need to read all of these!
+        profiles = _ -- FrameProfilesMeta{profiles = profs, shape630, shape854}
       }
  where
   headerAt :: forall es. (Parser :> es) => HDUIndex -> Eff es Header
@@ -118,13 +123,31 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
           Just (Image img) -> pure img.header
           Just _ -> parseFail $ "Expected ImageHDU at " ++ show index
 
+  -- profileHeaders :: Fits -> [Profile ProfileHeader]
+  -- profileHeaders = _
+  --
+  -- parseProfile :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
+  -- parseProfile meta h = do
+  --   lns :: [SpecLns] <- parseHeader h
+  --   common <- parseHeader h
+  --   wcs <- Profile.wcsHeader meta slice l1.header
+  --   pure $ ProfileHeader{meta, specLines = lns, common, wcs}
+
+  -- isMatchSpecLine :: ArmWavMeta -> SpecLns -> Bool
+  -- isMatchSpecLine meta h =
+  --   any isMatchSpecLnN
+  --
+  -- isMatchSpecLnN :: SpectralLine -> Text -> Bool
+  -- isMatchSpecLnN NaD kr =
+  --   "Na" `T.isInfixOf` kr.value
+
   parseQuantity :: forall q es. (HDUOrder q, FromHeader q, Parser :> es, Error QuantityError :> es) => Eff es (QuantityHeader q)
   parseQuantity = do
     h <- headerAt $ hduIndex @q
-    info <- parseHeader @q h
+    hduInfo <- parseHeader @q h
     common <- parseHeader h
     wcs <- Quantity.wcsHeader slice l1.header
-    pure $ QuantityHeader{info, common, wcs}
+    pure $ QuantityHeader{hduInfo, common, wcs}
 
   -- parseProfile
   --   :: forall fit wav es

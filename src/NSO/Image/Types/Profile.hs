@@ -2,7 +2,7 @@ module NSO.Image.Types.Profile where
 
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
-import NSO.Image.Headers.Types
+import NSO.Image.Types.Axes (Depth, FrameY, SlitX, Stokes)
 import NSO.Prelude
 import NSO.Types.Wavelength
 import Telescope.Asdf (ToAsdf (..))
@@ -13,6 +13,7 @@ import Telescope.Data.KnownText
 data ProfileType
   = Original
   | Fit
+  deriving (Show)
 
 
 instance KnownText Original where

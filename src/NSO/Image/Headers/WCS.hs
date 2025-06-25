@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Image.Headers.WCS where
 
@@ -6,6 +7,7 @@ import Data.Text (pack, unpack)
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics
+import NSO.Image.Headers
 import NSO.Image.Headers.Doc as Doc
 import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
@@ -28,6 +30,16 @@ data WCSHeader axes = WCSHeader
   , axesA :: axes 'A
   }
   deriving (Generic)
+
+
+instance (ToHeader (axes 'WCSMain), ToHeader (axes 'A)) => ToHeader (WCSHeader axes) where
+  toHeader wcs = writeHeader $ do
+    sectionHeader "WCS" "WCS Related Keywords"
+    addKeywords wcs.common
+    addKeywords wcs.axes
+
+    addKeywords wcs.commonA
+    addKeywords wcs.axesA
 
 
 newtype Axis a = Axis Int

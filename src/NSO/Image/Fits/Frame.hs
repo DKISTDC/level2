@@ -13,8 +13,9 @@ import NSO.Image.Files qualified as Files
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers
-import NSO.Image.Headers.Types (Depth, SliceXY, SlitX)
+import NSO.Image.Headers.Types (SliceXY)
 import NSO.Image.Primary
+import NSO.Image.Types.Axes (Depth, SlitX)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
@@ -125,3 +126,5 @@ instance HDUOrder GasPressure where
   hduIndex = 10
 instance HDUOrder Density where
   hduIndex = 11
+instance HDUOrder (Arms (Profile a)) where
+  hduIndex = 12

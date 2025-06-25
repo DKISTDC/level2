@@ -19,6 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
+import NSO.Image.Types.Axes (Stokes)
 import NSO.Image.Types.Profile
 import NSO.Prelude
 import NSO.Types.Wavelength (Wavelength (..))
@@ -87,11 +88,13 @@ profileHeader
 profileHeader now slice l1 arm img = do
   common <- dataCommon now img.data_
   wcs <- wcsHeader arm slice l1
-  pure $ ProfileHeader{common, wcs, meta = arm}
+  lns <- runParseError InvalidSpectralLines $ runParser $ parseHeader l1
+  pure $ ProfileHeader{common, specLines = lns, wcs, meta = arm}
 
 
 data ProfileHeader (fit :: ProfileType) = ProfileHeader
   { meta :: ArmWavMeta
+  , specLines :: SpecLns
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
@@ -99,24 +102,20 @@ data ProfileHeader (fit :: ProfileType) = ProfileHeader
 instance (KnownText fit) => ToHeader (ProfileHeader fit) where
   toHeader h = writeHeader $ do
     sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-    tell info
+    addKeywords hduInfo
     addKeywords h.common
+    addKeywords h.specLines
+    addKeywords $ Keyword $ keywordRecord $ SpecLnProfile (knownText @fit)
 
-    sectionHeader "WCS" "WCS Related Keywords"
-    addKeywords h.wcs.common
-    addKeywords h.wcs.axes
-
-    addKeywords h.wcs.commonA
-    addKeywords h.wcs.axesA
+    addKeywords h.wcs
    where
-    info =
-      Header $
-        fmap
-          Keyword
-          [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
-          , keywordRecord @(BType "spect.line.profile") BType
-          , keywordRecord @(BUnit Dimensionless) BUnit
-          ]
+    hduInfo =
+      fmap
+        Keyword
+        [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
+        , keywordRecord @(BType "spect.line.profile") BType
+        , keywordRecord @(BUnit Dimensionless) BUnit
+        ]
 
     extName :: Text
     extName = cs (show h.meta.line) <> " Profile " <> knownText @fit
@@ -243,5 +242,6 @@ wcsWavelength wp = do
 data ProfileError
   = InvalidWavelengthGroups
   | MissingProfileExtensions String
+  | InvalidSpectralLines ParseError
   | InvalidWCS ParseError
   deriving (Show, Exception, Eq)

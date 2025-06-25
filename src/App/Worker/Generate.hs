@@ -17,9 +17,10 @@ import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
 import NSO.Image.Headers.Parse (requireKey, runParseError)
-import NSO.Image.Headers.Types (Depth, SliceXY (..), SlitX, VISPArmId (..))
+import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Image.Primary (PrimaryError)
+import NSO.Image.Types.Axes (Depth, SlitX)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)

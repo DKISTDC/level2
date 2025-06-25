@@ -19,6 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
+import NSO.Image.Types.Axes (Depth, FrameY, SlitX, Stokes)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import Telescope.Data.Axes (Axes (..), AxisOrder (..))
@@ -44,21 +45,21 @@ quantities slice now l1 q = do
   density <- quantity @Density DataHDUInfo q.density
   pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
  where
-  quantity :: forall info es. (Error QuantityError :> es, ToHeader info) => info -> QuantityImage [SlitX, Depth] info -> Eff es (QuantityFrameFits info)
-  quantity info d = do
-    h <- quantityHeader info d
+  quantity :: forall hduInfo es. (Error QuantityError :> es, ToHeader hduInfo) => hduInfo -> QuantityImage [SlitX, Depth] hduInfo -> Eff es (QuantityFrameFits hduInfo)
+  quantity hduInfo d = do
+    h <- quantityHeader hduInfo d
     pure $ QuantityFrameFits{header = h, image = d.image}
 
   quantityHeader
-    :: forall info es
-     . (ToHeader info, Error QuantityError :> es)
-    => info
-    -> QuantityImage [SlitX, Depth] info
-    -> Eff es (QuantityHeader info)
-  quantityHeader info res = do
+    :: forall hduInfo es
+     . (ToHeader hduInfo, Error QuantityError :> es)
+    => hduInfo
+    -> QuantityImage [SlitX, Depth] hduInfo
+    -> Eff es (QuantityHeader hduInfo)
+  quantityHeader hduInfo res = do
     common <- dataCommon now res.image
     wcs <- wcsHeader slice l1
-    pure $ QuantityHeader{info, common, wcs}
+    pure $ QuantityHeader{hduInfo, common, wcs}
 
 
 wcsHeader :: (Error QuantityError :> es) => SliceXY -> Header -> Eff es (WCSHeader QuantityAxes)
@@ -269,8 +270,8 @@ data QuantityFrameFits info = QuantityFrameFits
   }
 
 
-data QuantityHeader info = QuantityHeader
-  { info :: info
+data QuantityHeader hduInfo = QuantityHeader
+  { hduInfo :: hduInfo
   , common :: DataCommon
   , wcs :: WCSHeader QuantityAxes
   }
@@ -278,15 +279,10 @@ data QuantityHeader info = QuantityHeader
 instance (ToHeader info) => ToHeader (QuantityHeader info) where
   toHeader h = writeHeader $ do
     sectionHeader "L2 Quantity" "Headers describing the physical quantity"
-    let dh = DataHeader{common = h.common, info = h.info}
-    addKeywords dh
+    addKeywords h.hduInfo
+    addKeywords h.common
 
-    sectionHeader "WCS" "WCS Related Keywords"
-    addKeywords h.wcs.common
-    addKeywords h.wcs.axes
-
-    addKeywords h.wcs.commonA
-    addKeywords h.wcs.axesA
+    addKeywords h.wcs
 
 
 fromList :: (forall x. a -> f x) -> [a] -> Maybe (Quantities f)

@@ -2,28 +2,21 @@ module NSO.Image.Headers.Types where
 
 -- import Control.Exception (Exception)
 -- import Data.Massiv.Array (Ix3, Ix4, Sz (..))
+
+import Data.List qualified as L
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.TypeLits
+import NSO.Data.Spectra (midPoint)
 import NSO.Image.Headers.Keywords
+import NSO.Image.Types.Profile
 import NSO.Prelude
+import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..))
+import Numeric (showFFloat)
 import Telescope.Asdf.GWCS (ToAxes (..))
 import Telescope.Data.KnownText
+import Telescope.Data.Parser (expected)
 import Telescope.Fits.Header
-
-
-data Depth deriving (Generic, ToAxes)
-data SlitX
-data FrameY
-data Stokes deriving (Generic, ToAxes)
-instance KnownText Depth where
-  knownText = "OpticalDepth"
-instance KnownText SlitX where
-  knownText = "SlitX"
-instance KnownText FrameY where
-  knownText = "FrameY"
-instance KnownText Stokes where
-  knownText = "Stokes"
 
 
 -- Keywords ------------------------------------------------------------------
@@ -277,3 +270,34 @@ data SliceXY = SliceXY
 
 newtype VISPArmId = VISPArmId Int
   deriving newtype (FromKeyword, Eq, Show)
+
+
+newtype SpecLns = SpecLns [Text]
+instance ToHeader SpecLns where
+  toHeader (SpecLns ts) = toHeader $ fmap Keyword $ do
+    zipWith specLnN [1 .. 9 :: Int] ts
+   where
+    specLnN n t = KeywordRecord ("SPECLN0" <> cs (show n)) (toKeywordValue t) Nothing
+instance FromHeader SpecLns where
+  parseHeader h = do
+    pure $ SpecLns $ L.foldl' addSpecLn [] h.records
+   where
+    addSpecLn :: [Text] -> HeaderRecord -> [Text]
+    addSpecLn lns (Keyword (KeywordRecord key (String value) _))
+      | "SPECLN" `T.isPrefixOf` key = value : lns
+      | otherwise = lns
+    addSpecLn lns _ = lns
+
+
+newtype SpecLnProfile = SpecLnProfile Text
+  deriving (Generic)
+instance IsKeyword SpecLnProfile where
+  keyword = "SPECLNPF"
+instance ToKeyword SpecLnProfile where
+  toKeywordValue (SpecLnProfile p) = String p
+instance FromKeyword SpecLnProfile where
+  parseKeywordValue = \case
+    String t -> pure $ SpecLnProfile t
+    other -> expected "SpecLnProfile" other
+instance KeywordInfo SpecLnProfile
+

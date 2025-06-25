@@ -46,25 +46,25 @@ instance FromHeader (DataHDUInfo ext btye bunit) where
   parseHeader _ = pure DataHDUInfo
 
 
-data DataHeader info = DataHeader
-  { info :: info
-  , common :: DataCommon
-  }
-
-
--- The library already inserts the NAXIS headers. No need to write them manually
-instance (ToHeader info) => ToHeader (DataHeader info) where
-  toHeader (DataHeader info common) =
-    toHeader info <> toHeader common
-
-
--- The Header Docs need to contain info, axes, and common
-instance (HeaderDoc info) => HeaderDoc (DataHeader info) where
-  headerDoc =
-    headerDoc @info
-      <> (headerDoc @DataHDUAxes)
-      <> (headerDoc @DataCommon)
-
+-- -- this isn't that useful...
+-- data DataHeader info = DataHeader
+--   { info :: info
+--   , common :: DataCommon
+--   }
+--
+--
+-- -- The library already inserts the NAXIS headers. No need to write them manually
+-- instance (ToHeader info) => ToHeader (DataHeader info) where
+--   toHeader (DataHeader info common) =
+--     toHeader info <> toHeader common
+--
+--
+-- -- The Header Docs need to contain info, axes, and common
+-- instance (HeaderDoc info) => HeaderDoc (DataHeader info) where
+--   headerDoc =
+--     headerDoc @info
+--       <> (headerDoc @DataHDUAxes)
+--       <> (headerDoc @DataCommon)
 
 data DataCommon = DataCommon
   { bzero :: BZero
