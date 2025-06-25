@@ -265,6 +265,7 @@ data DatasetInventory = DatasetInventory
   , -- , polarimetricAccuracy :: Distribution
     lightLevel :: Distribution
   , friedParameter :: Maybe Distribution
+  , spectralLines :: Maybe [Text]
   }
   deriving (Generic, Show, Eq, FromJSON, FieldNames)
 
@@ -298,8 +299,22 @@ mockDatasetsAvailable = do
 
 mockDatasetInventories :: (IOE :> es, Error GraphQLError :> es) => DatasetInventories -> Eff es [ParsedResult DatasetInventory]
 mockDatasetInventories r@(DatasetInventories pids dids) = do
-  ds <- datasetInventories r
-  pure $ filter (\d -> isDatasetId dids d || isProposalId pids d) ds
+  filter (isResult isQueryMatch) <$> datasetInventories r
+ where
+  isResult :: (a -> Bool) -> ParsedResult a -> Bool
+  isResult _ (ParsedResult _ (A.Error _)) = True
+  isResult f (ParsedResult _ (A.Success a)) = f a
+
+  isQueryMatch :: DatasetInventory -> Bool
+  isQueryMatch di = isDatasetId di && isProposalId di
+
+  isDatasetId :: DatasetInventory -> Bool
+  isDatasetId d =
+    Id d.datasetId `elem` dids || null dids
+
+  isProposalId :: DatasetInventory -> Bool
+  isProposalId d =
+    Id d.primaryProposalId `elem` pids || null pids
 
 
 mockJsonFile :: (IOE :> es, Request r, FromJSON (Data r), Error GraphQLError :> es) => r -> FilePath -> Eff es (Data r)
@@ -315,21 +330,13 @@ datasetInventories r = do
   pure $ ds1118 <> ds2114
 
 
-isDatasetId :: [Id Dataset] -> ParsedResult DatasetInventory -> Bool
-isDatasetId dids (ParsedResult _ (A.Success d)) =
-  Id d.datasetId `elem` dids
-isDatasetId _ _ = False
-
-
-isProposalId :: [Id Proposal] -> ParsedResult DatasetInventory -> Bool
-isProposalId pids (ParsedResult _ (A.Success d)) =
-  Id d.primaryProposalId `elem` pids
-isProposalId _ _ = False
-
-
 data ParsedResult a = ParsedResult Value (A.Result a)
 instance (FieldNames a) => FieldNames (ParsedResult a) where
   fieldNames _ = fieldNames (Proxy @a)
 instance (FromJSON a) => FromJSON (ParsedResult a) where
   parseJSON val = do
     pure $ ParsedResult val (fromJSON @a val)
+
+-- instance Functor ParsedResult where
+--   fmap f (ParsedResult val (A.Success a)) = ParsedResult val (A.Success (f a))
+--   fmap _ (Parse = res

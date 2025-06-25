@@ -2,6 +2,9 @@
   "data": {
     "datasetInventories": [
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-69.98,102.6),(-141.63,53.6)",
         "createDate": "2024-02-28T00:27:50.614662",
         "datasetId": "ALDLJ",
@@ -51,6 +54,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-69.96,113.1),(-141.32,52.66)",
         "createDate": "2024-02-28T00:44:53.835815",
         "datasetId": "AJQJL",
@@ -100,6 +106,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-69.93,120.56),(-141.56,45.4)",
         "createDate": "2024-02-28T00:49:53.925011",
         "datasetId": "AKPKJ",
@@ -149,6 +159,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-162.58,111.7),(-186.45,51.53)",
         "createDate": "2024-02-28T03:32:42.010643",
         "datasetId": "BMENL",
@@ -198,6 +211,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-162.6,101.22),(-186.53,52.5)",
         "createDate": "2024-02-28T03:36:40.068057",
         "datasetId": "BOJEX",
@@ -247,6 +263,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-30.17,122.37),(-52.87,62.2)",
         "createDate": "2024-02-28T05:42:28.569203",
         "datasetId": "ANGZL",
@@ -296,6 +315,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-30.15,129.82),(-52.98,54.94)",
         "createDate": "2024-02-28T05:45:28.761166",
         "datasetId": "AOJVX",
@@ -345,6 +368,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-182.21,101.1),(-227.47,52.26)",
         "createDate": "2024-02-28T06:25:44.099780",
         "datasetId": "BLDMN",
@@ -394,6 +420,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-141.29,101.34),(-186.53,52.5)",
         "createDate": "2024-02-28T06:30:41.728465",
         "datasetId": "BRLEW",
@@ -443,6 +472,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-182.3,111.58),(-227.39,51.3)",
         "createDate": "2024-02-28T07:33:43.785503",
         "datasetId": "BJQZW",
@@ -492,6 +524,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-182.21,119.04),(-227.5,44.04)",
         "createDate": "2024-02-28T07:34:42.707481",
         "datasetId": "BKPLX",
@@ -541,6 +577,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-57.36,109.23),(-102.59,60.39)",
         "createDate": "2024-02-28T07:45:44.662589",
         "datasetId": "BDDLM",
@@ -590,6 +629,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-111.06,137.05),(-156.32,62.05)",
         "createDate": "2024-02-28T07:53:44.336753",
         "datasetId": "ALDVN",
@@ -639,6 +682,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-111.06,119.11),(-156.28,70.27)",
         "createDate": "2024-02-28T07:57:43.009482",
         "datasetId": "AMEVL",
@@ -688,6 +734,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-141.29,119.27),(-186.56,44.28)",
         "createDate": "2024-02-28T08:05:40.868297",
         "datasetId": "BQLDN",
@@ -737,6 +787,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-57.45,119.71),(-102.51,59.43)",
         "createDate": "2024-02-28T08:37:42.731000",
         "datasetId": "AYYOZ",
@@ -786,6 +839,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-111.14,129.59),(-156.2,69.31)",
         "createDate": "2024-02-28T08:42:42.216232",
         "datasetId": "AKPVX",
@@ -835,6 +891,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-92.87,101.34),(-138.1,52.5)",
         "createDate": "2024-02-28T08:48:42.788214",
         "datasetId": "AXYNP",
@@ -884,6 +943,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-141.37,111.81),(-186.45,51.53)",
         "createDate": "2024-02-28T08:50:45.022574",
         "datasetId": "BPMVE",
@@ -933,6 +995,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-164.49,109.19),(-209.55,48.91)",
         "createDate": "2024-02-28T09:24:44.464935",
         "datasetId": "BEEMM",
@@ -982,6 +1047,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-57.36,127.16),(-102.62,52.17)",
         "createDate": "2024-02-28T10:10:43.763849",
         "datasetId": "AZYDR",
@@ -1031,6 +1100,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-92.95,111.81),(-138.02,51.53)",
         "createDate": "2024-02-28T10:57:42.952148",
         "datasetId": "AVZLY",
@@ -1080,6 +1152,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-164.4,116.65),(-209.66,41.66)",
         "createDate": "2024-02-28T11:04:42.822877",
         "datasetId": "AGJOM",
@@ -1129,6 +1205,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-92.87,119.27),(-138.13,44.28)",
         "createDate": "2024-02-28T12:24:43.159960",
         "datasetId": "AWVMV",
@@ -1178,6 +1258,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-164.4,98.72),(-209.63,49.88)",
         "createDate": "2024-02-28T13:58:43.615377",
         "datasetId": "AJQVW",
@@ -1227,6 +1310,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-162.55,119.15),(-186.56,44.27)",
         "createDate": "2024-02-28T15:37:30.359653",
         "datasetId": "BNGDL",
@@ -1276,6 +1363,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-30.2,111.89),(-52.94,63.17)",
         "createDate": "2024-02-28T15:43:28.397260",
         "datasetId": "APMLE",
@@ -1325,6 +1415,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-84.86,146),(-223.13,85.2)",
         "createDate": "2024-02-28T19:03:34.929417",
         "datasetId": "BRLOL",
@@ -1374,6 +1467,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-135.29,101.36),(-274.31,51.99)",
         "createDate": "2024-02-28T19:53:33.158512",
         "datasetId": "BYYZX",
@@ -1423,6 +1519,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-10.59,127.44),(-149.33,51.92)",
         "createDate": "2024-02-28T20:12:48.704110",
         "datasetId": "BMEZQ",
@@ -1472,6 +1572,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-10.49,109.48),(-149.39,60.12)",
         "createDate": "2024-02-28T20:16:43.763761",
         "datasetId": "BNGOE",
@@ -1521,6 +1624,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-94.39,101.58),(-233.35,52.22)",
         "createDate": "2024-02-28T20:28:32.884305",
         "datasetId": "AEEXW",
@@ -1570,6 +1676,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-94.49,119.55),(-233.29,44.02)",
         "createDate": "2024-02-28T20:40:34.946775",
         "datasetId": "ADDPJ",
@@ -1619,6 +1729,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-21.87,99.96),(-160.59,24.44)",
         "createDate": "2024-02-28T20:57:33.157395",
         "datasetId": "AQLJQ",
@@ -1668,6 +1782,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-135.4,119.32),(-274.25,43.79)",
         "createDate": "2024-02-28T21:10:50.626159",
         "datasetId": "BXYEQ",
@@ -1717,6 +1835,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-61.13,133.56),(-199.85,58.04)",
         "createDate": "2024-02-28T21:18:05.494310",
         "datasetId": "BEELW",
@@ -1766,6 +1888,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-117.85,109.47),(-256.12,48.66)",
         "createDate": "2024-02-28T21:21:40.677163",
         "datasetId": "BOJOD",
@@ -1815,6 +1940,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-64.29,137.32),(-203.02,61.8)",
         "createDate": "2024-02-28T21:37:52.108213",
         "datasetId": "AYYQX",
@@ -1864,6 +1993,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-94.71,112.08),(-233.04,51.28)",
         "createDate": "2024-02-28T21:41:40.791213",
         "datasetId": "BZYJD",
@@ -1913,6 +2045,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-84.64,153.47),(-223.37,77.94)",
         "createDate": "2024-02-28T21:44:37.042746",
         "datasetId": "AVZQN",
@@ -1962,6 +2098,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-21.87,99.96),(-160.59,24.44)",
         "createDate": "2024-02-28T21:57:05.525739",
         "datasetId": "BWVYD",
@@ -2011,6 +2151,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-46.3,112.08),(-184.6,51.28)",
         "createDate": "2024-02-28T22:00:53.905589",
         "datasetId": "BGJVR",
@@ -2060,6 +2203,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-61.02,115.6),(-199.92,66.24)",
         "createDate": "2024-02-28T22:04:35.889913",
         "datasetId": "AGJDR",
@@ -2109,6 +2255,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-45.99,101.58),(-184.91,52.23)",
         "createDate": "2024-02-28T22:09:33.691701",
         "datasetId": "BKPQJ",
@@ -2158,6 +2307,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-21.87,99.96),(-160.59,24.44)",
         "createDate": "2024-02-28T22:17:43.943235",
         "datasetId": "ANGDE",
@@ -2207,6 +2360,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-84.54,135.5),(-223.44,86.14)",
         "createDate": "2024-02-28T22:22:49.194365",
         "datasetId": "AWVQD",
@@ -2256,6 +2412,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-22.08,92.49),(-160.35,31.7)",
         "createDate": "2024-02-28T22:39:44.088747",
         "datasetId": "APMGK",
@@ -2305,6 +2464,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-21.76,82),(-160.65,32.65)",
         "createDate": "2024-02-28T22:42:34.733729",
         "datasetId": "BXYXQ",
@@ -2354,6 +2516,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-64.51,129.86),(-202.78,69.06)",
         "createDate": "2024-02-28T22:49:31.164523",
         "datasetId": "AXYQQ",
@@ -2403,6 +2568,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-46.09,119.55),(-184.84,44.03)",
         "createDate": "2024-02-28T23:25:45.647547",
         "datasetId": "BJQRL",
@@ -2452,6 +2621,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-22.08,92.49),(-160.35,31.7)",
         "createDate": "2024-02-28T23:29:10.416145",
         "datasetId": "BVZXN",
@@ -2501,6 +2673,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-64.19,119.36),(-203.08,70)",
         "createDate": "2024-02-28T23:32:38.825642",
         "datasetId": "AZYRD",
@@ -2550,6 +2725,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-61.34,126.09),(-199.61,65.29)",
         "createDate": "2024-02-28T23:36:44.651349",
         "datasetId": "BDDKJ",
@@ -2599,13 +2777,16 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-117.53,98.97),(-256.43,49.61)",
         "createDate": "2024-02-28T23:41:49.209279",
         "datasetId": "BQLYQ",
         "endTime": "2023-10-16T20:47:32.188500",
         "bucket": "public",
         "exposureTime": 14.995605633802818,
-        "frameCount": 10444,
+        "frameCount": 10443,
         "instrumentName": "VISP",
         "instrumentProgramExecutionId": "id.136838.714796",
         "isEmbargoed": false,
@@ -2615,7 +2796,7 @@
         "primaryProposalId": "pid_2_114",
         "startTime": "2023-10-16T20:41:47.509500",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T18:27:25.332622",
+        "updateDate": "2025-06-18T16:16:11.660812",
         "wavelengthMax": 854.6361356847904,
         "wavelengthMin": 853.7002737559743,
         "health": {
@@ -2648,6 +2829,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-21.76,82),(-160.65,32.65)",
         "createDate": "2024-02-28T23:45:57.316021",
         "datasetId": "AOJED",
@@ -2697,6 +2881,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(0.01,122.75),(-0.04,61.96)",
         "createDate": "2024-02-28T23:51:45.739053",
         "datasetId": "ADDMM",
@@ -2746,6 +2933,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-117.63,116.93),(-256.36,41.4)",
         "createDate": "2024-02-28T23:52:36.437935",
         "datasetId": "BPMPK",
@@ -2795,6 +2986,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-22.08,92.5),(-160.35,31.7)",
         "createDate": "2024-02-29T00:03:46.965913",
         "datasetId": "AMEMQ",
@@ -2844,6 +3038,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-10.81,119.98),(-149.08,59.18)",
         "createDate": "2024-02-29T00:09:45.393909",
         "datasetId": "BLDQJ",
@@ -2893,6 +3090,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-135.61,111.85),(-274,51.05)",
         "createDate": "2024-02-29T00:14:48.502797",
         "datasetId": "BWVDD",
@@ -2942,6 +3142,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(0,112.25),(-0,62.9)",
         "createDate": "2024-02-29T00:31:32.479503",
         "datasetId": "BGJEM",
@@ -2991,6 +3194,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-61.02,115.6),(-199.92,66.24)",
         "createDate": "2024-02-29T00:39:31.145353",
         "datasetId": "BKPDX",
@@ -3040,6 +3246,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(0.03,130.21),(-0,54.7)",
         "createDate": "2024-02-29T00:48:30.973724",
         "datasetId": "AEENM",
@@ -3089,6 +3299,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-21.76,82),(-160.65,32.65)",
         "createDate": "2024-02-29T03:25:44.341976",
         "datasetId": "ARLZL",
@@ -3138,6 +3351,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-61.13,133.56),(-199.85,58.04)",
         "createDate": "2024-02-29T06:17:33.046666",
         "datasetId": "BJQPW",
@@ -3187,6 +3404,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
         "boundingBox": "(-61.34,126.09),(-199.61,65.29)",
         "createDate": "2024-02-29T09:24:45.122538",
         "datasetId": "BGJMM",
@@ -3236,6 +3456,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-146.45,139.83),(-262.68,21)",
         "createDate": "2024-03-01T19:23:18.030507",
         "datasetId": "AZYQR",
@@ -3285,6 +3506,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-146.45,139.83),(-262.68,21)",
         "createDate": "2024-03-01T19:24:17.349924",
         "datasetId": "BDDXM",
@@ -3334,6 +3558,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-105.54,140.06),(-221.72,21.24)",
         "createDate": "2024-03-01T19:25:17.384321",
         "datasetId": "AJQWW",
@@ -3383,6 +3608,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-146.45,139.83),(-262.68,21)",
         "createDate": "2024-03-01T19:25:17.578247",
         "datasetId": "AXYOP",
@@ -3432,6 +3660,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-146.45,139.83),(-262.68,21)",
         "createDate": "2024-03-01T19:26:17.968273",
         "datasetId": "AYYPZ",
@@ -3481,6 +3710,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-57.14,140.06),(-173.28,21.24)",
         "createDate": "2024-03-01T19:27:17.590128",
         "datasetId": "AOJWX",
@@ -3530,6 +3762,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-21.64,147.96),(-137.77,29.13)",
         "createDate": "2024-03-01T19:27:18.190426",
         "datasetId": "APMXE",
@@ -3579,6 +3814,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-105.54,140.06),(-221.72,21.24)",
         "createDate": "2024-03-01T19:28:17.728244",
         "datasetId": "BEEWM",
@@ -3628,6 +3866,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-57.14,140.06),(-173.28,21.24)",
         "createDate": "2024-03-01T19:29:17.283533",
         "datasetId": "ANGWL",
@@ -3677,6 +3916,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-57.13,140.06),(-173.28,21.24)",
         "createDate": "2024-03-01T19:29:17.958868",
         "datasetId": "ALDWN",
@@ -3726,6 +3968,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-21.64,147.96),(-137.77,29.13)",
         "createDate": "2024-03-01T19:30:17.527455",
         "datasetId": "BVZGY",
@@ -3775,6 +4020,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-105.54,140.06),(-221.72,21.24)",
         "createDate": "2024-03-01T19:30:17.804809",
         "datasetId": "AGJZM",
@@ -3824,6 +4070,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-105.54,140.06),(-221.72,21.24)",
         "createDate": "2024-03-01T19:30:18.166606",
         "datasetId": "AKPWX",
@@ -3873,6 +4122,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-57.14,140.06),(-173.28,21.24)",
         "createDate": "2024-03-01T19:31:17.498509",
         "datasetId": "AMEWL",
@@ -3922,6 +4172,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-128.67,137.45),(-244.8,18.62)",
         "createDate": "2024-03-01T19:32:18.126612",
         "datasetId": "BWVJV",
@@ -3971,6 +4224,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-21.64,147.96),(-137.77,29.13)",
         "createDate": "2024-03-01T19:32:18.268771",
         "datasetId": "AQLXN",
@@ -4020,6 +4274,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-21.64,147.96),(-137.77,29.13)",
         "createDate": "2024-03-01T19:34:17.406941",
         "datasetId": "ARLXW",
@@ -4069,6 +4324,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-128.67,137.45),(-244.81,18.62)",
         "createDate": "2024-03-01T19:34:17.530413",
         "datasetId": "BXYKP",
@@ -4118,6 +4374,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-128.67,137.45),(-244.81,18.62)",
         "createDate": "2024-03-01T19:35:17.362111",
         "datasetId": "BYYLZ",
@@ -4167,6 +4424,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-95.69,173.98),(-211.82,55.15)",
         "createDate": "2024-03-01T19:35:18.035682",
         "datasetId": "BGJRM",
@@ -4216,6 +4474,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-128.67,137.45),(-244.81,18.62)",
         "createDate": "2024-03-01T19:36:17.455589",
         "datasetId": "BZYMR",
@@ -4265,6 +4526,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-95.69,173.98),(-211.82,55.15)",
         "createDate": "2024-03-01T19:36:17.477594",
         "datasetId": "BJQXW",
@@ -4314,6 +4578,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-75.33,157.84),(-191.46,39.01)",
         "createDate": "2024-03-01T19:36:17.634403",
         "datasetId": "BKPXX",
@@ -4363,6 +4630,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-95.69,173.98),(-211.81,55.15)",
         "createDate": "2024-03-01T19:36:18.228508",
         "datasetId": "ADDZM",
@@ -4412,6 +4682,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-75.33,157.84),(-191.46,39.01)",
         "createDate": "2024-03-01T19:39:17.945299",
         "datasetId": "BNGXL",
@@ -4461,6 +4734,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-95.69,173.98),(-211.82,55.15)",
         "createDate": "2024-03-01T19:39:17.958138",
         "datasetId": "AEEPM",
@@ -4510,6 +4784,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-72.17,154.08),(-188.29,35.25)",
         "createDate": "2024-03-01T19:39:18.112077",
         "datasetId": "BOJZX",
@@ -4559,6 +4836,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-75.34,157.84),(-191.46,39.01)",
         "createDate": "2024-03-01T19:40:17.523320",
         "datasetId": "BMEXL",
@@ -4608,6 +4886,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-72.17,154.08),(-188.3,35.25)",
         "createDate": "2024-03-01T19:42:17.379566",
         "datasetId": "BQLVN",
@@ -4657,6 +4936,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-75.33,157.84),(-191.46,39.01)",
         "createDate": "2024-03-01T19:43:18.187311",
         "datasetId": "BLDXN",
@@ -4706,6 +4986,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-72.17,154.08),(-188.3,35.25)",
         "createDate": "2024-03-01T19:44:18.175293",
         "datasetId": "BRLDW",
@@ -4755,6 +5038,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-72.17,154.08),(-188.3,35.25)",
         "createDate": "2024-03-01T19:45:17.539409",
         "datasetId": "BPMRE",
@@ -4804,6 +5088,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-13.89,141.43),(-130,22.61)",
         "createDate": "2024-03-01T20:16:16.939291",
         "datasetId": "AWVLV",
@@ -4853,6 +5138,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:20:17.588230",
         "datasetId": "AXYMP",
@@ -4902,6 +5190,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:23:17.936259",
         "datasetId": "BDDVM",
@@ -4951,6 +5242,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:23:18.109166",
         "datasetId": "AZYOR",
@@ -5000,6 +5292,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:24:17.442132",
         "datasetId": "BEEDM",
@@ -5049,6 +5344,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:25:17.503078",
         "datasetId": "AYYNZ",
@@ -5098,6 +5394,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:26:17.510614",
         "datasetId": "AJQLW",
@@ -5147,6 +5444,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:27:18.186991",
         "datasetId": "AGJGM",
@@ -5196,6 +5494,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:27:18.330778",
         "datasetId": "AKPZX",
@@ -5245,6 +5546,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:28:17.550394",
         "datasetId": "AOJQX",
@@ -5294,6 +5598,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:28:17.551527",
         "datasetId": "ALDNN",
@@ -5343,6 +5650,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-0,150.73),(-90.57,31.91)",
         "createDate": "2024-03-01T20:28:17.574738",
         "datasetId": "APMOE",
@@ -5392,6 +5702,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:29:17.924988",
         "datasetId": "ANGPL",
@@ -5441,6 +5752,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-32.91,120.48),(-149.03,1.65)",
         "createDate": "2024-03-01T20:29:18.297075",
         "datasetId": "AMEOL",
@@ -5490,6 +5802,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-0,150.73),(-90.58,31.91)",
         "createDate": "2024-03-01T20:31:17.489721",
         "datasetId": "ARLQW",
@@ -5539,6 +5852,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-0,150.73),(-90.58,31.91)",
         "createDate": "2024-03-01T20:35:17.760859",
         "datasetId": "AQLPN",
@@ -5588,6 +5902,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-0,150.73),(-90.58,31.91)",
         "createDate": "2024-03-01T20:36:17.462776",
         "datasetId": "BVZDY",
@@ -5637,6 +5954,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-141.76,102.97),(-185.51,58.33)",
         "createDate": "2024-03-01T20:37:16.112640",
         "datasetId": "AEEYL",
@@ -5686,6 +6006,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-141.76,102.97),(-185.51,58.33)",
         "createDate": "2024-03-01T20:37:16.228829",
         "datasetId": "BJQGV",
@@ -5735,6 +6058,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-182.68,102.74),(-226.45,58.1)",
         "createDate": "2024-03-01T20:45:16.449301",
         "datasetId": "ADDYP",
@@ -5784,6 +6110,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-182.68,102.74),(-226.44,58.1)",
         "createDate": "2024-03-01T20:47:16.770662",
         "datasetId": "BWVEV",
@@ -5833,6 +6162,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-72.17,154.08),(-188.29,35.25)",
         "createDate": "2024-03-01T20:47:17.531642",
         "datasetId": "ALDJW",
@@ -5882,6 +6214,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-8.2,113.64),(-51.92,69)",
         "createDate": "2024-03-01T20:48:16.116946",
         "datasetId": "AGJWE",
@@ -5931,6 +6266,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-141.76,102.97),(-185.5,58.33)",
         "createDate": "2024-03-01T20:48:16.634072",
         "datasetId": "BMELX",
@@ -5980,6 +6318,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-8.2,113.64),(-51.92,69)",
         "createDate": "2024-03-01T20:49:16.102973",
         "datasetId": "AKPGD",
@@ -6029,6 +6370,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-93.34,102.97),(-137.08,58.33)",
         "createDate": "2024-03-01T20:49:17.050764",
         "datasetId": "BNGMP",
@@ -6078,6 +6422,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-72.17,154.08),(-188.3,35.25)",
         "createDate": "2024-03-01T20:49:17.530476",
         "datasetId": "ANGLP",
@@ -6127,6 +6472,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-72.17,154.08),(-188.3,35.25)",
         "createDate": "2024-03-01T20:49:17.599203",
         "datasetId": "AMEKX",
@@ -6176,6 +6522,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-141.76,102.97),(-185.5,58.33)",
         "createDate": "2024-03-01T20:50:16.716390",
         "datasetId": "BKPJD",
@@ -6225,6 +6574,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-72.17,154.08),(-188.3,35.25)",
         "createDate": "2024-03-01T20:51:17.891843",
         "datasetId": "AOJMN",
@@ -6274,6 +6626,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-93.34,102.97),(-137.08,58.33)",
         "createDate": "2024-03-01T20:53:16.458106",
         "datasetId": "BPMON",
@@ -6323,6 +6678,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-57.84,110.87),(-101.57,66.22)",
         "createDate": "2024-03-01T20:53:16.884348",
         "datasetId": "BQLPG",
@@ -6372,6 +6730,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-164.88,100.36),(-208.61,55.71)",
         "createDate": "2024-03-01T20:54:17.070350",
         "datasetId": "AWVZO",
@@ -6421,6 +6782,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-57.84,110.87),(-101.57,66.22)",
         "createDate": "2024-03-01T20:55:16.597936",
         "datasetId": "AVZWJ",
@@ -6470,6 +6834,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-111.53,120.75),(-155.26,76.1)",
         "createDate": "2024-03-01T20:56:16.565722",
         "datasetId": "BEERL",
@@ -6519,6 +6886,9 @@
         }
       },
       {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
         "boundingBox": "(-164.88,100.36),(-208.61,55.71)",
         "createDate": "2024-03-01T20:59:16.708840",
         "datasetId": "AYYEY",
@@ -6568,6 +6938,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
         "boundingBox": "(-111.53,120.75),(-155.26,76.1)",
         "createDate": "2024-03-01T21:00:16.606639",
         "datasetId": "AZYGP",
@@ -6617,6 +6990,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-141.76,102.97),(-185.51,58.33)",
         "createDate": "2024-03-01T21:21:18.538726",
         "datasetId": "BGJYE",
@@ -6666,6 +7040,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-8.2,113.64),(-51.92,69)",
         "createDate": "2024-03-01T21:26:18.241581",
         "datasetId": "AJQEV",
@@ -6715,6 +7090,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-141.76,102.97),(-185.5,58.33)",
         "createDate": "2024-03-01T22:06:20.886020",
         "datasetId": "BLDKW",
@@ -6764,6 +7140,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-182.68,102.74),(-226.45,58.1)",
         "createDate": "2024-03-01T22:09:21.621186",
         "datasetId": "BXYGP",
@@ -6813,6 +7190,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-93.34,102.97),(-137.08,58.33)",
         "createDate": "2024-03-01T22:13:20.648943",
         "datasetId": "BOJNN",
@@ -6862,6 +7240,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-57.84,110.87),(-101.57,66.22)",
         "createDate": "2024-03-01T22:16:20.770154",
         "datasetId": "BRLPJ",
@@ -6911,6 +7290,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-164.88,100.36),(-208.61,55.71)",
         "createDate": "2024-03-01T22:20:20.556184",
         "datasetId": "AXYZW",
@@ -6960,6 +7340,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-111.53,120.75),(-155.26,76.1)",
         "createDate": "2024-03-01T22:22:20.694230",
         "datasetId": "BDDQP",
@@ -7009,6 +7390,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(0.04,-28.85),(-0.02,-105.3)",
         "createDate": "2024-04-24T12:29:56.814336",
         "datasetId": "AKRED",
@@ -7058,6 +7443,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(0.02,-47.2),(-0.02,-97.53)",
         "createDate": "2024-04-24T12:41:55.539565",
         "datasetId": "ALZPW",
@@ -7107,6 +7495,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(0.03,-46.96),(-0.01,-97.79)",
         "createDate": "2024-04-24T23:44:40.755195",
         "datasetId": "AGPLE",
@@ -7156,6 +7547,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(0.02,-38.72),(-0.03,-100.98)",
         "createDate": "2024-04-25T00:45:42.081687",
         "datasetId": "BDRNP",
@@ -7205,6 +7600,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(0.01,-28.58),(-0.01,-105.53)",
         "createDate": "2024-04-25T01:11:34.784167",
         "datasetId": "BEZOL",
@@ -7254,6 +7653,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(0.01,-38.99),(-0.09,-100.74)",
         "createDate": "2024-04-25T01:13:41.974201",
         "datasetId": "AJODV",
@@ -7303,6 +7706,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(47.94,41.47),(3.6,-34.97)",
         "createDate": "2024-12-18T11:20:41.399032",
         "datasetId": "BEZXZ",
@@ -7352,6 +7759,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(47.76,31.33),(3.82,-30.42)",
         "createDate": "2024-12-18T11:20:46.008576",
         "datasetId": "BDRPD",
@@ -7401,6 +7812,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-299.21,-34.45),(-343.13,-96.17)",
         "createDate": "2024-12-18T11:21:40.630841",
         "datasetId": "AJORJ",
@@ -7450,6 +7865,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(0.01,21.42),(-0.03,-29.39)",
         "createDate": "2024-12-18T11:23:56.092947",
         "datasetId": "ANRDW",
@@ -7499,6 +7917,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-299.03,-24.31),(-343.35,-100.73)",
         "createDate": "2024-12-18T11:55:39.122252",
         "datasetId": "AKRQL",
@@ -7548,6 +7970,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(0.02,29.65),(-0.02,-32.58)",
         "createDate": "2024-12-18T11:55:59.830524",
         "datasetId": "ALZMV",
@@ -7597,6 +8023,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-299.27,-42.65),(-343.04,-92.96)",
         "createDate": "2024-12-18T12:15:39.761475",
         "datasetId": "ALZQV",
@@ -7646,6 +8075,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(0.02,39.8),(-0,-37.14)",
         "createDate": "2024-12-18T12:22:00.279769",
         "datasetId": "AMRNG",
@@ -7695,6 +8128,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(47.7,23.12),(3.91,-27.21)",
         "createDate": "2024-12-18T12:22:40.685041",
         "datasetId": "AGPVV",
@@ -7744,6 +8180,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(735.29,-56.72),(691.48,-107.08)",
         "createDate": "2024-12-18T12:48:39.730142",
         "datasetId": "ARRYP",
@@ -7793,6 +8232,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(748.79,-74.42),(704.8,-136.19)",
         "createDate": "2024-12-18T12:54:38.975446",
         "datasetId": "BVNPV",
@@ -7842,6 +8285,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(769.79,-91.98),(725.4,-168.44)",
         "createDate": "2024-12-18T13:23:37.834362",
         "datasetId": "BZPRN",
@@ -7891,6 +8338,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(769.55,-110.33),(725.73,-160.68)",
         "createDate": "2024-12-18T13:23:42.497012",
         "datasetId": "ADRKD",
@@ -7940,6 +8390,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(735.54,-38.37),(691.16,-114.84)",
         "createDate": "2024-12-18T13:24:40.380078",
         "datasetId": "AQRWP",
@@ -7989,6 +8443,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(748.97,-64.28),(704.58,-140.74)",
         "createDate": "2024-12-18T13:41:40.024971",
         "datasetId": "BWRQW",
@@ -8038,6 +8496,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(735.36,-48.51),(691.38,-110.29)",
         "createDate": "2024-12-18T13:54:39.840602",
         "datasetId": "APWQR",
@@ -8087,6 +8549,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(704.16,-239.51),(660.35,-289.85)",
         "createDate": "2024-12-18T13:56:39.071363",
         "datasetId": "BMRMG",
@@ -8136,6 +8601,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(704.23,-231.3),(660.25,-293.06)",
         "createDate": "2024-12-18T14:11:40.422389",
         "datasetId": "BKRKL",
@@ -8185,6 +8654,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(0.05,29.39),(-0.05,-32.35)",
         "createDate": "2024-12-18T14:12:39.307436",
         "datasetId": "AEZLZ",
@@ -8234,6 +8707,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(782.31,-66.8),(738.32,-128.56)",
         "createDate": "2024-12-18T14:21:37.137856",
         "datasetId": "BNROW",
@@ -8283,6 +8760,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(748.72,-82.62),(704.9,-132.97)",
         "createDate": "2024-12-18T14:22:41.093952",
         "datasetId": "BXPQR",
@@ -8332,6 +8812,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(769.61,-102.12),(725.63,-163.89)",
         "createDate": "2024-12-18T14:26:41.290212",
         "datasetId": "BYWQV",
@@ -8381,6 +8865,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(704.41,-221.16),(660.03,-297.61)",
         "createDate": "2024-12-18T14:37:38.716811",
         "datasetId": "BLZLV",
@@ -8430,6 +8918,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(782.24,-75),(738.42,-125.35)",
         "createDate": "2024-12-18T14:46:38.821823",
         "datasetId": "BPWPR",
@@ -8479,6 +8970,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(0.04,21.18),(-0.01,-29.14)",
         "createDate": "2024-12-18T15:01:42.519010",
         "datasetId": "BJOJJ",
@@ -8528,6 +9022,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(782.49,-56.66),(738.1,-133.11)",
         "createDate": "2024-12-18T15:11:39.121386",
         "datasetId": "BOYOZ",
@@ -8577,6 +9075,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(0.07,39.53),(-0.01,-36.9)",
         "createDate": "2024-12-18T15:22:39.825324",
         "datasetId": "BGPDV",
@@ -8626,6 +9128,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-338.79,565.6),(-364.52,503.96)",
         "createDate": "2024-12-18T17:59:29.763274",
         "datasetId": "AMRGN",
@@ -8675,6 +9181,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(309.71,-19.11),(265.91,-69.44)",
         "createDate": "2024-12-18T18:07:37.545831",
         "datasetId": "BWRMW",
@@ -8724,6 +9233,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-338.81,557.39),(-364.42,507.17)",
         "createDate": "2024-12-18T18:11:27.695049",
         "datasetId": "AOYKK",
@@ -8773,6 +9285,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(309.8,-15.45),(265.83,-77.2)",
         "createDate": "2024-12-18T18:23:39.740920",
         "datasetId": "ARRZP",
@@ -8822,6 +9338,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(310.02,-10.9),(265.66,-87.34)",
         "createDate": "2024-12-18T18:26:40.503902",
         "datasetId": "BVNXV",
@@ -8871,6 +9391,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(312.03,-17.28),(268.23,-67.62)",
         "createDate": "2024-12-18T18:47:39.543676",
         "datasetId": "BKRVQ",
@@ -8920,6 +9443,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(312.12,-13.63),(268.15,-75.38)",
         "createDate": "2024-12-18T19:07:37.846055",
         "datasetId": "BXPNR",
@@ -8969,6 +9496,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(312.06,-16.04),(268.26,-66.38)",
         "createDate": "2024-12-18T19:14:40.787969",
         "datasetId": "BNRZZ",
@@ -9018,6 +9548,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-338.74,575.74),(-364.73,499.41)",
         "createDate": "2024-12-18T19:21:30.807537",
         "datasetId": "ANRJZ",
@@ -9067,6 +9601,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(307.44,-14.19),(263.64,-64.55)",
         "createDate": "2024-12-18T19:23:38.619933",
         "datasetId": "BQRDX",
@@ -9116,6 +9653,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(307.51,-6.42),(263.55,-68.21)",
         "createDate": "2024-12-18T19:28:39.324313",
         "datasetId": "BOYVK",
@@ -9165,6 +9706,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(312.34,-9.07),(267.98,-85.52)",
         "createDate": "2024-12-18T19:30:37.407512",
         "datasetId": "ADRLN",
@@ -9214,6 +9759,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(312.34,-9.07),(267.98,-85.52)",
         "createDate": "2024-12-18T19:30:41.344194",
         "datasetId": "BJOVO",
@@ -9263,6 +9812,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(312.15,-12.39),(268.18,-74.15)",
         "createDate": "2024-12-18T19:32:41.039390",
         "datasetId": "BLZVL",
@@ -9312,6 +9865,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(312.12,-13.63),(268.15,-75.39)",
         "createDate": "2024-12-18T19:51:41.004158",
         "datasetId": "BGPOJ",
@@ -9361,6 +9918,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(312.37,-7.83),(268.01,-84.28)",
         "createDate": "2024-12-18T20:01:39.532958",
         "datasetId": "BMRVN",
@@ -9410,6 +9971,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(304.09,-14.19),(260.29,-64.57)",
         "createDate": "2024-12-18T20:12:39.444220",
         "datasetId": "AWRMZ",
@@ -9459,6 +10023,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(301.21,-13.31),(257.26,-75.15)",
         "createDate": "2024-12-18T20:20:42.234388",
         "datasetId": "AXPND",
@@ -9508,6 +10076,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(304.16,-6.42),(260.2,-68.22)",
         "createDate": "2024-12-18T20:27:39.042968",
         "datasetId": "BRRED",
@@ -9557,6 +10129,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(307.69,3.71),(263.33,-72.77)",
         "createDate": "2024-12-18T20:35:44.754338",
         "datasetId": "BPWVZ",
@@ -9606,6 +10182,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(301.14,-21.08),(257.34,-71.49)",
         "createDate": "2024-12-18T20:37:37.948122",
         "datasetId": "AZPLW",
@@ -9655,6 +10234,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-271.93,-34),(-315.86,-95.72)",
         "createDate": "2024-12-18T21:00:38.478729",
         "datasetId": "BDRJN",
@@ -9704,6 +10287,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-271.99,-42.21),(-315.77,-92.51)",
         "createDate": "2024-12-18T21:34:38.168333",
         "datasetId": "AGPMJ",
@@ -9753,6 +10339,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(304.33,3.72),(259.99,-72.78)",
         "createDate": "2024-12-18T21:37:37.266268",
         "datasetId": "AVNLD",
@@ -9802,6 +10392,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(301.39,-3.17),(257.05,-79.71)",
         "createDate": "2024-12-18T21:51:37.480632",
         "datasetId": "AYWKR",
@@ -9851,6 +10445,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-298.88,-50.97),(-342.65,-101.28)",
         "createDate": "2024-12-18T22:04:40.229550",
         "datasetId": "ALZEL",
@@ -9900,6 +10497,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-298.82,-42.76),(-342.75,-104.48)",
         "createDate": "2024-12-18T22:10:41.220767",
         "datasetId": "AJOPO",
@@ -9949,6 +10550,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-339.04,558.54),(-382.82,508.23)",
         "createDate": "2024-12-18T22:11:40.395503",
         "datasetId": "BXPJD",
@@ -9998,6 +10602,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-338.98,566.75),(-382.92,505.02)",
         "createDate": "2024-12-18T22:36:49.876816",
         "datasetId": "BVNED",
@@ -10047,6 +10655,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-298.64,-32.62),(-342.96,-109.03)",
         "createDate": "2024-12-18T22:36:51.740812",
         "datasetId": "AKRDQ",
@@ -10096,6 +10708,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-271.75,-23.85),(-316.08,-100.27)",
         "createDate": "2024-12-18T22:42:52.281508",
         "datasetId": "BEZKV",
@@ -10145,6 +10761,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-338.8,576.9),(-383.14,500.47)",
         "createDate": "2024-12-18T22:43:49.298046",
         "datasetId": "BWRGZ",
@@ -10194,6 +10814,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-336.16,571.1),(-380.49,494.68)",
         "createDate": "2024-12-18T22:55:40.236970",
         "datasetId": "BZPQW",
@@ -10243,6 +10867,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-323.17,560.94),(-367.12,499.21)",
         "createDate": "2024-12-18T22:56:37.051282",
         "datasetId": "APWLZ",
@@ -10292,6 +10920,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-336.33,560.96),(-380.28,499.22)",
         "createDate": "2024-12-18T22:59:40.141788",
         "datasetId": "BYWPR",
@@ -10341,6 +10973,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-336.4,552.75),(-380.18,502.43)",
         "createDate": "2024-12-18T23:03:38.512242",
         "datasetId": "ADRXN",
@@ -10390,6 +11025,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-323.24,552.73),(-367.02,502.42)",
         "createDate": "2024-12-18T23:15:37.493862",
         "datasetId": "ARRND",
@@ -10439,6 +11077,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-323,571.09),(-367.33,494.66)",
         "createDate": "2024-12-18T23:26:41.437077",
         "datasetId": "AQRMX",
@@ -10488,6 +11130,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-253.71,-34.19),(-388.53,-96.39)",
         "createDate": "2024-12-18T23:54:18.233259",
         "datasetId": "AXPER",
@@ -10537,6 +11183,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-253.2,-24.05),(-389.07,-100.95)",
         "createDate": "2024-12-19T00:03:14.707111",
         "datasetId": "AYWZV",
@@ -10586,6 +11236,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(0.01,41.74),(-0.02,-35.21)",
         "createDate": "2024-12-19T00:38:11.069474",
         "datasetId": "ANRQW",
@@ -10635,6 +11289,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-253.88,-42.43),(-388.33,-93.2)",
         "createDate": "2024-12-19T00:47:13.112445",
         "datasetId": "AZPJN",
@@ -10684,6 +11341,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(0,31.6),(-0.01,-30.66)",
         "createDate": "2024-12-19T01:02:19.412471",
         "datasetId": "AMRZG",
@@ -10733,6 +11394,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(312.03,-17.28),(268.23,-67.62)",
         "createDate": "2024-12-19T03:19:40.502524",
         "datasetId": "AEZMV",
@@ -10782,6 +11446,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(804.96,-100.79),(670.47,-151.7)",
         "createDate": "2024-12-19T03:28:17.471446",
         "datasetId": "BEZNZ",
@@ -10831,6 +11498,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(794.83,-58.23),(658.89,-135.27)",
         "createDate": "2024-12-19T03:30:05.797788",
         "datasetId": "BRROP",
@@ -10880,6 +11551,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(794.32,-68.38),(659.44,-130.71)",
         "createDate": "2024-12-19T03:49:17.975833",
         "datasetId": "BQRYP",
@@ -10929,6 +11604,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(794.15,-76.61),(659.65,-127.52)",
         "createDate": "2024-12-19T04:05:15.429617",
         "datasetId": "AVNQV",
@@ -10978,6 +11656,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(829.68,-131.69),(695.19,-182.59)",
         "createDate": "2024-12-19T05:11:08.544097",
         "datasetId": "AKRLL",
@@ -11027,6 +11708,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(805.14,-92.56),(670.26,-154.89)",
         "createDate": "2024-12-19T05:16:04.936714",
         "datasetId": "AZPXN",
@@ -11076,6 +11761,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(805.65,-82.41),(669.7,-159.44)",
         "createDate": "2024-12-19T05:31:17.839008",
         "datasetId": "BDRMD",
@@ -11125,6 +11814,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(829.86,-123.46),(694.98,-185.78)",
         "createDate": "2024-12-19T05:44:20.411215",
         "datasetId": "AGPEV",
@@ -11174,6 +11867,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(828.23,-56.35),(692.28,-133.37)",
         "createDate": "2024-12-19T05:52:11.891023",
         "datasetId": "APWGR",
@@ -11223,6 +11920,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(830.37,-113.31),(694.43,-190.34)",
         "createDate": "2024-12-19T05:57:11.241387",
         "datasetId": "AJOZJ",
@@ -11272,6 +11973,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(0.04,23.36),(-0,-27.47)",
         "createDate": "2024-12-19T06:05:17.184610",
         "datasetId": "AOYRZ",
@@ -11321,6 +12025,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(827.72,-66.5),(692.84,-128.82)",
         "createDate": "2024-12-19T06:44:20.110822",
         "datasetId": "AOYEZ",
@@ -11370,6 +12078,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(827.54,-74.73),(693.05,-125.63)",
         "createDate": "2024-12-19T07:06:11.213511",
         "datasetId": "AQRJP",
@@ -11419,6 +12130,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-228.05,-36.01),(-362.87,-98.2)",
         "createDate": "2024-12-19T11:07:20.864067",
         "datasetId": "AEZWV",
@@ -11468,6 +12183,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-275.87,564.85),(-410.7,502.63)",
         "createDate": "2024-12-19T11:38:19.119217",
         "datasetId": "BKRWQ",
@@ -11517,6 +12236,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-227.54,-25.86),(-363.41,-102.75)",
         "createDate": "2024-12-19T11:44:31.168278",
         "datasetId": "BGPZJ",
@@ -11566,6 +12289,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-293.52,567.05),(-428.36,504.82)",
         "createDate": "2024-12-19T11:47:14.234822",
         "datasetId": "BQREX",
@@ -11615,6 +12342,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-275.36,575),(-411.24,498.08)",
         "createDate": "2024-12-19T11:58:08.492074",
         "datasetId": "BLZWL",
@@ -11664,6 +12395,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-293.7,558.81),(-428.15,508.01)",
         "createDate": "2024-12-19T12:05:16.089908",
         "datasetId": "AVNMD",
@@ -11713,6 +12447,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-228.22,-44.25),(-362.66,-95.01)",
         "createDate": "2024-12-19T12:23:18.025507",
         "datasetId": "BJOWO",
@@ -11762,6 +12499,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)",
+          "Na I D2 (589.0 nm)"
+        ],
         "boundingBox": "(-274.95,556.3),(-409.78,494.08)",
         "createDate": "2024-12-19T12:29:11.616604",
         "datasetId": "BNRWZ",
@@ -11811,6 +12552,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-276.04,556.61),(-410.49,505.82)",
         "createDate": "2024-12-19T12:39:06.285400",
         "datasetId": "BMRWN",
@@ -11860,6 +12604,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-293.02,577.2),(-428.9,500.27)",
         "createDate": "2024-12-19T13:30:18.103949",
         "datasetId": "BRRGD",
@@ -11909,6 +12657,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
         "boundingBox": "(-275.12,548.06),(-409.57,497.26)",
         "createDate": "2024-12-19T14:22:20.999615",
         "datasetId": "BPWZZ",
@@ -11958,6 +12709,10 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(-274.44,566.45),(-410.32,489.53)",
         "createDate": "2024-12-19T15:46:11.005781",
         "datasetId": "BOYWK",
@@ -12007,6 +12762,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-284.07,586.36),(-400.18,467.56)",
         "createDate": "2024-12-23T19:15:31.333919",
         "datasetId": "AEKKM",
@@ -12056,6 +12812,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-284.99,594.91),(-401.1,476.11)",
         "createDate": "2024-12-23T19:17:29.451825",
         "datasetId": "ADJJM",
@@ -12105,6 +12862,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-237.18,-5.95),(-353.26,-124.72)",
         "createDate": "2024-12-23T19:18:30.066653",
         "datasetId": "BZLLR",
@@ -12154,6 +12912,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-302.65,597.11),(-418.75,478.3)",
         "createDate": "2024-12-23T19:28:30.657316",
         "datasetId": "BGMMM",
@@ -12203,6 +12962,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-336.18,554.2),(-379.89,509.56)",
         "createDate": "2024-12-23T19:42:18.565270",
         "datasetId": "BYKKZ",
@@ -12252,6 +13012,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-320.42,558.93),(-364.13,514.3)",
         "createDate": "2024-12-23T19:54:20.639875",
         "datasetId": "BVEEY",
@@ -12301,6 +13062,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(311.73,-23.09),(268,-67.74)",
         "createDate": "2024-12-23T20:18:23.517962",
         "datasetId": "AKDVX",
@@ -12350,6 +13112,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(311.73,-23.08),(268,-67.74)",
         "createDate": "2024-12-23T20:19:23.243207",
         "datasetId": "ALEVN",
@@ -12399,6 +13162,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(309.41,-24.91),(265.68,-69.56)",
         "createDate": "2024-12-23T20:22:23.235534",
         "datasetId": "AJPVW",
@@ -12448,6 +13212,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(0,-46.41),(-0,-91.07)",
         "createDate": "2024-12-23T20:24:22.136678",
         "datasetId": "AGMOM",
@@ -12497,6 +13262,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(304.32,-14.06),(260.58,-58.76)",
         "createDate": "2024-12-23T20:24:24.442487",
         "datasetId": "AOKVX",
@@ -12546,6 +13312,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(311.76,-21.84),(268.03,-66.5)",
         "createDate": "2024-12-23T20:25:22.627793",
         "datasetId": "AMGVL",
@@ -12595,6 +13362,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(301.37,-20.94),(257.64,-65.69)",
         "createDate": "2024-12-23T20:29:24.441970",
         "datasetId": "APLLE",
@@ -12644,6 +13412,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(307.67,-14.07),(263.93,-58.75)",
         "createDate": "2024-12-23T20:30:21.760695",
         "datasetId": "ANJZL",
@@ -12693,6 +13462,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-298.66,-49.53),(-342.37,-94.15)",
         "createDate": "2024-12-23T20:31:22.567345",
         "datasetId": "ARNNW",
@@ -12742,6 +13512,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-323.02,554.18),(-366.74,509.54)",
         "createDate": "2024-12-23T20:31:23.068658",
         "datasetId": "BWGGV",
@@ -12791,6 +13562,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-271.77,-40.76),(-315.48,-85.39)",
         "createDate": "2024-12-23T20:37:22.767419",
         "datasetId": "AQMMN",
@@ -12840,6 +13612,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-338.82,559.99),(-382.54,515.35)",
         "createDate": "2024-12-23T20:49:23.588393",
         "datasetId": "BXJJP",
@@ -12889,6 +13662,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(68.99,-9.32),(-47.13,-128.15)",
         "createDate": "2024-12-23T22:05:18.613319",
         "datasetId": "ANJWL",
@@ -12938,6 +13712,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(785.22,-38.98),(669.02,-157.88)",
         "createDate": "2025-02-21T17:38:38.697471",
         "datasetId": "QZBPJQ",
@@ -12987,6 +13762,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(58.43,59.05),(-57.68,-59.76)",
         "createDate": "2025-02-21T17:39:35.627627",
         "datasetId": "POVJUM",
@@ -13036,6 +13812,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(820.75,-94.06),(704.56,-212.95)",
         "createDate": "2025-02-21T17:46:19.086791",
         "datasetId": "BPROXN",
@@ -13085,6 +13862,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(796.03,-63.16),(679.84,-182.06)",
         "createDate": "2025-02-21T17:46:29.242234",
         "datasetId": "GWYCRP",
@@ -13134,6 +13912,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(818.62,-37.1),(702.42,-155.99)",
         "createDate": "2025-02-21T17:50:18.286490",
         "datasetId": "DBSYEL",
@@ -13183,6 +13962,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(735.52,-55.94),(691.77,-100.61)",
         "createDate": "2025-02-21T18:57:21.392284",
         "datasetId": "RVFWLI",
@@ -13232,6 +14012,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(769.77,-109.54),(726.02,-154.21)",
         "createDate": "2025-02-21T19:02:21.358777",
         "datasetId": "FCKMWI",
@@ -13281,6 +14062,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(704.38,-238.72),(660.64,-283.38)",
         "createDate": "2025-02-21T19:04:21.086370",
         "datasetId": "ZYPVAU",
@@ -13330,6 +14112,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(748.94,-81.84),(705.19,-126.51)",
         "createDate": "2025-02-21T19:11:20.828075",
         "datasetId": "SRARNK",
@@ -13379,6 +14162,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(0,21.97),(-0,-22.67)",
         "createDate": "2025-02-21T19:16:20.593279",
         "datasetId": "WMTEVA",
@@ -13428,6 +14212,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(782.46,-74.22),(738.71,-118.88)",
         "createDate": "2025-02-21T19:53:22.379522",
         "datasetId": "VDCIHK",

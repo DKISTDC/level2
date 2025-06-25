@@ -139,6 +139,7 @@ runDataDatasets = interpret $ \_ -> \case
             , polarimetricAccuracy = "polarimetric_accuracy"
             , lightLevel = "light_level"
             , embargo = "embargo"
+            , spectralLines = "spectral_lines"
             }
       }
 

@@ -2,6 +2,7 @@
   "data": {
     "datasetInventories": [
       {
+        "spectralLines": null,
         "boundingBox": "(-560.16,-347.5),(-677.17,-467.21)",
         "createDate": "2022-12-08T19:07:55.038280",
         "datasetId": "BLKGA",
@@ -51,6 +52,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
         "createDate": "2022-12-08T19:08:04.089380",
         "datasetId": "BJLKB",
@@ -100,6 +102,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
         "createDate": "2022-12-08T19:12:55.517795",
         "datasetId": "BKJYA",
@@ -149,6 +152,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-460.16,-347.52),(-577.17,-467.2)",
         "createDate": "2022-12-08T19:27:50.932745",
         "datasetId": "BMLYA",
@@ -198,6 +202,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
         "createDate": "2022-12-08T19:32:48.315446",
         "datasetId": "BONJA",
@@ -247,6 +252,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
         "createDate": "2022-12-08T19:34:42.164502",
         "datasetId": "BNMNA",
@@ -296,6 +302,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
         "createDate": "2022-12-08T19:40:04.745388",
         "datasetId": "AXGJB",
@@ -345,6 +352,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
         "createDate": "2022-12-08T19:40:04.748360",
         "datasetId": "BPOWA",
@@ -394,6 +402,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
         "createDate": "2022-12-08T19:40:53.051889",
         "datasetId": "BRQOA",
@@ -443,6 +452,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-451.17,-347.53),(-568.17,-467.18)",
         "createDate": "2022-12-08T19:44:56.372900",
         "datasetId": "AWEMA",
@@ -492,6 +502,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-551.18,-347.54),(-668.16,-467.17)",
         "createDate": "2022-12-08T19:45:54.120125",
         "datasetId": "BQPWA",
@@ -541,6 +552,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
         "createDate": "2022-12-08T19:46:03.212404",
         "datasetId": "AZZMA",
@@ -590,6 +602,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
         "createDate": "2022-12-08T19:48:45.745088",
         "datasetId": "AVDXA",
@@ -639,6 +652,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
         "createDate": "2022-12-08T19:48:46.378926",
         "datasetId": "BDYVA",
@@ -688,6 +702,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
         "createDate": "2022-12-08T19:50:55.141641",
         "datasetId": "AJGKB",
@@ -737,6 +752,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
         "createDate": "2022-12-08T19:52:51.959185",
         "datasetId": "AMKYA",
@@ -786,6 +802,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
         "createDate": "2022-12-08T19:52:52.272131",
         "datasetId": "BEYYB",
@@ -835,6 +852,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
         "createDate": "2022-12-08T19:55:34.387795",
         "datasetId": "AKGYA",
@@ -884,6 +902,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
         "createDate": "2022-12-08T19:56:53.200885",
         "datasetId": "ALJGA",
@@ -933,6 +952,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
         "createDate": "2022-12-08T19:56:53.232141",
         "datasetId": "AYJPB",
@@ -982,6 +1002,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
         "createDate": "2022-12-08T19:56:53.358120",
         "datasetId": "ARPOA",
@@ -1031,6 +1052,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
         "createDate": "2022-12-08T19:59:06.513003",
         "datasetId": "BVWXA",
@@ -1080,6 +1102,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
         "createDate": "2022-12-08T19:59:06.570311",
         "datasetId": "APNWA",
@@ -1129,6 +1152,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
         "createDate": "2022-12-08T20:00:45.304119",
         "datasetId": "ANLNA",
@@ -1178,6 +1202,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-443.18,-347.54),(-560.16,-467.17)",
         "createDate": "2022-12-08T20:01:40.801583",
         "datasetId": "AGYWA",
@@ -1227,6 +1252,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
         "createDate": "2022-12-08T20:02:46.555643",
         "datasetId": "BYEPB",
@@ -1276,6 +1302,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
         "createDate": "2022-12-08T20:02:57.209116",
         "datasetId": "AOMJA",
@@ -1325,6 +1352,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
         "createDate": "2022-12-08T20:04:00.890398",
         "datasetId": "AERYB",
@@ -1374,6 +1402,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
         "createDate": "2022-12-08T20:04:01.005655",
         "datasetId": "AQOWA",
@@ -1423,6 +1452,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
         "createDate": "2022-12-08T20:05:48.014253",
         "datasetId": "BWZMA",
@@ -1472,6 +1502,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
         "createDate": "2022-12-08T20:06:47.979242",
         "datasetId": "ADQVB",
@@ -1521,6 +1552,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-328.16,-318.53),(-445.18,-438.19)",
         "createDate": "2022-12-08T20:08:00.095695",
         "datasetId": "BGWWB",
@@ -1570,6 +1602,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
         "createDate": "2022-12-08T20:08:06.184058",
         "datasetId": "BXZJB",
@@ -1619,6 +1652,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-231.15,-318.52),(-348.19,-438.2)",
         "createDate": "2022-12-08T20:09:06.925838",
         "datasetId": "BZGMA",
@@ -1668,6 +1702,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-331.16,-376.52),(-448.17,-496.19)",
         "createDate": "2022-12-08T20:09:07.044885",
         "datasetId": "BMQYB",
@@ -1717,6 +1752,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-331.16,-376.53),(-448.17,-496.19)",
         "createDate": "2022-12-08T20:09:27.648182",
         "datasetId": "BNVNB",
@@ -1766,6 +1802,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
         "createDate": "2022-12-08T20:10:34.201481",
         "datasetId": "BJEKA",
@@ -1815,6 +1852,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
         "createDate": "2022-12-08T20:10:34.644024",
         "datasetId": "BKMYB",
@@ -1864,6 +1902,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-331.16,-376.52),(-448.18,-496.19)",
         "createDate": "2022-12-08T20:13:52.948655",
         "datasetId": "BLOGA",
@@ -1913,6 +1952,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-253.15,-376.51),(-370.18,-496.2)",
         "createDate": "2022-12-08T20:14:51.431127",
         "datasetId": "BQGWB",
@@ -1962,6 +2002,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
         "createDate": "2022-12-08T20:14:53.907311",
         "datasetId": "BOXJA",
@@ -2011,6 +2052,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
         "createDate": "2022-12-08T20:14:54.159698",
         "datasetId": "BPDWB",
@@ -2060,6 +2102,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
         "createDate": "2022-12-08T20:16:35.605281",
         "datasetId": "AVVXA",
@@ -2109,6 +2152,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-251.14,-318.5),(-368.2,-438.21)",
         "createDate": "2022-12-08T20:16:40.603318",
         "datasetId": "BRKOA",
@@ -2158,6 +2202,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
         "createDate": "2022-12-08T20:17:35.001872",
         "datasetId": "AWXMB",
@@ -2207,6 +2252,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-348.14,-318.5),(-465.19,-438.21)",
         "createDate": "2022-12-08T20:21:49.767936",
         "datasetId": "AYGPA",
@@ -2256,6 +2302,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-348.15,-318.5),(-465.18,-438.21)",
         "createDate": "2022-12-08T20:21:53.241406",
         "datasetId": "AZKMB",
@@ -2305,6 +2352,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-348.15,-318.5),(-465.19,-438.21)",
         "createDate": "2022-12-08T20:24:04.210475",
         "datasetId": "AXDJA",
@@ -2354,6 +2402,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-351.14,-376.46),(-468.2,-496.25)",
         "createDate": "2022-12-08T20:26:47.791839",
         "datasetId": "BDOVA",
@@ -2403,6 +2452,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-351.13,-376.46),(-468.2,-496.25)",
         "createDate": "2022-12-08T20:44:55.698408",
         "datasetId": "BEQYB",
@@ -2452,6 +2502,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(-351.14,-376.46),(-468.19,-496.25)",
         "createDate": "2022-12-08T20:53:53.466481",
         "datasetId": "AGXWB",
@@ -2501,6 +2552,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(6.39,-374.42),(-124.96,-407.5)",
         "createDate": "2023-04-21T08:48:47.844921",
         "datasetId": "BDWQK",
@@ -2550,6 +2602,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(37.74,-374.42),(-93.61,-407.49)",
         "createDate": "2023-04-21T08:55:44.824162",
         "datasetId": "AYDEW",
@@ -2599,6 +2652,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(4.04,-402.06),(-127.31,-436.49)",
         "createDate": "2023-04-21T09:16:47.602610",
         "datasetId": "BLGOX",
@@ -2648,6 +2702,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(15.39,-374.42),(-115.96,-407.49)",
         "createDate": "2023-04-21T09:22:46.141586",
         "datasetId": "AKNGW",
@@ -2697,6 +2752,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(115.38,-402.06),(-15.96,-436.5)",
         "createDate": "2023-04-21T09:28:46.072027",
         "datasetId": "AWOWP",
@@ -2746,6 +2802,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(7.04,-346.79),(-124.31,-378.49)",
         "createDate": "2023-04-21T09:33:45.024094",
         "datasetId": "BJNKP",
@@ -2795,6 +2852,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(104.04,-346.79),(-27.31,-378.49)",
         "createDate": "2023-04-21T09:38:45.048058",
         "datasetId": "AEJQN",
@@ -2844,6 +2902,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(46.73,-374.42),(-84.61,-407.5)",
         "createDate": "2023-04-21T09:43:45.553483",
         "datasetId": "AGNWO",
@@ -2893,6 +2952,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(54.74,-374.42),(-76.61,-407.49)",
         "createDate": "2023-04-21T09:50:46.634150",
         "datasetId": "AMDKO",
@@ -2942,6 +3004,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(82.04,-402.06),(-49.31,-436.49)",
         "createDate": "2023-04-21T09:57:46.094758",
         "datasetId": "BNKVM",
@@ -2991,6 +3054,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(102.04,-402.06),(-29.31,-436.49)",
         "createDate": "2023-04-21T10:00:44.965456",
         "datasetId": "BZWKJ",
@@ -3040,6 +3104,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(23.39,-374.42),(-107.96,-407.5)",
         "createDate": "2023-04-21T10:06:45.490391",
         "datasetId": "AODMM",
@@ -3089,6 +3156,9 @@
         }
       },
       {
+        "spectralLines": [
+          "Fe I (630.25 nm)"
+        ],
         "boundingBox": "(118.38,-346.79),(-12.96,-378.49)",
         "createDate": "2023-04-21T10:11:44.759365",
         "datasetId": "BRWJV",
@@ -3138,6 +3208,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(62.74,-374.42),(-68.61,-407.49)",
         "createDate": "2023-04-21T10:16:46.026301",
         "datasetId": "AQNGZ",
@@ -3187,6 +3258,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(45.39,-374.42),(-85.95,-407.5)",
         "createDate": "2023-04-21T10:21:46.968169",
         "datasetId": "BVJVO",
@@ -3236,6 +3308,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(84.04,-346.79),(-47.31,-378.49)",
         "createDate": "2023-04-21T10:26:46.093447",
         "datasetId": "BPJDD",
@@ -3285,6 +3358,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(91.74,-374.42),(-39.61,-407.49)",
         "createDate": "2023-04-21T10:31:45.079315",
         "datasetId": "BXRDY",
@@ -3334,6 +3408,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(116.98,-327.84),(-96.51,-378.51)",
         "createDate": "2023-04-22T05:18:49.558875",
         "datasetId": "BQKZZ",
@@ -3383,6 +3458,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(160.48,-353.6),(-53.01,-407.51)",
         "createDate": "2023-04-22T05:23:46.310302",
         "datasetId": "BWKXP",
@@ -3432,6 +3508,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(136.98,-327.84),(-76.51,-378.51)",
         "createDate": "2023-04-22T06:07:44.765552",
         "datasetId": "BGNXO",
@@ -3481,6 +3558,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(16.98,-379.37),(-196.51,-436.51)",
         "createDate": "2023-04-22T06:33:49.172665",
         "datasetId": "AXVLY",
@@ -3530,6 +3608,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(75.49,-353.6),(-138.01,-407.5)",
         "createDate": "2023-04-22T06:38:44.985256",
         "datasetId": "BYDGW",
@@ -3579,6 +3658,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(38.49,-353.61),(-175.01,-407.5)",
         "createDate": "2023-04-22T08:29:47.173395",
         "datasetId": "ANKLM",
@@ -3628,6 +3708,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(138.48,-353.61),(-75.01,-407.51)",
         "createDate": "2023-04-22T08:50:45.143450",
         "datasetId": "APJND",
@@ -3677,6 +3758,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(134.99,-379.37),(-78.51,-436.51)",
         "createDate": "2023-04-22T08:55:44.284574",
         "datasetId": "ADWOK",
@@ -3726,6 +3808,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(30.48,-353.61),(-183.01,-407.51)",
         "createDate": "2023-04-22T09:00:46.895795",
         "datasetId": "AJNEP",
@@ -3775,6 +3858,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(46.49,-353.61),(-167.01,-407.5)",
         "createDate": "2023-04-22T09:05:46.642884",
         "datasetId": "ARVKV",
@@ -3824,6 +3908,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(114.98,-379.37),(-98.51,-436.51)",
         "createDate": "2023-04-22T09:12:44.669520",
         "datasetId": "BODXM",
@@ -3873,6 +3958,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(39.98,-327.84),(-173.51,-378.51)",
         "createDate": "2023-04-22T09:20:47.527844",
         "datasetId": "BKNMW",
@@ -3922,6 +4008,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(121.48,-353.61),(-92.01,-407.51)",
         "createDate": "2023-04-22T09:25:46.715887",
         "datasetId": "BEJRN",
@@ -3971,6 +4058,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(21.49,-353.6),(-192.01,-407.5)",
         "createDate": "2023-04-22T09:43:45.765881",
         "datasetId": "AZWGJ",
@@ -4020,6 +4108,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(36.98,-379.37),(-176.51,-436.51)",
         "createDate": "2023-04-22T09:49:47.136976",
         "datasetId": "BMDQO",
@@ -4069,6 +4158,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(19.98,-327.84),(-193.51,-378.51)",
         "createDate": "2023-04-22T10:06:44.553166",
         "datasetId": "AVORO",
@@ -4118,6 +4208,7 @@
         }
       },
       {
+        "spectralLines": null,
         "boundingBox": "(130.49,-353.61),(-83.01,-407.5)",
         "createDate": "2023-04-22T10:15:46.164778",
         "datasetId": "ALGJX",

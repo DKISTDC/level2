@@ -15,6 +15,7 @@ import Data.Aeson qualified as A
 import Data.Grouped
 import Data.List qualified as L
 import Data.Ord (Down (..))
+import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Sync as Sync
@@ -46,7 +47,7 @@ data Syncs = Syncs
   deriving (Generic, ViewId)
 
 
-instance (MetadataSync :> es) => HyperView Syncs es where
+instance (MetadataSync :> es, Log :> es) => HyperView Syncs es where
   data Action Syncs
     = SyncsRefresh
     deriving (Generic, ViewAction)
@@ -149,7 +150,7 @@ data ScanProp = ScanProp (Id Proposal)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Time :> es, Metadata es) => HyperView ScanProp es where
+instance (Datasets :> es, Time :> es, Log :> es, Metadata es) => HyperView ScanProp es where
   data Action ScanProp
     = RunScanProposal
     deriving (Generic, ViewAction)

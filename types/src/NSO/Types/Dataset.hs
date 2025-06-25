@@ -41,6 +41,7 @@ data Dataset' f = Dataset'
   , polarimetricAccuracy :: Column f Distribution
   , friedParameter :: Column f (Maybe Distribution)
   , embargo :: Column f (Maybe UTCTime)
+  , spectralLines :: Column f [Text]
   }
   deriving (Generic, Rel8able)
 

@@ -22,7 +22,7 @@ page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Syn
 page syncId = do
   sc <- send $ Sync.Get syncId
   appLayout (Route.Datasets Route.DatasetRoot) $ do
-    col (Style.page) $ do
+    col Style.page $ do
       col (Style.card . pad 15) $ do
         hyper (SyncDetails syncId) $ viewSyncDetails sc
 
@@ -61,17 +61,20 @@ viewSyncDetails s = do
 viewSyncProposal :: ScanProposal -> View SyncDetails ()
 viewSyncProposal scan = do
   let skips = filter (\d -> d.sync == Skip) scan.datasets
-  let other = filter (\d -> d.sync /= Skip) scan.datasets
+  let news = filter (\d -> d.sync == New) scan.datasets
+  let ups = filter (\d -> d.sync == Update) scan.datasets
 
   col (gap 5) $ do
     row (gap 10) $ do
       appRoute (Route.Proposal scan.proposalId Route.PropRoot) (Style.link . bold) $ text $ cs scan.proposalId.fromId
-      el italic $ text $ (cs $ show $ length skips) <> " skipped"
+      el italic $ text $ "new: " <> cs (show $ length news) <> ","
+      el italic $ text $ "updated: " <> cs (show $ length ups) <> ","
+      el italic $ text $ "skipped: " <> cs (show $ length skips)
 
     forM_ scan.errors $ \e -> do
       el (color Danger . pad (XY 5 0)) (text $ cs $ show e)
 
-    mapM_ viewSyncDataset other
+    mapM_ viewSyncDataset (news <> ups)
 
 
 viewSyncDataset :: SyncDataset -> View SyncDetails ()

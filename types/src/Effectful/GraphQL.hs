@@ -158,7 +158,6 @@ instance (Request a) => FromJSON (Response a) where
 
 service :: Text -> Maybe Service
 service inp = do
-  traceM $ "service: " <> show inp
   req <- parseRequest (cs inp)
   pure $ Service req
 

@@ -44,6 +44,7 @@ viewDataset d =
       dataField "Stokes Parameters" $ text $ cs $ show d.stokesParameters
       dataField "Create Date" $ text $ showTimestamp d.createDate
       dataField "Update Date" $ text $ showTimestamp d.updateDate
+      dataField "Spectral Lines" $ text $ cs $ show d.spectralLines
       dataField "Wavelength Min" $ text $ cs $ show d.wavelengthMin
       dataField "Wavelength Max" $ text $ cs $ show d.wavelengthMax
       dataField "Start Time" $ text $ showTimestamp d.startTime
