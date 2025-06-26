@@ -35,6 +35,7 @@ import NSO.Image.Fits.Meta qualified as Meta
 import NSO.Image.Fits.Quantity (QuantityError, decodeQuantitiesFrames)
 import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
+import NSO.Image.Types.Frame (Arms (..), Frames (..))
 import NSO.Prelude
 import NSO.Types.InstrumentProgram
 import Telescope.Data.Parser (ParseError)
@@ -136,13 +137,13 @@ fitsTask task = do
     gfs <- Gen.collateFrames quantities arms profileFit profileOrig l1
 
     now <- currentTime
-    send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = NE.length gfs, throughput = 0}
+    send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length gfs, throughput = 0}
 
     -- Generate them in parallel with N = available CPUs
     metas <- CPU.parallelize $ fmap (workFrame task slice) gfs
 
-    log Debug $ dump "SKIPPED: " (length $ NE.filter isNothing metas)
-    log Debug $ dump "WRITTEN: " (length $ NE.filter isJust metas)
+    log Debug $ dump "SKIPPED: " (length $ NE.filter isNothing metas.frames)
+    log Debug $ dump "WRITTEN: " (length $ NE.filter isJust metas.frames)
     Inversions.setGeneratedFits task.inversionId
 
 
@@ -300,12 +301,12 @@ asdfTask t = do
 
     l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
 
-    (metas :: NonEmpty L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
+    (metas :: Frames L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
 
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let tree = asdfDocument inv.inversionId ds now $ NE.sort metas
+    let tree = asdfDocument inv.inversionId ds now $ Frames $ NE.sort metas.frames
     let path = Asdf.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output
@@ -323,11 +324,11 @@ requireMetas
   -> SliceXY
   -> Arms ArmWavMeta
   -> [BinTableHDU]
-  -> Eff es (NonEmpty L2FitsMeta)
+  -> Eff es (Frames L2FitsMeta)
 requireMetas propId invId slice arms l1fits = do
   metas <- loadMetas
   case metas of
-    (m : ms) -> pure (m :| ms)
+    (m : ms) -> pure $ Frames (m :| ms)
     _ -> throwError MissingL2Fits
  where
   loadMetas :: Eff es [L2FitsMeta]

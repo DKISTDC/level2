@@ -1,9 +1,8 @@
 module NSO.Image.Blanca where
 
-import Control.Monad (foldM, zipWithM)
+import Control.Monad (foldM)
 import Control.Monad.Catch (Exception, Handler (..), catches)
 import Data.ByteString qualified as BS
-import Data.List (foldl')
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array as M (Ix2 (..), IxN (..), Sz (..))
@@ -12,15 +11,14 @@ import Effectful
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Spectra (midPoint)
-import NSO.Image.Headers.Types
 import NSO.Image.Types.Profile
 import Effectful.State.Static.Local
 import NSO.Prelude
+import NSO.Image.Types.Frame
 import NSO.Types.Wavelength (MA, Nm, SpectralLine (..), Wavelength (..))
 import Telescope.Data.Array (ArrayError)
 import Telescope.Data.DataCube as DC
 import Telescope.Fits as Fits
-import NSO.Image.Types.Axes (Depth, SlitX, FrameY, Stokes)
 
 
 
@@ -28,15 +26,15 @@ import NSO.Image.Types.Axes (Depth, SlitX, FrameY, Stokes)
 -- Decoding Profiles ---------------------------------------------------------------------------------------
 
 -- Given the decoded blanca profiles by arm-frames, return list of frames each split into arms
-collateFramesArms :: Arms ArmWavMeta -> Arms (NonEmpty (ProfileImage Fit)) -> Arms (NonEmpty (ProfileImage Original)) -> NonEmpty (Arms (Profile ProfileImage))
+collateFramesArms :: Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> Frames (Arms ArmProfileImages)
 collateFramesArms metas fits origs =
-  let fitFrames = frameArms fits :: NonEmpty (Arms (ProfileImage Fit))
-      orgFrames = frameArms origs :: NonEmpty (Arms (ProfileImage Original))
-  in NE.zipWith profile fitFrames orgFrames
+  let fitFrameArms = framesArms fits :: Frames (Arms (ProfileImage Fit))
+      orgFrameArms = framesArms origs :: Frames (Arms (ProfileImage Original))
+  in Frames $ NE.zipWith profile fitFrameArms.frames orgFrameArms.frames
   where
-    profile :: Arms (ProfileImage Fit) -> Arms (ProfileImage Original) -> Arms (Profile ProfileImage)
+    profile :: Arms (ProfileImage Fit) -> Arms (ProfileImage Original) -> Arms ArmProfileImages
     profile fitArms origArms =
-      Arms $ zipWithNE Profile metas.arms fitArms.arms origArms.arms
+      Arms $ zipWithNE ArmProfileImages metas.arms fitArms.arms origArms.arms
 
     -- they MUST all be the same length
     zipWithNE :: (a->b->c->d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
@@ -62,25 +60,17 @@ decodeArmWavMeta hdus = profileWavMetas hdus.lineIds hdus.offsets
 
 
 -- decode a fit or original profile 
-decodeProfileArms :: forall fit es. (Error BlancaError :> es, Log :> es) => Arms ArmWavMeta -> ProfileHDUs -> Eff es (Arms (NonEmpty (ProfileImage fit)))
+decodeProfileArms :: forall fit es. (Error BlancaError :> es, Log :> es) => Arms ArmWavMeta -> ProfileHDUs -> Eff es (Arms (Frames (ProfileImage fit)))
 decodeProfileArms arms hdus = do
   let frames = profilesByFrame hdus.array
   case frames of
     [] -> throwError $ NoProfileFrames arms
     (f : fs) -> do
       framesByArms <- mapM (splitFrameIntoArms arms) (f :| fs)
-      let imagesByArms :: NonEmpty (Arms (ProfileImage fit)) = fmap (\(Arms as) -> Arms $ fmap ProfileImage as) framesByArms
+      let imagesByArms :: Frames (Arms (ProfileImage fit)) = Frames $ fmap (\(Arms as) -> Arms $ fmap ProfileImage as) framesByArms
       pure $ armsFrames imagesByArms
 
 
--- Given a list of frames, subdivided by arm, create an Arms (list of arms), split by frames
-armsFrames ::  NonEmpty (Arms a) -> Arms (NonEmpty a)
-armsFrames frames =
-  Arms $ NE.transpose $ fmap (.arms) frames
-
-frameArms ::  Arms (NonEmpty a) -> NonEmpty (Arms a)
-frameArms (Arms arms) =
-  fmap Arms $ NE.transpose arms
 
 
 -- Split a single profile frame (one scan position) into N arms given N arm WavMetas

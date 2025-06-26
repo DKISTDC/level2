@@ -19,7 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import NSO.Image.Types.Axes (Stokes)
+import NSO.Image.Types.Frame (Arms (..), Stokes)
 import NSO.Image.Types.Profile
 import NSO.Prelude
 import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..), ionName)
@@ -39,21 +39,27 @@ data ProfileFrameFits (fit :: ProfileType) = ProfileFrameFits
   }
 
 
+data ArmProfileFrameFits = ArmProfileFrameFits
+  { fit :: ProfileFrameFits Fit
+  , original :: ProfileFrameFits Original
+  }
+
+
 profilesForFrame
   :: forall es
    . (Error ProfileError :> es)
   => SliceXY
   -> UTCTime
   -> Header
-  -> Arms (Profile ProfileImage)
-  -> Eff es (Arms (Profile ProfileFrameFits))
+  -> Arms ArmProfileImages
+  -> Eff es (Arms ArmProfileFrameFits)
 profilesForFrame slice now l1 pros = Arms <$> mapM profileArm pros.arms
  where
-  profileArm :: Profile ProfileImage -> Eff es (Profile ProfileFrameFits)
+  profileArm :: ArmProfileImages -> Eff es ArmProfileFrameFits
   profileArm p = do
     fit <- profileFrameFits @Fit p.arm p.fit
     original <- profileFrameFits @Original p.arm p.original
-    pure $ Profile{arm = p.arm, fit, original}
+    pure $ ArmProfileFrameFits{fit, original}
 
   profileFrameFits :: ArmWavMeta -> ProfileImage fit -> Eff es (ProfileFrameFits fit)
   profileFrameFits arm image = do
@@ -61,10 +67,10 @@ profilesForFrame slice now l1 pros = Arms <$> mapM profileArm pros.arms
     pure $ ProfileFrameFits h image
 
 
-profileHDUs :: Arms (Profile ProfileFrameFits) -> [DataHDU]
+profileHDUs :: Arms ArmProfileFrameFits -> [DataHDU]
 profileHDUs (Arms arms) = mconcat $ fmap pairHDUs $ NE.toList arms
  where
-  pairHDUs :: Profile ProfileFrameFits -> [DataHDU]
+  pairHDUs :: ArmProfileFrameFits -> [DataHDU]
   pairHDUs pair =
     [ profileHDU pair.original
     , profileHDU pair.fit

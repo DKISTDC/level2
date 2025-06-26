@@ -11,7 +11,7 @@ import NSO.Image.Headers (Observation (..), Telescope (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
-import NSO.Image.Types.Axes (Depth, Stokes)
+import NSO.Image.Types.Frame (Depth, Stokes)
 import NSO.Prelude as Prelude
 import NSO.Types.Common (DateTime (..))
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))

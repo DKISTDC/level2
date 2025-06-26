@@ -9,8 +9,9 @@ import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers.Keywords (IsKeyword (keyword))
-import NSO.Image.Headers.Types (ProfIon (..), ProfType (..), SliceXY)
+import NSO.Image.Headers.Types (ProfType (..), SliceXY)
 import NSO.Image.Primary
+import NSO.Image.Types.Frame (Arms (..))
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
@@ -32,7 +33,7 @@ data L2FitsMeta = L2FitsMeta
   { path :: Path' Filename L2FrameFits
   , primary :: PrimaryHeader
   , quantities :: FrameQuantitiesMeta
-  , profiles :: Arms FrameProfileMeta
+  , profiles :: Arms ArmFrameProfileMeta
   }
 
 
@@ -49,9 +50,11 @@ data FrameQuantitiesMeta = FrameQuantitiesMeta
   deriving (Generic)
 
 
-data FrameProfileMeta = FrameProfileMeta
-  { shape :: Shape Profile
-  , profile :: Profile ProfileHeader
+data ArmFrameProfileMeta = ArmFrameProfileMeta
+  { arm :: ArmWavMeta
+  , shape :: Shape Profile
+  , fit :: ProfileHeader Fit
+  , original :: ProfileHeader Original
   }
   deriving (Generic)
 
@@ -120,26 +123,25 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
 
   profileHeaders :: Fits -> [Header]
   profileHeaders f =
-    let HDUIndex start = hduIndex @(Arms (Profile ProfileHeader))
+    let HDUIndex start = hduIndex @(Arms Profile)
      in fmap header $ drop (start - 1) f.extensions
    where
     header (Image dat) = dat.header
     header (BinTable bin) = bin.header
 
-  parseAllProfiles :: (Error ProfileError :> es, Parser :> es) => Arms ArmWavMeta -> [Header] -> Eff es (Arms FrameProfileMeta)
+  parseAllProfiles :: (Error ProfileError :> es, Parser :> es) => Arms ArmWavMeta -> [Header] -> Eff es (Arms ArmFrameProfileMeta)
   parseAllProfiles metas hs = do
     as <- mapM (\(arm :: ArmWavMeta) -> parseProfile arm hs) metas.arms
     pure $ Arms as
 
-  parseProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es FrameProfileMeta
+  parseProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es ArmFrameProfileMeta
   parseProfile arm hs = do
     fith <- findProfile arm.line Fit hs
     orgh <- findProfile arm.line Original hs
     fit <- parseProfileFit @Fit arm fith
     original <- parseProfileFit @Original arm orgh
     shape <- parseHeader @(Shape Profile) fith
-    let h = Profile{arm, fit, original}
-    pure $ FrameProfileMeta shape h
+    pure $ ArmFrameProfileMeta{arm, shape, fit, original}
 
   parseProfileFit :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
   parseProfileFit meta h = do

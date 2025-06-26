@@ -102,7 +102,7 @@ library
       NSO.Image.Headers.WCS
       NSO.Image.L1Input
       NSO.Image.Primary
-      NSO.Image.Types.Axes
+      NSO.Image.Types.Frame
       NSO.Image.Types.Profile
       NSO.Image.Types.Quantity
       NSO.InterserviceBus

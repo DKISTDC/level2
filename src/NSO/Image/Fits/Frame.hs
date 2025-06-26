@@ -15,7 +15,7 @@ import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers
 import NSO.Image.Headers.Types (SliceXY)
 import NSO.Image.Primary
-import NSO.Image.Types.Axes (Depth, SlitX)
+import NSO.Image.Types.Frame (Arms (..), Depth, SlitX)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
@@ -31,14 +31,14 @@ import Telescope.Fits.Encoding (replaceKeywordLine)
 data L2FrameFits = L2FrameFits
   { primary :: PrimaryHeader
   , quantities :: Quantities QuantityFrameFits
-  , profiles :: Arms (Profile ProfileFrameFits)
+  , profiles :: Arms ArmProfileFrameFits
   }
   deriving (Generic)
 
 
 data L2FrameInputs = L2FrameInputs
   { quantities :: Quantities (QuantityImage [SlitX, Depth])
-  , profiles :: Arms (Profile ProfileImage)
+  , profiles :: Arms ArmProfileImages
   , l1Frame :: BinTableHDU
   }
 instance Show L2FrameInputs where
@@ -126,5 +126,5 @@ instance HDUOrder GasPressure where
   hduIndex = 10
 instance HDUOrder Density where
   hduIndex = 11
-instance HDUOrder (Arms (Profile ProfileHeader)) where
+instance HDUOrder (Arms a) where
   hduIndex = 12

@@ -6,6 +6,7 @@ import Data.ByteString.Lazy qualified as BL
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
+import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import Telescope.Asdf
 import Telescope.Asdf.NDArray (ByteOrder (..), DataType (..), putUcs4)
@@ -16,15 +17,15 @@ import Telescope.Fits qualified as Fits
 
 -- Data ---------------------------------------
 
-newtype HeaderTable a = HeaderTable (NonEmpty a)
+newtype HeaderTable a = HeaderTable (Frames a)
 
 
 instance (ToHeader a) => ToAsdf (HeaderTable a) where
   schema _ = "tag:astropy.org:astropy/table/table-1.0.0"
   toValue (HeaderTable as) =
     Object
-      [ ("colnames", colnames as)
-      , ("columns", toNode $ Array $ fmap toNode $ keywordColumns $ fmap toHeader as)
+      [ ("colnames", colnames as.frames)
+      , ("columns", toNode $ Array $ fmap toNode $ keywordColumns $ fmap toHeader as.frames)
       , ("qtable", toNode False)
       ]
    where

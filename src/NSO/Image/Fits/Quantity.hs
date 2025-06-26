@@ -19,7 +19,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
-import NSO.Image.Types.Axes (Depth, FrameY, SlitX, Stokes)
+import NSO.Image.Types.Frame (Depth, FrameY, SlitX, Stokes)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import Telescope.Data.Axes (Axes (..), AxisOrder (..))

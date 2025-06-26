@@ -20,7 +20,7 @@ import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Image.Primary (PrimaryError)
-import NSO.Image.Types.Axes (Depth, SlitX)
+import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
@@ -32,14 +32,14 @@ import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (NonEmpty (ProfileImage Fit)) -> Arms (NonEmpty (ProfileImage Original)) -> [BinTableHDU] -> Eff es (NonEmpty L2FrameInputs)
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> [BinTableHDU] -> Eff es (Frames L2FrameInputs)
 collateFrames qs metas pfs pos ts = do
   unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
-  let frameArms :: NonEmpty (Arms (Profile ProfileImage)) = Blanca.collateFramesArms metas pfs pos
-  frames $ L.zipWith3 L2FrameInputs qs (NE.toList frameArms) ts
+  let pframes :: Frames (Arms ArmProfileImages) = Blanca.collateFramesArms metas pfs pos
+  frames $ L.zipWith3 L2FrameInputs qs (NE.toList pframes.frames) ts
  where
   frames [] = throwError $ NoFrames frameSizes
-  frames (f : fs) = pure $ f :| fs
+  frames (f : fs) = pure $ Frames $ f :| fs
 
   allFramesEqual :: Bool
   allFramesEqual =
@@ -56,7 +56,7 @@ collateFrames qs metas pfs pos ts = do
       }
 
 
-armFramesLength :: Arms (NonEmpty (ProfileImage fit)) -> Int
+armFramesLength :: Arms (Frames (ProfileImage fit)) -> Int
 armFramesLength as = length . head $ as.arms
 
 

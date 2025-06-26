@@ -7,25 +7,26 @@ import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
+import NSO.Data.Spectra (midPoint)
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
-import NSO.Image.Blanca (armsFrames)
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Primary
+import NSO.Image.Types.Frame (Arms (..), Frames (..), armsFrames)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (datasetId))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
-import NSO.Types.Wavelength (Nm, Wavelength (..))
+import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName)
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Data.KnownText
@@ -33,7 +34,7 @@ import Telescope.Data.KnownText
 
 -- DONE: move extra keys into meta.inventory
 -- DONE: support ND collection
--- DOING: 3-arm profiles sodium
+-- DONE: 3-arm profiles sodium
 -- TODO: fit/orig separate GWCS + anchors
 
 data L2Asdf
@@ -44,32 +45,29 @@ outputL2AsdfPath ip ii =
   filePath (Files.outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
-asdfDocument :: Id Inversion -> [Dataset] -> UTCTime -> NonEmpty L2FitsMeta -> Document
+asdfDocument :: Id Inversion -> [Dataset] -> UTCTime -> Frames L2FitsMeta -> Document
 asdfDocument inversionId dsets now metas =
-  Document inversionTree
+  let frames = Frames $ NE.sort metas.frames
+   in Document (inversionTree frames)
  where
-  frames = NE.sort metas
-
-  frame = head frames
-
-  inversionTree :: InversionTree
-  inversionTree =
+  inversionTree :: Frames L2FitsMeta -> InversionTree
+  inversionTree sorted =
     InversionTree
       { fileuris
-      , meta = inversionMeta $ fmap (.primary) frames
-      , quantities = quantitiesSection (fmap (.quantities) frames) (qgwcs frame)
-      , profiles = profilesSection frame.primary $ fmap (.profiles) frames
+      , meta = inversionMeta $ fmap (.primary) sorted
+      , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs (head sorted.frames))
+      , profiles = profilesSection (head sorted.frames).primary $ fmap (.profiles) sorted
       }
 
   -- choose a single frame from which to calculate the GWCS
   qgwcs :: L2FitsMeta -> QuantityGWCS
   qgwcs m = quantityGWCS m.primary m.quantities.items.opticalDepth.wcs
 
-  inversionMeta :: NonEmpty PrimaryHeader -> InversionMeta
+  inversionMeta :: Frames PrimaryHeader -> InversionMeta
   inversionMeta headers =
     InversionMeta{headers = HeaderTable headers, inventory = inversionInventory headers}
 
-  inversionInventory :: NonEmpty PrimaryHeader -> InversionInventory
+  inversionInventory :: Frames PrimaryHeader -> InversionInventory
   inversionInventory headers =
     InversionInventory
       { frameCount = length headers
@@ -79,7 +77,7 @@ asdfDocument inversionId dsets now metas =
       , created = now
       }
 
-  fileuris = Fileuris $ fmap (.path) $ NE.toList frames
+  fileuris = Fileuris $ fmap (.path) $ NE.toList metas.frames
 
 
 filenameL2Asdf :: Id Proposal -> Id Inversion -> Path' Filename L2Asdf
@@ -151,25 +149,27 @@ data QuantitiesSection = QuantitiesSection
   }
 instance ToAsdf QuantitiesSection where
   schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
-
-
-  -- where
-  --  refs :: Quantities Ref
-  --  refs = quantitiesFrom (const Ref) ()
   toValue section =
-    mconcat
-      [ Object
-          [ ("axes", toNode section.axes)
-          , ("meta", toNode $ Object [("gwcs", toNode section.gwcs)])
-          ]
-      , toValue (NDCollection (quantitiesFrom AlignedAxes) section.axes section.items)
+    Object
+      [ ("meta", toNode meta)
+      , ("aligned_axes", toNode aligned)
+      , ("items", toNode section.items)
       ]
+   where
+    aligned :: Quantities AlignedAxes
+    aligned = alignedAxes @Quantities (quantitiesFrom AlignedAxes) section.axes
+
+    meta =
+      Object
+        [ ("axes", toNode section.axes)
+        , ("gwcs", toNode section.gwcs)
+        ]
 
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: NonEmpty FrameQuantitiesMeta -> QuantityGWCS -> QuantitiesSection
-quantitiesSection frames gwcs =
+quantitiesSection :: Frames FrameQuantitiesMeta -> QuantityGWCS -> QuantitiesSection
+quantitiesSection metas gwcs =
   QuantitiesSection
     { axes =
         [ AxisMeta "frameY" True
@@ -200,10 +200,10 @@ quantitiesSection frames gwcs =
     -> DataTree QuantityMeta info
   quantity f = quantityTree shape $ fmap f items
 
-  items :: NonEmpty (Quantities QuantityHeader)
-  items = fmap (.items) frames
+  items :: Frames (Quantities QuantityHeader)
+  items = fmap (.items) metas
 
-  shape = (head frames).shape
+  shape = (head metas.frames).shape
 
 
 data DataTree meta info = DataTree
@@ -238,7 +238,7 @@ quantityTree
   :: forall info ext btype unit
    . (KnownText unit, HDUOrder info, info ~ DataHDUInfo ext btype unit)
   => Shape Quantity
-  -> NonEmpty (QuantityHeader info)
+  -> Frames (QuantityHeader info)
   -> DataTree QuantityMeta info
 quantityTree shape heads =
   DataTree
@@ -261,7 +261,7 @@ data QuantityMeta info = QuantityMeta
 -- you can't pass it a single set of axes
 data ProfilesSection = ProfilesSection
   { axes :: [AxisMeta]
-  , arms :: Arms (Profile ProfileTree)
+  , arms :: Arms ArmProfileTree
   , gwcsFit :: ProfileGWCS Fit
   , gwcsOrig :: ProfileGWCS Original
   }
@@ -270,54 +270,51 @@ data ProfilesSection = ProfilesSection
 instance ToAsdf ProfilesSection where
   schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
   toValue section =
-    mconcat
-      [ Object
-          [ ("axes", toNode section.axes)
-          , ("meta", toNode meta)
-          ]
-          -- , toValue (NDCollection (_ AlignedAxes) section.axes section.arms)
-          -- , toValue section.arms
+    Object
+      [ ("meta", toNode meta)
+      , ("aligned_axes", toNode Null)
+      , ("items", toNode section.arms)
       ]
    where
     meta =
       Object
-        [ ("gwcs_fit", toNode section.gwcsFit)
+        [ ("axes", toNode section.axes)
+        , ("gwcs_fit", toNode section.gwcsFit)
         , ("gwcs_orig", toNode section.gwcsOrig)
         ]
 
 
 -- we need one ProfileMeta for each arm
-profilesSection :: PrimaryHeader -> NonEmpty (Arms FrameProfileMeta) -> ProfilesSection
-profilesSection primary frames =
-  let sampleArm = head (head frames).arms
-      fit = sampleArm.profile.fit
-      orig = sampleArm.profile.original
+profilesSection :: PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
+profilesSection primary profs =
+  let sampleArm = head (head profs.frames).arms
+      fit = sampleArm.fit
+      orig = sampleArm.original
    in ProfilesSection
         { axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-        , arms = profilesArmsTree frames
+        , arms = profilesArmsTree profs
         , gwcsFit = profileGWCS primary fit.wcs
         , gwcsOrig = profileGWCS primary orig.wcs
         }
 
 
-profilesArmsTree :: NonEmpty (Arms FrameProfileMeta) -> Arms (Profile ProfileTree)
+profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms ArmProfileTree
 profilesArmsTree framesByArms =
-  let Arms arms = armsFrames framesByArms :: Arms (NonEmpty FrameProfileMeta)
+  let Arms arms = armsFrames framesByArms :: Arms (Frames ArmFrameProfileMeta)
       armNums = NE.fromList [0 ..] :: NonEmpty Int
    in Arms $ NE.zipWith frameProfileTree armNums arms
  where
-  frameProfileTree :: Int -> NonEmpty FrameProfileMeta -> Profile ProfileTree
-  frameProfileTree armNum frames =
-    let frame = head frames
-        arm = frame.profile.arm
-        index = hduIndex @(Arms (Profile ProfileHeader)) + HDUIndex armNum
-        original = profileTree index frame.shape $ fmap (\f -> f.profile.original) frames
-        fit = profileTree (index + 1) frame.shape $ fmap (\f -> f.profile.fit) frames
-     in Profile{arm, fit, original}
+  frameProfileTree :: Int -> Frames ArmFrameProfileMeta -> ArmProfileTree
+  frameProfileTree armNum profs =
+    let frame = head profs.frames
+        arm = frame.arm
+        index = hduIndex @(Arms Profile) + HDUIndex (armNum * 2)
+        original = profileTree index arm frame.shape $ fmap (\f -> f.original) profs
+        fit = profileTree (index + 1) arm frame.shape $ fmap (\f -> f.fit) profs
+     in ArmProfileTree{arm, fit, original}
 
-  -- how do I find out what the hdu index is?
-  profileTree :: forall fit. (KnownText fit) => HDUIndex -> Shape Profile -> NonEmpty (ProfileHeader fit) -> ProfileTree fit
-  profileTree ix shape heads =
+  profileTree :: forall fit. (KnownText fit) => HDUIndex -> ArmWavMeta -> Shape Profile -> Frames (ProfileHeader fit) -> ProfileTree fit
+  profileTree ix arm shape heads =
     ProfileTree
       { unit = Count
       , wcs = Ref
@@ -325,10 +322,26 @@ profilesArmsTree framesByArms =
       , meta =
           ProfileTreeMeta
             { headers = HeaderTable heads
-            , -- , wavelength = profileWav @fit
-              profile = T.toLower $ knownText @fit
+            , spectralLine = arm.line
+            , profile = T.toLower $ knownText @fit
             }
       }
+
+
+data ArmProfileTree = ArmProfileTree
+  { arm :: ArmWavMeta
+  , fit :: ProfileTree Fit
+  , original :: ProfileTree Original
+  }
+
+
+instance ToAsdf ArmProfileTree where
+  toValue p =
+    let key f = cs $ "line_" <> show p.arm.line <> "_" <> f
+     in Object
+          [ (key "orig", toNode p.original)
+          , (key "fit", toNode p.fit)
+          ]
 
 
 data ProfileTree fit = ProfileTree
@@ -351,7 +364,15 @@ instance (KnownText fit) => ToAsdf (ProfileTree fit) where
 
 data ProfileTreeMeta fit = ProfileTreeMeta
   { headers :: HeaderTable (ProfileHeader fit)
-  , -- , wavelength :: Wavelength Nm
-    profile :: Text
+  , spectralLine :: SpectralLine
+  , profile :: Text
   }
-  deriving (Generic, ToAsdf)
+  deriving (Generic)
+instance (KnownText fit) => ToAsdf (ProfileTreeMeta fit) where
+  toValue m =
+    Object
+      [ ("ion", toNode $ ionName m.spectralLine)
+      , ("wavelength", toNode $ midPoint m.spectralLine)
+      , ("profile", toNode m.profile)
+      , ("headers", toNode m.headers)
+      ]
