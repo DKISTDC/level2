@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Image.Asdf where
 
@@ -261,10 +262,14 @@ data QuantityMeta info = QuantityMeta
 -- you can't pass it a single set of axes
 data ProfilesSection = ProfilesSection
   { axes :: [AxisMeta]
-  , arms :: Arms ArmProfileTree
+  , arms :: Arms (ArmProfile ProfileTree)
   , gwcsFit :: ProfileGWCS Fit
   , gwcsOrig :: ProfileGWCS Original
   }
+
+
+newtype ArmsProfileAxes f = ArmsProfileAxes (Arms (ArmProfile AlignedAxes))
+  deriving newtype (ToAsdf)
 
 
 instance ToAsdf ProfilesSection where
@@ -272,10 +277,21 @@ instance ToAsdf ProfilesSection where
   toValue section =
     Object
       [ ("meta", toNode meta)
-      , ("aligned_axes", toNode Null)
+      , ("aligned_axes", toNode aligned)
       , ("items", toNode section.arms)
       ]
    where
+    aligned :: Arms (ArmProfile AlignedAxes)
+    aligned = fmap alignedArmAxes section.arms
+
+    alignedArmAxes :: ArmProfile ProfileTree -> ArmProfile AlignedAxes
+    alignedArmAxes ap =
+      alignedAxes (toAligned ap.arm) section.axes
+
+    toAligned :: ArmWavMeta -> [Int] -> ArmProfile AlignedAxes
+    toAligned arm ns =
+      ArmProfile{arm, fit = AlignedAxes ns, original = AlignedAxes ns}
+
     meta =
       Object
         [ ("axes", toNode section.axes)
@@ -298,20 +314,20 @@ profilesSection primary profs =
         }
 
 
-profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms ArmProfileTree
+profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms (ArmProfile ProfileTree)
 profilesArmsTree framesByArms =
   let Arms arms = armsFrames framesByArms :: Arms (Frames ArmFrameProfileMeta)
       armNums = NE.fromList [0 ..] :: NonEmpty Int
-   in Arms $ NE.zipWith frameProfileTree armNums arms
+   in Arms $ NE.zipWith armProfileTree armNums arms
  where
-  frameProfileTree :: Int -> Frames ArmFrameProfileMeta -> ArmProfileTree
-  frameProfileTree armNum profs =
+  armProfileTree :: Int -> Frames ArmFrameProfileMeta -> ArmProfile ProfileTree
+  armProfileTree armNum profs =
     let frame = head profs.frames
         arm = frame.arm
         index = hduIndex @(Arms Profile) + HDUIndex (armNum * 2)
         original = profileTree index arm frame.shape $ fmap (\f -> f.original) profs
         fit = profileTree (index + 1) arm frame.shape $ fmap (\f -> f.fit) profs
-     in ArmProfileTree{arm, fit, original}
+     in ArmProfile{arm, fit, original}
 
   profileTree :: forall fit. (KnownText fit) => HDUIndex -> ArmWavMeta -> Shape Profile -> Frames (ProfileHeader fit) -> ProfileTree fit
   profileTree ix arm shape heads =
@@ -328,14 +344,14 @@ profilesArmsTree framesByArms =
       }
 
 
-data ArmProfileTree = ArmProfileTree
+data ArmProfile f = ArmProfile
   { arm :: ArmWavMeta
-  , fit :: ProfileTree Fit
-  , original :: ProfileTree Original
+  , fit :: f Fit
+  , original :: f Original
   }
 
 
-instance ToAsdf ArmProfileTree where
+instance (ToAsdf (f Fit), ToAsdf (f Original)) => ToAsdf (ArmProfile f) where
   toValue p =
     let key f = cs $ "line_" <> show p.arm.line <> "_" <> f
      in Object

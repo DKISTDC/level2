@@ -3,13 +3,14 @@ module NSO.Image.Fits.Meta where
 import Control.Monad (filterM)
 import Data.List.Ext
 import Data.Massiv.Array ()
+import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers.Keywords (IsKeyword (keyword))
-import NSO.Image.Headers.Types (ProfType (..), SliceXY)
+import NSO.Image.Headers.Types (ProfIon (..), ProfType (..), SliceXY)
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arms (..))
 import NSO.Image.Types.Profile
@@ -60,6 +61,7 @@ data ArmFrameProfileMeta = ArmFrameProfileMeta
 
 
 newtype Shape a = Shape {axes :: Axes Row}
+  deriving (Show)
 
 
 newtype QuantityShape = QuantityShape {axes :: Axes Row}
@@ -99,8 +101,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
   qshape <- parseHeader @(Shape Quantity) qh
   quants <- parseQuantities
 
-  -- we need to read one for each
-  -- oh! I already have all my arms!
+  traceM "frameMetaFromL2Fits"
   ps <- parseAllProfiles arms $ profileHeaders fits
 
   -- profs <- parseProfiles
@@ -131,16 +132,18 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
 
   parseAllProfiles :: (Error ProfileError :> es, Parser :> es) => Arms ArmWavMeta -> [Header] -> Eff es (Arms ArmFrameProfileMeta)
   parseAllProfiles metas hs = do
-    as <- mapM (\(arm :: ArmWavMeta) -> parseProfile arm hs) metas.arms
+    as <- mapM (\(arm :: ArmWavMeta) -> parseArmProfile arm hs) metas.arms
     pure $ Arms as
 
-  parseProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es ArmFrameProfileMeta
-  parseProfile arm hs = do
+  -- what are looking at here? How many headers are there? One per frame? No.... One per profile
+  parseArmProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es ArmFrameProfileMeta
+  parseArmProfile arm hs = do
     fith <- findProfile arm.line Fit hs
     orgh <- findProfile arm.line Original hs
     fit <- parseProfileFit @Fit arm fith
     original <- parseProfileFit @Original arm orgh
     shape <- parseHeader @(Shape Profile) fith
+    traceM $ " - " <> show arm <> " -- " <> show shape
     pure $ ArmFrameProfileMeta{arm, shape, fit, original}
 
   parseProfileFit :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
@@ -153,7 +156,8 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
   findProfile line typ hs = do
     mh <- flip filterM hs $ \h -> do
       typ' <- parseProfileType h
-      pure $ typ' == typ
+      ProfIon line' <- parseKeyword (keyword @ProfIon) h
+      pure $ typ' == typ && line' == line
     case mh of
       (h : _) -> pure h
       _ -> throwError $ MissingProfileType line typ

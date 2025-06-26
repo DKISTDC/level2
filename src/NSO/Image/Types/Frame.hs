@@ -37,7 +37,7 @@ newtype Frames a = Frames {frames :: NonEmpty a}
 
 -- | One entry per ViSP arm
 newtype Arms a = Arms {arms :: NonEmpty a}
-  deriving newtype (Eq)
+  deriving newtype (Eq, Functor)
 
 
 instance (ToAsdf a) => ToAsdf (Arms a) where
