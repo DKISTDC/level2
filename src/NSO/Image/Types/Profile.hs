@@ -13,7 +13,7 @@ import Telescope.Data.KnownText
 data ProfileType
   = Original
   | Fit
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 instance KnownText Original where

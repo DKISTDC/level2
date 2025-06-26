@@ -41,8 +41,22 @@ data SpectralLine
   | CaII854 -- just the one
   deriving (Eq, Ord, Show, Bounded, Enum)
 
+
+ionName :: SpectralLine -> Text
+ionName = \case
+  NaID -> "Na I"
+  FeI630 -> "Fe I"
+  CaII854 -> "Ca II"
+
+
+fromIonName :: Text -> Maybe SpectralLine
+fromIonName = \case
+  "Na I" -> pure NaID
+  "Fe I" -> pure FeI630
+  "Ca II" -> pure CaII854
+  _ -> Nothing
+
 --  Ca II (854.21 nm) cm
---
 
 -- Level 1 Spectral Line Names:
 -- https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/models.py

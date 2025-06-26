@@ -1,5 +1,6 @@
 module NSO.Image.Fits.Meta where
 
+import Control.Monad (filterM)
 import Data.List.Ext
 import Data.Massiv.Array ()
 import Effectful
@@ -7,7 +8,8 @@ import Effectful.Error.Static
 import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
-import NSO.Image.Headers.Types (SliceXY, SpecLnProfile (..), SpecLns (..))
+import NSO.Image.Headers.Keywords (IsKeyword (keyword))
+import NSO.Image.Headers.Types (ProfIon (..), ProfType (..), SliceXY)
 import NSO.Image.Primary
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
@@ -30,7 +32,7 @@ data L2FitsMeta = L2FitsMeta
   { path :: Path' Filename L2FrameFits
   , primary :: PrimaryHeader
   , quantities :: FrameQuantitiesMeta
-  , profiles :: Arms ProfileMeta
+  , profiles :: Arms FrameProfileMeta
   }
 
 
@@ -47,8 +49,7 @@ data FrameQuantitiesMeta = FrameQuantitiesMeta
   deriving (Generic)
 
 
--- TODO: are we original or fit? How is this shown in the asdf?
-data ProfileMeta = ProfileMeta
+data FrameProfileMeta = FrameProfileMeta
   { shape :: Shape Profile
   , profile :: Profile ProfileHeader
   }
@@ -97,13 +98,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
 
   -- we need to read one for each
   -- oh! I already have all my arms!
-  let ps = _ -- profileFitsHeaders fits
-
-  -- p630 <- headerFor @Orig630
-  -- shape630 <- parseHeader @(Shape Profile) p630
-  --
-  -- p854 <- headerFor @Orig854
-  -- shape854 <- parseHeader @(Shape Profile) p854
+  ps <- parseAllProfiles arms $ profileHeaders fits
 
   -- profs <- parseProfiles
   pure $
@@ -112,7 +107,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
       , primary
       , quantities = FrameQuantitiesMeta{items = quants, shape = qshape}
       , -- need to read all of these!
-        profiles = _ -- FrameProfilesMeta{profiles = profs, shape630, shape854}
+        profiles = ps
       }
  where
   headerAt :: forall es. (Parser :> es) => HDUIndex -> Eff es Header
@@ -123,23 +118,51 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
           Just (Image img) -> pure img.header
           Just _ -> parseFail $ "Expected ImageHDU at " ++ show index
 
-  -- profileHeaders :: Fits -> [Profile ProfileHeader]
-  -- profileHeaders = _
-  --
-  -- parseProfile :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
-  -- parseProfile meta h = do
-  --   lns :: [SpecLns] <- parseHeader h
-  --   common <- parseHeader h
-  --   wcs <- Profile.wcsHeader meta slice l1.header
-  --   pure $ ProfileHeader{meta, specLines = lns, common, wcs}
+  profileHeaders :: Fits -> [Header]
+  profileHeaders f =
+    let HDUIndex start = hduIndex @(Arms (Profile ProfileHeader))
+     in fmap header $ drop (start - 1) f.extensions
+   where
+    header (Image dat) = dat.header
+    header (BinTable bin) = bin.header
 
-  -- isMatchSpecLine :: ArmWavMeta -> SpecLns -> Bool
-  -- isMatchSpecLine meta h =
-  --   any isMatchSpecLnN
-  --
-  -- isMatchSpecLnN :: SpectralLine -> Text -> Bool
-  -- isMatchSpecLnN NaD kr =
-  --   "Na" `T.isInfixOf` kr.value
+  parseAllProfiles :: (Error ProfileError :> es, Parser :> es) => Arms ArmWavMeta -> [Header] -> Eff es (Arms FrameProfileMeta)
+  parseAllProfiles metas hs = do
+    as <- mapM (\(arm :: ArmWavMeta) -> parseProfile arm hs) metas.arms
+    pure $ Arms as
+
+  parseProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es FrameProfileMeta
+  parseProfile arm hs = do
+    fith <- findProfile arm.line Fit hs
+    orgh <- findProfile arm.line Original hs
+    fit <- parseProfileFit @Fit arm fith
+    original <- parseProfileFit @Original arm orgh
+    shape <- parseHeader @(Shape Profile) fith
+    let h = Profile{arm, fit, original}
+    pure $ FrameProfileMeta shape h
+
+  parseProfileFit :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
+  parseProfileFit meta h = do
+    common <- parseHeader h
+    wcs <- Profile.wcsHeader meta slice h
+    pure $ ProfileHeader{meta, common, wcs}
+
+  findProfile :: (Parser :> es, Error ProfileError :> es) => SpectralLine -> ProfileType -> [Header] -> Eff es Header
+  findProfile line typ hs = do
+    mh <- flip filterM hs $ \h -> do
+      typ' <- parseProfileType h
+      pure $ typ' == typ
+    case mh of
+      (h : _) -> pure h
+      _ -> throwError $ MissingProfileType line typ
+
+  parseProfileType :: (Error ProfileError :> es) => (Parser :> es) => Header -> Eff es ProfileType
+  parseProfileType h = do
+    ProfType t <- parseKeyword (keyword @ProfType) h
+    case t of
+      "Original" -> pure Original
+      "Fit" -> pure Fit
+      _ -> throwError $ InvalidProfileType t
 
   parseQuantity :: forall q es. (HDUOrder q, FromHeader q, Parser :> es, Error QuantityError :> es) => Eff es (QuantityHeader q)
   parseQuantity = do

@@ -11,7 +11,7 @@ import NSO.Data.Spectra (midPoint)
 import NSO.Image.Headers.Keywords
 import NSO.Image.Types.Profile
 import NSO.Prelude
-import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..))
+import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..), fromIonName, ionName)
 import Numeric (showFFloat)
 import Telescope.Asdf.GWCS (ToAxes (..))
 import Telescope.Data.KnownText
@@ -272,32 +272,25 @@ newtype VISPArmId = VISPArmId Int
   deriving newtype (FromKeyword, Eq, Show)
 
 
-newtype SpecLns = SpecLns [Text]
-instance ToHeader SpecLns where
-  toHeader (SpecLns ts) = toHeader $ fmap Keyword $ do
-    zipWith specLnN [1 .. 9 :: Int] ts
-   where
-    specLnN n t = KeywordRecord ("SPECLN0" <> cs (show n)) (toKeywordValue t) Nothing
-instance FromHeader SpecLns where
-  parseHeader h = do
-    pure $ SpecLns $ L.foldl' addSpecLn [] h.records
-   where
-    addSpecLn :: [Text] -> HeaderRecord -> [Text]
-    addSpecLn lns (Keyword (KeywordRecord key (String value) _))
-      | "SPECLN" `T.isPrefixOf` key = value : lns
-      | otherwise = lns
-    addSpecLn lns _ = lns
-
-
-newtype SpecLnProfile = SpecLnProfile Text
+newtype ProfType = ProfType Text
   deriving (Generic)
-instance IsKeyword SpecLnProfile where
-  keyword = "SPECLNPF"
-instance ToKeyword SpecLnProfile where
-  toKeywordValue (SpecLnProfile p) = String p
-instance FromKeyword SpecLnProfile where
-  parseKeywordValue = \case
-    String t -> pure $ SpecLnProfile t
-    other -> expected "SpecLnProfile" other
-instance KeywordInfo SpecLnProfile
+  deriving newtype (FromKeyword, ToKeyword)
+instance IsKeyword ProfType where
+  keyword = "SPECPFTP"
+instance KeywordInfo ProfType
 
+
+newtype ProfIon = ProfIon SpectralLine
+  deriving (Generic)
+instance IsKeyword ProfIon where
+  keyword = "SPECPFIN"
+instance ToKeyword ProfIon where
+  toKeywordValue (ProfIon p) = String (ionName p)
+instance FromKeyword ProfIon where
+  parseKeywordValue = \case
+    String val ->
+      case fromIonName val of
+        Just ion -> pure $ ProfIon ion
+        Nothing -> expected "ProfIon" val
+    other -> expected "ProfIon" other
+instance KeywordInfo ProfIon

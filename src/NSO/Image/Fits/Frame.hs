@@ -126,5 +126,5 @@ instance HDUOrder GasPressure where
   hduIndex = 10
 instance HDUOrder Density where
   hduIndex = 11
-instance HDUOrder (Arms (Profile a)) where
+instance HDUOrder (Arms (Profile ProfileHeader)) where
   hduIndex = 12

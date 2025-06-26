@@ -13,6 +13,7 @@ import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
+import NSO.Image.Blanca (armsFrames)
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
@@ -286,24 +287,49 @@ instance ToAsdf ProfilesSection where
 
 
 -- we need one ProfileMeta for each arm
-profilesSection :: PrimaryHeader -> NonEmpty (Arms ProfileMeta) -> ProfilesSection
+profilesSection :: PrimaryHeader -> NonEmpty (Arms FrameProfileMeta) -> ProfilesSection
 profilesSection primary frames =
   let sampleArm = head (head frames).arms
       fit = sampleArm.profile.fit
       orig = sampleArm.profile.original
    in ProfilesSection
         { axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-        , arms = _ -- profilesArmsTree frames
+        , arms = profilesArmsTree frames
         , gwcsFit = profileGWCS primary fit.wcs
         , gwcsOrig = profileGWCS primary orig.wcs
         }
 
 
--- profilesArmsTree :: NonEmpty (Arms ProfileMeta) -> Arms (Profile ProfileTree)
--- profilesArmsTree frames =
---   let frame = head frames
---    in -- ps = fmap (.profiles) frames
---       _ -- Arms []
+profilesArmsTree :: NonEmpty (Arms FrameProfileMeta) -> Arms (Profile ProfileTree)
+profilesArmsTree framesByArms =
+  let Arms arms = armsFrames framesByArms :: Arms (NonEmpty FrameProfileMeta)
+      armNums = NE.fromList [0 ..] :: NonEmpty Int
+   in Arms $ NE.zipWith frameProfileTree armNums arms
+ where
+  frameProfileTree :: Int -> NonEmpty FrameProfileMeta -> Profile ProfileTree
+  frameProfileTree armNum frames =
+    let frame = head frames
+        arm = frame.profile.arm
+        index = hduIndex @(Arms (Profile ProfileHeader)) + HDUIndex armNum
+        original = profileTree index frame.shape $ fmap (\f -> f.profile.original) frames
+        fit = profileTree (index + 1) frame.shape $ fmap (\f -> f.profile.fit) frames
+     in Profile{arm, fit, original}
+
+  -- how do I find out what the hdu index is?
+  profileTree :: forall fit. (KnownText fit) => HDUIndex -> Shape Profile -> NonEmpty (ProfileHeader fit) -> ProfileTree fit
+  profileTree ix shape heads =
+    ProfileTree
+      { unit = Count
+      , wcs = Ref
+      , data_ = fileManager shape.axes ix
+      , meta =
+          ProfileTreeMeta
+            { headers = HeaderTable heads
+            , -- , wavelength = profileWav @fit
+              profile = T.toLower $ knownText @fit
+            }
+      }
+
 
 data ProfileTree fit = ProfileTree
   { unit :: Unit
@@ -323,28 +349,9 @@ instance (KnownText fit) => ToAsdf (ProfileTree fit) where
       ]
 
 
--- profileTree
---   :: forall fit
---    . (ProfileInfo fit, KnownText fit)
---   => Shape Profile
---   -> NonEmpty (ProfileHeader info)
---   -> ProfileTree info
--- profileTree shape heads =
---   ProfileTree
---     { unit = Count
---     , wcs = Ref
---     , data_ = fileManager shape.axes
---     , meta =
---         ProfileTreeMeta
---           { headers = HeaderTable heads
---           , wavelength = profileWav @fit
---           , profile = T.toLower $ knownText @fit
---           }
---     }
-
 data ProfileTreeMeta fit = ProfileTreeMeta
   { headers :: HeaderTable (ProfileHeader fit)
-  , wavelength :: Wavelength Nm
-  , profile :: Text
+  , -- , wavelength :: Wavelength Nm
+    profile :: Text
   }
   deriving (Generic, ToAsdf)

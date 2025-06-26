@@ -22,7 +22,7 @@ import NSO.Image.Headers.WCS
 import NSO.Image.Types.Axes (Stokes)
 import NSO.Image.Types.Profile
 import NSO.Prelude
-import NSO.Types.Wavelength (Wavelength (..))
+import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..), ionName)
 import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
@@ -88,37 +88,40 @@ profileHeader
 profileHeader now slice l1 arm img = do
   common <- dataCommon now img.data_
   wcs <- wcsHeader arm slice l1
-  lns <- runParseError InvalidSpectralLines $ runParser $ parseHeader l1
-  pure $ ProfileHeader{common, specLines = lns, wcs, meta = arm}
+  pure $ ProfileHeader{common, wcs, meta = arm}
 
 
 data ProfileHeader (fit :: ProfileType) = ProfileHeader
   { meta :: ArmWavMeta
-  , specLines :: SpecLns
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
   }
   deriving (Generic)
 instance (KnownText fit) => ToHeader (ProfileHeader fit) where
   toHeader h = writeHeader $ do
+    let typ = ProfType (knownText @fit)
+        ion = ProfIon h.meta.line
+
     sectionHeader "Spectral Profile" "Headers describing the spectral profile"
-    addKeywords hduInfo
+    addKeywords $ hduInfo typ ion
     addKeywords h.common
-    addKeywords h.specLines
-    addKeywords $ Keyword $ keywordRecord $ SpecLnProfile (knownText @fit)
+
+    addKeywords $ Keyword $ keywordRecord typ
+    addKeywords $ Keyword $ keywordRecord ion
 
     addKeywords h.wcs
    where
-    hduInfo =
+    hduInfo typ ion =
       fmap
         Keyword
-        [ KeywordRecord (keyword @(ExtName "")) (String extName) Nothing
+        [ KeywordRecord (keyword @(ExtName "")) (extName typ ion) Nothing
         , keywordRecord @(BType "spect.line.profile") BType
         , keywordRecord @(BUnit Dimensionless) BUnit
         ]
 
-    extName :: Text
-    extName = cs (show h.meta.line) <> " Profile " <> knownText @fit
+    extName :: ProfType -> ProfIon -> Value
+    extName (ProfType typ) (ProfIon ion) =
+      String $ ionName ion <> " Profile " <> typ
 
 
 wcsHeader :: (Error ProfileError :> es) => ArmWavMeta -> SliceXY -> Header -> Eff es (WCSHeader ProfileAxes)
@@ -241,7 +244,9 @@ wcsWavelength wp = do
 
 data ProfileError
   = InvalidWavelengthGroups
+  | InvalidProfileType Text
   | MissingProfileExtensions String
-  | InvalidSpectralLines ParseError
-  | InvalidWCS ParseError
+  | MissingProfileType SpectralLine ProfileType
+  | -- | InvalidSpectralLines ParseError
+    InvalidWCS ParseError
   deriving (Show, Exception, Eq)
