@@ -1,11 +1,8 @@
 module NSO.Image.Types.Profile where
 
-import Data.List qualified as L
-import Data.List.NonEmpty qualified as NE
 import NSO.Image.Types.Frame (SlitX, Stokes)
 import NSO.Prelude
 import NSO.Types.Wavelength
-import Telescope.Asdf (ToAsdf (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText
 
@@ -17,8 +14,6 @@ data ProfileType
 
 
 data Profile
-
-
 
 
 instance KnownText Original where

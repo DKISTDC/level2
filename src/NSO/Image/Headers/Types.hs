@@ -3,17 +3,12 @@ module NSO.Image.Headers.Types where
 -- import Control.Exception (Exception)
 -- import Data.Massiv.Array (Ix3, Ix4, Sz (..))
 
-import Data.List qualified as L
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.TypeLits
-import NSO.Data.Spectra (midPoint)
 import NSO.Image.Headers.Keywords
-import NSO.Image.Types.Profile
 import NSO.Prelude
-import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..), fromIonName, ionName)
-import Numeric (showFFloat)
-import Telescope.Asdf.GWCS (ToAxes (..))
+import NSO.Types.Wavelength (SpectralLine (..), fromIonName, ionName)
 import Telescope.Data.KnownText
 import Telescope.Data.Parser (expected)
 import Telescope.Fits.Header

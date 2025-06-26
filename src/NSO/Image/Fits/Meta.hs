@@ -3,7 +3,6 @@ module NSO.Image.Fits.Meta where
 import Control.Monad (filterM)
 import Data.List.Ext
 import Data.Massiv.Array ()
-import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import NSO.Image.Fits.Frame
@@ -101,7 +100,6 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
   qshape <- parseHeader @(Shape Quantity) qh
   quants <- parseQuantities
 
-  traceM "frameMetaFromL2Fits"
   ps <- parseAllProfiles arms $ profileHeaders fits
 
   -- profs <- parseProfiles
@@ -143,7 +141,6 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
     fit <- parseProfileFit @Fit arm fith
     original <- parseProfileFit @Original arm orgh
     shape <- parseHeader @(Shape Profile) fith
-    traceM $ " - " <> show arm <> " -- " <> show shape
     pure $ ArmFrameProfileMeta{arm, shape, fit, original}
 
   parseProfileFit :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
