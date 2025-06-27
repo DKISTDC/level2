@@ -374,7 +374,7 @@ instance (KnownText fit) => ToAsdf (ProfileTree fit) where
       [ ("unit", toNode p.unit)
       , ("data", toNode p.data_)
       , ("meta", toNode p.meta)
-      -- , ("wcs", toNode p.wcs)
+      , ("wcs", toNode p.wcs)
       ]
 
 

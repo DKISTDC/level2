@@ -287,13 +287,13 @@ newtype ProfileGWCS fit
       (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame)))
 
 
-instance KnownText ProfileGWCS where
-  knownText = "profileGWCS"
+instance (KnownText fit) => KnownText (ProfileGWCS fit) where
+  knownText = "ProfileGWCS" <> knownText @fit
 
 
 instance (KnownText fit) => ToAsdf (ProfileGWCS fit) where
   schema (ProfileGWCS gwcs) = schema gwcs
-  anchor _ = Just $ Anchor $ "ProfileGWCS" <> knownText @fit
+  anchor _ = Just $ Anchor $ knownText @(ProfileGWCS fit)
   toValue (ProfileGWCS gwcs) = toValue gwcs
 
 
