@@ -2,7 +2,7 @@ module Test.FrameSpec where
 
 import Data.Massiv.Array as M
 import NSO.Image.Blanca (splitFrameY)
-import NSO.Image.Headers.Types
+import NSO.Image.Types.Frame
 import NSO.Prelude
 import Skeletest
 import Telescope.Data.DataCube

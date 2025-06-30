@@ -9,6 +9,7 @@ import Effectful
 import Effectful.Error.Static
 import GHC.Int (Int32)
 import NSO.Image.Asdf.HeaderTable
+import NSO.Image.Types.Frame
 import NSO.Prelude
 import Skeletest
 import Skeletest.Predicate qualified as P
@@ -82,7 +83,7 @@ specHeaderTable = describe "Header Table" $ do
 
   describe "table node" $ do
     it "should encode to Asdf" $ do
-      let table = HeaderTable $ NE.fromList [Sample 1, Sample 2, Sample 3]
+      let table = HeaderTable $ Frames $ NE.fromList [Sample 1, Sample 2, Sample 3]
       case toValue table of
         Object vals -> do
           lookup "colnames" vals `shouldSatisfy` P.just (P.con Node{value = P.eq (Array [fromValue $ String "user", fromValue $ String "value"])})

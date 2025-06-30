@@ -18,6 +18,7 @@ import NSO.Image.Headers.Types
 import NSO.Image.Headers.WCS
 import NSO.Image.L1Input
 import NSO.Image.Primary as Primary
+import NSO.Image.Types.Frame
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity as Quantity
 import NSO.Prelude
@@ -145,7 +146,7 @@ specHeader = describe "Header Keywords" $ do
   genProfile = do
     DataCommonFix common <- getFixture
     L1HeaderFix l1 <- getFixture
-    let wp = ArmWavMeta{pixel = 0, delta = WavOffset 1, length = 10, line = FeI}
+    let wp = ArmWavMeta{pixel = 0, delta = WavOffset 1, length = 10, line = FeI630}
     wcs <- runGen $ Profile.wcsHeader wp slice l1
     pure $ ProfileHeader @Original wp common wcs
 
@@ -247,21 +248,21 @@ specWavProfile = do
         avgDelta simpleOffsets `shouldBe` WavOffset 1000
 
       it "meta offset in nm" $ do
-        (armWavMeta (ArmWavBreak FeI 5) simpleOffsets).delta `shouldBe` WavOffset 0.1
+        (armWavMeta (ArmWavBreak FeI630 5) simpleOffsets).delta `shouldBe` WavOffset 0.1
 
       it "real world offset" $ do
-        roundDigits 5 (armWavMeta (ArmWavBreak FeI 5) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
+        roundDigits 5 (armWavMeta (ArmWavBreak FeI630 5) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
 
     describe "pixel" $ do
       it "should be exactly center in simple" $ do
         pixel0 (WavOffset 1000) simpleOffsets `shouldBe` 3.5
 
       it "< positive index in wav630" $ do
-        let m = armWavMeta (ArmWavBreak FeI 5) wav630
+        let m = armWavMeta (ArmWavBreak FeI630 5) wav630
         m.pixel `shouldSatisfy` P.lt 4
 
       it "> last negative index in wav630" $ do
-        let m = armWavMeta (ArmWavBreak FeI 5) wav630
+        let m = armWavMeta (ArmWavBreak FeI630 5) wav630
         m.pixel `shouldSatisfy` P.gt 3
 
 
@@ -270,7 +271,7 @@ simple = DataCube $ M.delay @Ix1 @P $ M.fromLists' Seq $ fmap (.value) simpleNum
 
 
 simpleNums :: [Wavelength Nm]
-simpleNums = offsetsToWavelengths FeI simpleOffsets
+simpleNums = offsetsToWavelengths FeI630 simpleOffsets
 
 
 simpleOffsets :: [WavOffset MA]

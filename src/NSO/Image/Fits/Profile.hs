@@ -10,7 +10,6 @@ import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
-import Effectful.Writer.Static.Local
 import NSO.Data.Spectra (midPoint)
 import NSO.Image.Fits.Quantity (addDummyAxis, dataCommon)
 import NSO.Image.Headers

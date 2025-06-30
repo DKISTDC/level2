@@ -159,7 +159,7 @@ library
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.3
+    , telescope >=0.4
     , text
     , time
     , unordered-containers
@@ -223,7 +223,7 @@ executable level2
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.3
+    , telescope >=0.4
     , text
     , time
     , unordered-containers
@@ -299,7 +299,7 @@ test-suite spec
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.3
+    , telescope >=0.4
     , text
     , time
     , unordered-containers
