@@ -72,7 +72,7 @@ main = do
 
     concurrently_
       (startWebServer config auth fits asdf pubs sync)
-      (runWorkers config auth fits asdf pubs sync metas props (startWorkers config))
+      (runWorkers config auth fits asdf pubs sync metas props startWorkers)
 
     pure ()
  where
@@ -98,7 +98,7 @@ main = do
           id
           [startWorker Gen.fitsTask, startWorker Gen.asdfTask]
 
-  startWorkers cfg =
+  startWorkers =
     mapConcurrently_
       id
       [ startPuppetMaster

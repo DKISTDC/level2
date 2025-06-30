@@ -35,7 +35,7 @@ quantities slice now l1 q = do
   opticalDepth <- quantity @OpticalDepth DataHDUInfo q.opticalDepth
   temperature <- quantity @Temperature DataHDUInfo q.temperature
   electronPressure <- quantity @ElectronPressure DataHDUInfo q.electronPressure
-  microTurbulence <- quantity @Microturbulence DataHDUInfo q.microTurbulence
+  microturbulence <- quantity @Microturbulence DataHDUInfo q.microturbulence
   magStrength <- quantity @MagStrength DataHDUInfo q.magStrength
   velocity <- quantity @Velocity DataHDUInfo q.velocity
   magInclination <- quantity @MagInclination DataHDUInfo q.magInclination
@@ -43,7 +43,7 @@ quantities slice now l1 q = do
   geoHeight <- quantity @GeoHeight DataHDUInfo q.geoHeight
   gasPressure <- quantity @GasPressure DataHDUInfo q.gasPressure
   density <- quantity @Density DataHDUInfo q.density
-  pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
+  pure $ Quantities{opticalDepth, temperature, electronPressure, microturbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
  where
   quantity :: forall hduInfo es. (Error QuantityError :> es, ToHeader hduInfo) => hduInfo -> QuantityImage [SlitX, Depth] hduInfo -> Eff es (QuantityFrameFits hduInfo)
   quantity hduInfo d = do
@@ -91,7 +91,7 @@ quantityHDUs qs = runPureEff $ do
   opticalDepth <- dataHDU @OpticalDepth qs.opticalDepth
   temperature <- dataHDU @Temperature qs.temperature
   electronPressure <- dataHDU @ElectronPressure $ convertData dyneCmToNm qs.electronPressure
-  microTurbulence <- dataHDU @Microturbulence $ convertData cmsToKms qs.microTurbulence
+  microturbulence <- dataHDU @Microturbulence $ convertData cmsToKms qs.microturbulence
   magStrength <- dataHDU @MagStrength $ convertData gaussToTesla qs.magStrength
   magInclination <- dataHDU @MagInclination qs.magInclination
   magAzimuth <- dataHDU @MagAzimuth $ convertData forcePositive360 qs.magAzimuth
@@ -293,7 +293,7 @@ fromList f qs = do
       { opticalDepth = f od
       , temperature = f t
       , electronPressure = f ep
-      , microTurbulence = f mt
+      , microturbulence = f mt
       , magStrength = f ms
       , velocity = f v
       , magInclination = f mi
@@ -309,7 +309,7 @@ toList f qs =
   [ f qs.opticalDepth
   , f qs.temperature
   , f qs.electronPressure
-  , f qs.microTurbulence
+  , f qs.microturbulence
   , f qs.magStrength
   , f qs.velocity
   , f qs.magInclination
@@ -326,7 +326,7 @@ quantitiesFrom val a =
     { opticalDepth = val a
     , temperature = val a
     , electronPressure = val a
-    , microTurbulence = val a
+    , microturbulence = val a
     , magStrength = val a
     , velocity = val a
     , magInclination = val a
@@ -343,7 +343,7 @@ mapQuantities f qs =
     { opticalDepth = f qs.opticalDepth
     , temperature = f qs.temperature
     , electronPressure = f qs.electronPressure
-    , microTurbulence = f qs.microTurbulence
+    , microturbulence = f qs.microturbulence
     , magStrength = f qs.magStrength
     , velocity = f qs.velocity
     , magInclination = f qs.magInclination

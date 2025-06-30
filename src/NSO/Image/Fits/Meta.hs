@@ -191,7 +191,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
     opticalDepth <- parseQuantity
     temperature <- parseQuantity
     electronPressure <- parseQuantity
-    microTurbulence <- parseQuantity
+    microturbulence <- parseQuantity
     magStrength <- parseQuantity
     velocity <- parseQuantity
     magInclination <- parseQuantity
@@ -199,7 +199,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
     geoHeight <- parseQuantity
     gasPressure <- parseQuantity
     density <- parseQuantity
-    pure $ Quantities{opticalDepth, temperature, electronPressure, microTurbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
+    pure $ Quantities{opticalDepth, temperature, electronPressure, microturbulence, magStrength, velocity, magInclination, magAzimuth, geoHeight, gasPressure, density}
 
 
 -- parseProfiles = do

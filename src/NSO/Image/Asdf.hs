@@ -3,11 +3,13 @@
 
 module NSO.Image.Asdf where
 
+import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
+import GHC.Generics (Rep, from)
 import NSO.Data.Spectra (midPoint)
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Image.Asdf.FileManager (FileManager, fileManager)
@@ -29,8 +31,10 @@ import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName)
 import Telescope.Asdf as Asdf
+import Telescope.Asdf.Class (GToObject (..))
 import Telescope.Asdf.Core (Unit (..))
 import Telescope.Data.KnownText
+import Text.Casing (quietSnake)
 
 
 -- DONE: move extra keys into meta.inventory
@@ -153,7 +157,7 @@ instance ToAsdf QuantitiesSection where
   toValue section =
     Object
       [ ("meta", toNode meta)
-      , ("aligned_axes", toNode aligned)
+      , ("aligned_axes", toNode $ QuantitiesAlignedAxes aligned)
       , ("items", toNode section.items)
       ]
    where
@@ -173,9 +177,9 @@ quantitiesSection :: Frames FrameQuantitiesMeta -> QuantityGWCS -> QuantitiesSec
 quantitiesSection metas gwcs =
   QuantitiesSection
     { axes =
-        [ AxisMeta "frameY" True
-        , AxisMeta "slitX" True
-        , AxisMeta "opticalDepth" True
+        [ AxisMeta "frame_y" True
+        , AxisMeta "slit_x" True
+        , AxisMeta "optical_depth" True
         ]
     , gwcs
     , items =
@@ -183,7 +187,7 @@ quantitiesSection metas gwcs =
           { opticalDepth = quantity (.opticalDepth)
           , temperature = quantity (.temperature)
           , electronPressure = quantity (.electronPressure)
-          , microTurbulence = quantity (.microTurbulence)
+          , microturbulence = quantity (.microturbulence)
           , magStrength = quantity (.magStrength)
           , velocity = quantity (.velocity)
           , magInclination = quantity (.magInclination)
@@ -224,16 +228,22 @@ instance (ToAsdf (meta info), KnownText info) => ToAsdf (DataTree meta info) whe
       , ("meta", toNode q.meta)
       , ("wcs", toNode q.wcs)
       ]
-instance ToAsdf (Quantities (DataTree QuantityMeta))
 
 
--- instance KnownText QuantityGWCS where
---   knownText = "quantityGWCS"
---
--- instance ToAsdf QuantityGWCS where
---   schema (QuantityGWCS gwcs) = schema gwcs
---   anchor _ = Just $ Anchor $ knownText @QuantityGWCS
---   toValue (QuantityGWCS gwcs) = toValue gwcs
+snakeObject :: (Generic a, GToObject (Rep a)) => a -> [(Key, Node)]
+snakeObject a = fmap (first (cs . quietSnake . cs)) $ gToObject (from a)
+
+
+instance ToAsdf (Quantities (DataTree QuantityMeta)) where
+  toValue q = Object $ snakeObject q
+
+
+newtype QuantitiesAlignedAxes = QuantitiesAlignedAxes (Quantities AlignedAxes)
+
+
+instance ToAsdf QuantitiesAlignedAxes where
+  toValue (QuantitiesAlignedAxes q) = Object $ snakeObject q
+
 
 quantityTree
   :: forall info ext btype unit
@@ -307,7 +317,7 @@ profilesSection primary profs =
       fit = sampleArm.fit
       orig = sampleArm.original
    in ProfilesSection
-        { axes = [AxisMeta "frameY" True, AxisMeta "slitX" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+        { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
         , arms = profilesArmsTree profs
         , gwcsFit = profileGWCS primary fit.wcs
         , gwcsOrig = profileGWCS primary orig.wcs

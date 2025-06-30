@@ -38,7 +38,7 @@ instance KnownText ElectronPressure where
 type Microturbulence =
   DataHDUInfo
     "Microturbulence"
-    "phys.veloc.microTurb"
+    "phys.veloc.microturb"
     'Km_s
 instance KnownText Microturbulence where
   knownText = "Microturbulence"
@@ -111,7 +111,7 @@ data Quantities (f :: Type -> Type) = Quantities
   { opticalDepth :: f OpticalDepth
   , temperature :: f Temperature
   , electronPressure :: f ElectronPressure
-  , microTurbulence :: f Microturbulence
+  , microturbulence :: f Microturbulence
   , magStrength :: f MagStrength
   , velocity :: f Velocity
   , magInclination :: f MagInclination
@@ -124,4 +124,3 @@ data Quantities (f :: Type -> Type) = Quantities
 
 
 data Quantity
-

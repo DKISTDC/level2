@@ -2,7 +2,6 @@
 
 module NSO.Image.Asdf.NDCollection where
 
-import NSO.Image.Types.Quantity
 import NSO.Prelude
 import Telescope.Asdf as Asdf
 
@@ -24,9 +23,6 @@ instance ToAsdf AxisMeta where
 
 newtype AlignedAxes f = AlignedAxes [Int]
   deriving newtype (ToAsdf)
-
-
-instance ToAsdf (Quantities AlignedAxes)
 
 
 newtype AxisLabel = AxisLabel Text

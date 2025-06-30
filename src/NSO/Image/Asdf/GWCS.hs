@@ -162,9 +162,9 @@ quantityGWCS primary wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) o
         { name = "pixel"
         , axes =
             NE.fromList
-              [ FrameAxis 0 "opticalDepth" (AxisType "PIXEL") Pixel
-              , FrameAxis 1 "slitX" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "frameY" (AxisType "PIXEL") Pixel
+              [ FrameAxis 0 "optical_depth" (AxisType "PIXEL") Pixel
+              , FrameAxis 1 "slit_x" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "frame_y" (AxisType "PIXEL") Pixel
               ]
         }
 
@@ -258,8 +258,8 @@ profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) out
             NE.fromList
               [ FrameAxis 0 "stokes" (AxisType "PIXEL") Pixel
               , FrameAxis 1 "wavelength" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "slitX" (AxisType "PIXEL") Pixel
-              , FrameAxis 3 "frameY" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "slit_x" (AxisType "PIXEL") Pixel
+              , FrameAxis 3 "frame_y" (AxisType "PIXEL") Pixel
               ]
         }
 

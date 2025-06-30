@@ -53,7 +53,6 @@ page propId invId = do
   let admin = AdminLogin mtok login
   gen <- send $ TaskLookupStatus $ GenFits propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
-  now <- currentTime
   appLayout Inversions $ do
     col Style.page $ do
       col (gap 5) $ do
@@ -71,7 +70,7 @@ page propId invId = do
           appRoute (Route.Proposal inv.proposalId PropRoot) Style.link $ do
             text inv.proposalId.fromId
 
-      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion now inv ds admin gen pub
+      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds admin gen pub
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
@@ -149,17 +148,16 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
     refresh = do
       InversionStatus propId progId invId <- viewId
       ds <- Datasets.find (Datasets.ByProgram progId)
-      now <- currentTime
       mtok <- send AdminToken
       login <- send LoginUrl
       inv <- loadInversion invId
       gen <- send $ TaskLookupStatus $ GenFits propId invId
       pub <- send $ TaskLookupStatus $ PublishTask propId invId
-      pure $ viewInversion now inv ds (AdminLogin mtok login) gen pub
+      pure $ viewInversion inv ds (AdminLogin mtok login) gen pub
 
 
-viewInversion :: UTCTime -> Inversion -> [Dataset] -> AdminLogin -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
-viewInversion now inv ds admin gen pub = do
+viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion inv ds admin gen pub = do
   col (gap 30) $ do
     if inv.deleted
       then restoreButton
@@ -174,7 +172,7 @@ viewInversion now inv ds admin gen pub = do
 
         stepGenerate (generateStep inv) $ do
           hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
-            viewGenerate now inv admin gen
+            viewGenerate inv admin gen
 
         stepPublish (publishStep inv) $ do
           hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
@@ -379,19 +377,18 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
     refresh = do
       GenerateStep _ _ invId <- viewId
       inv <- loadInversion invId
-      now <- currentTime
       if isGenerated inv
         then refreshInversion
-        else loadGenerate now
+        else loadGenerate
 
-    loadGenerate now = do
+    loadGenerate = do
       GenerateStep propId _ invId <- viewId
       inv <- loadInversion invId
       status <- send $ TaskLookupStatus $ GenFits propId invId
       mtok <- send AdminToken
       login <- send LoginUrl
       pure $ do
-        viewGenerate now inv (AdminLogin mtok login) status
+        viewGenerate inv (AdminLogin mtok login) status
 
     refreshInversion = do
       GenerateStep propId progId invId <- viewId
@@ -405,8 +402,8 @@ generateStep inv
   | otherwise = StepNext
 
 
-viewGenerate :: UTCTime -> Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
-viewGenerate now inv admin status
+viewGenerate :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
+viewGenerate inv admin status
   | inv.deleted = none
   | isInverted inv = viewGenerate' inv admin status
   | otherwise = none
