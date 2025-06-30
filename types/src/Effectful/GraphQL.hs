@@ -17,7 +17,6 @@ import Data.List qualified as L
 import Data.String (fromString)
 import Data.String.Interpolate (i)
 import Data.Text qualified as T
-import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static

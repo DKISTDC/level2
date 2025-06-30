@@ -21,7 +21,6 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
-import Data.Time.Clock (NominalDiffTime, diffUTCTime)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -409,12 +408,12 @@ generateStep inv
 viewGenerate :: UTCTime -> Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
 viewGenerate now inv admin status
   | inv.deleted = none
-  | isInverted inv = viewGenerate' now inv admin status
+  | isInverted inv = viewGenerate' inv admin status
   | otherwise = none
 
 
-viewGenerate' :: UTCTime -> Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
-viewGenerate' now inv admin status =
+viewGenerate' :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
+viewGenerate' inv admin status =
   col (gap 10) viewGen
  where
   viewGen =

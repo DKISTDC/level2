@@ -91,7 +91,7 @@ main = do
           addHeaders [("app-version", cs appVersion)] $
             webServer config auth fits asdf pubs sync
 
-  startGen cfg = do
+  startGen = do
     runLogger "FitsGen" $
       waitForGlobusAccess $ do
         mapConcurrently_
@@ -102,7 +102,7 @@ main = do
     mapConcurrently_
       id
       [ startPuppetMaster
-      , startGen cfg
+      , startGen
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
       ]

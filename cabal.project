@@ -3,8 +3,8 @@ packages:
   .
   ./types/
   -- ../telescope.hs/
-  ../hyperbole/
-  ../atomic-css/
+  -- ../hyperbole/
+  -- ../atomic-css/
   -- ../fits-parse/
   -- ../globus.hs
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz
@@ -23,16 +23,18 @@ packages:
 --   type: git
 --   location: https://github.com/krakrjak/fits-parse.git
 --   tag: 0823caab07b0f6574f3582759e085e70c282d821
- 
---source-repository-package
--- type: git
--- location: https://github.com/seanhess/hyperbole.git
--- tag: 0e0c84f1f5e2d8a9a7a6fa8ad685838f434007ab
 
--- source-repository-package
---  type: git
---  location: https://github.com/seanhess/web-view.git
---  tag: 59c19e98dd6ef4679f118988acfdc54f2ba92459
+
+ 
+source-repository-package
+  type: git
+  location: https://github.com/seanhess/hyperbole.git
+  tag: 0e0c84f1f5e2d8a9a7a6fa8ad685838f434007ab
+
+source-repository-package
+ type: git
+ location: https://github.com/seanhess/atomic-css.git
+ tag: a67dc9ad4ea9
 
 -- source-repository-package
 --   type: git
