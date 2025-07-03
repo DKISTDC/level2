@@ -42,6 +42,10 @@ data SpectralLine
   deriving (Eq, Ord, Show, Bounded, Enum)
 
 
+instance ToAsdf SpectralLine where
+  toValue = String . cs . show
+
+
 ionName :: SpectralLine -> Text
 ionName = \case
   NaID -> "Na I"

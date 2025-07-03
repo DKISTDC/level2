@@ -306,7 +306,7 @@ asdfTask t = do
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let tree = asdfDocument inv.inversionId ds now $ Frames $ NE.sort metas.frames
+    let tree = asdfDocument inv.inversionId dc ds now $ Frames $ NE.sort metas.frames
     let path = Asdf.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output

@@ -11,6 +11,7 @@ import Data.Text (pack)
 import Data.Text qualified as T
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.UUID qualified as UUID
+import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
@@ -52,37 +53,12 @@ data Observation = Observation
   , telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
   , dateBeg :: Key DateTime "Start date and time of light exposure for the frame"
   , dateEnd :: Key DateTime "End date and time of light exposure for the frame"
-  , dateAvg :: Key DateTime "Date/Time of the midpoint of the frame. (DATE-END - DATE_BEG) / 2"
+  , dateAvg :: Key DateTime "Date/Time of the midpoint of the frame. (DATE-END - DATE-BEG) / 2"
   , timesys :: Key (Constant "UTC") "Time scale of the time related keywords"
   , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
   }
   deriving (Generic, HeaderDoc)
   deriving (ToHeader, FromHeader) via (DashedKeys Observation)
-
-
--- Dashed Keys --- all keys use KEYBAB-CASE instead of SCREAM_CASE
-newtype DashedKeys a = DashedKeys a
-
-
-instance (Generic a, GToHeader (Rep a)) => ToHeader (DashedKeys a) where
-  toHeader (DashedKeys a) =
-    let Header rs = gToHeader $ from a
-     in Header $ fmap toDashes rs
-
-
-instance (Generic a, GFromHeader (Rep a)) => FromHeader (DashedKeys a) where
-  parseHeader h =
-    let Header rs = h
-     in DashedKeys . to <$> gParseHeader (Header $ fmap toDashes rs)
-
-
-toDashes :: HeaderRecord -> HeaderRecord
-toDashes = \case
-  (Keyword (KeywordRecord k v mc)) ->
-    Keyword $ KeywordRecord (dashKey k) v mc
-  hr -> hr
- where
-  dashKey = T.replace "_" "-"
 
 
 data Datacenter = Datacenter
@@ -389,3 +365,26 @@ sectionHeader title desc = do
 
     lineLength :: [Text] -> Int
     lineLength ws = sum $ fmap (\t -> T.length t + 1) ws
+
+
+-- Dashed Keys --- all keys use KEYBAB-CASE instead of SCREAM_CASE
+newtype DashedKeys a = DashedKeys a
+
+
+instance (Generic a, GToHeader (Rep a)) => ToHeader (DashedKeys a) where
+  toHeader (DashedKeys a) =
+    let Header rs = gToHeader $ from a
+     in Header $ fmap (mapKeys (T.replace "_" "-")) rs
+
+
+instance (Generic a, GFromHeader (Rep a)) => FromHeader (DashedKeys a) where
+  parseHeader h = do
+    let Header rs = h
+    DashedKeys . to <$> gParseHeader (Header $ fmap (mapKeys (T.replace "-" "_")) rs)
+
+
+mapKeys :: (Text -> Text) -> HeaderRecord -> HeaderRecord
+mapKeys f = \case
+  (Keyword (KeywordRecord k v mc)) ->
+    Keyword $ KeywordRecord (f k) v mc
+  hr -> hr

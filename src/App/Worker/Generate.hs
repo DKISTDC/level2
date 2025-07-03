@@ -45,7 +45,7 @@ collateFrames qs metas pfs pos ts = do
   allFramesEqual =
     frameSizes.fit == frameSizes.quantities
       && frameSizes.original == frameSizes.quantities
-      && (frameSizes.l1 - frameSizes.quantities <= 1) -- one frame may be dropped
+      && (frameSizes.l1 - frameSizes.quantities <= 1) -- one frame may be dropped, always at the end
   frameSizes :: FrameSizes
   frameSizes =
     FrameSizes

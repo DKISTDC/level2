@@ -26,7 +26,7 @@ import NSO.Image.Types.Frame (Arms (..), Frames (..), armsFrames)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset (Dataset, Dataset' (datasetId))
+import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName)
@@ -40,7 +40,9 @@ import Text.Casing (quietSnake)
 -- DONE: move extra keys into meta.inventory
 -- DONE: support ND collection
 -- DONE: 3-arm profiles sodium
--- TODO: fit/orig separate GWCS + anchors
+-- DONE: fit/orig separate GWCS + anchors
+-- TODO: fix gwcs
+-- TODO: labelled meta.axes for profiles
 
 data L2Asdf
 
@@ -50,8 +52,8 @@ outputL2AsdfPath ip ii =
   filePath (Files.outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
-asdfDocument :: Id Inversion -> [Dataset] -> UTCTime -> Frames L2FitsMeta -> Document
-asdfDocument inversionId dsets now metas =
+asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> UTCTime -> Frames L2FitsMeta -> Document
+asdfDocument inversionId dscanon dsets now metas =
   let frames = Frames $ NE.sort metas.frames
    in Document (inversionTree frames)
  where
@@ -74,13 +76,17 @@ asdfDocument inversionId dsets now metas =
 
   inversionInventory :: Frames PrimaryHeader -> InversionInventory
   inversionInventory headers =
-    InversionInventory
-      { frameCount = length headers
-      , inversionId
-      , datasetIds = fmap (.datasetId) dsets
-      , wavelengths = fmap Spectra.midPoint $ Spectra.identifyLines dsets
-      , created = now
-      }
+    let specs = Spectra.identifyLines dsets
+     in InversionInventory
+          { frameCount = length headers
+          , inversionId
+          , proposalId = dscanon.primaryProposalId
+          , canonicalDataset = dscanon.datasetId
+          , spectralLines = specs
+          , datasetIds = fmap (.datasetId) dsets
+          , wavelengths = fmap Spectra.midPoint specs
+          , created = now
+          }
 
   fileuris = Fileuris $ fmap (.path) $ NE.toList metas.frames
 
@@ -125,8 +131,11 @@ data InversionMeta = InversionMeta
 data InversionInventory = InversionInventory
   { inversionId :: Id Inversion
   , created :: UTCTime
-  , wavelengths :: [Wavelength Nm]
+  , proposalId :: Id Proposal
+  , canonicalDataset :: Id Dataset
   , datasetIds :: [Id Dataset]
+  , spectralLines :: [SpectralLine]
+  , wavelengths :: [Wavelength Nm]
   , frameCount :: Int
   }
   deriving (Generic)
@@ -310,6 +319,11 @@ instance ToAsdf ProfilesSection where
         ]
 
 
+-- newtype ProfilesItems = ProfilesItems (Arms (ArmProfile ProfileTree))
+-- instance ToAsdf ProfilesItems where
+--   schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
+--   toValue (ProfilesItems arms) = toValue arms
+
 -- we need one ProfileMeta for each arm
 profilesSection :: PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
 profilesSection primary profs =
@@ -363,7 +377,7 @@ data ArmProfile f = ArmProfile
 
 instance (ToAsdf (f Fit), ToAsdf (f Original)) => ToAsdf (ArmProfile f) where
   toValue p =
-    let key f = cs $ "line_" <> show p.arm.line <> "_" <> f
+    let key f = cs $ show p.arm.line <> "_" <> f
      in Object
           [ (key "orig", toNode p.original)
           , (key "fit", toNode p.fit)
@@ -379,6 +393,7 @@ data ProfileTree fit = ProfileTree
   deriving (Generic)
 instance (KnownText fit) => ToAsdf (ProfileTree fit) where
   -- anchor _ = Just $ Anchor $ knownText @fit
+  schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
   toValue p =
     Object
       [ ("unit", toNode p.unit)
@@ -401,4 +416,5 @@ instance (KnownText fit) => ToAsdf (ProfileTreeMeta fit) where
       , ("wavelength", toNode $ midPoint m.spectralLine)
       , ("profile", toNode m.profile)
       , ("headers", toNode m.headers)
+      , ("inventory", toNode (Ref @InversionInventory))
       ]
