@@ -1,5 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module NSO.Image.Headers where
 
@@ -23,6 +25,7 @@ import NSO.Types.Common (DateTime (..), Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Header as Fits
+import Telescope.Fits.Header.Class (GFromHeader (..), GToHeader (..))
 
 
 headerSpecVersion :: Text
@@ -36,8 +39,8 @@ headerSpecVersion = "L2." <> pack appVersion
 -- LATER: DATAKURT
 -- LATER: DATASKEW
 -- NOPE: DATAP<pp>
--- TODO: Doubles vs Floats - fits-parse
 -- NOPE: CONTINUE - if a url is too long. Or make sure they aren't too long :)
+-- DONE: Doubles vs Floats - fits-parse
 
 data Observation = Observation
   { origin :: Key (Constant "National Solar Observatory") "The organization or institution responsible for creating the FITS file."
@@ -53,7 +56,33 @@ data Observation = Observation
   , timesys :: Key (Constant "UTC") "Time scale of the time related keywords"
   , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
   }
-  deriving (Generic, HeaderDoc, ToHeader, FromHeader)
+  deriving (Generic, HeaderDoc)
+  deriving (ToHeader, FromHeader) via (DashedKeys Observation)
+
+
+-- Dashed Keys --- all keys use KEYBAB-CASE instead of SCREAM_CASE
+newtype DashedKeys a = DashedKeys a
+
+
+instance (Generic a, GToHeader (Rep a)) => ToHeader (DashedKeys a) where
+  toHeader (DashedKeys a) =
+    let Header rs = gToHeader $ from a
+     in Header $ fmap toDashes rs
+
+
+instance (Generic a, GFromHeader (Rep a)) => FromHeader (DashedKeys a) where
+  parseHeader h =
+    let Header rs = h
+     in DashedKeys . to <$> gParseHeader (Header $ fmap toDashes rs)
+
+
+toDashes :: HeaderRecord -> HeaderRecord
+toDashes = \case
+  (Keyword (KeywordRecord k v mc)) ->
+    Keyword $ KeywordRecord (dashKey k) v mc
+  hr -> hr
+ where
+  dashKey = T.replace "_" "-"
 
 
 data Datacenter = Datacenter
@@ -123,13 +152,19 @@ data Telescope = Telescope
   , ttbltrck :: Ttbltrck
   , ttblangl :: Key Degrees "Telescope Coude table angle"
   , dateref :: Key DateTime "Time coordinate zero point"
-  , obsgeoX :: Key Meters "Observer’s fixed geographic X coordinate"
-  , obsgeoY :: Key Meters "Observer’s fixed geographic Y coordinate"
-  , obsgeoZ :: Key Meters "Observer’s fixed geographic Z coordinate"
   , rotcomp :: Maybe (Key Int "Solar rotation compensation: 1: On 2: Off")
   , obsVr :: Key Mps "Observer’s outward velocity w.r.t. the Sun"
   }
   deriving (Generic, ToHeader, FromHeader)
+
+
+data Obsgeo = Obsgeo
+  { obsgeoX :: Key Meters "Observer’s fixed geographic X coordinate"
+  , obsgeoY :: Key Meters "Observer’s fixed geographic Y coordinate"
+  , obsgeoZ :: Key Meters "Observer’s fixed geographic Z coordinate"
+  }
+  deriving (Generic)
+  deriving (ToHeader, FromHeader) via (DashedKeys Obsgeo)
 
 
 data DKISTHeader = DKISTHeader
@@ -276,12 +311,17 @@ telescopeHeader l1 = do
   ttblangl <- Key . Degrees <$> requireKey "TTBLANGL" l1
   ttbltrck <- Ttbltrck <$> requireKey "TTBLTRCK" l1
   dateref <- Key <$> requireKey "DATEREF" l1
-  obsgeoX <- Key . Meters <$> requireKey "OBSGEO-X" l1
-  obsgeoY <- Key . Meters <$> requireKey "OBSGEO-Y" l1
-  obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" l1
   rotcomp <- fmap Key <$> lookupKey "ROTCOMP" l1
   obsVr <- Key . Mps <$> requireKey "OBS_VR" l1
   pure $ Telescope{..}
+
+
+obsgeoHeader :: (Error ParseError :> es) => Header -> Eff es Obsgeo
+obsgeoHeader l1 = do
+  obsgeoX <- Key . Meters <$> requireKey "OBSGEO-X" l1
+  obsgeoY <- Key . Meters <$> requireKey "OBSGEO-Y" l1
+  obsgeoZ <- Key . Meters <$> requireKey "OBSGEO-Z" l1
+  pure $ Obsgeo{obsgeoX, obsgeoY, obsgeoZ}
 
 
 -- statsHeader :: Results Frame -> Eff es StatisticsHeader

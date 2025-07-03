@@ -7,7 +7,7 @@ import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
-import NSO.Image.Headers (Observation (..), Telescope (..))
+import NSO.Image.Headers (Observation (..), Obsgeo (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
@@ -187,7 +187,7 @@ quantityGWCS primary wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) o
 helioprojectiveFrame :: PrimaryHeader -> HelioprojectiveFrame
 helioprojectiveFrame primary =
   HelioprojectiveFrame
-    { coordinates = Cartesian3D (coord primary.telescope.obsgeoX) (coord primary.telescope.obsgeoY) (coord primary.telescope.obsgeoZ)
+    { coordinates = Cartesian3D (coord primary.obsgeo.obsgeoX) (coord primary.obsgeo.obsgeoY) (coord primary.obsgeo.obsgeoZ)
     , obstime = primary.observation.dateBeg.ktype.utc
     , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
     }
