@@ -11,11 +11,12 @@ import NSO.Image.Headers (Observation (..), Obsgeo (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
-import NSO.Image.Types.Frame (Depth, Stokes)
+import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
+import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude
 import NSO.Types.Common (DateTime (..))
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
-import Telescope.Asdf.Core (Unit (Pixel))
+import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Pixel, Unit))
 import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS as GWCS
 import Telescope.Data.KnownText
@@ -46,15 +47,24 @@ transformProfile common axes =
 
 transformQuantity
   :: WCSCommon
-  -> QuantityAxes 'WCSMain
-  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, Alpha, Delta)
+  -> Frames (QuantityAxes 'WCSMain)
+  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat)
 transformQuantity common axes =
-  transformOpticalDepth (toWCSAxis axes.depth.keys) <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
+  let mid = middleFrame axes
+   in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> varyingCelestialTransform common (fmap wcsFrame axes)
  where
-  pcs :: PCXY QuantityAxes 'WCSMain
-  pcs = fromMaybe identityPCXY $ do
-    pcx <- axes.slitX.pcs
-    pcy <- axes.dummyY.pcs
+  wcsFrame :: QuantityAxes 'WCSMain -> WCSFrame QuantityAxes
+  wcsFrame axs =
+    WCSFrame
+      { x = toWCSAxis axs.slitX.keys
+      , y = toWCSAxis axs.dummyY.keys
+      , pcxy = pcs axs
+      }
+
+  pcs :: QuantityAxes 'WCSMain -> PCXY QuantityAxes 'WCSMain
+  pcs axs = fromMaybe identityPCXY $ do
+    pcx <- axs.slitX.pcs
+    pcy <- axs.dummyY.pcs
     pure $ PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
 
 
@@ -92,12 +102,7 @@ transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project P
   linearXY = spatialLinear (wcsToDegrees wcsX) <&> spatialLinear (wcsToDegrees wcsY)
 
   sky :: Transform (Phi, Theta) (Alpha, Delta)
-  sky = celestial (Lat $ arcsecondsToDegrees wcsX.crval) (Lon $ arcsecondsToDegrees wcsY.crval) lonPole
-
-  lonPole :: LonPole
-  lonPole =
-    let (Key (Degrees d)) = common.lonpole
-     in LonPole d
+  sky = celestial (Lat $ arcsecondsToDegrees wcsX.crval) (Lon $ arcsecondsToDegrees wcsY.crval) (lonPole common)
 
   -- we don't use wcsLinear, because it includes the crval, which is already taken into account in the sky transform
   spatialLinear :: forall a alt x. (ToAxes a) => WCSAxis alt x -> Transform (Pix a) (Linear a)
@@ -108,6 +113,12 @@ transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project P
     -- crpix is 1-indexed, need to switch to zero
     -- don't use crval, it's already incorporated into the sky transform
     Intercept $ negate (w.cdelt * (w.crpix - 1))
+
+
+lonPole :: WCSCommon -> LonPole
+lonPole common =
+  let (Key (Degrees d)) = common.lonpole
+   in LonPole d
 
 
 -- -- linear (wcsShift wcs) (wcsScale wcs)
@@ -150,12 +161,18 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-quantityGWCS :: PrimaryHeader -> WCSHeader QuantityAxes -> QuantityGWCS
-quantityGWCS primary wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+quantityGWCS :: Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
+quantityGWCS primaries quants =
+  let midPrim = middleFrame primaries
+      midQuan = middleFrame quants
+   in QuantityGWCS $ GWCS (inputStep midQuan.wcs.common) (outputStep midPrim)
  where
-  inputStep :: WCSCommon -> QuantityAxes 'WCSMain -> GWCSStep CoordinateFrame
-  inputStep common axes = GWCSStep pixelFrame (Just (transformQuantity common axes).transformation)
+  inputStep :: WCSCommon -> GWCSStep CoordinateFrame
+  inputStep common = GWCSStep pixelFrame (Just (transformQuantity common (fmap axis quants)).transformation)
    where
+    axis :: QuantityHeader x -> QuantityAxes 'WCSMain
+    axis q = q.wcs.axes
+
     pixelFrame :: CoordinateFrame
     pixelFrame =
       CoordinateFrame
@@ -168,11 +185,11 @@ quantityGWCS primary wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) o
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame))
-  outputStep = GWCSStep compositeFrame Nothing
+  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame))
+  outputStep mid = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame primary))
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame mid.observation mid.obsgeo))
 
     opticalDepthFrame =
       CoordinateFrame
@@ -184,11 +201,15 @@ quantityGWCS primary wcs = QuantityGWCS $ GWCS (inputStep wcs.common wcs.axes) o
         }
 
 
-helioprojectiveFrame :: PrimaryHeader -> HelioprojectiveFrame
-helioprojectiveFrame primary =
+data HPLat deriving (Generic, ToAxes)
+data HPLon deriving (Generic, ToAxes)
+
+
+helioprojectiveFrame :: Observation -> Obsgeo -> HelioprojectiveFrame
+helioprojectiveFrame obs obsgeo =
   HelioprojectiveFrame
-    { coordinates = Cartesian3D (coord primary.obsgeo.obsgeoX) (coord primary.obsgeo.obsgeoY) (coord primary.obsgeo.obsgeoZ)
-    , obstime = primary.observation.dateBeg.ktype.utc
+    { coordinates = Cartesian3D (coord obsgeo.obsgeoX) (coord obsgeo.obsgeoY) (coord obsgeo.obsgeoZ)
+    , obstime = obs.dateBeg.ktype.utc
     , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
     }
  where
@@ -267,7 +288,7 @@ profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) out
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 (helioprojectiveFrame primary))
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 (helioprojectiveFrame primary.observation primary.obsgeo))
 
     stokesFrame =
       StokesFrame
@@ -301,12 +322,64 @@ instance (KnownText fit) => ToAsdf (ProfileGWCS fit) where
 
 data VaryingCelestialTransform = VaryingCelestialTransform
   { cdelt :: (Double, Double)
-  , crpix :: (Double, Double)
-  , crvals :: Array D Ix2 Float
-  , pcs :: Array D Ix3 Float
-  , lonPole :: Degrees
+  , crpixs :: [(Double, Double)]
+  , crvals :: [(Double, Double)] -- one per frame
+  , pcs :: [Array D Ix2 Double] -- one per frame
+  , lonPole :: LonPole
   }
   deriving (Generic)
+instance ToAsdf VaryingCelestialTransform where
+  schema _ = "asdf://dkist.nso.edu/tags/varying_celestial_transform-1.1.0"
+  toValue vct =
+    Object
+      [ ("cdelt", toNode $ Quantity (Unit "arcsec.pixel**-1") $ toValue vct.cdelt)
+      , ("crpix", toNode $ Quantity Pixel (toValue vct.crpixs))
+      , ("crval_table", toNode $ Quantity Arcseconds $ toValue vct.crvals)
+      , ("pc_table", toNode $ Quantity Pixel $ toValue vct.pcs)
+      , ("lon_pole", toNode vct.lonPole)
+      , ("projection", toNode $ Projection Pix2Sky)
+      -- , ("inputs", "[x,y,z]")
+      -- , ("outputs", "[lon, lat]")
+      ]
+
+
+data WCSFrame s = WCSFrame
+  { x :: WCSAxis 'WCSMain X
+  , y :: WCSAxis 'WCSMain Y
+  , pcxy :: PCXY s 'WCSMain
+  }
+
+
+varyingCelestialTransform
+  :: WCSCommon
+  -> Frames (WCSFrame s)
+  -> Transform (Pix X, Pix Y) (HPLon, HPLat)
+varyingCelestialTransform common wcss =
+  -- swap lat/lon for VaryingCelestialTransform, it expects them backwards from the FITS input
+  let mid = middleFrame wcss
+      frames = NE.toList wcss.frames
+   in transform $
+        VaryingCelestialTransform
+          { cdelt = (mid.y.cdelt, mid.x.cdelt)
+          , crpixs = fmap crpix frames
+          , crvals = fmap crval frames
+          , pcs = fmap pc frames
+          , lonPole = lonPole common
+          }
+ where
+  crpix f =
+    -- subtract 1 from crpix. GWCS transforms are zero-indexed while fits is 1-indexed
+    (f.y.crpix - 1, f.x.crpix - 1)
+  crval f =
+    (f.y.crval, f.x.crval)
+  pc f =
+    M.delay $
+      M.fromLists' @M.P
+        M.Seq
+        -- rotate 180 degrees from [[xx, xy], [yx, yy]]
+        [ [f.pcxy.yy.value, f.pcxy.yx.value]
+        , [f.pcxy.xy.value, f.pcxy.xx.value]
+        ]
 
 {-
   - !<asdf://dkist.nso.edu/tags/varying_celestial_transform-1.1.0>

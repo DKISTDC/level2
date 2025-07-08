@@ -7,6 +7,7 @@ module NSO.Image.Types.Frame
   , Arms (..)
   , armsFrames
   , framesArms
+  , middleFrame
   )
 where
 
@@ -33,6 +34,13 @@ instance KnownText FrameY where
 newtype Frames a = Frames {frames :: NonEmpty a}
   deriving newtype (Foldable, Functor)
   deriving (Show, Traversable)
+
+
+middleFrame :: Frames a -> a
+middleFrame (Frames as) =
+  case take 1 $ NE.drop (length as `div` 2) as of
+    [] -> head as
+    (a : _) -> a
 
 
 -- | One entry per ViSP arm

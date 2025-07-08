@@ -212,7 +212,7 @@ specWCS = describe "WCS" $ do
       w2.cdelt.ktype `shouldSatisfy` P.approx P.tol (wcsX.cdelt.ktype * fromIntegral slice.pixelsPerBin)
       w2.cdelt.ktype `shouldBe` 8
 
-    it "should scale CRPIX down by pixelsPerBin, and translate it down by begPixel" $ do
+    it "should scale CRPIX down by pixelsPerBin" $ do
       let w2 = adjustSlitX slice wcsX
       -- 800 is exactly 700 higher than starting pixel, which should be 100 bins
       w2.crpix.ktype `shouldSatisfy` P.lt wcsX.crpix.ktype

@@ -62,13 +62,16 @@ asdfDocument inversionId dscanon dsets now metas =
     InversionTree
       { fileuris
       , meta = inversionMeta $ fmap (.primary) sorted
-      , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs (head sorted.frames))
+      , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs sorted)
       , profiles = profilesSection (head sorted.frames).primary $ fmap (.profiles) sorted
       }
 
   -- choose a single frame from which to calculate the GWCS
-  qgwcs :: L2FitsMeta -> QuantityGWCS
-  qgwcs m = quantityGWCS m.primary m.quantities.items.opticalDepth.wcs
+  qgwcs :: Frames L2FitsMeta -> QuantityGWCS
+  qgwcs sorted =
+    quantityGWCS
+      (fmap (.primary) sorted)
+      (fmap (\m -> m.quantities.items.opticalDepth) sorted)
 
   inversionMeta :: Frames PrimaryHeader -> InversionMeta
   inversionMeta headers =

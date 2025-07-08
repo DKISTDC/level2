@@ -46,12 +46,13 @@ newtype Axis a = Axis Int
   deriving (Show, Eq)
 
 
-data X deriving (Generic, ToAxes)
-data Y deriving (Generic, ToAxes)
+data X deriving (Generic, ToAxes) -- HPLT-TAN
+data Y deriving (Generic, ToAxes) -- HPLN-TAN
 data Wav deriving (Generic, ToAxes)
 
 
 -- axisIndex :: Proxy a -> Proxy ax -> Natural
+-- SlitX = P
 
 data PCXY s (alt :: WCSAlt) = PCXY
   { xx :: PC s alt X X
