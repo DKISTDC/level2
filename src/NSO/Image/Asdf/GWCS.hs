@@ -2,6 +2,7 @@
 
 module NSO.Image.Asdf.GWCS where
 
+import Data.Bifunctor (bimap)
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
@@ -19,6 +20,7 @@ import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
 import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Pixel, Unit))
 import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS as GWCS
+import Telescope.Asdf.NDArray (ToNDArray (..))
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
@@ -185,11 +187,11 @@ quantityGWCS primaries quants =
               ]
         }
 
-  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame))
+  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
   outputStep mid = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame mid.observation mid.obsgeo))
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame mid.observation mid.obsgeo), temporalFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -199,6 +201,26 @@ quantityGWCS primaries quants =
               [ FrameAxis 0 "optical_depth" "optical_depth" Pixel
               ]
         }
+
+    temporalFrame =
+      TemporalFrame
+        { name = "temporal"
+        , axisOrder = 3
+        , time = mid.observation.dateAvg.ktype.utc
+        }
+
+
+newtype QuantityGWCS
+  = QuantityGWCS
+      (GWCS CoordinateFrame (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
+instance KnownText QuantityGWCS where
+  knownText = "quantityGWCS"
+
+
+instance ToAsdf QuantityGWCS where
+  schema (QuantityGWCS gwcs) = schema gwcs
+  anchor _ = Just $ Anchor $ knownText @QuantityGWCS
+  toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
 data HPLat deriving (Generic, ToAxes)
@@ -251,19 +273,6 @@ celestialFrame n helioFrame =
 --     rsun: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 km,
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
-
-newtype QuantityGWCS
-  = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame)))
-instance KnownText QuantityGWCS where
-  knownText = "quantityGWCS"
-
-
-instance ToAsdf QuantityGWCS where
-  schema (QuantityGWCS gwcs) = schema gwcs
-  anchor _ = Just $ Anchor $ knownText @QuantityGWCS
-  toValue (QuantityGWCS gwcs) = toValue gwcs
-
 
 profileGWCS :: PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS fit
 profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
@@ -320,12 +329,14 @@ instance (KnownText fit) => ToAsdf (ProfileGWCS fit) where
 
 -- Varying Celestial Transform -----------------------------------
 
+-- TODO: add time frame
 data VaryingCelestialTransform = VaryingCelestialTransform
   { cdelt :: (Double, Double)
-  , crpixs :: [(Double, Double)]
-  , crvals :: [(Double, Double)] -- one per frame
-  , pcs :: [Array D Ix2 Double] -- one per frame
   , lonPole :: LonPole
+  , -- one of each per frame
+    crpixs :: [(Double, Double)]
+  , crvals :: [(Double, Double)]
+  , pcs :: [((Double, Double), (Double, Double))]
   }
   deriving (Generic)
 instance ToAsdf VaryingCelestialTransform where
@@ -333,14 +344,25 @@ instance ToAsdf VaryingCelestialTransform where
   toValue vct =
     Object
       [ ("cdelt", toNode $ Quantity (Unit "arcsec.pixel**-1") $ toValue vct.cdelt)
-      , ("crpix", toNode $ Quantity Pixel (toValue vct.crpixs))
-      , ("crval_table", toNode $ Quantity Arcseconds $ toValue vct.crvals)
-      , ("pc_table", toNode $ Quantity Pixel $ toValue vct.pcs)
+      , ("crpix", toNode $ Quantity Pixel $ toValue $ toNDArray $ fmap tupleList vct.crpixs)
+      , ("crval_table", toNode $ Quantity Arcseconds $ toValue $ toNDArray $ fmap tupleList vct.crvals)
+      , ("pc_table", toNode $ Quantity Pixel $ toValue $ toNDArray $ pcsMatrix vct.pcs)
       , ("lon_pole", toNode vct.lonPole)
       , ("projection", toNode $ Projection Pix2Sky)
       -- , ("inputs", "[x,y,z]")
       -- , ("outputs", "[lon, lat]")
       ]
+   where
+    tupleList (a, b) = [a, b]
+
+    pcList ((a, b), (c, d)) = [[a, b], [c, d]]
+
+    pcsMatrix :: [((Double, Double), (Double, Double))] -> Array D Ix3 Double
+    pcsMatrix pcs =
+      M.delay
+        $ M.fromLists' @M.P
+          M.Seq
+        $ fmap pcList pcs
 
 
 data WCSFrame s = WCSFrame
@@ -373,13 +395,10 @@ varyingCelestialTransform common wcss =
   crval f =
     (f.y.crval, f.x.crval)
   pc f =
-    M.delay $
-      M.fromLists' @M.P
-        M.Seq
-        -- rotate 180 degrees from [[xx, xy], [yx, yy]]
-        [ [f.pcxy.yy.value, f.pcxy.yx.value]
-        , [f.pcxy.xy.value, f.pcxy.xx.value]
-        ]
+    -- rotate 180 degrees from [[xx, xy], [yx, yy]]
+    ( (f.pcxy.yy.value, f.pcxy.yx.value)
+    , (f.pcxy.xy.value, f.pcxy.xx.value)
+    )
 
 {-
   - !<asdf://dkist.nso.edu/tags/varying_celestial_transform-1.1.0>
