@@ -300,13 +300,14 @@ asdfTask t = do
     -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
 
     l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
+    l1trans <- Gen.readLevel1Asdf (Files.dataset dc)
 
     (metas :: Frames L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
 
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let tree = asdfDocument inv.inversionId dc ds now $ Frames $ NE.sort metas.frames
+    let tree = asdfDocument inv.inversionId dc ds now l1trans $ Frames $ NE.sort metas.frames
     let path = Asdf.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output

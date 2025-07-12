@@ -6,6 +6,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (..))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Generate, InvProfileFit, InvProfileOrig, InvQuantities, Inversion)
+import System.FilePath (takeExtension)
 
 
 -- UPLOADS --------------------------------------------------------------------------
@@ -57,6 +58,11 @@ input = Scratch.baseDir </> "input"
 dataset :: Dataset -> Path' Dir Dataset
 dataset d =
   input </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.instrumentProgramId.fromId) </> Path (cs d.datasetId.fromId)
+
+
+isAsdf :: Path' Filename Dataset -> Bool
+isAsdf p = do
+  takeExtension p.filePath == ".asdf"
 
 
 blanca :: Id Proposal -> Id Inversion -> Path' Dir BLANCA

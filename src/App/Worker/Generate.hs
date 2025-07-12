@@ -16,6 +16,7 @@ import NSO.Image.Files (UploadFiles (..))
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
+import NSO.Image.GWCS.L1Transform
 import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
@@ -27,6 +28,7 @@ import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import Network.Globus qualified as Globus
 import System.FilePath (takeExtensions)
+import Telescope.Asdf qualified as Asdf
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
@@ -118,12 +120,29 @@ readLevel1File dir frame = do
     _ -> throwError $ MissingL1HDU frame.file.filePath
 
 
+readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path' Dir Dataset -> Eff es L1Asdf
+readLevel1Asdf dir = do
+  files <- Scratch.listDirectory dir
+  case filter Files.isAsdf files of
+    [asdfFile] -> do
+      inp <- send $ Scratch.ReadFile $ filePath dir asdfFile
+      res <- runErrorNoCallStack @AsdfError $ Asdf.decode @L1Asdf inp
+      case res of
+        Left e -> throwError $ L1AsdfParse e
+        Right a -> pure a
+    _ -> throwError $ MissingL1Asdf dir.filePath
+
+
 readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path' Filename L2FrameFits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   inp <- send $ Scratch.ReadFile $ filePath dir path
   Fits.decode inp
 
+
+-- -- where do we parse this from?
+-- requireL1Transform :: Eff es L1WCSTransform
+-- requireL1Transform = _
 
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]
 l2FramePaths pid iid = do
@@ -135,6 +154,8 @@ data FetchError
   = NoCanonicalDataset [Id Dataset]
   | MissingFrames (Id Dataset)
   | MissingL1HDU FilePath
+  | L1AsdfParse AsdfError
+  | MissingL1Asdf FilePath
   | FetchParse ParseError
   deriving (Show, Exception, Eq)
 

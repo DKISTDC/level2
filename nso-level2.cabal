@@ -82,7 +82,6 @@ library
       NSO.Data.Sync
       NSO.Image.Asdf
       NSO.Image.Asdf.FileManager
-      NSO.Image.Asdf.GWCS
       NSO.Image.Asdf.HeaderTable
       NSO.Image.Asdf.NDCollection
       NSO.Image.Asdf.Ref
@@ -93,6 +92,8 @@ library
       NSO.Image.Fits.Meta
       NSO.Image.Fits.Profile
       NSO.Image.Fits.Quantity
+      NSO.Image.GWCS
+      NSO.Image.GWCS.L1Transform
       NSO.Image.Headers
       NSO.Image.Headers.DataCommon
       NSO.Image.Headers.Doc

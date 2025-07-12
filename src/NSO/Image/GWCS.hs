@@ -1,13 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module NSO.Image.Asdf.GWCS where
+module NSO.Image.GWCS where
 
-import Data.Bifunctor (bimap)
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
+import NSO.Image.GWCS.L1Transform (HPLat, HPLon, L1WCSTransform (..), Time, l1WCSTransform)
 import NSO.Image.Headers (Observation (..), Obsgeo (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
@@ -48,12 +48,13 @@ transformProfile common axes =
 -- Quantity ---------------------------------------------------
 
 transformQuantity
-  :: WCSCommon
+  :: L1WCSTransform
+  -> WCSCommon
   -> Frames (QuantityAxes 'WCSMain)
-  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat)
-transformQuantity common axes =
+  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time)
+transformQuantity l1trans common axes =
   let mid = middleFrame axes
-   in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> varyingCelestialTransform common (fmap wcsFrame axes)
+   in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> l1WCSTransform l1trans -- varyingCelestialTransform common (fmap wcsFrame axes)
  where
   wcsFrame :: QuantityAxes 'WCSMain -> WCSFrame QuantityAxes
   wcsFrame axs =
@@ -163,14 +164,15 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-quantityGWCS :: Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
-quantityGWCS primaries quants =
+quantityGWCS :: L1WCSTransform -> Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
+quantityGWCS l1trans primaries quants =
   let midPrim = middleFrame primaries
+      firstPrim = head primaries.frames
       midQuan = middleFrame quants
-   in QuantityGWCS $ GWCS (inputStep midQuan.wcs.common) (outputStep midPrim)
+   in QuantityGWCS $ GWCS (inputStep midQuan.wcs.common) (outputStep firstPrim midPrim)
  where
   inputStep :: WCSCommon -> GWCSStep CoordinateFrame
-  inputStep common = GWCSStep pixelFrame (Just (transformQuantity common (fmap axis quants)).transformation)
+  inputStep common = GWCSStep pixelFrame (Just (transformQuantity l1trans common (fmap axis quants)).transformation)
    where
     axis :: QuantityHeader x -> QuantityAxes 'WCSMain
     axis q = q.wcs.axes
@@ -187,11 +189,11 @@ quantityGWCS primaries quants =
               ]
         }
 
-  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
-  outputStep mid = GWCSStep compositeFrame Nothing
+  outputStep :: PrimaryHeader -> PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
+  outputStep h0 hmid = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame mid.observation mid.obsgeo), temporalFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame hmid.observation hmid.obsgeo), temporalFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -206,13 +208,16 @@ quantityGWCS primaries quants =
       TemporalFrame
         { name = "temporal"
         , axisOrder = 3
-        , time = mid.observation.dateAvg.ktype.utc
+        , time = h0.observation.dateAvg.ktype.utc
         }
+
+
+type OpticalDepthFrame = CoordinateFrame
 
 
 newtype QuantityGWCS
   = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
 instance KnownText QuantityGWCS where
   knownText = "quantityGWCS"
 
@@ -221,10 +226,6 @@ instance ToAsdf QuantityGWCS where
   schema (QuantityGWCS gwcs) = schema gwcs
   anchor _ = Just $ Anchor $ knownText @QuantityGWCS
   toValue (QuantityGWCS gwcs) = toValue gwcs
-
-
-data HPLat deriving (Generic, ToAxes)
-data HPLon deriving (Generic, ToAxes)
 
 
 helioprojectiveFrame :: Observation -> Obsgeo -> HelioprojectiveFrame

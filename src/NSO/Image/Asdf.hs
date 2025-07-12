@@ -13,13 +13,14 @@ import GHC.Generics (Rep, from)
 import NSO.Data.Spectra (midPoint)
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Image.Asdf.FileManager (FileManager, fileManager)
-import NSO.Image.Asdf.GWCS
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
+import NSO.Image.GWCS
+import NSO.Image.GWCS.L1Transform
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arms (..), Frames (..), armsFrames)
@@ -42,7 +43,7 @@ import Text.Casing (quietSnake)
 -- DONE: 3-arm profiles sodium
 -- DONE: fit/orig separate GWCS + anchors
 -- TODO: fix gwcs
--- TODO: labelled meta.axes for profiles
+-- TODO: labeled meta.axes for profiles
 
 data L2Asdf
 
@@ -52,8 +53,8 @@ outputL2AsdfPath ip ii =
   filePath (Files.outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
-asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> UTCTime -> Frames L2FitsMeta -> Document
-asdfDocument inversionId dscanon dsets now metas =
+asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
+asdfDocument inversionId dscanon dsets now l1asdf metas =
   let frames = Frames $ NE.sort metas.frames
    in Document (inversionTree frames)
  where
@@ -70,6 +71,7 @@ asdfDocument inversionId dscanon dsets now metas =
   qgwcs :: Frames L2FitsMeta -> QuantityGWCS
   qgwcs sorted =
     quantityGWCS
+      l1asdf.dataset.wcs.transform
       (fmap (.primary) sorted)
       (fmap (\m -> m.quantities.items.opticalDepth) sorted)
 

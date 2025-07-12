@@ -11,7 +11,6 @@ import Data.Text (pack)
 import Data.Text qualified as T
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.UUID qualified as UUID
-import Debug.Trace
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
