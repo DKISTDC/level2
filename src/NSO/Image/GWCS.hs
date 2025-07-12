@@ -7,7 +7,7 @@ import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
-import NSO.Image.GWCS.L1Transform (HPLat, HPLon, L1WCSTransform (..), Time, l1WCSTransform)
+import NSO.Image.GWCS.L1Transform (HPLat, HPLon, L1WCSTransform (..), Time, Zero, l1WCSTransform)
 import NSO.Image.Headers (Observation (..), Obsgeo (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
@@ -16,6 +16,7 @@ import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
 import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude
 import NSO.Types.Common (DateTime (..))
+import Numeric (showFFloat)
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
 import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Pixel, Unit))
 import Telescope.Asdf.Core qualified as Unit
@@ -49,26 +50,18 @@ transformProfile common axes =
 
 transformQuantity
   :: L1WCSTransform
-  -> WCSCommon
   -> Frames (QuantityAxes 'WCSMain)
   -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time)
-transformQuantity l1trans common axes =
-  let mid = middleFrame axes
-   in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> l1WCSTransform l1trans -- varyingCelestialTransform common (fmap wcsFrame axes)
+transformQuantity l1trans axes =
+  dropUnusedZeros fullTransform
  where
-  wcsFrame :: QuantityAxes 'WCSMain -> WCSFrame QuantityAxes
-  wcsFrame axs =
-    WCSFrame
-      { x = toWCSAxis axs.slitX.keys
-      , y = toWCSAxis axs.dummyY.keys
-      , pcxy = pcs axs
-      }
+  fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+  fullTransform =
+    let mid = middleFrame axes
+     in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> l1WCSTransform l1trans
 
-  pcs :: QuantityAxes 'WCSMain -> PCXY QuantityAxes 'WCSMain
-  pcs axs = fromMaybe identityPCXY $ do
-    pcx <- axs.slitX.pcs
-    pcy <- axs.dummyY.pcs
-    pure $ PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
+  dropUnusedZeros :: Transform inp (a, b, c, d, Zero z1, Zero z2) -> Transform inp (w, x, y, z)
+  dropUnusedZeros (Transform t) = Transform t
 
 
 identityPCXY :: PCXY s 'WCSMain
@@ -76,12 +69,24 @@ identityPCXY =
   PCXY{xx = PC 1, xy = PC 0, yx = PC 0, yy = PC 1}
 
 
+data LinearOpticalDepth = LinearOpticalDepth {intercept :: Quantity, slope :: Quantity}
+  deriving (Generic)
+instance ToAsdf LinearOpticalDepth where
+  schema _ = "!transform/linear1d-1.0.0"
+
+
 transformOpticalDepth :: WCSAxis 'WCSMain Depth -> Transform (Pix Depth) (Linear Depth)
 transformOpticalDepth wcsOD =
-  linear (wcsIntercept wcsOD) (Scale $ factor1digit wcsOD.cdelt)
+  let Intercept i = wcsIntercept wcsOD
+      s = wcsOD.cdelt
+   in transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
  where
-  factor1digit :: Double -> Double
-  factor1digit d = fromIntegral (round @Double @Integer (d * 10)) / 10
+  -- intercept: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 pix, value: 853.7012736084624}
+  -- slope: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 pix.pixel**-1, value: 9.99852488051306e-4}
+  -- linear (wcsIntercept wcsOD) (Scale $ factor1digit wcsOD.cdelt)
+
+  factor1digit :: Double -> Value
+  factor1digit d = String $ cs $ showFFloat (Just 1) d "" -- fromIntegral (round @Double @Integer (d * 10)) / 10
 
 
 transformSpatial
@@ -168,11 +173,10 @@ quantityGWCS :: L1WCSTransform -> Frames PrimaryHeader -> Frames (QuantityHeader
 quantityGWCS l1trans primaries quants =
   let midPrim = middleFrame primaries
       firstPrim = head primaries.frames
-      midQuan = middleFrame quants
-   in QuantityGWCS $ GWCS (inputStep midQuan.wcs.common) (outputStep firstPrim midPrim)
+   in QuantityGWCS $ GWCS inputStep (outputStep firstPrim midPrim)
  where
-  inputStep :: WCSCommon -> GWCSStep CoordinateFrame
-  inputStep common = GWCSStep pixelFrame (Just (transformQuantity l1trans common (fmap axis quants)).transformation)
+  inputStep :: GWCSStep CoordinateFrame
+  inputStep = GWCSStep pixelFrame (Just (transformQuantity l1trans (fmap axis quants)).transformation)
    where
     axis :: QuantityHeader x -> QuantityAxes 'WCSMain
     axis q = q.wcs.axes

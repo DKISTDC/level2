@@ -233,7 +233,7 @@ data DataTree meta info = DataTree
   }
   deriving (Generic)
 instance (ToAsdf (meta info), KnownText info) => ToAsdf (DataTree meta info) where
-  schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
+  -- schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
   anchor _ = Just $ Anchor $ knownText @info
   toValue q =
     Object
@@ -398,7 +398,7 @@ data ProfileTree fit = ProfileTree
   deriving (Generic)
 instance (KnownText fit) => ToAsdf (ProfileTree fit) where
   -- anchor _ = Just $ Anchor $ knownText @fit
-  schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
+  -- schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
   toValue p =
     Object
       [ ("unit", toNode p.unit)

@@ -53,8 +53,8 @@ instance ToAsdf L1WCSTransform where
   toValue (L1WCSTransform n) = n.value
 
 
-l1WCSTransform :: L1WCSTransform -> Transform (Pix X, Pix Y) (HPLon, HPLat, Time)
-l1WCSTransform t = fixL1Inputs |> zeroWavStokes |> originalL1Transform |> reorderDropOutput
+l1WCSTransform :: L1WCSTransform -> Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+l1WCSTransform t = fixL1Inputs |> zeroWavStokes |> originalL1Transform |> reorderOutput
  where
   originalL1Transform :: Transform (Pix X, Zero Wav, Pix Y, Zero Stokes) (HPLon, Wav, HPLat, Time, Stokes)
   originalL1Transform = transform t
@@ -68,5 +68,5 @@ l1WCSTransform t = fixL1Inputs |> zeroWavStokes |> originalL1Transform |> reorde
   zeroWavStokes :: Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Pix X, Zero Wav, Pix Y, Zero Stokes)
   zeroWavStokes = identity @(Pix X) <&> zero <&> identity @(Pix Y) <&> zero
 
-  reorderDropOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (HPLon, HPLat, Time)
-  reorderDropOutput = transform $ Mapping [0, 2, 3, 1, 4]
+  reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+  reorderOutput = transform $ Mapping [0, 2, 3, 1, 4]
