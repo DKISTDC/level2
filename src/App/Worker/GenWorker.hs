@@ -311,7 +311,7 @@ asdfTask t = do
 
     now <- currentTime
     let tree = asdfDocument inv.inversionId dc ds slice.pixelsPerBin now l1trans $ Frames $ NE.sort metas.frames
-    let path = Asdf.outputL2AsdfPath inv.proposalId inv.inversionId
+    let path = Files.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output
 

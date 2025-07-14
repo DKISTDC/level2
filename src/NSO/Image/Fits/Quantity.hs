@@ -206,7 +206,7 @@ wcsAxes s h = do
 
 wcsDepth :: (Monad m) => m (QuantityAxis alt n)
 wcsDepth = do
-  let crpix = Key 12
+  let crpix = Key 13 -- 1-indexed pixel where depth == 0
       crval = Key 0
       cdelt = Key (-0.1)
       cunit = Key ""

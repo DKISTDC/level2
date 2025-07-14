@@ -5,6 +5,7 @@ module NSO.Image.GWCS where
 import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
+import Debug.Trace
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
 import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero, l1FixInputs, l1ScaleAxes, l1WCSTransform)
@@ -82,7 +83,7 @@ transformOpticalDepth :: WCSAxis 'WCSMain Depth -> Transform (Pix Depth) (Linear
 transformOpticalDepth wcsOD =
   let Intercept i = wcsIntercept wcsOD
       s = wcsOD.cdelt
-   in transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
+   in trace ("OD:" <> show wcsOD) $ transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
  where
   -- intercept: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 pix, value: 853.7012736084624}
   -- slope: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 pix.pixel**-1, value: 9.99852488051306e-4}

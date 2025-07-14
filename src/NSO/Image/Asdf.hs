@@ -16,6 +16,7 @@ import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
+import NSO.Image.Files (L2Asdf)
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
@@ -46,12 +47,6 @@ import Text.Casing (quietSnake)
 -- TODO: fix gwcs
 -- TODO: labeled meta.axes for profiles
 
-data L2Asdf
-
-
-outputL2AsdfPath :: Id Proposal -> Id Inversion -> Path L2Asdf
-outputL2AsdfPath ip ii =
-  filePath (Files.outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
@@ -96,15 +91,6 @@ asdfDocument inversionId dscanon dsets bin now l1asdf metas =
           }
 
   fileuris = Fileuris $ fmap (.path) $ NE.toList metas.frames
-
-
-filenameL2Asdf :: Id Proposal -> Id Inversion -> Path' Filename L2Asdf
-filenameL2Asdf _ ii =
-  Path $ cs (T.toUpper $ T.map toUnderscore ii.fromId) <> "_L2.asdf"
- where
-  toUnderscore :: Char -> Char
-  toUnderscore '.' = '_'
-  toUnderscore c = c
 
 
 encodeL2 :: (Error AsdfError :> es, IOE :> es) => Document -> Eff es ByteString

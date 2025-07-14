@@ -1,5 +1,6 @@
 module NSO.Image.Files where
 
+import Data.Text qualified as T
 import NSO.Data.Scratch qualified as Scratch
 import NSO.Prelude
 import NSO.Types.Common
@@ -79,3 +80,20 @@ generated = Scratch.baseDir </> "generated"
 outputL2Dir :: Id Proposal -> Id Inversion -> Path' Dir Inversion
 outputL2Dir ip ii =
   generated </> Path (cs ip.fromId) </> Path (cs ii.fromId)
+
+
+data L2Asdf
+
+
+outputL2AsdfPath :: Id Proposal -> Id Inversion -> Path L2Asdf
+outputL2AsdfPath ip ii =
+  filePath (outputL2Dir ip ii) $ filenameL2Asdf ip ii
+
+
+filenameL2Asdf :: Id Proposal -> Id Inversion -> Path' Filename L2Asdf
+filenameL2Asdf _ ii =
+  Path $ cs (T.toUpper $ T.map toUnderscore ii.fromId) <> "_L2_metadata.asdf"
+ where
+  toUnderscore :: Char -> Char
+  toUnderscore '.' = '_'
+  toUnderscore c = c
