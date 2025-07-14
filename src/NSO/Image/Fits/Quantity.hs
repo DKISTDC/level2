@@ -8,6 +8,7 @@ import Control.Exception (Exception)
 import Data.ByteString (ByteString)
 import Data.Fixed (mod')
 import Data.Massiv.Array as M (Index, Sz (..), map)
+import Data.Time (utc, utcToLocalTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log
@@ -240,7 +241,7 @@ addDummyAxis DataArray{bitpix, axes, rawData} =
 
 dataCommon :: (Monad m, Index (IndexOf as)) => UTCTime -> DataCube as Float -> m DataCommon
 dataCommon now res = do
-  let date = Key now
+  let date = Key (utcToLocalTime utc now)
       datamax = Key $ maximum res.array
       datamin = Key $ minimum res.array
   pure $

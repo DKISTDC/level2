@@ -20,7 +20,7 @@ import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.GWCS
-import NSO.Image.GWCS.L1Transform
+import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arms (..), Frames (..), armsFrames)
@@ -64,14 +64,14 @@ asdfDocument inversionId dscanon dsets now l1asdf metas =
       { fileuris
       , meta = inversionMeta $ fmap (.primary) sorted
       , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs sorted)
-      , profiles = profilesSection (head sorted.frames).primary $ fmap (.profiles) sorted
+      , profiles = profilesSection l1asdf.dataset.wcs (head sorted.frames).primary $ fmap (.profiles) sorted
       }
 
   -- choose a single frame from which to calculate the GWCS
   qgwcs :: Frames L2FitsMeta -> QuantityGWCS
   qgwcs sorted =
     quantityGWCS
-      l1asdf.dataset.wcs.transform
+      l1asdf.dataset.wcs
       (fmap (.primary) sorted)
       (fmap (\m -> m.quantities.items.opticalDepth) sorted)
 
@@ -330,16 +330,16 @@ instance ToAsdf ProfilesSection where
 --   toValue (ProfilesItems arms) = toValue arms
 
 -- we need one ProfileMeta for each arm
-profilesSection :: PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
-profilesSection primary profs =
+profilesSection :: L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
+profilesSection l1gwcs primary profs =
   let sampleArm = head (head profs.frames).arms
       fit = sampleArm.fit
       orig = sampleArm.original
    in ProfilesSection
         { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
         , arms = profilesArmsTree profs
-        , gwcsFit = profileGWCS primary fit.wcs
-        , gwcsOrig = profileGWCS primary orig.wcs
+        , gwcsFit = profileGWCS l1gwcs fit.wcs
+        , gwcsOrig = profileGWCS l1gwcs orig.wcs
         }
 
 

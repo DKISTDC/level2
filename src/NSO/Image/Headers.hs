@@ -21,7 +21,7 @@ import NSO.Image.Headers.Keywords
 import NSO.Image.Headers.Parse
 import NSO.Image.Headers.Types
 import NSO.Prelude
-import NSO.Types.Common (DateTime (..), Id (..))
+import NSO.Types.Common (Id (..))
 import NSO.Types.Inversion (Inversion)
 import Telescope.Fits as Fits
 import Telescope.Fits.Header as Fits
@@ -50,9 +50,9 @@ data Observation = Observation
   , instrume :: Instrument
   , object :: Object
   , telapse :: Key Seconds "TELAPSE = DATE-END - DATE-BEG. Not always equal to the exposure time as multiple exposures could be combined"
-  , dateBeg :: Key DateTime "Start date and time of light exposure for the frame"
-  , dateEnd :: Key DateTime "End date and time of light exposure for the frame"
-  , dateAvg :: Key DateTime "Date/Time of the midpoint of the frame. (DATE-END - DATE-BEG) / 2"
+  , dateBeg :: Key LocalTime "Start date and time of light exposure for the frame"
+  , dateEnd :: Key LocalTime "End date and time of light exposure for the frame"
+  , dateAvg :: Key LocalTime "Date/Time of the midpoint of the frame. (DATE-END - DATE-BEG) / 2"
   , timesys :: Key (Constant "UTC") "Time scale of the time related keywords"
   , solarnet :: Key (Constant "1.0") "SOLARNET compliance: 1.0: Fully compliant 0.5: Partially compliant"
   }
@@ -126,7 +126,7 @@ data Telescope = Telescope
   , telscan :: Maybe Telscan
   , ttbltrck :: Ttbltrck
   , ttblangl :: Key Degrees "Telescope Coude table angle"
-  , dateref :: Key DateTime "Time coordinate zero point"
+  , dateref :: Key LocalTime "Time coordinate zero point"
   , rotcomp :: Maybe (Key Int "Solar rotation compensation: 1: On 2: Off")
   , obsVr :: Key Mps "Observer’s outward velocity w.r.t. the Sun"
   }
@@ -212,7 +212,7 @@ observationHeader l1 = do
 
 datacenterHeader :: (Error ParseError :> es, GenRandom :> es) => Header -> Id Inversion -> Eff es Datacenter
 datacenterHeader l1 i = do
-  DateTime dateBeg <- requireKey "DATE-BEG" l1
+  dateBeg <- requireKey "DATE-BEG" l1
   dkistver <- requireKey "DKISTVER" l1
   obsprId <- Key <$> requireKey "OBSPR_ID" l1
   experId <- Key <$> requireKey "EXPER_ID" l1
@@ -311,7 +311,7 @@ obsgeoHeader l1 = do
 --   pure $ StatisticsHeader{..}
 
 -- 2023_10_16T23_55_59_513_00589600_inv_290834_L2.fits
-fitsFrameFilename :: UTCTime -> Id Inversion -> Text
+fitsFrameFilename :: LocalTime -> Id Inversion -> Text
 fitsFrameFilename start iv =
   addExtension . T.toUpper . T.map toUnderscore $
     T.intercalate

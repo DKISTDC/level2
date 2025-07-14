@@ -10,6 +10,7 @@ import Data.Grouped
 import Data.List qualified as L
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
+import Data.Time (localTimeToUTC, utc)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
@@ -228,12 +229,12 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
         , boundingBox = boundingBoxNaN d.boundingBox
         , instrument = ins
         , stokesParameters = d.stokesParameters
-        , createDate = d.createDate.utc
-        , updateDate = d.updateDate.utc
+        , createDate = localTimeToUTC utc d.createDate
+        , updateDate = localTimeToUTC utc d.updateDate
         , wavelengthMin = Wavelength d.wavelengthMin
         , wavelengthMax = Wavelength d.wavelengthMax
-        , startTime = d.startTime.utc
-        , endTime = d.endTime.utc
+        , startTime = localTimeToUTC utc d.startTime
+        , endTime = localTimeToUTC utc d.endTime
         , frameCount = fromIntegral d.frameCount
         , primaryExperimentId = Id d.primaryExperimentId
         , primaryProposalId = Id d.primaryProposalId
@@ -245,7 +246,7 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
         , friedParameter = d.friedParameter
         , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
         , lightLevel = d.lightLevel
-        , embargo = emb
+        , embargo = localTimeToUTC utc <$> emb
         , spectralLines = fromMaybe [] d.spectralLines
         }
 
@@ -259,12 +260,12 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
   parseInstrument input =
     maybe (Left [i|Invalid Instrument: #{input}|]) Right $ instrumentFromName $ cs input
 
-  parseEmbargo :: Either String (Maybe UTCTime)
+  parseEmbargo :: Either String (Maybe LocalTime)
   parseEmbargo =
     if d.isEmbargoed
       then do
         dt <- required "Embargo End Date" d.embargoEndDate
-        pure (Just dt.utc)
+        pure (Just dt)
       else pure Nothing
 
   required :: String -> Maybe a -> Either String a

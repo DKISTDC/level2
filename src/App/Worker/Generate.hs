@@ -16,7 +16,7 @@ import NSO.Image.Files (UploadFiles (..))
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
-import NSO.Image.GWCS.L1Transform
+import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
@@ -140,9 +140,6 @@ readLevel2Fits pid iid path = do
   Fits.decode inp
 
 
--- -- where do we parse this from?
--- requireL1Transform :: Eff es L1WCSTransform
--- requireL1Transform = _
 
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]
 l2FramePaths pid iid = do

@@ -1,4 +1,4 @@
-module NSO.Image.GWCS.L1Transform where
+module NSO.Image.GWCS.L1GWCS where
 
 import NSO.Image.Headers.WCS (Wav, X, Y)
 import NSO.Prelude hiding (identity)
@@ -30,6 +30,7 @@ data L1AsdfDataset = L1AsdfDataset
 
 data L1GWCS = L1GWCS
   { transform :: L1WCSTransform
+  , helioprojectiveFrame :: HelioprojectiveFrame
   }
 
 
@@ -39,11 +40,20 @@ data Zero a deriving (Generic, ToAxes)
 instance FromAsdf L1GWCS where
   parseValue = \case
     Object o -> do
-      ss :: [Value] <- o .: "steps"
+      -- Parse the steps as objects, not GWCSSteps
+      -- , because we want to read their Node directly
+      ss <- o .: "steps"
       case ss of
-        [Object s1, _] -> do
+        [Object s1, Object s2] -> do
           n :: Node <- s1 .: "transform"
-          pure $ L1GWCS $ L1WCSTransform n
+
+          compFrame :: Object <- s2 .: "frame"
+          compFrames :: [Object] <- compFrame .: "frames"
+          case compFrames of
+            [_spectral, celest, _temporal, _stokes] -> do
+              helio <- celest .: "reference_frame"
+              pure $ L1GWCS (L1WCSTransform n) helio
+            other -> expected "final step 2 frames" other
         _ -> expected "l1 gwcs [step1, step2]" ss
     other -> expected "l1 gwcs" other
 

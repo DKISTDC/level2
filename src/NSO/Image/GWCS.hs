@@ -7,7 +7,7 @@ import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
-import NSO.Image.GWCS.L1Transform (HPLat, HPLon, L1WCSTransform (..), Time, Zero, l1WCSTransform)
+import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero, l1WCSTransform)
 import NSO.Image.Headers (Observation (..), Obsgeo (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
@@ -15,7 +15,6 @@ import NSO.Image.Primary (PrimaryHeader (..))
 import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
 import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude
-import NSO.Types.Common (DateTime (..))
 import Numeric (showFFloat)
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
 import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Pixel, Unit))
@@ -169,14 +168,13 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-quantityGWCS :: L1WCSTransform -> Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
-quantityGWCS l1trans primaries quants =
-  let midPrim = middleFrame primaries
-      firstPrim = head primaries.frames
-   in QuantityGWCS $ GWCS inputStep (outputStep firstPrim midPrim)
+quantityGWCS :: L1GWCS -> Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
+quantityGWCS l1gwcs primaries quants =
+  let firstPrim = head primaries.frames
+   in QuantityGWCS $ GWCS inputStep (outputStep firstPrim)
  where
   inputStep :: GWCSStep CoordinateFrame
-  inputStep = GWCSStep pixelFrame (Just (transformQuantity l1trans (fmap axis quants)).transformation)
+  inputStep = GWCSStep pixelFrame (Just (transformQuantity l1gwcs.transform (fmap axis quants)).transformation)
    where
     axis :: QuantityHeader x -> QuantityAxes 'WCSMain
     axis q = q.wcs.axes
@@ -193,11 +191,11 @@ quantityGWCS l1trans primaries quants =
               ]
         }
 
-  outputStep :: PrimaryHeader -> PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
-  outputStep h0 hmid = GWCSStep compositeFrame Nothing
+  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
+  outputStep h0 = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 (helioprojectiveFrame hmid.observation hmid.obsgeo), temporalFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioprojectiveFrame, temporalFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -212,7 +210,7 @@ quantityGWCS l1trans primaries quants =
       TemporalFrame
         { name = "temporal"
         , axisOrder = 3
-        , time = h0.observation.dateAvg.ktype.utc
+        , time = h0.observation.dateAvg.ktype
         }
 
 
@@ -232,17 +230,19 @@ instance ToAsdf QuantityGWCS where
   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
-helioprojectiveFrame :: Observation -> Obsgeo -> HelioprojectiveFrame
-helioprojectiveFrame obs obsgeo =
-  HelioprojectiveFrame
-    { coordinates = Cartesian3D (coord obsgeo.obsgeoX) (coord obsgeo.obsgeoY) (coord obsgeo.obsgeoZ)
-    , obstime = obs.dateBeg.ktype.utc
-    , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
-    }
- where
-  coord :: Key Meters desc -> Unit.Quantity
-  coord (Key (Meters m)) = Unit.Quantity Unit.Meters $ toValue m
-
+-- helioprojectiveFrame :: Observation -> Obsgeo -> HelioprojectiveFrame
+-- helioprojectiveFrame obs obsgeo =
+--   HelioprojectiveFrame
+--     { coordinates = Cartesian3D (coord obsgeo.obsgeoX) (coord obsgeo.obsgeoY) (coord obsgeo.obsgeoZ)
+--     , observation =
+--         HelioObservation
+--           { obstime = obs.dateBeg.ktype
+--           , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
+--           }
+--     }
+--  where
+--   coord :: Key Meters desc -> Unit.Quantity
+--   coord (Key (Meters m)) = Unit.Quantity Unit.Meters $ toValue m
 
 celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame HelioprojectiveFrame
 celestialFrame n helioFrame =
@@ -279,8 +279,8 @@ celestialFrame n helioFrame =
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
 
-profileGWCS :: PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS fit
-profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+profileGWCS :: L1GWCS -> WCSHeader ProfileAxes -> ProfileGWCS fit
+profileGWCS l1gwcs wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
   inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
   inputStep common axes = GWCSStep pixelFrame (Just (transformProfile common axes).transformation)
@@ -302,7 +302,7 @@ profileGWCS primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) out
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 (helioprojectiveFrame primary.observation primary.obsgeo))
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 l1gwcs.helioprojectiveFrame)
 
     stokesFrame =
       StokesFrame

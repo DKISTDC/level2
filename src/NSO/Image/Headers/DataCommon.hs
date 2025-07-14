@@ -71,6 +71,6 @@ data DataCommon = DataCommon
   , bscale :: BScale
   , datamin :: Key Float "The minimum data value"
   , datamax :: Key Float "The maximum data value"
-  , date :: Key UTCTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
+  , date :: Key LocalTime "UTC Date/Time of HDU creation, in the form: YYYY-MM-DDThh:mm:ss[.sss…]"
   }
   deriving (Generic, HeaderDoc, ToHeader, FromHeader)

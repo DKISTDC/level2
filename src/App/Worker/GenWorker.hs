@@ -125,11 +125,11 @@ fitsTask task = do
     log Debug $ dump "Profile Arms " arms
 
     profileFit <- Blanca.decodeProfileArms arms fitHDUs
-    log Debug $ dump "Profile Fit " profileFit
+    log Debug $ dump "Profile Fit" (length profileFit.arms)
 
     origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
     profileOrig <- Blanca.decodeProfileArms arms origHDUs
-    log Debug $ dump "Profile Orig" profileOrig
+    log Debug $ dump "Profile Orig" (length profileOrig.arms)
 
     l1 <- Gen.canonicalL1Frames (Files.dataset dc)
     log Debug $ dump "Frames" (length quantities, armFramesLength profileFit, armFramesLength profileOrig, length l1)
@@ -192,7 +192,7 @@ workFrame
   -> Eff es (Maybe L2FitsMeta)
 workFrame t slice frameInputs = runGenerateError $ do
   start <- currentTime
-  DateTime dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
+  dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
   let path = Fits.outputL2Fits t.proposalId t.inversionId dateBeg
   alreadyExists <- Scratch.pathExists path
 
@@ -299,8 +299,11 @@ asdfTask t = do
     -- profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileArms arms fitHDUs
     -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
 
+    log Debug "Got Blanca"
     l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
+    log Debug "Got Gfits"
     l1trans <- Gen.readLevel1Asdf (Files.dataset dc)
+    log Debug "Got L1Asdf"
 
     (metas :: Frames L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
 

@@ -11,6 +11,7 @@ module NSO.Prelude
   , Map
   , Text
   , UTCTime
+  , LocalTime
   , Tagged (..)
   , Type
 
@@ -52,6 +53,7 @@ import Data.String.Conversions (cs)
 import Data.Tagged (Tagged (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
+import Data.Time.LocalTime (LocalTime)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import GHC.Generics (Generic)

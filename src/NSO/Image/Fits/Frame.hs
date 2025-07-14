@@ -48,12 +48,12 @@ instance Show L2FrameInputs where
      in [i| L2FrameInputs { quantities = , profiles = #{ps}, l1Frame = #{length ks}} |]
 
 
-outputL2Fits :: Id Proposal -> Id Inversion -> UTCTime -> Path L2FrameFits
+outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path L2FrameFits
 outputL2Fits ip ii dt =
   filePath (Files.outputL2Dir ip ii) $ filenameL2Fits ii dt
 
 
-filenameL2Fits :: Id Inversion -> UTCTime -> Path' Filename L2FrameFits
+filenameL2Fits :: Id Inversion -> LocalTime -> Path' Filename L2FrameFits
 filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
 
 

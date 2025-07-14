@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE LambdaCase #-}
 
 module NSO.Types.Common where
 
@@ -8,8 +7,6 @@ import Data.Aeson
 import Data.Aeson.Types (parseEither)
 import Data.List qualified as L
 import Data.Text qualified as T
-import Data.Time.Format (FormatTime)
-import Data.Time.Format.ISO8601 (ISO8601, iso8601ParseM)
 import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
@@ -18,7 +15,6 @@ import System.FilePath (takeDirectory, takeFileName)
 import System.FilePath qualified as FP
 import Telescope.Asdf
 import Telescope.Asdf.GWCS (ToAxes)
-import Telescope.Data.Parser (expected)
 import Telescope.Fits as Telescope
 import Text.Read (readMaybe)
 import Web.HttpApiData (FromHttpApiData)
@@ -155,7 +151,8 @@ data PathType
   | Filename -- only the filename
 
 
--- | UTCTime that can handle missing Zs at the end
+{- | UTCTime that can handle missing Zs at the end
+   REMOVED: This is the same as a LocalTime with an implicit Data.Time.utc timezone
 newtype DateTime = DateTime {utc :: UTCTime}
   deriving (Show, Eq, Generic)
   deriving newtype (ISO8601, FormatTime, ToKeyword)
@@ -179,3 +176,4 @@ addUTCZ :: Text -> Text
 addUTCZ t
   | T.isSuffixOf "Z" t = t
   | otherwise = t <> "Z"
+-}

@@ -93,7 +93,7 @@ library
       NSO.Image.Fits.Profile
       NSO.Image.Fits.Quantity
       NSO.Image.GWCS
-      NSO.Image.GWCS.L1Transform
+      NSO.Image.GWCS.L1GWCS
       NSO.Image.Headers
       NSO.Image.Headers.DataCommon
       NSO.Image.Headers.Doc

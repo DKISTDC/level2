@@ -9,7 +9,7 @@ import Data.Time.Format.ISO8601 (iso8601Show)
 import GHC.Generics
 import GHC.TypeLits
 import NSO.Prelude
-import NSO.Types.Common (DateTime (..), Id (..))
+import NSO.Types.Common (Id (..))
 import Telescope.Data.KnownText
 import Telescope.Fits.Header (KeywordRecord (..), LogicalConstant (..), ToKeyword (..), Value (..))
 
@@ -89,10 +89,10 @@ instance KeyType UTCTime where
   typeName = "UTCTime"
   typeComment = ""
   typeValue utc = String $ cs $ iso8601Show utc
-instance KeyType DateTime where
-  typeName = "DateTime"
+instance KeyType LocalTime where
+  typeName = "LocalTime"
   typeComment = ""
-  typeValue (DateTime utc) = typeValue utc
+  typeValue utc = String $ cs $ iso8601Show utc
 
 
 instance KeyType (Id a) where

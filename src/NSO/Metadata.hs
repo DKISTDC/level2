@@ -200,7 +200,7 @@ mockMetadata _ _ _ _ = pure $ FetchResponse "" [] status200
 data DatasetAvailable = DatasetAvailable
   { datasetId :: Text
   , primaryProposalId :: Text
-  , updateDate :: DateTime
+  , updateDate :: LocalTime
   }
   deriving (Generic, Show, Eq, FromJSON, FieldNames)
 
@@ -217,11 +217,11 @@ data DatasetInventory = DatasetInventory
   , -- calibrationDocumentationUrl :: Text
     -- , contributingExperimentIds :: [Text]
     -- contributingProposalIds :: [Text]
-    createDate :: DateTime
+    createDate :: LocalTime
   , datasetId :: Text
   , -- , datasetInventoryId :: Int
     -- , datasetSize :: Int
-    endTime :: DateTime
+    endTime :: LocalTime
   , -- , experimentDescription :: Text
     exposureTime :: Double
   , frameCount :: Int
@@ -240,7 +240,7 @@ data DatasetInventory = DatasetInventory
   , instrumentProgramExecutionId :: Text
   , -- , isActive :: Bool
     isEmbargoed :: Bool
-  , embargoEndDate :: Maybe DateTime
+  , embargoEndDate :: Maybe LocalTime
   , observingProgramExecutionId :: Text
   , -- , originalFrameCount :: Int
     primaryExperimentId :: Text
@@ -251,10 +251,10 @@ data DatasetInventory = DatasetInventory
     -- , recipeId :: Int
     -- , recipeInstanceId :: Int
     -- , recipeRunId :: Int
-    startTime :: DateTime
+    startTime :: LocalTime
   , stokesParameters :: StokesParameters
   , -- , targetTypes :: [Text]
-    updateDate :: DateTime
+    updateDate :: LocalTime
   , wavelengthMax :: Double
   , wavelengthMin :: Double
   , -- , workflowName :: Text
