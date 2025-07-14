@@ -7,9 +7,9 @@ import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
-import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero, l1WCSTransform)
+import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero, l1FixInputs, l1ScaleAxes, l1WCSTransform)
 import NSO.Image.Headers (Observation (..), Obsgeo (..))
-import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..))
+import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..), PixelsPerBin (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
 import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
@@ -48,16 +48,20 @@ transformProfile common axes =
 -- Quantity ---------------------------------------------------
 
 transformQuantity
-  :: L1WCSTransform
+  :: PixelsPerBin
+  -> L1WCSTransform
   -> Frames (QuantityAxes 'WCSMain)
   -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time)
-transformQuantity l1trans axes =
+transformQuantity bin l1trans axes =
   dropUnusedZeros fullTransform
  where
   fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
   fullTransform =
     let mid = middleFrame axes
-     in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> l1WCSTransform l1trans
+     in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
+
+  spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+  spaceTimeTransform = l1FixInputs |> l1ScaleAxes bin |> l1WCSTransform l1trans
 
   dropUnusedZeros :: Transform inp (a, b, c, d, Zero z1, Zero z2) -> Transform inp (w, x, y, z)
   dropUnusedZeros (Transform t) = Transform t
@@ -168,13 +172,13 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-quantityGWCS :: L1GWCS -> Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
-quantityGWCS l1gwcs primaries quants =
+quantityGWCS :: PixelsPerBin -> L1GWCS -> Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
+quantityGWCS bin l1gwcs primaries quants =
   let firstPrim = head primaries.frames
    in QuantityGWCS $ GWCS inputStep (outputStep firstPrim)
  where
   inputStep :: GWCSStep CoordinateFrame
-  inputStep = GWCSStep pixelFrame (Just (transformQuantity l1gwcs.transform (fmap axis quants)).transformation)
+  inputStep = GWCSStep pixelFrame (Just (transformQuantity bin l1gwcs.transform (fmap axis quants)).transformation)
    where
     axis :: QuantityHeader x -> QuantityAxes 'WCSMain
     axis q = q.wcs.axes

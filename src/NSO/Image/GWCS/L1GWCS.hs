@@ -1,5 +1,6 @@
 module NSO.Image.GWCS.L1GWCS where
 
+import NSO.Image.Headers.Types (PixelsPerBin (..))
 import NSO.Image.Headers.WCS (Wav, X, Y)
 import NSO.Prelude hiding (identity)
 import NSO.Types.Common (Stokes)
@@ -63,20 +64,26 @@ instance ToAsdf L1WCSTransform where
   toValue (L1WCSTransform n) = n.value
 
 
-l1WCSTransform :: L1WCSTransform -> Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
-l1WCSTransform t = fixL1Inputs |> zeroWavStokes |> originalL1Transform |> reorderOutput
+l1WCSTransform :: L1WCSTransform -> Transform (Scale X, Zero Wav, Pix Y, Zero Stokes) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+l1WCSTransform t = originalL1Transform |> reorderOutput
  where
-  originalL1Transform :: Transform (Pix X, Zero Wav, Pix Y, Zero Stokes) (HPLon, Wav, HPLat, Time, Stokes)
+  originalL1Transform :: Transform (Scale X, Zero Wav, Pix Y, Zero Stokes) (HPLon, Wav, HPLat, Time, Stokes)
   originalL1Transform = transform t
-
-  fixL1Inputs :: Transform (Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
-  fixL1Inputs = transform $ Mapping [0, 0, 1, 0]
-
-  zero :: (ToAxes a) => Transform (Pix a) (Zero a)
-  zero = transform $ Scale 0
-
-  zeroWavStokes :: Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Pix X, Zero Wav, Pix Y, Zero Stokes)
-  zeroWavStokes = identity @(Pix X) <&> zero <&> identity @(Pix Y) <&> zero
 
   reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
   reorderOutput = transform $ Mapping [0, 2, 3, 1, 4]
+
+
+-- "fix" inputs to unused input axes in the l1 transform: wavlength and stokes
+l1FixInputs :: Transform (Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
+l1FixInputs = transform $ Mapping [0, 0, 1, 0]
+
+
+l1ScaleAxes :: PixelsPerBin -> Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Scale X, Zero Wav, Pix Y, Zero Stokes)
+l1ScaleAxes (PixelsPerBin p) = binX <&> zero <&> identity @(Pix Y) <&> zero
+ where
+  binX :: Transform (Pix X) (Scale X)
+  binX = scale (fromIntegral p)
+
+  zero :: (ToAxes a) => Transform (Pix a) (Zero a)
+  zero = transform $ Scale 0

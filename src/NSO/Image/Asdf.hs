@@ -22,6 +22,7 @@ import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.GWCS
 import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.DataCommon
+import NSO.Image.Headers.Types (PixelsPerBin)
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arms (..), Frames (..), armsFrames)
 import NSO.Image.Types.Quantity
@@ -53,8 +54,8 @@ outputL2AsdfPath ip ii =
   filePath (Files.outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
-asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
-asdfDocument inversionId dscanon dsets now l1asdf metas =
+asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
+asdfDocument inversionId dscanon dsets bin now l1asdf metas =
   let frames = Frames $ NE.sort metas.frames
    in Document (inversionTree frames)
  where
@@ -71,6 +72,7 @@ asdfDocument inversionId dscanon dsets now l1asdf metas =
   qgwcs :: Frames L2FitsMeta -> QuantityGWCS
   qgwcs sorted =
     quantityGWCS
+      bin
       l1asdf.dataset.wcs
       (fmap (.primary) sorted)
       (fmap (\m -> m.quantities.items.opticalDepth) sorted)

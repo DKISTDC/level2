@@ -12,6 +12,7 @@ import NSO.Types.Wavelength (SpectralLine (..), fromIonName, ionName)
 import Telescope.Data.KnownText
 import Telescope.Data.Parser (expected)
 import Telescope.Fits.Header
+import Prelude (Real)
 
 
 -- Keywords ------------------------------------------------------------------
@@ -255,9 +256,13 @@ instance KnownValue Km
 instance KnownValue Kg_m3
 
 
+newtype PixelsPerBin = PixelsPerBin Int
+  deriving newtype (Show, Eq, Num, Ord, Real, Enum, Integral, FromKeyword)
+
+
 -- | Headers in inv_res_pre (Profile Fit) that describe the subsection of the canonical data we use
 data SliceXY = SliceXY
-  { pixelsPerBin :: Int
+  { pixelsPerBin :: PixelsPerBin
   , fiducialArmId :: VISPArmId
   }
   deriving (Show, Eq)
