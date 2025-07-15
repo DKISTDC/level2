@@ -52,10 +52,12 @@ transformQuantity
   :: PixelsPerBin
   -> L1WCSTransform
   -> Frames (QuantityAxes 'WCSMain)
-  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time)
+  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
 transformQuantity bin l1trans axes =
-  dropUnusedZeros fullTransform
+  fullTransform
  where
+  -- dropUnusedZeros fullTransform
+
   fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
   fullTransform =
     let mid = middleFrame axes
@@ -64,9 +66,9 @@ transformQuantity bin l1trans axes =
   spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
   spaceTimeTransform = l1FixInputs |> l1ScaleAxes bin |> l1WCSTransform l1trans
 
-  dropUnusedZeros :: Transform inp (a, b, c, d, Zero z1, Zero z2) -> Transform inp (w, x, y, z)
-  dropUnusedZeros (Transform t) = Transform t
 
+-- dropUnusedZeros :: Transform inp (a, b, c, d, Zero z1, Zero z2) -> Transform inp (w, x, y, z)
+-- dropUnusedZeros (Transform t) = Transform t
 
 identityPCXY :: PCXY s 'WCSMain
 identityPCXY =
@@ -196,11 +198,11 @@ quantityGWCS bin l1gwcs primaries quants =
               ]
         }
 
-  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
+  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, SpectralFrame, StokesFrame))
   outputStep h0 = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioprojectiveFrame, temporalFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioprojectiveFrame, temporalFrame, spectralFrame, stokesFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -218,13 +220,25 @@ quantityGWCS bin l1gwcs primaries quants =
         , time = h0.observation.dateAvg.ktype
         }
 
+    stokesFrame =
+      StokesFrame
+        { name = "polarization state"
+        , axisOrder = 5
+        }
+
+    spectralFrame =
+      SpectralFrame
+        { name = "wavelength"
+        , axisOrder = 4
+        }
+
 
 type OpticalDepthFrame = CoordinateFrame
 
 
 newtype QuantityGWCS
   = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, SpectralFrame, StokesFrame)))
 instance KnownText QuantityGWCS where
   knownText = "quantityGWCS"
 

@@ -2,7 +2,7 @@ tests: True
 packages:
   .
   ./types/
-  -- ../telescope.hs/
+  ../telescope.hs/
   -- ../hyperbole/
   -- ../atomic-css/
   -- ../globus.hs
@@ -16,10 +16,10 @@ packages:
 --   location: https://github.com/dkistdc/globus.hs
 --   tag: ec800752b23b
 
-source-repository-package
-  type: git
-  location: https://github.com/dkistdc/telescope.hs
-  tag: a9d42968fe7c
+-- source-repository-package
+--   type: git
+--   location: https://github.com/dkistdc/telescope.hs
+--   tag: a9d42968fe7c
  
 source-repository-package
   type: git
