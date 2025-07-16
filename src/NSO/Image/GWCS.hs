@@ -8,7 +8,8 @@ import Data.Massiv.Array qualified as M
 import Debug.Trace
 import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
-import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero, l1FixInputs, l1ScaleAxes, l1WCSTransform)
+import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero)
+import NSO.Image.GWCS.L1GWCS qualified as L1
 import NSO.Image.Headers (Observation (..), Obsgeo (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..), PixelsPerBin (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
@@ -56,16 +57,17 @@ transformQuantity
 transformQuantity bin l1trans axes =
   fullTransform
  where
-  -- dropUnusedZeros fullTransform
-
   fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
   fullTransform =
     let mid = middleFrame axes
      in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
 
   spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
-  spaceTimeTransform = l1FixInputs |> l1ScaleAxes bin |> l1WCSTransform l1trans
+  spaceTimeTransform = L1.fixInputs |> L1.scaleZeroAxes bin |> L1.varyingTransform l1trans
 
+
+-- inverseTransform :: Transform (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes) (Pix Depth, Pix X, Pix Y)
+-- inverseTransform = _
 
 -- dropUnusedZeros :: Transform inp (a, b, c, d, Zero z1, Zero z2) -> Transform inp (w, x, y, z)
 -- dropUnusedZeros (Transform t) = Transform t
@@ -209,7 +211,7 @@ quantityGWCS bin l1gwcs primaries quants =
         { name = "optical_depth"
         , axes =
             NE.fromList
-              [ FrameAxis 0 "optical_depth" "optical_depth" Pixel
+              [ FrameAxis 0 "optical depth" "phys.absorption.opticalDepth" Pixel
               ]
         }
 
@@ -270,8 +272,8 @@ celestialFrame n helioFrame =
     , referenceFrame = helioFrame
     , axes =
         NE.fromList
-          [ FrameAxis n "helioprojective longitude" (AxisType "pos.helioprojective.lon") Unit.Arcseconds
-          , FrameAxis (n + 1) "helioprojective latitude" (AxisType "pos.helioprojective.lat") Unit.Arcseconds
+          [ FrameAxis n "pos.helioprojective.lon" (AxisType "pos.helioprojective.lon") Unit.Arcseconds
+          , FrameAxis (n + 1) "pos.helioprojective.lat" (AxisType "pos.helioprojective.lat") Unit.Arcseconds
           ]
     }
 

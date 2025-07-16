@@ -47,8 +47,6 @@ import Text.Casing (quietSnake)
 -- TODO: fix gwcs
 -- TODO: labeled meta.axes for profiles
 
-
-
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
 asdfDocument inversionId dscanon dsets bin now l1asdf metas =
   let frames = Frames $ NE.sort metas.frames
@@ -155,7 +153,7 @@ data QuantitiesSection = QuantitiesSection
   , gwcs :: QuantityGWCS
   }
 instance ToAsdf QuantitiesSection where
-  schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
+  schema _ = "tag:sunpy.org:ndcube/ndcollection-1.0.0"
   toValue section =
     Object
       [ ("meta", toNode meta)
@@ -285,7 +283,7 @@ newtype ArmsProfileAxes f = ArmsProfileAxes (Arms (ArmProfile AlignedAxes))
 
 
 instance ToAsdf ProfilesSection where
-  schema _ = "tag:sunpy.org:ndcube/ndcube/ndcollection-1.0.0"
+  schema _ = "tag:sunpy.org:ndcube/ndcollection-1.0.0"
   toValue section =
     Object
       [ ("meta", toNode meta)
