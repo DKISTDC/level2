@@ -272,8 +272,8 @@ celestialFrame n helioFrame =
     , referenceFrame = helioFrame
     , axes =
         NE.fromList
-          [ FrameAxis n "pos.helioprojective.lon" (AxisType "pos.helioprojective.lon") Unit.Arcseconds
-          , FrameAxis (n + 1) "pos.helioprojective.lat" (AxisType "pos.helioprojective.lat") Unit.Arcseconds
+          [ FrameAxis n "pos.helioprojective.lon" (AxisType "custom:pos.helioprojective.lon") Unit.Arcseconds
+          , FrameAxis (n + 1) "pos.helioprojective.lat" (AxisType "custom:pos.helioprojective.lat") Unit.Arcseconds
           ]
     }
 
