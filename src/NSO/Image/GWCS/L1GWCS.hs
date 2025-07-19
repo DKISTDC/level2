@@ -65,47 +65,13 @@ instance ToAsdf L1WCSTransform where
   toValue (L1WCSTransform n) = n.value
 
 
-varyingTransform :: L1WCSTransform -> Transform (Scale X, Zero Wav, Pix Y, Zero Stokes) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
-varyingTransform t = originalL1Transform |> reorderOutput
- where
-  originalL1Transform :: Transform (Scale X, Zero Wav, Pix Y, Zero Stokes) (HPLon, Wav, HPLat, Time, Stokes)
-  originalL1Transform = transform t
+varyingTransform :: (ToAxes (inp Wav), ToAxes (inp Stokes)) => L1WCSTransform -> Transform (Scale X, inp Wav, Pix Y, inp Stokes) (HPLon, Wav, HPLat, Time, Stokes)
+varyingTransform = transform
 
-  reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
-  reorderOutput = transform $ Mapping [0, 2, 3, 1, 4]
-
-
-scaleZeroAxes :: PixelsPerBin -> Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Scale X, Zero Wav, Pix Y, Zero Stokes)
-scaleZeroAxes (PixelsPerBin p) = binX <&> zero <&> identity @(Pix Y) <&> zero
- where
-  binX :: Transform (Pix X) (Scale X)
-  binX = scale (fromIntegral p)
-
-  zero :: (ToAxes a) => Transform (Pix a) (Zero a)
-  zero = transform $ Const1D $ Quantity Pixel (Integer 0)
-
-
-fixInputs :: Transform (Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
-fixInputs = transform $ Mapping [0, 0, 1, 0]
-
-
-data Const1D = Const1D Quantity
-instance ToAsdf Const1D where
-  schema _ = "!transform/constant-1.2.0"
-  toValue (Const1D q) =
-    Object
-      [ ("dimensions", toNode $ Integer 1)
-      , ("value", toNode q)
-      ]
-instance FromAsdf Const1D where
-  parseValue val = do
-    o <- parseValue @Object val
-    Const1D <$> o .: "value"
 
 -- fixWavStokes0 :: (ToAxes out) => Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) out -> Transform (Pix X, Pix Y) out
 -- fixWavStokes0 (Transform t) = transform $ FixInputs t [(1, 0), (3, 0)]
---
---
+
 -- -- This ONLY works with integers for some reason (doesn't like quantities)
 -- -- combine with Const1D or Scale or something to convert it to a quantity?
 -- data FixInputs = FixInputs Transformation [(Int, Int)]

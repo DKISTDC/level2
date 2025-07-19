@@ -58,7 +58,7 @@ asdfDocument inversionId dscanon dsets bin now l1asdf metas =
       { fileuris
       , meta = inversionMeta $ fmap (.primary) sorted
       , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs sorted)
-      , profiles = profilesSection l1asdf.dataset.wcs (head sorted.frames).primary $ fmap (.profiles) sorted
+      , profiles = profilesSection bin l1asdf.dataset.wcs (head sorted.frames).primary $ fmap (.profiles) sorted
       }
 
   -- choose a single frame from which to calculate the GWCS
@@ -316,16 +316,16 @@ instance ToAsdf ProfilesSection where
 --   toValue (ProfilesItems arms) = toValue arms
 
 -- we need one ProfileMeta for each arm
-profilesSection :: L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
-profilesSection l1gwcs primary profs =
+profilesSection :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
+profilesSection bin l1gwcs primary profs =
   let sampleArm = head (head profs.frames).arms
       fit = sampleArm.fit
       orig = sampleArm.original
    in ProfilesSection
         { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
         , arms = profilesArmsTree profs
-        , gwcsFit = profileGWCS l1gwcs fit.wcs
-        , gwcsOrig = profileGWCS l1gwcs orig.wcs
+        , gwcsFit = profileGWCS bin l1gwcs primary fit.wcs
+        , gwcsOrig = profileGWCS bin l1gwcs primary orig.wcs
         }
 
 

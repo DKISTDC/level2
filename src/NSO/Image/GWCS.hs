@@ -10,13 +10,13 @@ import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
 import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero)
 import NSO.Image.GWCS.L1GWCS qualified as L1
-import NSO.Image.Headers (Observation (..), Obsgeo (..))
-import NSO.Image.Headers.Types (Degrees (..), Key (..), Meters (..), PixelsPerBin (..))
+import NSO.Image.Headers (Observation (..))
+import NSO.Image.Headers.Types (Degrees (..), Key (..), PixelsPerBin (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
 import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
 import NSO.Image.Types.Quantity (OpticalDepth)
-import NSO.Prelude as Prelude
+import NSO.Prelude as Prelude hiding (identity)
 import Numeric (showFFloat)
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
 import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Pixel, Unit))
@@ -28,23 +28,22 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
 
 transformProfile
-  :: WCSCommon
+  :: PixelsPerBin
+  -> L1WCSTransform
+  -> WCSCommon
   -> ProfileAxes 'WCSMain
-  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix Stokes, Linear Wav, Alpha, Delta)
-transformProfile common axes =
-  transformIdentity <&> transformWav <&> transformSpatial common (toWCSAxis axes.slitX.keys) (toWCSAxis axes.dummyY.keys) pcs
+  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Wav, HPLon, HPLat, Time)
+transformProfile bin l1trans common axes =
+  reorderInput |> scaleAxes |> L1.varyingTransform l1trans |> reorderOutput
  where
-  transformWav :: Transform (Pix Wav) (Linear Wav)
-  transformWav = wcsLinear $ wcsToNanometers (toWCSAxis axes.wavelength.keys)
+  reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
+  reorderInput = transform $ Mapping [2, 1, 3, 0]
 
-  transformIdentity :: (ToAxes (Pix a)) => Transform (Pix a) (Pix a)
-  transformIdentity = GWCS.identity
+  scaleAxes :: Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Scale X, Pix Wav, Pix Y, Pix Stokes)
+  scaleAxes = scaleX bin <&> GWCS.identity @(Pix Wav) <&> GWCS.identity @(Pix Y) <&> GWCS.identity @(Pix Stokes)
 
-  pcs :: PCXY ProfileAxes 'WCSMain
-  pcs = fromMaybe identityPCXY $ do
-    pcx <- axes.slitX.pcs
-    pcy <- axes.dummyY.pcs
-    pure $ PCXY{xx = pcx.slitX, xy = pcx.dummyY, yx = pcy.slitX, yy = pcy.dummyY}
+  reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (Stokes, Wav, HPLon, HPLat, Time)
+  reorderOutput = transform $ Mapping [4, 1, 0, 2, 3]
 
 
 -- Quantity ---------------------------------------------------
@@ -53,24 +52,34 @@ transformQuantity
   :: PixelsPerBin
   -> L1WCSTransform
   -> Frames (QuantityAxes 'WCSMain)
-  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Wav, Stokes)
 transformQuantity bin l1trans axes =
   fullTransform
  where
-  fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes)
+  fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Wav, Stokes)
   fullTransform =
     let mid = middleFrame axes
      in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
 
-  spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Zero Wav, Zero Stokes)
-  spaceTimeTransform = L1.fixInputs |> L1.scaleZeroAxes bin |> L1.varyingTransform l1trans
+  spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Wav, Stokes)
+  spaceTimeTransform = fixInputs |> scaleZeroAxes |> L1.varyingTransform l1trans |> reorderOutput
+
+  scaleZeroAxes :: Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Scale X, Zero Wav, Pix Y, Zero Stokes)
+  scaleZeroAxes = scaleX bin <&> zero <&> GWCS.identity @(Pix Y) <&> zero
+   where
+    zero :: (ToAxes a) => Transform (Pix a) (Zero a)
+    zero = transform $ GWCS.Const1D $ Quantity Pixel (Integer 0)
+
+  fixInputs :: Transform (Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
+  fixInputs = transform $ Mapping [0, 0, 1, 0]
+
+  reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (HPLon, HPLat, Time, Wav, Stokes)
+  reorderOutput = transform $ Mapping [0, 2, 3, 1, 4]
 
 
--- inverseTransform :: Transform (Linear Depth, HPLon, HPLat, Time, Zero Wav, Zero Stokes) (Pix Depth, Pix X, Pix Y)
--- inverseTransform = _
+scaleX :: PixelsPerBin -> Transform (Pix X) (Scale X)
+scaleX p = scale (fromIntegral p)
 
--- dropUnusedZeros :: Transform inp (a, b, c, d, Zero z1, Zero z2) -> Transform inp (w, x, y, z)
--- dropUnusedZeros (Transform t) = Transform t
 
 identityPCXY :: PCXY s 'WCSMain
 identityPCXY =
@@ -136,13 +145,6 @@ lonPole common =
   let (Key (Degrees d)) = common.lonpole
    in LonPole d
 
-
--- -- linear (wcsShift wcs) (wcsScale wcs)
--- linear (Shift (realToFrac wcs.crpix.ktype)) (wcsScale wcs)
-
--- wcsScale :: WCSAxisKeywords s alt x -> Scale
--- wcsScale wcs =
---   Scale (realToFrac $ arcsecondsToDegrees wcs.cdelt.ktype)
 
 wcsToDegrees :: WCSAxis alt axis -> WCSAxis alt axis
 wcsToDegrees WCSAxis{ctype, cunit, crpix, crval, cdelt} =
@@ -222,16 +224,16 @@ quantityGWCS bin l1gwcs primaries quants =
         , time = h0.observation.dateAvg.ktype
         }
 
-    stokesFrame =
-      StokesFrame
-        { name = "polarization state"
-        , axisOrder = 5
-        }
-
     spectralFrame =
       SpectralFrame
         { name = "wavelength"
         , axisOrder = 4
+        }
+
+    stokesFrame =
+      StokesFrame
+        { name = "polarization state"
+        , axisOrder = 5
         }
 
 
@@ -251,20 +253,6 @@ instance ToAsdf QuantityGWCS where
   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
--- helioprojectiveFrame :: Observation -> Obsgeo -> HelioprojectiveFrame
--- helioprojectiveFrame obs obsgeo =
---   HelioprojectiveFrame
---     { coordinates = Cartesian3D (coord obsgeo.obsgeoX) (coord obsgeo.obsgeoY) (coord obsgeo.obsgeoZ)
---     , observation =
---         HelioObservation
---           { obstime = obs.dateBeg.ktype
---           , rsun = Unit.Quantity Unit.Kilometers (Integer 695700)
---           }
---     }
---  where
---   coord :: Key Meters desc -> Unit.Quantity
---   coord (Key (Meters m)) = Unit.Quantity Unit.Meters $ toValue m
-
 celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame HelioprojectiveFrame
 celestialFrame n helioFrame =
   CelestialFrame
@@ -278,7 +266,6 @@ celestialFrame n helioFrame =
     }
 
 
---
 -- reference_frame: !<tag:sunpy.org:sunpy/coordinates/frames/helioprojective-1.0.0>
 --   frame_attributes:
 --     observer: !<tag:sunpy.org:sunpy/coordinates/frames/heliographic_stonyhurst-1.1.0>
@@ -300,11 +287,11 @@ celestialFrame n helioFrame =
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
 
-profileGWCS :: L1GWCS -> WCSHeader ProfileAxes -> ProfileGWCS fit
-profileGWCS l1gwcs wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS fit
+profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
   inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
-  inputStep common axes = GWCSStep pixelFrame (Just (transformProfile common axes).transformation)
+  inputStep common axes = GWCSStep pixelFrame (Just (transformProfile bin l1gwcs.transform common axes).transformation)
    where
     pixelFrame :: CoordinateFrame
     pixelFrame =
@@ -319,11 +306,11 @@ profileGWCS l1gwcs wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outp
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame))
+  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 l1gwcs.helioprojectiveFrame)
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 l1gwcs.helioprojectiveFrame, temporalFrame)
 
     stokesFrame =
       StokesFrame
@@ -337,10 +324,17 @@ profileGWCS l1gwcs wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outp
         , axisOrder = 1
         }
 
+    temporalFrame =
+      TemporalFrame
+        { name = "temporal"
+        , axisOrder = 4
+        , time = primary.observation.dateAvg.ktype
+        }
+
 
 newtype ProfileGWCS fit
   = ProfileGWCS
-      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
 
 
 instance (KnownText fit) => KnownText (ProfileGWCS fit) where
