@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module NSO.Image.Asdf where
 
@@ -25,7 +26,7 @@ import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Types (PixelsPerBin)
 import NSO.Image.Primary
-import NSO.Image.Types.Frame (Arms (..), Frames (..), armsFrames)
+import NSO.Image.Types.Frame (Arm (..), Arms (..), Frames (..), armsFrames)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
@@ -47,8 +48,8 @@ import Text.Casing (quietSnake)
 -- TODO: fix gwcs
 -- TODO: labeled meta.axes for profiles
 
-asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
-asdfDocument inversionId dscanon dsets bin now l1asdf metas =
+asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> Arms (Arm SpectralLine L1Asdf) -> Frames L2FitsMeta -> Document
+asdfDocument inversionId dscanon dsets bin now l1asdfs metas =
   let frames = Frames $ NE.sort metas.frames
    in Document (inversionTree frames)
  where
@@ -58,15 +59,18 @@ asdfDocument inversionId dscanon dsets bin now l1asdf metas =
       { fileuris
       , meta = inversionMeta $ fmap (.primary) sorted
       , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs sorted)
-      , profiles = profilesSection bin l1asdf.dataset.wcs (head sorted.frames).primary $ fmap (.profiles) sorted
+      , profiles = profilesSection bin gwcs (head sorted.frames).primary $ fmap (.profiles) sorted
       }
+
+  gwcs :: Arms (Arm SpectralLine L1GWCS)
+  gwcs = fmap (fmap (\a -> a.dataset.wcs)) l1asdfs
 
   -- choose a single frame from which to calculate the GWCS
   qgwcs :: Frames L2FitsMeta -> QuantityGWCS
   qgwcs sorted =
     quantityGWCS
       bin
-      l1asdf.dataset.wcs
+      (head gwcs.arms).value
       (fmap (.primary) sorted)
       (fmap (\m -> m.quantities.items.opticalDepth) sorted)
 
@@ -161,8 +165,8 @@ instance ToAsdf QuantitiesSection where
       , ("items", toNode section.items)
       ]
    where
-    aligned :: Quantities AlignedAxes
-    aligned = alignedAxes @Quantities (quantitiesFrom AlignedAxes) section.axes
+    aligned :: Quantities AlignedAxesF
+    aligned = quantitiesFrom AlignedAxesF (alignedAxes section.axes).axes
 
     meta =
       Object
@@ -238,7 +242,7 @@ instance ToAsdf (Quantities (DataTree QuantityMeta)) where
   toValue q = Object $ snakeObject q
 
 
-newtype QuantitiesAlignedAxes = QuantitiesAlignedAxes (Quantities AlignedAxes)
+newtype QuantitiesAlignedAxes = QuantitiesAlignedAxes (Quantities AlignedAxesF)
 
 
 instance ToAsdf QuantitiesAlignedAxes where
@@ -269,18 +273,25 @@ data QuantityMeta info = QuantityMeta
 
 -- Profiles ------------------------------------------------
 
--- you can't pass it a single set of axes
 data ProfilesSection = ProfilesSection
   { axes :: [AxisMeta]
-  , arms :: Arms (ArmProfile ProfileTree)
-  , gwcsFit :: ProfileGWCS Fit
-  , gwcsOrig :: ProfileGWCS Original
+  , arms :: Arms (Profiles ProfileTree)
+  , gwcs :: Arms (Arm SpectralLine ProfileGWCS)
   }
 
 
-newtype ArmsProfileAxes f = ArmsProfileAxes (Arms (ArmProfile AlignedAxes))
-  deriving newtype (ToAsdf)
+profileGWCSAnchor :: SpectralLine -> Anchor
+profileGWCSAnchor l = Anchor $ "ProfileGWCS" <> cs (show l)
 
+
+-- data ArmProfileAxes = ArmProfileAxes
+--   { arm :: ArmWavMeta
+--   , fit :: AlignedAxes Fit
+--   , original :: AlignedAxes Original
+--   }
+
+-- newtype ArmsProfileAxes f = ArmsProfileAxes (Arms ArmProfileAxes)
+--   deriving newtype (ToAsdf)
 
 instance ToAsdf ProfilesSection where
   schema _ = "tag:sunpy.org:ndcube/ndcollection-1.0.0"
@@ -291,23 +302,38 @@ instance ToAsdf ProfilesSection where
       , ("items", toNode section.arms)
       ]
    where
-    aligned :: Arms (ArmProfile AlignedAxes)
+    aligned :: Arms (Arm SpectralLine (Profiles AlignedAxesF))
     aligned = fmap alignedArmAxes section.arms
 
-    alignedArmAxes :: ArmProfile ProfileTree -> ArmProfile AlignedAxes
-    alignedArmAxes ap =
-      alignedAxes (toAligned ap.arm) section.axes
-
-    toAligned :: ArmWavMeta -> [Int] -> ArmProfile AlignedAxes
-    toAligned arm ns =
-      ArmProfile{arm, fit = AlignedAxes ns, original = AlignedAxes ns}
+    alignedArmAxes :: Profiles ProfileTree -> Arm SpectralLine (Profiles AlignedAxesF)
+    alignedArmAxes pfs =
+      let AlignedAxes axs = alignedAxes section.axes
+       in Arm pfs.fit.meta.spectralLine $ Profiles{fit = AlignedAxesF axs, original = AlignedAxesF axs}
 
     meta =
-      Object
-        [ ("axes", toNode section.axes)
-        , ("gwcs_fit", toNode section.gwcsFit)
-        , ("gwcs_orig", toNode section.gwcsOrig)
-        ]
+      Object [("axes", toNode section.axes)]
+        <> toValue section.gwcs
+
+
+instance ToAsdf (Arm SpectralLine ProfileGWCS) where
+  anchor (Arm l _) = Just $ profileGWCSAnchor l
+  toNode (Arm _ (ProfileGWCS p)) = toNode p
+  toValue (Arm _ (ProfileGWCS p)) = toValue p
+
+
+instance ToAsdf (Arm SpectralLine (Profiles AlignedAxesF)) where
+  toValue a =
+    Object
+      [ (profileKey a.arm Original, toNode a.value.original)
+      , (profileKey a.arm Fit, toNode a.value.fit)
+      ]
+
+
+profileKey :: SpectralLine -> ProfileType -> Key
+profileKey line pt = cs $ show line <> "_" <> suffix pt
+ where
+  suffix Original = "orig"
+  suffix Fit = "fit"
 
 
 -- newtype ProfilesItems = ProfilesItems (Arms (ArmProfile ProfileTree))
@@ -316,39 +342,39 @@ instance ToAsdf ProfilesSection where
 --   toValue (ProfilesItems arms) = toValue arms
 
 -- we need one ProfileMeta for each arm
-profilesSection :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
+profilesSection :: PixelsPerBin -> Arms (Arm SpectralLine L1GWCS) -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
 profilesSection bin l1gwcs primary profs =
-  let sampleArm = head (head profs.frames).arms
-      fit = sampleArm.fit
-      orig = sampleArm.original
+  let sampleFrame :: Arms ArmFrameProfileMeta = head profs.frames
    in ProfilesSection
         { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
         , arms = profilesArmsTree profs
-        , gwcsFit = profileGWCS bin l1gwcs primary fit.wcs
-        , gwcsOrig = profileGWCS bin l1gwcs primary orig.wcs
+        , gwcs = Arms $ NE.zipWith armGWCS l1gwcs.arms sampleFrame.arms
         }
+ where
+  armGWCS :: Arm SpectralLine L1GWCS -> ArmFrameProfileMeta -> Arm SpectralLine ProfileGWCS
+  armGWCS ag am =
+    Arm ag.arm $ profileGWCS bin ag.value primary am.fit.wcs
 
 
-profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms (ArmProfile ProfileTree)
+profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms (Profiles ProfileTree)
 profilesArmsTree framesByArms =
   let Arms arms = armsFrames framesByArms :: Arms (Frames ArmFrameProfileMeta)
       armNums = NE.fromList [0 ..] :: NonEmpty Int
    in Arms $ NE.zipWith armProfileTree armNums arms
  where
-  armProfileTree :: Int -> Frames ArmFrameProfileMeta -> ArmProfile ProfileTree
+  armProfileTree :: Int -> Frames ArmFrameProfileMeta -> Profiles ProfileTree
   armProfileTree armNum profs =
     let frame = head profs.frames
         arm = frame.arm
         index = hduIndex @(Arms Profile) + HDUIndex (armNum * 2)
         original = profileTree index arm frame.shape $ fmap (\f -> f.original) profs
         fit = profileTree (index + 1) arm frame.shape $ fmap (\f -> f.fit) profs
-     in ArmProfile{arm, fit, original}
+     in Profiles{fit, original}
 
   profileTree :: forall fit. (KnownText fit) => HDUIndex -> ArmWavMeta -> Shape Profile -> Frames (ProfileHeader fit) -> ProfileTree fit
   profileTree ix arm shape heads =
     ProfileTree
       { unit = Count
-      , wcs = Ref
       , data_ = fileManager shape.axes ix
       , meta =
           ProfileTreeMeta
@@ -359,19 +385,12 @@ profilesArmsTree framesByArms =
       }
 
 
-data ArmProfile f = ArmProfile
-  { arm :: ArmWavMeta
-  , fit :: f Fit
-  , original :: f Original
-  }
-
-
-instance (ToAsdf (f Fit), ToAsdf (f Original)) => ToAsdf (ArmProfile f) where
-  toValue p =
-    let key f = cs $ show p.arm.line <> "_" <> f
+instance ToAsdf (Profiles ProfileTree) where
+  toValue ps =
+    let line = ps.fit.meta.spectralLine
      in Object
-          [ (key "orig", toNode p.original)
-          , (key "fit", toNode p.fit)
+          [ (profileKey line Original, toNode ps.original)
+          , (profileKey line Fit, toNode ps.fit)
           ]
 
 
@@ -379,7 +398,6 @@ data ProfileTree fit = ProfileTree
   { unit :: Unit
   , data_ :: FileManager
   , meta :: ProfileTreeMeta fit
-  , wcs :: Ref (ProfileGWCS fit)
   }
   deriving (Generic)
 instance (KnownText fit) => ToAsdf (ProfileTree fit) where
@@ -390,7 +408,7 @@ instance (KnownText fit) => ToAsdf (ProfileTree fit) where
       [ ("unit", toNode p.unit)
       , ("data", toNode p.data_)
       , ("meta", toNode p.meta)
-      , ("wcs", toNode p.wcs)
+      , ("wcs", toNode $ Alias $ profileGWCSAnchor p.meta.spectralLine)
       ]
 
 

@@ -32,7 +32,7 @@ import Telescope.Fits.Header (Header (..), HeaderRecord (..))
 
 -- Profile FITS Generation -----------------------------------------------------------
 
-data ProfileFrameFits (fit :: ProfileType) = ProfileFrameFits
+data ProfileFrameFits fit = ProfileFrameFits
   { header :: ProfileHeader fit
   , image :: ProfileImage fit
   }
@@ -96,7 +96,7 @@ profileHeader now slice l1 arm img = do
   pure $ ProfileHeader{common, wcs, meta = arm}
 
 
-data ProfileHeader (fit :: ProfileType) = ProfileHeader
+data ProfileHeader fit = ProfileHeader
   { meta :: ArmWavMeta
   , common :: DataCommon
   , wcs :: WCSHeader ProfileAxes
@@ -251,7 +251,7 @@ data ProfileError
   = InvalidWavelengthGroups
   | InvalidProfileType Text
   | MissingProfileExtensions String
-  | MissingProfileType SpectralLine ProfileType
+  | MissingProfileType SpectralLine String
   | -- | InvalidSpectralLines ParseError
     InvalidWCS ParseError
   deriving (Show, Exception, Eq)

@@ -157,7 +157,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
       pure $ typ' == typ && line' == line
     case mh of
       (h : _) -> pure h
-      _ -> throwError $ MissingProfileType line typ
+      _ -> throwError $ MissingProfileType line (show typ)
 
   parseProfileType :: (Error ProfileError :> es) => (Parser :> es) => Header -> Eff es ProfileType
   parseProfileType h = do

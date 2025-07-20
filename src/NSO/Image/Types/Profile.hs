@@ -61,3 +61,9 @@ data ArmWavMeta = ArmWavMeta
   , delta :: !(WavOffset Nm)
   }
   deriving (Show, Eq)
+
+
+data Profiles f = Profiles
+  { fit :: f Fit
+  , original :: f Original
+  }

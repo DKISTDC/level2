@@ -6,11 +6,11 @@ import NSO.Prelude
 import Telescope.Asdf as Asdf
 
 
-alignedAxes :: ([Int] -> f AlignedAxes) -> [AxisMeta] -> f AlignedAxes
-alignedAxes toAligned axes =
+alignedAxes :: [AxisMeta] -> AlignedAxes
+alignedAxes axes =
   let aligned = filter ((.aligned) . snd) $ zip [0 ..] axes :: [(Int, AxisMeta)]
       axns :: [Int] = fmap fst aligned :: [Int]
-   in toAligned axns
+   in AlignedAxes axns
 
 
 data AxisMeta = AxisMeta
@@ -21,7 +21,11 @@ instance ToAsdf AxisMeta where
   toValue am = toValue am.label
 
 
-newtype AlignedAxes f = AlignedAxes [Int]
+newtype AlignedAxes = AlignedAxes {axes :: [Int]}
+  deriving newtype (ToAsdf)
+
+
+newtype AlignedAxesF f = AlignedAxesF {axes :: [Int]}
   deriving newtype (ToAsdf)
 
 

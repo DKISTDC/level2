@@ -5,6 +5,7 @@ module NSO.Image.Types.Frame
   , Stokes
   , Frames (..)
   , Arms (..)
+  , Arm (..)
   , armsFrames
   , framesArms
   , middleFrame
@@ -72,3 +73,11 @@ armsFrames (Frames frames) =
 framesArms :: Arms (Frames a) -> Frames (Arms a)
 framesArms (Arms arms) =
   Frames $ fmap Arms $ NE.transpose $ fmap (.frames) arms
+
+
+data Arm a v = Arm
+  { arm :: a
+  , value :: v
+  }
+instance Functor (Arm a) where
+  fmap f (Arm a v) = Arm a $ f v
