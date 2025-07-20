@@ -287,7 +287,7 @@ celestialFrame n helioFrame =
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
 
-profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS
+profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS fit
 profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
  where
   inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
@@ -332,9 +332,19 @@ profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wc
         }
 
 
-newtype ProfileGWCS
+newtype ProfileGWCS fit
   = ProfileGWCS
       (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
+
+
+instance (KnownText fit) => KnownText (ProfileGWCS fit) where
+  knownText = "ProfileGWCS" <> knownText @fit
+
+
+instance (KnownText fit) => ToAsdf (ProfileGWCS fit) where
+  schema (ProfileGWCS gwcs) = schema gwcs
+  anchor _ = Just $ Anchor $ knownText @(ProfileGWCS fit)
+  toValue (ProfileGWCS gwcs) = toValue gwcs
 
 
 -- Varying Celestial Transform -----------------------------------

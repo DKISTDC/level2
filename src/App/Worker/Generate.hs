@@ -21,7 +21,7 @@ import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Image.Primary (PrimaryError)
-import NSO.Image.Types.Frame (Arm (..), Arms (..), Depth, Frames (..), SlitX)
+import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.InstrumentProgram (Proposal)
@@ -59,7 +59,7 @@ collateFrames qs metas pfs pos ts = do
 
 
 armFramesLength :: Arms (Frames (ProfileImage fit)) -> Int
-armFramesLength as = length (head as.arms).value
+armFramesLength as = length . head $ as.arms
 
 
 data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1 :: Int}
@@ -138,6 +138,7 @@ readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   inp <- send $ Scratch.ReadFile $ filePath dir path
   Fits.decode inp
+
 
 
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]

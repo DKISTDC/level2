@@ -11,7 +11,7 @@ import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers.Keywords (IsKeyword (keyword))
 import NSO.Image.Headers.Types (ProfIon (..), ProfType (..), SliceXY)
 import NSO.Image.Primary
-import NSO.Image.Types.Frame (Arm (..), Arms (..))
+import NSO.Image.Types.Frame (Arms (..))
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
@@ -130,18 +130,18 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
 
   parseAllProfiles :: (Error ProfileError :> es, Parser :> es) => Arms ArmWavMeta -> [Header] -> Eff es (Arms ArmFrameProfileMeta)
   parseAllProfiles metas hs = do
-    as <- mapM (\(arm :: Arm ArmWavMeta) -> parseArmProfile arm.value hs) metas.arms
+    as <- mapM (\(arm :: ArmWavMeta) -> parseArmProfile arm hs) metas.arms
     pure $ Arms as
 
   -- what are looking at here? How many headers are there? One per frame? No.... One per profile
-  parseArmProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es (Arm ArmFrameProfileMeta)
+  parseArmProfile :: forall es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> [Header] -> Eff es ArmFrameProfileMeta
   parseArmProfile arm hs = do
     fith <- findProfile arm.line Fit hs
     orgh <- findProfile arm.line Original hs
     fit <- parseProfileFit @Fit arm fith
     original <- parseProfileFit @Original arm orgh
     shape <- parseHeader @(Shape Profile) fith
-    pure $ Arm arm.line ArmFrameProfileMeta{arm, shape, fit, original}
+    pure $ ArmFrameProfileMeta{arm, shape, fit, original}
 
   parseProfileFit :: forall fit es. (Parser :> es, Error ProfileError :> es) => ArmWavMeta -> Header -> Eff es (ProfileHeader fit)
   parseProfileFit meta h = do
