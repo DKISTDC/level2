@@ -337,8 +337,10 @@ newtype ProfileGWCS
       (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
 
 
--- instance (KnownText fit) => KnownText (ProfileGWCS fit) where
---   knownText = "ProfileGWCS" <> knownText @fit
+instance KnownText ProfileGWCS where
+  knownText = "ProfileGWCS"
+
+
 --
 --
 -- instance (KnownText fit) => ToAsdf (ProfileGWCS fit) where
