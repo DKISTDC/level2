@@ -70,7 +70,7 @@ specHeader = describe "Header Keywords" $ do
     it "should include Telescope" $ do
       h <- toHeader <$> genPrimary
       lookupKeyword "TAZIMUTH" h `shouldSatisfy` P.just (P.con (Float P.anything))
-      lookupKeyword "OBSGEO_X" h `shouldSatisfy` P.just (P.con (Float P.anything))
+      lookupKeyword "OBSGEO-X" h `shouldSatisfy` P.just (P.con (Float P.anything))
       lookupKeyword "TELTRACK" h `shouldSatisfy` P.just (P.con (String P.anything))
 
     it "should include Observation" $ do
@@ -307,7 +307,7 @@ specDateHeaders :: Spec
 specDateHeaders = do
   describe "DateTime" $ do
     it "should parse UTCTimes without Z" $ do
-      let res :: Either ParseError DateTime = runParserPure $ parseKeywordValue (String "2023-05-01T18:53:59.504")
+      let res :: Either ParseError LocalTime = runParserPure $ parseKeywordValue (String "2023-05-01T18:53:59.504")
       res `shouldSatisfy` P.right P.anything
 
 
