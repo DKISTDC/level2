@@ -12,10 +12,10 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     container:
-      image: haskell:9.8.2
+      image: haskell:9.6.6
 
     steps:
     - uses: actions/checkout@v4
