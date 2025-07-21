@@ -6,7 +6,6 @@ import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import Debug.Trace
-import NSO.Image.Fits.Profile
 import NSO.Image.Fits.Quantity
 import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero)
 import NSO.Image.GWCS.L1GWCS qualified as L1
@@ -30,10 +29,8 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 transformProfile
   :: PixelsPerBin
   -> L1WCSTransform
-  -> WCSCommon
-  -> ProfileAxes 'WCSMain
   -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Wav, HPLon, HPLat, Time)
-transformProfile bin l1trans common axes =
+transformProfile bin l1trans =
   reorderInput |> scaleAxes |> L1.varyingTransform l1trans |> reorderOutput
  where
   reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
@@ -287,11 +284,11 @@ celestialFrame n helioFrame =
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
 
-profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS
-profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS (inputStep wcs.common wcs.axes) outputStep
+profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> ProfileGWCS
+profileGWCS bin l1gwcs primary = ProfileGWCS $ GWCS inputStep outputStep
  where
-  inputStep :: WCSCommon -> ProfileAxes 'WCSMain -> GWCSStep CoordinateFrame
-  inputStep common axes = GWCSStep pixelFrame (Just (transformProfile bin l1gwcs.transform common axes).transformation)
+  inputStep :: GWCSStep CoordinateFrame
+  inputStep = GWCSStep pixelFrame (Just (transformProfile bin l1gwcs.transform).transformation)
    where
     pixelFrame :: CoordinateFrame
     pixelFrame =

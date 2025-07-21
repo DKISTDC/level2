@@ -17,8 +17,6 @@ import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
-import NSO.Image.Files (L2Asdf)
-import NSO.Image.Files qualified as Files
 import NSO.Image.Fits
 import NSO.Image.Fits.Quantity hiding (quantities)
 import NSO.Image.GWCS
@@ -45,7 +43,7 @@ import Text.Casing (quietSnake)
 -- DONE: support ND collection
 -- DONE: 3-arm profiles sodium
 -- DONE: fit/orig separate GWCS + anchors
--- TODO: fix gwcs
+-- DONE: fix gwcs
 -- TODO: labeled meta.axes for profiles
 
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
@@ -339,12 +337,11 @@ profileKey line pt = cs $ show line <> "_" <> suffix pt
 -- we need one ProfileMeta for each arm
 profilesSection :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
 profilesSection bin l1gwcs primary profs =
-  let sampleFrame :: Arms ArmFrameProfileMeta = head profs.frames
-   in ProfilesSection
-        { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-        , arms = profilesArmsTree profs
-        , gwcs = profileGWCS bin l1gwcs primary (head sampleFrame.arms).fit.wcs
-        }
+  ProfilesSection
+    { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+    , arms = profilesArmsTree profs
+    , gwcs = profileGWCS bin l1gwcs primary
+    }
 
 
 -- where

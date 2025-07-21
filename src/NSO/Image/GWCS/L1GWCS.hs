@@ -1,11 +1,9 @@
 module NSO.Image.GWCS.L1GWCS where
 
-import NSO.Image.Headers.Types (PixelsPerBin (..))
 import NSO.Image.Headers.WCS (Wav, X, Y)
 import NSO.Prelude hiding (identity)
 import NSO.Types.Common (Stokes)
 import Telescope.Asdf
-import Telescope.Asdf.Core (Quantity (..), Unit (..))
 import Telescope.Asdf.GWCS as GWCS
 import Telescope.Data.Parser
 
@@ -67,7 +65,6 @@ instance ToAsdf L1WCSTransform where
 
 varyingTransform :: (ToAxes (inp Wav), ToAxes (inp Stokes)) => L1WCSTransform -> Transform (Scale X, inp Wav, Pix Y, inp Stokes) (HPLon, Wav, HPLat, Time, Stokes)
 varyingTransform = transform
-
 
 -- fixWavStokes0 :: (ToAxes out) => Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) out -> Transform (Pix X, Pix Y) out
 -- fixWavStokes0 (Transform t) = transform $ FixInputs t [(1, 0), (3, 0)]
