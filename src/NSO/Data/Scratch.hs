@@ -64,7 +64,9 @@ runScratch cfg = interpret $ \_ -> \case
   DirExists src -> do
     FS.doesDirectoryExist (mounted src)
   RemoveDir dir -> do
-    FS.removeDirectoryRecursive (mounted dir)
+    exists <- FS.doesDirectoryExist (mounted dir)
+    when exists $ do
+      FS.removeDirectoryRecursive (mounted dir)
   Globus -> pure $ Id cfg.collection.unTagged
  where
   mounted :: Path' x a -> FilePath
