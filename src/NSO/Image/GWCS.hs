@@ -6,6 +6,7 @@ import Data.List.NonEmpty qualified as NE
 import Data.Massiv.Array (Array, D, Ix2, Ix3)
 import Data.Massiv.Array qualified as M
 import Debug.Trace
+import NSO.Image.Fits.Profile (ProfileAxes (..), ProfileAxis (..))
 import NSO.Image.Fits.Quantity
 import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero)
 import NSO.Image.GWCS.L1GWCS qualified as L1
@@ -29,18 +30,22 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 transformProfile
   :: PixelsPerBin
   -> L1WCSTransform
-  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Wav, HPLon, HPLat, Time)
-transformProfile bin l1trans =
-  reorderInput |> scaleAxes |> L1.varyingTransform l1trans |> reorderOutput
+  -> ProfileAxes 'WCSMain
+  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Linear Wav, HPLon, HPLat, Time)
+transformProfile bin l1trans axes =
+  reorderInput |> (spectral <&> (scaleAxes |> L1.varyingTransform l1trans)) |> reorderOutput
  where
-  reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
-  reorderInput = transform $ Mapping [2, 1, 3, 0]
+  reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix Wav, Pix X, Pix Y, Pix Stokes)
+  reorderInput = transform $ Mapping [1, 2, 3, 0]
 
-  scaleAxes :: Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Scale X, Pix Wav, Pix Y, Pix Stokes)
-  scaleAxes = scaleX bin <&> GWCS.identity @(Pix Wav) <&> GWCS.identity @(Pix Y) <&> GWCS.identity @(Pix Stokes)
+  scaleAxes :: Transform (Pix X, Pix Y, Pix Stokes) (Scale X, Pix Y, Pix Stokes)
+  scaleAxes = scaleX bin <&> GWCS.identity @(Pix Y) <&> GWCS.identity @(Pix Stokes)
 
-  reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (Stokes, Wav, HPLon, HPLat, Time)
-  reorderOutput = transform $ Mapping [4, 1, 0, 2, 3]
+  spectral :: Transform (Pix Wav) (Linear Wav)
+  spectral = wcsLinear $ wcsToNanometers (toWCSAxis axes.wavelength.keys)
+
+  reorderOutput :: Transform (Linear Wav, HPLon, HPLat, Time, Stokes) (Stokes, Linear Wav, HPLon, HPLat, Time)
+  reorderOutput = transform $ Mapping [4, 0, 1, 2, 3]
 
 
 -- Quantity ---------------------------------------------------
@@ -49,29 +54,26 @@ transformQuantity
   :: PixelsPerBin
   -> L1WCSTransform
   -> Frames (QuantityAxes 'WCSMain)
-  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Wav, Stokes)
+  -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Stokes)
 transformQuantity bin l1trans axes =
   fullTransform
  where
-  fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Wav, Stokes)
+  fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Stokes)
   fullTransform =
     let mid = middleFrame axes
      in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
 
-  spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Wav, Stokes)
-  spaceTimeTransform = fixInputs |> scaleZeroAxes |> L1.varyingTransform l1trans |> reorderOutput
+  spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Stokes)
+  spaceTimeTransform = duplicateInputs |> scaleZeroAxes |> L1.varyingTransform l1trans
 
-  scaleZeroAxes :: Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) (Scale X, Zero Wav, Pix Y, Zero Stokes)
-  scaleZeroAxes = scaleX bin <&> zero <&> GWCS.identity @(Pix Y) <&> zero
+  duplicateInputs :: Transform (Pix X, Pix Y) (Pix X, Pix Y, Pix Stokes)
+  duplicateInputs = transform $ Mapping [0, 1, 0]
+
+  scaleZeroAxes :: Transform (Pix X, Pix Y, Pix Stokes) (Scale X, Pix Y, Zero Stokes)
+  scaleZeroAxes = scaleX bin <&> GWCS.identity @(Pix Y) <&> zero
    where
     zero :: (ToAxes a) => Transform (Pix a) (Zero a)
     zero = transform $ GWCS.Const1D $ Quantity Pixel (Integer 0)
-
-  fixInputs :: Transform (Pix X, Pix Y) (Pix X, Pix Wav, Pix Y, Pix Stokes)
-  fixInputs = transform $ Mapping [0, 0, 1, 0]
-
-  reorderOutput :: Transform (HPLon, Wav, HPLat, Time, Stokes) (HPLon, HPLat, Time, Wav, Stokes)
-  reorderOutput = transform $ Mapping [0, 2, 3, 1, 4]
 
 
 scaleX :: PixelsPerBin -> Transform (Pix X) (Scale X)
@@ -199,11 +201,11 @@ quantityGWCS bin l1gwcs primaries quants =
               ]
         }
 
-  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, SpectralFrame, StokesFrame))
+  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, StokesFrame))
   outputStep h0 = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioprojectiveFrame, temporalFrame, spectralFrame, stokesFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioprojectiveFrame, temporalFrame, stokesFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -221,16 +223,16 @@ quantityGWCS bin l1gwcs primaries quants =
         , time = h0.observation.dateAvg.ktype
         }
 
-    spectralFrame =
-      SpectralFrame
-        { name = "wavelength"
-        , axisOrder = 4
-        }
+    -- spectralFrame =
+    --   SpectralFrame
+    --     { name = "wavelength"
+    --     , axisOrder = 4
+    --     }
 
     stokesFrame =
       StokesFrame
         { name = "polarization state"
-        , axisOrder = 5
+        , axisOrder = 4
         }
 
 
@@ -239,7 +241,7 @@ type OpticalDepthFrame = CoordinateFrame
 
 newtype QuantityGWCS
   = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, SpectralFrame, StokesFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, StokesFrame)))
 instance KnownText QuantityGWCS where
   knownText = "quantityGWCS"
 
@@ -284,11 +286,11 @@ celestialFrame n helioFrame =
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
 
-profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> ProfileGWCS
-profileGWCS bin l1gwcs primary = ProfileGWCS $ GWCS inputStep outputStep
+profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS
+profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS inputStep outputStep
  where
   inputStep :: GWCSStep CoordinateFrame
-  inputStep = GWCSStep pixelFrame (Just (transformProfile bin l1gwcs.transform).transformation)
+  inputStep = GWCSStep pixelFrame (Just (transformProfile bin l1gwcs.transform wcs.axes).transformation)
    where
     pixelFrame :: CoordinateFrame
     pixelFrame =

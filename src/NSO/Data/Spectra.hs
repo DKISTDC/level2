@@ -28,6 +28,6 @@ identifyLine d = lineForWaves d.wavelengthMin d.wavelengthMax
 
 
 midPoint :: SpectralLine -> Wavelength Nm
-midPoint NaID = Wavelength 589.3
-midPoint FeI630 = Wavelength 630.2
-midPoint CaII854 = Wavelength 854.2
+midPoint NaID = Wavelength 589.899
+midPoint FeI630 = Wavelength 630.150
+midPoint CaII854 = Wavelength 854.209

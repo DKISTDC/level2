@@ -422,7 +422,7 @@ viewGenerate' inv admin status =
 
   viewGenError e = do
     row truncate $ View.systemError $ cs e
-    button RegenError (Style.btn Primary) "Restart"
+    button RegenError (Style.btn Primary) "Retry"
     button RegenFits (Style.btnOutline Secondary) "Restart Transfer"
 
   viewGenComplete :: UTCTime -> UTCTime -> View GenerateStep ()

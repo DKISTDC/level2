@@ -44,7 +44,14 @@ import Text.Casing (quietSnake)
 -- DONE: 3-arm profiles sodium
 -- DONE: fit/orig separate GWCS + anchors
 -- DONE: fix gwcs
--- TODO: labeled meta.axes for profiles
+-- DONE: labeled meta.axes for profiles
+-- TODO: Reuse varyingCelestialTransform as an anchor...
+-- TODO: 2x Profile GWCS, one per Arm. But the spatial is the same for both
+-- TODO: Profile Spectral GWCS - doesn't line up with L1 at all!
+--  * the L2 input data contain wavelength offsets from center
+--  * it is contained in the fits wcs - pretty straightforward conversion
+--  * how can I steal only the spatial transform?
+-- DONE: Fix center line wavelengths.. Generically, or just for L2?
 
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
 asdfDocument inversionId dscanon dsets bin now l1asdf metas =
@@ -218,7 +225,7 @@ data DataTree meta info = DataTree
   }
   deriving (Generic)
 instance (ToAsdf (meta info), KnownText info) => ToAsdf (DataTree meta info) where
-  -- schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
+  schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
   anchor _ = Just $ Anchor $ knownText @info
   toValue q =
     Object
@@ -329,19 +336,14 @@ profileKey line pt = cs $ show line <> "_" <> suffix pt
   suffix Fit = "fit"
 
 
--- newtype ProfilesItems = ProfilesItems (Arms (ArmProfile ProfileTree))
--- instance ToAsdf ProfilesItems where
---   schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
---   toValue (ProfilesItems arms) = toValue arms
-
--- we need one ProfileMeta for each arm
 profilesSection :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
 profilesSection bin l1gwcs primary profs =
-  ProfilesSection
-    { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
-    , arms = profilesArmsTree profs
-    , gwcs = profileGWCS bin l1gwcs primary
-    }
+  let sampleFrame :: Arms ArmFrameProfileMeta = head profs.frames
+   in ProfilesSection
+        { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+        , arms = profilesArmsTree profs
+        , gwcs = profileGWCS bin l1gwcs primary (head sampleFrame.arms).fit.wcs
+        }
 
 
 -- where
@@ -396,7 +398,6 @@ data ProfileTree fit = ProfileTree
   }
   deriving (Generic)
 instance (KnownText fit) => ToAsdf (ProfileTree fit) where
-  -- anchor _ = Just $ Anchor $ knownText @fit
   -- schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
   toValue p =
     Object
