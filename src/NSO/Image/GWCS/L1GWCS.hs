@@ -5,30 +5,28 @@ import NSO.Prelude hiding (identity)
 import NSO.Types.Common (Stokes)
 import Telescope.Asdf
 import Telescope.Asdf.GWCS as GWCS hiding (parseCompose, parseConcat, parseDirect)
+import Telescope.Data.KnownText
 import Telescope.Data.Parser
 
 
--- DONE: Parse L1 focused past the spectral, dropping the remappings
---  existing transform is (X, Y, Stokes) -> (HPLon, HPLat, Time, Stokes)
---  so the remaps in L1 are to swap: (X, Wav, Y, Stokes) -> (Wav, X, Y, Stokes)
---  and afterwards (Wav, HPLon, HPLat, Time, Stokes) -> (HPLon, Wav, HPLat, Time, Stokes)
---  yeah, you can tell by the axes_order in the final frame
--- TODO: Manually remap the axes as needed. (X, Wav, Y, Stokes) -> (Wav, X, Y, Stokes)
+type VaryingInput inp = (Scale X, Pix Y, inp Stokes)
+type VaryingOutput = (HPLon, HPLat, Time, Stokes)
+
 
 --  existing transform is (X, Y, Stokes) -> (HPLon, HPLat, Time, Stokes)
 --  so the remaps in L1 are to swap: (X, Wav, Y, Stokes) -> (Wav, X, Y, Stokes)
 --  and afterwards (Wav, HPLon, HPLat, Time, Stokes) -> (HPLon, Wav, HPLat, Time, Stokes)
 --  yeah, you can tell by the axes_order in the final frame
-varyingTransform :: (ToAxes (inp Stokes)) => L1WCSTransform -> Transform (Scale X, Pix Y, inp Stokes) (HPLon, HPLat, Time, Stokes)
+varyingTransform
+  :: (ToAxes (inp Stokes))
+  => L1WCSTransform
+  -> Transform (VaryingInput inp) VaryingOutput
 varyingTransform = transform
 
 
 data HPLat deriving (Generic, ToAxes)
 data HPLon deriving (Generic, ToAxes)
 data Time deriving (Generic, ToAxes)
-
-
-newtype L1WCSTransform = L1WCSTransform Node
 
 
 data L1Asdf = L1Asdf
@@ -45,8 +43,41 @@ data L1AsdfDataset = L1AsdfDataset
 
 data L1GWCS = L1GWCS
   { transform :: L1WCSTransform
-  , helioprojectiveFrame :: HelioprojectiveFrame
+  , helioFrame :: L1HelioFrame
   }
+  deriving (Generic, ToAsdf)
+
+
+newtype L1WCSTransform = L1WCSTransform {node :: Node}
+instance KnownText L1WCSTransform where
+  knownText = "L1WCSTransform"
+
+
+instance ToAsdf L1WCSTransform where
+  -- schema l1 = schema l1.node
+  -- anchor _ = Just $ Anchor $ knownText @L1WCSTransform
+  -- toValue l1 =
+  --   toValue $
+  --     Transformation
+  --       (toAxes @(VaryingInput Pix))
+  --       (toAxes @VaryingOutput)
+  --       (Direct l1.node)
+  toNode (L1WCSTransform n) = toNode n
+  schema (L1WCSTransform n) = schema n
+  toValue (L1WCSTransform n) = toValue n
+
+
+newtype L1HelioFrame = L1HelioFrame {frame :: HelioprojectiveFrame}
+
+
+instance KnownText L1HelioFrame where
+  knownText = "L1HelioFrame"
+
+
+instance ToAsdf L1HelioFrame where
+  schema (L1HelioFrame h) = schema h
+  anchor _ = Just $ Anchor $ knownText @L1HelioFrame
+  toValue (L1HelioFrame h) = toValue h
 
 
 data Zero a deriving (Generic, ToAxes)
@@ -80,7 +111,7 @@ instance FromAsdf L1GWCS where
         [GWCSStep _ (Just t1), GWCSStep f2 Nothing] -> do
           t <- parseAt "[0].transform" $ parseTransformNoSpectral t1
           h <- parseAt "[1].frame" $ parseHelioFrame f2
-          pure $ L1GWCS t h
+          pure $ L1GWCS t $ L1HelioFrame h
         _ -> expected "l1 gwcs [GWCSStep _ trans, GWCSStep frame ~]" ss
     other -> expected "l1 gwcs" other
    where
@@ -117,11 +148,6 @@ instance FromAsdf L1GWCS where
       case t.forward of
         Direct n -> pure n
         other -> expected "Direct" other
-
-
-instance ToAsdf L1WCSTransform where
-  schema (L1WCSTransform n) = n.schema
-  toValue (L1WCSTransform n) = n.value
 
 -- fixWavStokes0 :: (ToAxes out) => Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) out -> Transform (Pix X, Pix Y) out
 -- fixWavStokes0 (Transform t) = transform $ FixInputs t [(1, 0), (3, 0)]

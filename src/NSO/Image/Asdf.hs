@@ -46,13 +46,9 @@ import Text.Casing (quietSnake)
 -- DONE: fix gwcs
 -- DONE: labeled meta.axes for profiles
 -- TODO: Reuse varyingCelestialTransform as an anchor...
--- TODO: 2x Profile GWCS, one per Arm. But the spatial is the same for both
--- TODO: Profile Spectral GWCS - doesn't line up with L1 at all!
---  * the L2 input data contain wavelength offsets from center
---  * it is contained in the fits wcs - pretty straightforward conversion
---  * how can I steal only the spatial transform?
--- TODO: Profiles Spectral WCS-based
---  * needs quantities
+-- DONE: 2x Profile GWCS, one per Arm. But the spatial is the same for both
+-- DONE: Profile Spectral GWCS - doesn't line up with L1 at all!
+-- DONE: Profiles Spectral WCS-based
 -- DONE: Fix center line wavelengths.. Generically, or just for L2?
 
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
@@ -80,7 +76,11 @@ asdfDocument inversionId dscanon dsets bin now l1asdf metas =
 
   inversionMeta :: Frames PrimaryHeader -> InversionMeta
   inversionMeta headers =
-    InversionMeta{headers = HeaderTable headers, inventory = inversionInventory headers}
+    InversionMeta
+      { headers = HeaderTable headers
+      , inventory = inversionInventory headers
+      , l1gwcs = l1asdf.dataset.wcs
+      }
 
   inversionInventory :: Frames PrimaryHeader -> InversionInventory
   inversionInventory headers =
@@ -123,6 +123,7 @@ data InversionTree = InversionTree
 data InversionMeta = InversionMeta
   { inventory :: InversionInventory
   , headers :: HeaderTable PrimaryHeader
+  , l1gwcs :: L1GWCS
   }
   deriving (Generic, ToAsdf)
 

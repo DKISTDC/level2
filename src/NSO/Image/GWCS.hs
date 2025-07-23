@@ -3,12 +3,11 @@
 module NSO.Image.GWCS where
 
 import Data.List.NonEmpty qualified as NE
-import Data.Massiv.Array (Array, D, Ix2, Ix3)
-import Data.Massiv.Array qualified as M
 import Debug.Trace
+import NSO.Image.Asdf.Ref (Ref (..))
 import NSO.Image.Fits.Profile (ProfileAxes (..), ProfileAxis (..))
 import NSO.Image.Fits.Quantity
-import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1WCSTransform (..), Time, Zero)
+import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1HelioFrame, L1WCSTransform (..), Time, Zero)
 import NSO.Image.GWCS.L1GWCS qualified as L1
 import NSO.Image.Headers (Observation (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), PixelsPerBin (..))
@@ -19,10 +18,9 @@ import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude hiding (identity)
 import Numeric (showFFloat)
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
-import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Nanometers, Pixel, Unit))
+import Telescope.Asdf.Core (Quantity (..), Unit (Nanometers, Pixel, Unit))
 import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS as GWCS
-import Telescope.Asdf.NDArray (ToNDArray (..))
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
@@ -41,9 +39,6 @@ transformProfile bin l1trans axes =
   scaleAxes :: Transform (Pix X, Pix Y, Pix Stokes) (Scale X, Pix Y, Pix Stokes)
   scaleAxes = scaleX bin <&> GWCS.identity @(Pix Y) <&> GWCS.identity @(Pix Stokes)
 
-  -- spectral :: Transform (Pix Wav) (Linear Wav)
-  -- spectral = wcsLinear $ wcsToNanometers (toWCSAxis axes.wavelength.keys)
-
   reorderOutput :: Transform (Linear Wav, HPLon, HPLat, Time, Stokes) (Stokes, Linear Wav, HPLon, HPLat, Time)
   reorderOutput = transform $ Mapping [4, 0, 1, 2, 3]
 
@@ -61,7 +56,7 @@ linearSpectral wcs =
    in transform $ LinearSpectral (Quantity Nanometers (nanosValue i)) (Quantity (Unit "nm.pixel**-1") (nanosValue s))
  where
   nanosValue :: Double -> Value
-  nanosValue d = String $ cs $ showFFloat (Just 6) d "" -- fromIntegral (round @Double @Integer (d * 10)) / 10
+  nanosValue d = String $ cs $ showFFloat (Just 6) d ""
 
 
 -- Quantity ---------------------------------------------------
@@ -216,11 +211,11 @@ quantityGWCS bin l1gwcs primaries quants =
               ]
         }
 
-  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, StokesFrame))
+  outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame, StokesFrame))
   outputStep h0 = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioprojectiveFrame, temporalFrame, stokesFrame)
+      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioFrame.frame, temporalFrame, stokesFrame)
 
     opticalDepthFrame =
       CoordinateFrame
@@ -256,7 +251,7 @@ type OpticalDepthFrame = CoordinateFrame
 
 newtype QuantityGWCS
   = QuantityGWCS
-      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame, StokesFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (OpticalDepthFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame, StokesFrame)))
 instance KnownText QuantityGWCS where
   knownText = "quantityGWCS"
 
@@ -267,11 +262,11 @@ instance ToAsdf QuantityGWCS where
   toValue (QuantityGWCS gwcs) = toValue gwcs
 
 
-celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame HelioprojectiveFrame
+celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame (Ref L1HelioFrame)
 celestialFrame n helioFrame =
   CelestialFrame
     { name = "helioprojective"
-    , referenceFrame = helioFrame
+    , referenceFrame = Ref -- helioFrame
     , axes =
         NE.fromList
           [ FrameAxis n "pos.helioprojective.lon" (AxisType "custom:pos.helioprojective.lon") Unit.Arcseconds
@@ -320,11 +315,11 @@ profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS inputStep outputStep
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame))
+  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 l1gwcs.helioprojectiveFrame, temporalFrame)
+      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 l1gwcs.helioFrame.frame, temporalFrame)
 
     stokesFrame =
       StokesFrame
@@ -348,7 +343,7 @@ profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS inputStep outputStep
 
 newtype ProfileGWCS
   = ProfileGWCS
-      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame)))
 
 
 -- instance KnownText ProfileGWCS where
