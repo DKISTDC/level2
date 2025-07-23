@@ -19,7 +19,7 @@ import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude hiding (identity)
 import Numeric (showFFloat)
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
-import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Pixel, Unit))
+import Telescope.Asdf.Core (Quantity (..), Unit (Arcseconds, Nanometers, Pixel, Unit))
 import Telescope.Asdf.Core qualified as Unit
 import Telescope.Asdf.GWCS as GWCS
 import Telescope.Asdf.NDArray (ToNDArray (..))
@@ -33,7 +33,7 @@ transformProfile
   -> ProfileAxes 'WCSMain
   -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Linear Wav, HPLon, HPLat, Time)
 transformProfile bin l1trans axes =
-  reorderInput |> (spectral <&> (scaleAxes |> L1.varyingTransform l1trans)) |> reorderOutput
+  reorderInput |> (linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransform l1trans)) |> reorderOutput
  where
   reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix Wav, Pix X, Pix Y, Pix Stokes)
   reorderInput = transform $ Mapping [1, 2, 3, 0]
@@ -41,11 +41,27 @@ transformProfile bin l1trans axes =
   scaleAxes :: Transform (Pix X, Pix Y, Pix Stokes) (Scale X, Pix Y, Pix Stokes)
   scaleAxes = scaleX bin <&> GWCS.identity @(Pix Y) <&> GWCS.identity @(Pix Stokes)
 
-  spectral :: Transform (Pix Wav) (Linear Wav)
-  spectral = wcsLinear $ wcsToNanometers (toWCSAxis axes.wavelength.keys)
+  -- spectral :: Transform (Pix Wav) (Linear Wav)
+  -- spectral = wcsLinear $ wcsToNanometers (toWCSAxis axes.wavelength.keys)
 
   reorderOutput :: Transform (Linear Wav, HPLon, HPLat, Time, Stokes) (Stokes, Linear Wav, HPLon, HPLat, Time)
   reorderOutput = transform $ Mapping [4, 0, 1, 2, 3]
+
+
+data LinearSpectral = LinearSpectral {intercept :: Quantity, slope :: Quantity}
+  deriving (Generic)
+instance ToAsdf LinearSpectral where
+  schema _ = "!transform/linear1d-1.0.0"
+
+
+linearSpectral :: WCSAxis 'WCSMain Wav -> Transform (Pix Wav) (Linear Wav)
+linearSpectral wcs =
+  let Intercept i = wcsIntercept wcs
+      s = wcs.cdelt
+   in transform $ LinearSpectral (Quantity Nanometers (nanosValue i)) (Quantity (Unit "nm.pixel**-1") (nanosValue s))
+ where
+  nanosValue :: Double -> Value
+  nanosValue d = String $ cs $ showFFloat (Just 6) d "" -- fromIntegral (round @Double @Integer (d * 10)) / 10
 
 
 -- Quantity ---------------------------------------------------
@@ -93,51 +109,50 @@ instance ToAsdf LinearOpticalDepth where
 
 transformOpticalDepth :: WCSAxis 'WCSMain Depth -> Transform (Pix Depth) (Linear Depth)
 transformOpticalDepth wcsOD =
-  let Intercept i = wcsIntercept wcsOD
-      s = wcsOD.cdelt
-   in trace ("OD:" <> show wcsOD) $ transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
- where
   -- intercept: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 pix, value: 853.7012736084624}
   -- slope: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 pix.pixel**-1, value: 9.99852488051306e-4}
   -- linear (wcsIntercept wcsOD) (Scale $ factor1digit wcsOD.cdelt)
+  let Intercept i = wcsIntercept wcsOD
+      s = wcsOD.cdelt
+   in trace ("OD:" <> show wcsOD) $ transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
 
-  factor1digit :: Double -> Value
-  factor1digit d = String $ cs $ showFFloat (Just 1) d "" -- fromIntegral (round @Double @Integer (d * 10)) / 10
+
+factor1digit :: Double -> Value
+factor1digit d = String $ cs $ showFFloat (Just 1) d "" -- fromIntegral (round @Double @Integer (d * 10)) / 10
 
 
-transformSpatial
-  :: WCSCommon
-  -> WCSAxis 'WCSMain X
-  -> WCSAxis 'WCSMain Y
-  -> PCXY s 'WCSMain
-  -> Transform (Pix X, Pix Y) (Alpha, Delta)
-transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky |> sky
- where
-  pcMatrix :: Array D Ix2 Double
-  pcMatrix =
-    M.delay $
-      M.fromLists' @M.P
-        M.Seq
-        [ [pcs.xx.value, pcs.xy.value]
-        , [pcs.yx.value, pcs.yy.value]
-        ]
-
-  linearXY :: Transform (Pix X, Pix Y) (Linear X, Linear Y)
-  linearXY = spatialLinear (wcsToDegrees wcsX) <&> spatialLinear (wcsToDegrees wcsY)
-
-  sky :: Transform (Phi, Theta) (Alpha, Delta)
-  sky = celestial (Lat $ arcsecondsToDegrees wcsX.crval) (Lon $ arcsecondsToDegrees wcsY.crval) (lonPole common)
-
-  -- we don't use wcsLinear, because it includes the crval, which is already taken into account in the sky transform
-  spatialLinear :: forall a alt x. (ToAxes a) => WCSAxis alt x -> Transform (Pix a) (Linear a)
-  spatialLinear wcs = linear (spatialIntercept wcs) (Scale wcs.cdelt)
-
-  spatialIntercept :: WCSAxis alt axis -> Intercept
-  spatialIntercept w =
-    -- crpix is 1-indexed, need to switch to zero
-    -- don't use crval, it's already incorporated into the sky transform
-    Intercept $ negate (w.cdelt * (w.crpix - 1))
-
+-- transformSpatial
+--   :: WCSCommon
+--   -> WCSAxis 'WCSMain X
+--   -> WCSAxis 'WCSMain Y
+--   -> PCXY s 'WCSMain
+--   -> Transform (Pix X, Pix Y) (Alpha, Delta)
+-- transformSpatial common wcsX wcsY pcs = linearXY |> rotate pcMatrix |> project Pix2Sky |> sky
+--  where
+--   pcMatrix :: Array D Ix2 Double
+--   pcMatrix =
+--     M.delay $
+--       M.fromLists' @M.P
+--         M.Seq
+--         [ [pcs.xx.value, pcs.xy.value]
+--         , [pcs.yx.value, pcs.yy.value]
+--         ]
+--
+--   linearXY :: Transform (Pix X, Pix Y) (Linear X, Linear Y)
+--   linearXY = spatialLinear (wcsToDegrees wcsX) <&> spatialLinear (wcsToDegrees wcsY)
+--
+--   sky :: Transform (Phi, Theta) (Alpha, Delta)
+--   sky = celestial (Lat $ arcsecondsToDegrees wcsX.crval) (Lon $ arcsecondsToDegrees wcsY.crval) (lonPole common)
+--
+--   -- we don't use wcsLinear, because it includes the crval, which is already taken into account in the sky transform
+--   spatialLinear :: forall a alt x. (ToAxes a) => WCSAxis alt x -> Transform (Pix a) (Linear a)
+--   spatialLinear wcs = linear (spatialIntercept wcs) (Scale wcs.cdelt)
+--
+--   spatialIntercept :: WCSAxis alt axis -> Intercept
+--   spatialIntercept w =
+--     -- crpix is 1-indexed, need to switch to zero
+--     -- don't use crval, it's already incorporated into the sky transform
+--     Intercept $ negate (w.cdelt * (w.crpix - 1))
 
 lonPole :: WCSCommon -> LonPole
 lonPole common =
@@ -145,33 +160,33 @@ lonPole common =
    in LonPole d
 
 
-wcsToDegrees :: WCSAxis alt axis -> WCSAxis alt axis
-wcsToDegrees WCSAxis{ctype, cunit, crpix, crval, cdelt} =
-  WCSAxis
-    { ctype
-    , cunit
-    , crpix
-    , crval = arcsecondsToDegrees crval
-    , cdelt = arcsecondsToDegrees cdelt
-    }
+--
 
+-- wcsToDegrees :: WCSAxis alt axis -> WCSAxis alt axis
+-- wcsToDegrees WCSAxis{ctype, cunit, crpix, crval, cdelt} =
+--   WCSAxis
+--     { ctype
+--     , cunit
+--     , crpix
+--     , crval = arcsecondsToDegrees crval
+--     , cdelt = arcsecondsToDegrees cdelt
+--     }
 
-arcsecondsToDegrees :: Double -> Double
-arcsecondsToDegrees f = f / 3600
+--
+-- arcsecondsToDegrees :: Double -> Double
+-- arcsecondsToDegrees f = f / 3600
 
-
-wcsToNanometers :: WCSAxis alt Wav -> WCSAxis alt Wav
-wcsToNanometers WCSAxis{ctype, cunit, crpix, crval, cdelt} =
-  WCSAxis
-    { ctype
-    , cunit
-    , crpix
-    , crval = toNanometers crval
-    , cdelt = toNanometers cdelt
-    }
- where
-  toNanometers n = n / 10 ^ (9 :: Int)
-
+-- wcsToNanometers :: WCSAxis alt Wav -> WCSAxis alt Wav
+-- wcsToNanometers WCSAxis{ctype, cunit, crpix, crval, cdelt} =
+--   WCSAxis
+--     { ctype
+--     , cunit
+--     , crpix
+--     , crval = toNanometers crval
+--     , cdelt = toNanometers cdelt
+--     }
+--  where
+--   toNanometers n = n / 10 ^ (9 :: Int)
 
 wcsShift :: WCSAxisKeywords s alt a -> Shift a
 wcsShift wcs =
@@ -336,9 +351,8 @@ newtype ProfileGWCS
       (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame HelioprojectiveFrame, TemporalFrame)))
 
 
-instance KnownText ProfileGWCS where
-  knownText = "ProfileGWCS"
-
+-- instance KnownText ProfileGWCS where
+--   knownText = "ProfileGWCS"
 
 --
 --
@@ -349,41 +363,40 @@ instance KnownText ProfileGWCS where
 
 -- Varying Celestial Transform -----------------------------------
 
--- TODO: add time frame
-data VaryingCelestialTransform = VaryingCelestialTransform
-  { cdelt :: (Double, Double)
-  , lonPole :: LonPole
-  , -- one of each per frame
-    crpixs :: [(Double, Double)]
-  , crvals :: [(Double, Double)]
-  , pcs :: [((Double, Double), (Double, Double))]
-  }
-  deriving (Generic)
-instance ToAsdf VaryingCelestialTransform where
-  schema _ = "asdf://dkist.nso.edu/tags/varying_celestial_transform-1.1.0"
-  toValue vct =
-    Object
-      [ ("cdelt", toNode $ Quantity (Unit "arcsec.pixel**-1") $ toValue vct.cdelt)
-      , ("crpix", toNode $ Quantity Pixel $ toValue $ toNDArray $ fmap tupleList vct.crpixs)
-      , ("crval_table", toNode $ Quantity Arcseconds $ toValue $ toNDArray $ fmap tupleList vct.crvals)
-      , ("pc_table", toNode $ Quantity Pixel $ toValue $ toNDArray $ pcsMatrix vct.pcs)
-      , ("lon_pole", toNode vct.lonPole)
-      , ("projection", toNode $ Projection Pix2Sky)
-      -- , ("inputs", "[x,y,z]")
-      -- , ("outputs", "[lon, lat]")
-      ]
-   where
-    tupleList (a, b) = [a, b]
-
-    pcList ((a, b), (c, d)) = [[a, b], [c, d]]
-
-    pcsMatrix :: [((Double, Double), (Double, Double))] -> Array D Ix3 Double
-    pcsMatrix pcs =
-      M.delay
-        $ M.fromLists' @M.P
-          M.Seq
-        $ fmap pcList pcs
-
+-- -- TODO: add time frame
+-- data VaryingCelestialTransform = VaryingCelestialTransform
+--   { cdelt :: (Double, Double)
+--   , lonPole :: LonPole
+--   , -- one of each per frame
+--     crpixs :: [(Double, Double)]
+--   , crvals :: [(Double, Double)]
+--   , pcs :: [((Double, Double), (Double, Double))]
+--   }
+--   deriving (Generic)
+-- instance ToAsdf VaryingCelestialTransform where
+--   schema _ = "asdf://dkist.nso.edu/tags/varying_celestial_transform-1.1.0"
+--   toValue vct =
+--     Object
+--       [ ("cdelt", toNode $ Quantity (Unit "arcsec.pixel**-1") $ toValue vct.cdelt)
+--       , ("crpix", toNode $ Quantity Pixel $ toValue $ toNDArray $ fmap tupleList vct.crpixs)
+--       , ("crval_table", toNode $ Quantity Arcseconds $ toValue $ toNDArray $ fmap tupleList vct.crvals)
+--       , ("pc_table", toNode $ Quantity Pixel $ toValue $ toNDArray $ pcsMatrix vct.pcs)
+--       , ("lon_pole", toNode vct.lonPole)
+--       , ("projection", toNode $ Projection Pix2Sky)
+--       -- , ("inputs", "[x,y,z]")
+--       -- , ("outputs", "[lon, lat]")
+--       ]
+--    where
+--     tupleList (a, b) = [a, b]
+--
+--     pcList ((a, b), (c, d)) = [[a, b], [c, d]]
+--
+--     pcsMatrix :: [((Double, Double), (Double, Double))] -> Array D Ix3 Double
+--     pcsMatrix pcs =
+--       M.delay
+--         $ M.fromLists' @M.P
+--           M.Seq
+--         $ fmap pcList pcs
 
 data WCSFrame s = WCSFrame
   { x :: WCSAxis 'WCSMain X
@@ -391,34 +404,33 @@ data WCSFrame s = WCSFrame
   , pcxy :: PCXY s 'WCSMain
   }
 
-
-varyingCelestialTransform
-  :: WCSCommon
-  -> Frames (WCSFrame s)
-  -> Transform (Pix X, Pix Y) (HPLon, HPLat)
-varyingCelestialTransform common wcss =
-  -- swap lat/lon for VaryingCelestialTransform, it expects them backwards from the FITS input
-  let mid = middleFrame wcss
-      frames = NE.toList wcss.frames
-   in transform $
-        VaryingCelestialTransform
-          { cdelt = (mid.y.cdelt, mid.x.cdelt)
-          , crpixs = fmap crpix frames
-          , crvals = fmap crval frames
-          , pcs = fmap pc frames
-          , lonPole = lonPole common
-          }
- where
-  crpix f =
-    -- subtract 1 from crpix. GWCS transforms are zero-indexed while fits is 1-indexed
-    (f.y.crpix - 1, f.x.crpix - 1)
-  crval f =
-    (f.y.crval, f.x.crval)
-  pc f =
-    -- rotate 180 degrees from [[xx, xy], [yx, yy]]
-    ( (f.pcxy.yy.value, f.pcxy.yx.value)
-    , (f.pcxy.xy.value, f.pcxy.xx.value)
-    )
+-- varyingCelestialTransform
+--   :: WCSCommon
+--   -> Frames (WCSFrame s)
+--   -> Transform (Pix X, Pix Y) (HPLon, HPLat)
+-- varyingCelestialTransform common wcss =
+--   -- swap lat/lon for VaryingCelestialTransform, it expects them backwards from the FITS input
+--   let mid = middleFrame wcss
+--       frames = NE.toList wcss.frames
+--    in transform $
+--         VaryingCelestialTransform
+--           { cdelt = (mid.y.cdelt, mid.x.cdelt)
+--           , crpixs = fmap crpix frames
+--           , crvals = fmap crval frames
+--           , pcs = fmap pc frames
+--           , lonPole = lonPole common
+--           }
+--  where
+--   crpix f =
+--     -- subtract 1 from crpix. GWCS transforms are zero-indexed while fits is 1-indexed
+--     (f.y.crpix - 1, f.x.crpix - 1)
+--   crval f =
+--     (f.y.crval, f.x.crval)
+--   pc f =
+--     -- rotate 180 degrees from [[xx, xy], [yx, yy]]
+--     ( (f.pcxy.yy.value, f.pcxy.yx.value)
+--     , (f.pcxy.xy.value, f.pcxy.xx.value)
+--     )
 
 {-
   - !<asdf://dkist.nso.edu/tags/varying_celestial_transform-1.1.0>

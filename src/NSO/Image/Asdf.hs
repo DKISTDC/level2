@@ -51,6 +51,8 @@ import Text.Casing (quietSnake)
 --  * the L2 input data contain wavelength offsets from center
 --  * it is contained in the fits wcs - pretty straightforward conversion
 --  * how can I steal only the spatial transform?
+-- TODO: Profiles Spectral WCS-based
+--  * needs quantities
 -- DONE: Fix center line wavelengths.. Generically, or just for L2?
 
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
@@ -278,7 +280,7 @@ data QuantityMeta info = QuantityMeta
 data ProfilesSection = ProfilesSection
   { axes :: [AxisMeta]
   , arms :: Arms (Profiles ProfileTree)
-  , gwcs :: ProfileGWCS
+  , gwcs :: Arms (Arm SpectralLine ProfileGWCS)
   }
 
 
@@ -317,8 +319,18 @@ instance ToAsdf ProfilesSection where
 
 instance ToAsdf ProfileGWCS where
   schema (ProfileGWCS g) = schema g
-  anchor _ = Just $ Anchor $ knownText @ProfileGWCS
   toValue (ProfileGWCS g) = toValue g
+
+
+instance ToAsdf (Arm SpectralLine ProfileGWCS) where
+  schema (Arm _ g) = schema g
+  anchor (Arm l _) = Just $ profileGWCSAnchor l
+  toValue (Arm l g) =
+    Object [(cs (show l), Node (schema g) (anchor (Arm l g)) (toValue g))]
+
+
+profileGWCSAnchor :: SpectralLine -> Anchor
+profileGWCSAnchor l = Anchor $ "ProfileGWCS" <> cs (show l)
 
 
 instance ToAsdf (Arm SpectralLine (Profiles AlignedAxesF)) where
@@ -342,14 +354,13 @@ profilesSection bin l1gwcs primary profs =
    in ProfilesSection
         { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
         , arms = profilesArmsTree profs
-        , gwcs = profileGWCS bin l1gwcs primary (head sampleFrame.arms).fit.wcs
+        , gwcs = fmap armGWCS sampleFrame
         }
+ where
+  armGWCS :: ArmFrameProfileMeta -> Arm SpectralLine ProfileGWCS
+  armGWCS am =
+    Arm am.arm.line $ profileGWCS bin l1gwcs primary am.fit.wcs
 
-
--- where
---  armGWCS :: Arm SpectralLine L1GWCS -> ArmFrameProfileMeta -> Arm SpectralLine ProfileGWCS
---  armGWCS ag am =
---    Arm ag.arm $ profileGWCS bin ag.value primary am.fit.wcs
 
 profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms (Profiles ProfileTree)
 profilesArmsTree framesByArms =
@@ -398,13 +409,13 @@ data ProfileTree fit = ProfileTree
   }
   deriving (Generic)
 instance (KnownText fit) => ToAsdf (ProfileTree fit) where
-  -- schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
+  schema _ = "asdf://dkist.nso.edu/tags/dataset-1.2.0"
   toValue p =
     Object
       [ ("unit", toNode p.unit)
       , ("data", toNode p.data_)
       , ("meta", toNode p.meta)
-      , ("wcs", toNode p.wcs)
+      , ("wcs", toNode $ Alias $ profileGWCSAnchor p.meta.spectralLine)
       ]
 
 
