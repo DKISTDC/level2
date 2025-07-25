@@ -302,7 +302,7 @@ asdfTask t = do
     log Debug "Got Blanca"
     l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
     log Debug "Got Gfits"
-    l1trans <- Gen.readLevel1Asdf (Files.dataset dc)
+    l1asdf <- Gen.readLevel1Asdf (Files.dataset dc)
     log Debug "Got L1Asdf"
 
     (metas :: Frames L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
@@ -310,7 +310,7 @@ asdfTask t = do
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let tree = asdfDocument inv.inversionId dc ds slice.pixelsPerBin now l1trans $ Frames $ NE.sort metas.frames
+    let tree = asdfDocument inv.inversionId dc ds slice.pixelsPerBin now l1asdf $ Frames $ NE.sort metas.frames
     let path = Files.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output

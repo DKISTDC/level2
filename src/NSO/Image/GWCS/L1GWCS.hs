@@ -1,5 +1,6 @@
 module NSO.Image.GWCS.L1GWCS where
 
+import NSO.Image.Asdf.Ref
 import NSO.Image.Headers.WCS (X, Y)
 import NSO.Prelude hiding (identity)
 import NSO.Types.Common (Stokes)
@@ -22,6 +23,18 @@ varyingTransform
   => L1WCSTransform
   -> Transform (VaryingInput inp) VaryingOutput
 varyingTransform = transform
+
+
+varyingTransformRef
+  :: forall inp
+   . (ToAxes (inp Stokes))
+  => Transform (VaryingInput inp) VaryingOutput
+varyingTransformRef =
+  Transform $
+    Transformation
+      (toAxes @(VaryingInput inp))
+      (toAxes @VaryingOutput)
+      (Direct $ toNode (Ref @L1WCSTransform))
 
 
 data HPLat deriving (Generic, ToAxes)
@@ -54,17 +67,22 @@ instance KnownText L1WCSTransform where
 
 
 instance ToAsdf L1WCSTransform where
-  -- schema l1 = schema l1.node
-  -- anchor _ = Just $ Anchor $ knownText @L1WCSTransform
-  -- toValue l1 =
-  --   toValue $
-  --     Transformation
-  --       (toAxes @(VaryingInput Pix))
-  --       (toAxes @VaryingOutput)
-  --       (Direct l1.node)
-  toNode (L1WCSTransform n) = toNode n
-  schema (L1WCSTransform n) = schema n
-  toValue (L1WCSTransform n) = toValue n
+  schema l1 = l1.node.schema
+  anchor _ = Just $ Anchor $ knownText @L1WCSTransform
+  toNode l1 = Node (schema l1.node) (anchor l1) (toValue l1)
+
+
+  -- toValue (L1WCSTransform n) = toValue n
+  toValue l1 =
+    toValue $ l1WCSTransformation l1
+
+
+l1WCSTransformation :: L1WCSTransform -> Transformation
+l1WCSTransformation l1 =
+  Transformation
+    (toAxes @(VaryingInput Pix))
+    (toAxes @VaryingOutput)
+    (Direct l1.node)
 
 
 newtype L1HelioFrame = L1HelioFrame {frame :: HelioprojectiveFrame}

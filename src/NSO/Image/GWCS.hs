@@ -7,7 +7,7 @@ import Debug.Trace
 import NSO.Image.Asdf.Ref (Ref (..))
 import NSO.Image.Fits.Profile (ProfileAxes (..), ProfileAxis (..))
 import NSO.Image.Fits.Quantity
-import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1HelioFrame, L1WCSTransform (..), Time, Zero)
+import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1HelioFrame, Time, Zero)
 import NSO.Image.GWCS.L1GWCS qualified as L1
 import NSO.Image.Headers (Observation (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), PixelsPerBin (..))
@@ -27,11 +27,10 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
 transformProfile
   :: PixelsPerBin
-  -> L1WCSTransform
   -> ProfileAxes 'WCSMain
   -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Linear Wav, HPLon, HPLat, Time)
-transformProfile bin l1trans axes =
-  reorderInput |> (linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransform l1trans)) |> reorderOutput
+transformProfile bin axes =
+  reorderInput |> (linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransformRef)) |> reorderOutput
  where
   reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix Wav, Pix X, Pix Y, Pix Stokes)
   reorderInput = transform $ Mapping [1, 2, 3, 0]
@@ -63,10 +62,9 @@ linearSpectral wcs =
 
 transformQuantity
   :: PixelsPerBin
-  -> L1WCSTransform
   -> Frames (QuantityAxes 'WCSMain)
   -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Stokes)
-transformQuantity bin l1trans axes =
+transformQuantity bin axes =
   fullTransform
  where
   fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time, Stokes)
@@ -75,7 +73,7 @@ transformQuantity bin l1trans axes =
      in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
 
   spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time, Stokes)
-  spaceTimeTransform = duplicateInputs |> scaleZeroAxes |> L1.varyingTransform l1trans
+  spaceTimeTransform = duplicateInputs |> scaleZeroAxes |> L1.varyingTransformRef
 
   duplicateInputs :: Transform (Pix X, Pix Y) (Pix X, Pix Y, Pix Stokes)
   duplicateInputs = transform $ Mapping [0, 1, 0]
@@ -194,7 +192,7 @@ quantityGWCS bin l1gwcs primaries quants =
    in QuantityGWCS $ GWCS inputStep (outputStep firstPrim)
  where
   inputStep :: GWCSStep CoordinateFrame
-  inputStep = GWCSStep pixelFrame (Just (transformQuantity bin l1gwcs.transform (fmap axis quants)).transformation)
+  inputStep = GWCSStep pixelFrame (Just (transformQuantity bin (fmap axis quants)).transformation)
    where
     axis :: QuantityHeader x -> QuantityAxes 'WCSMain
     axis q = q.wcs.axes
@@ -263,7 +261,7 @@ instance ToAsdf QuantityGWCS where
 
 
 celestialFrame :: Int -> HelioprojectiveFrame -> CelestialFrame (Ref L1HelioFrame)
-celestialFrame n helioFrame =
+celestialFrame n _helioFrame =
   CelestialFrame
     { name = "helioprojective"
     , referenceFrame = Ref -- helioFrame
@@ -300,7 +298,7 @@ profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes 
 profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS inputStep outputStep
  where
   inputStep :: GWCSStep CoordinateFrame
-  inputStep = GWCSStep pixelFrame (Just (transformProfile bin l1gwcs.transform wcs.axes).transformation)
+  inputStep = GWCSStep pixelFrame (Just (transformProfile bin wcs.axes).transformation)
    where
     pixelFrame :: CoordinateFrame
     pixelFrame =
