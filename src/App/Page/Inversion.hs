@@ -21,6 +21,7 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -35,9 +36,12 @@ import NSO.Data.Spectra qualified as Spectra
 import NSO.Image.Files qualified as Files
 import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
+import Web.Atomic.CSS
 import Web.Hyperbole
+import Web.Hyperbole.Data.URI as URI (Path (..), pathUri)
 
 
 page
@@ -54,20 +58,20 @@ page propId invId = do
   gen <- send $ TaskLookupStatus $ GenFits propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
   appLayout Inversions $ do
-    col Style.page $ do
-      col (gap 5) $ do
-        el Style.header $ do
+    col ~ Style.page $ do
+      col ~ gap 5 $ do
+        el ~ Style.header $ do
           text "Inversion - "
           text invId.fromId
 
-        el_ $ do
+        el $ do
           text "Program - "
-          appRoute (Route.Proposal inv.proposalId $ Program inv.programId Prog) Style.link $ do
+          appRoute (Route.Proposal inv.proposalId $ Program inv.programId Prog) ~ Style.link $ do
             text inv.programId.fromId
 
-        el_ $ do
+        el $ do
           text "Proposal - "
-          appRoute (Route.Proposal inv.proposalId PropRoot) Style.link $ do
+          appRoute (Route.Proposal inv.proposalId PropRoot) ~ Style.link $ do
             text inv.proposalId.fromId
 
       hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds admin gen pub
@@ -82,7 +86,7 @@ loadInversion invId = do
 
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())
 redirectHome = do
-  redirect $ pathUrl . routePath $ Inversions
+  redirect $ pathUri . URI.Path True $ routePath Inversions
 
 
 -------------------------------------------------------------------
@@ -102,12 +106,12 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
   update = \case
     CreateInversion -> do
       MoreInversions propId progId <- viewId
-      redirect $ routeUrl $ Route.Proposal propId $ Program progId Prog
+      redirect $ routeUri $ Route.Proposal propId $ Program progId Prog
 
 
 viewMoreInversions :: View MoreInversions ()
 viewMoreInversions = do
-  button CreateInversion (Style.btnOutline Primary) "Start Over With New Inversion"
+  button CreateInversion ~ Style.btnOutline Primary $ "Start Over With New Inversion"
 
 
 -------------------------------------------------------------------
@@ -158,11 +162,11 @@ instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenF
 
 viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
 viewInversion inv ds admin gen pub = do
-  col (gap 30) $ do
+  col ~ gap 30 $ do
     if inv.deleted
       then restoreButton
       else none
-    col disableIfDeleted $ do
+    col ~ disableIfDeleted $ do
       viewInversionContainer inv $ do
         stepUpload (uploadStep inv) $ do
           viewUpload inv
@@ -182,9 +186,9 @@ viewInversion inv ds admin gen pub = do
  where
   disableIfDeleted = if inv.deleted then Style.disabled else id
   restoreButton =
-    col (gap 10) $ do
-      el (color Danger . italic) "Inversion has been archived"
-      button Restore (Style.btn Primary) "Restore"
+    col ~ gap 10 $ do
+      el ~ color Danger . italic $ "Inversion has been archived"
+      button Restore ~ Style.btn Primary $ "Restore"
 
 
 uploadStep :: Inversion -> Step
@@ -222,7 +226,8 @@ instance (Inversions :> es) => HyperView InversionMeta es where
         pure $ viewInversionMeta inv
       Delete -> do
         send $ Inversions.Deleted invId True
-        pure $ target (InversionStatus propId progId invId) $ el (onLoad Reload 100) ""
+        pure $ target (InversionStatus propId progId invId) $ do
+          el @ onLoad Reload 100 $ ""
 
 
 viewInversionMeta :: Inversion -> View InversionMeta ()
@@ -237,21 +242,21 @@ viewInversionMeta inv =
 
 viewInversionMeta' :: Inversion -> View InversionMeta () -> View InversionMeta ()
 viewInversionMeta' inv delContent = do
-  col (gap 20) $ do
-    col (gap 5) $ do
-      el bold "Notes"
-      liveTextArea SetNotes (att "rows" "3") inv.notes
+  col ~ gap 20 $ do
+    col ~ gap 5 $ do
+      el ~ bold $ "Notes"
+      liveTextArea SetNotes @ att "rows" "3" $ inv.notes
     delContent
 
 
 viewDeleteBtn :: View InversionMeta ()
 viewDeleteBtn = do
-  button Delete (Style.btnOutline Danger) "Archive Inversion"
+  button Delete ~ Style.btnOutline Danger $ "Archive Inversion"
 
 
 viewCannotDelete :: View InversionMeta ()
 viewCannotDelete = do
-  el (italic . color Secondary) "This Inversion has been published, it can no longer be deleted. Please create new one instead"
+  el ~ italic . color Secondary $ "This Inversion has been published, it can no longer be deleted. Please create new one instead"
 
 
 --
@@ -311,19 +316,19 @@ metadataStep inv
 
 viewDatasets :: Inversion -> [Dataset] -> View InversionStatus ()
 viewDatasets inv ds = do
-  col (gap 5) $ do
-    el bold "Datasets Used"
+  col ~ gap 5 $ do
+    el ~ bold $ "Datasets Used"
     forM_ ds $ \d -> do
-      row (gap 10) $ do
+      row ~ gap 10 $ do
         View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets)
-        appRoute (Route.Datasets $ Dataset d.datasetId) Style.link $ text d.datasetId.fromId
+        appRoute (Route.Datasets $ Dataset d.datasetId) ~ Style.link $ text d.datasetId.fromId
         -- maybe none (\l -> text $ "(" <> cs (show l) <> ")") $ Spectra.identifyLine d
-        el (fontSize 12) $ maybe none spectralLineTag $ Spectra.identifyLine d
+        el ~ fontSize 12 $ maybe none spectralLineTag $ Spectra.identifyLine d
 
 
 viewMetadata :: Inversion -> [Dataset] -> View InversionStatus ()
 viewMetadata inv ds = do
-  col (gap 15) $ do
+  col ~ gap 15 $ do
     viewDatasets inv ds
 
     hyper (Metadata inv.proposalId inv.inversionId) $ do
@@ -392,7 +397,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, 
 
     refreshInversion = do
       GenerateStep propId progId invId <- viewId
-      pure $ target (InversionStatus propId progId invId) $ el (onLoad Reload 0) "RELOAD?"
+      pure $ target (InversionStatus propId progId invId) $ el @ onLoad Reload 0 $ "RELOAD?"
 
 
 generateStep :: Inversion -> Step
@@ -411,7 +416,7 @@ viewGenerate inv admin status
 
 viewGenerate' :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
 viewGenerate' inv admin status =
-  col (gap 10) viewGen
+  col ~ gap 10 $ viewGen
  where
   viewGen =
     case (inv.invError, inv.generate.fits, inv.generate.asdf) of
@@ -421,46 +426,46 @@ viewGenerate' inv admin status =
       (_, _, _) -> viewGenerateStep status
 
   viewGenError e = do
-    row truncate $ View.systemError $ cs e
-    button RegenError (Style.btn Primary) "Retry"
-    button RegenFits (Style.btnOutline Secondary) "Restart Transfer"
+    row ~ overflow Hidden $ View.systemError $ cs e
+    button RegenError ~ Style.btn Primary $ "Retry"
+    button RegenFits ~ Style.btnOutline Secondary $ "Restart Transfer"
 
   viewGenComplete :: UTCTime -> UTCTime -> View GenerateStep ()
   viewGenComplete _fits _asdf = do
-    row (gap 10) $ do
+    row ~ gap 10 $ do
       viewGeneratedFiles inv
-      button RegenFits (Style.btnOutline Secondary) "Regen FITS"
-      button RegenAsdf (Style.btnOutline Secondary) "Regen ASDF"
+      button RegenFits ~ Style.btnOutline Secondary $ "Regen FITS"
+      button RegenAsdf ~ Style.btnOutline Secondary $ "Regen ASDF"
 
   viewGenAsdf :: UTCTime -> View GenerateStep ()
   viewGenAsdf _fits = do
     loadingMessage "Generating ASDF"
-    el (onLoad ReloadGen 1000) none
+    el @ onLoad ReloadGen 1000 $ none
 
   viewGenerateStep Nothing =
-    row (onLoad ReloadGen 1000) $ do
+    row @ onLoad ReloadGen 1000 $ do
       loadingMessage "Adding to Queue"
   viewGenerateStep (Just gen) =
     case gen of
       GenWaiting -> do
-        row (onLoad ReloadGen 1000) $ do
+        row @ onLoad ReloadGen 1000 $ do
           loadingMessage "Waiting for job to start"
           space
           case admin.token of
-            Nothing -> link admin.loginUrl (Style.btnOutline Danger) "Needs Globus Login"
+            Nothing -> link admin.loginUrl ~ Style.btnOutline Danger $ "Needs Globus Login"
             Just _ -> pure ()
       GenStarted ->
-        row (onLoad ReloadGen 1000) $ do
+        row @ onLoad ReloadGen 1000 $ do
           loadingMessage "Started"
       GenTransferring taskId -> do
-        el_ "Generating FITS - Transferring L1 Files"
+        el "Generating FITS - Transferring L1 Files"
         hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
           Transfer.viewLoadTransfer GenTransfer
       GenFrames{complete, total, throughput, skipped} -> do
         loadingMessage "Generating FITS"
-        col (onLoad ReloadGen 1000) $ do
+        col @ onLoad ReloadGen 1000 $ do
           let done = complete + skipped
-          row (gap 5) $ do
+          row ~ gap 5 $ do
             speedMessage throughput
             space
             text $ cs $ show complete
@@ -470,24 +475,24 @@ viewGenerate' inv admin status =
                 text " + "
                 text $ cs $ show skipped
                 text " skipped"
-            el_ " / "
-            el_ $ text $ cs $ show gen.total
+            el " / "
+            el $ text $ cs $ show gen.total
           View.progress (fromIntegral done / fromIntegral total)
 
   speedMessage throughput = do
     case throughput of
       0 -> none
       _ ->
-        el_ $ do
+        el $ do
           text $ cs $ showFFloat (Just 2) (throughput * 60) ""
           text " frames per minute"
 
   loadingMessage msg =
-    row (gap 5) $ do
-      el (width 20) Icons.spinnerCircle
-      col id $ do
+    row ~ gap 5 $ do
+      el ~ width 20 $ Icons.spinnerCircle
+      col $ do
         space
-        el_ $ text msg
+        el $ text msg
         space
 
 
@@ -511,11 +516,11 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
         pure $ do
           Transfer.viewTransferFailed taskId
           target (GenerateStep propId progId invId) $ do
-            button RegenFits (Style.btn Primary) "Restart Transfer"
+            button RegenFits ~ Style.btn Primary $ "Restart Transfer"
       TaskSucceeded ->
         pure $ do
           target (GenerateStep propId progId invId) $ do
-            el (onLoad ReloadGen 1000) "SUCCEEDED"
+            el @ onLoad ReloadGen 1000 $ "SUCCEEDED"
       CheckTransfer -> do
         res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer GenTransfer taskId
         pure $ either (Transfer.viewTransferError taskId) id res
@@ -523,7 +528,7 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
 
 viewGeneratedFiles :: Inversion -> View c ()
 viewGeneratedFiles inv =
-  link (fileManagerOpenInv $ Files.outputL2Dir inv.proposalId inv.inversionId) (Style.btnOutline Success . grow . att "target" "_blank") "View Generated Files"
+  link (fileManagerOpenInv $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
 
 
 -- ----------------------------------------------------------------
@@ -568,7 +573,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
       PublishTransfer taskId TaskFailed -> do
         pure $ do
           Transfer.viewTransferFailed taskId
-          button StartSoftPublish (Style.btn Primary . grow) "Restart Transfer"
+          button StartSoftPublish ~ Style.btn Primary . grow $ "Restart Transfer"
       PublishTransfer _ TaskSucceeded -> do
         refreshInversion
       PublishTransfer taskId CheckTransfer -> do
@@ -578,7 +583,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, 
     refreshInversion = do
       PublishStep propId progId invId <- viewId
       pure $ target (InversionStatus propId progId invId) $ do
-        el (onLoad Reload 0) none
+        el @ onLoad Reload 0 $ none
 
 
 -- what if it is actively being published?
@@ -589,7 +594,7 @@ viewPublish inv mstatus
   | otherwise = none
  where
   viewNeedsPublish =
-    button StartSoftPublish (Style.btn Primary . grow) "Soft Publish"
+    button StartSoftPublish ~ Style.btn Primary . grow $ "Soft Publish"
 
   viewCheckStatus = do
     case mstatus of
@@ -599,15 +604,16 @@ viewPublish inv mstatus
 
 viewPublishWait :: View PublishStep ()
 viewPublishWait = do
-  el (onLoad CheckPublish 1000) "Publishing..."
+  el @ onLoad CheckPublish 1000 $ "Publishing..."
 
 
 viewPublishTransfer :: Id Task -> View PublishStep ()
 viewPublishTransfer taskId = do
-  el_ "Publishing..."
+  el "Publishing..."
   Transfer.viewLoadTransfer (PublishTransfer taskId)
 
 
 viewPublished :: Id Proposal -> Id Inversion -> View PublishStep ()
 viewPublished propId invId = do
-  link (Publish.fileManagerOpenPublish $ Publish.publishedDir propId invId) (Style.btnOutline Success . grow . att "target" "_blank") "View Published Files"
+  link (Publish.fileManagerOpenPublish $ Publish.publishedDir propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
+    "View Published Files"

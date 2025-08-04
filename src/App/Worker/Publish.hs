@@ -13,10 +13,10 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
-import NSO.Data.Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Scratch as Scratch
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Network.Globus (taskPercentComplete)
 import Network.Globus qualified as Globus

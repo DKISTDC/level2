@@ -39,6 +39,7 @@ library
       App.Page.Inversions
       App.Page.Inversions.CommitForm
       App.Page.InversionUpload
+      App.Page.InversionUpload.UploadFiles
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
@@ -107,7 +108,6 @@ library
       NSO.Image.Types.Profile
       NSO.Image.Types.Quantity
       NSO.InterserviceBus
-      NSO.Level2
       NSO.Metadata
   other-modules:
       Paths_nso_level2
@@ -126,12 +126,12 @@ library
       DuplicateRecordFields
       NoImplicitPrelude
       NoFieldSelectors
-      StrictData
       LambdaCase
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       aeson
     , amqp-worker >=2.0.1
+    , atomic-css >=0.1.0
     , base >=4.18
     , binary
     , bytestring
@@ -148,7 +148,7 @@ library
     , http-client
     , http-client-tls
     , http-types
-    , hyperbole ==0.4.3
+    , hyperbole ==0.5.0
     , lens
     , massiv
     , megaparsec
@@ -167,7 +167,6 @@ library
     , uuid
     , wai-extra
     , warp >=3.4
-    , web-view >=0.7
   default-language: GHC2021
 
 executable level2
@@ -189,12 +188,12 @@ executable level2
       DuplicateRecordFields
       NoImplicitPrelude
       NoFieldSelectors
-      StrictData
       LambdaCase
   ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
     , amqp-worker >=2.0.1
+    , atomic-css >=0.1.0
     , base >=4.18
     , binary
     , bytestring
@@ -211,7 +210,7 @@ executable level2
     , http-client
     , http-client-tls
     , http-types
-    , hyperbole ==0.4.3
+    , hyperbole ==0.5.0
     , lens
     , massiv
     , megaparsec
@@ -231,7 +230,6 @@ executable level2
     , uuid
     , wai-extra
     , warp >=3.4
-    , web-view >=0.7
   default-language: GHC2021
 
 test-suite spec
@@ -261,7 +259,6 @@ test-suite spec
       DuplicateRecordFields
       NoImplicitPrelude
       NoFieldSelectors
-      StrictData
       LambdaCase
   ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N -F -pgmF=skeletest-preprocessor
   build-tool-depends:
@@ -270,6 +267,7 @@ test-suite spec
       Diff >=0.5 && <1.0
     , aeson
     , amqp-worker >=2.0.1
+    , atomic-css
     , base >=4.18
     , binary
     , bytestring
@@ -286,7 +284,7 @@ test-suite spec
     , http-client
     , http-client-tls
     , http-types
-    , hyperbole ==0.4.3
+    , hyperbole ==0.5.0
     , lens
     , massiv
     , megaparsec
@@ -307,5 +305,4 @@ test-suite spec
     , uuid
     , wai-extra
     , warp >=3.4
-    , web-view
   default-language: GHC2021

@@ -5,9 +5,8 @@ import App.Style qualified as Style
 import App.View.Icons qualified as Icons
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import NSO.Prelude
+import Web.Atomic.CSS
 import Web.Hyperbole hiding (input, label)
-import Web.View qualified as View
-import Web.View.Style
 
 
 showDate :: UTCTime -> Text
@@ -20,35 +19,35 @@ showTimestamp = cs . formatTime defaultTimeLocale "%F %T"
 
 systemError :: Text -> View c ()
 systemError e = do
-  col (gap 5 . grow . borderColor Danger . border 1 . bg (HexColor "#fdd9d7") . rounded 5) $ do
-    el (bold . color White . bg Danger . pad (XY 8 5)) "Error!"
-    tag "code" (fontSize 14 . wrap . pad 10) . text $ e
+  col ~ gap 5 . grow . borderColor Danger . border 1 . bg (HexColor "#fdd9d7") . rounded 5 $ do
+    el ~ bold . color White . bg Danger . pad (XY 8 5) $ "Error!"
+    tag "code" ~ fontSize 14 . wrap . pad 10 $ text e
  where
-  wrap = addClass $ cls "wrap" & prop @Text "word-wrap" "break-word"
+  wrap = utility "wrap-word" ["word-wrap" :. "break-word"]
 
 
-hr :: Mod c -> View c ()
-hr f = tag "hr" f none
+hr :: View c ()
+hr = tag "hr" $ pure ()
 
 
 progress :: Float -> View c ()
 progress p = do
-  row (bg Gray . height 20) $ do
-    el (width (Pct p) . bg (light Info)) $ do
+  row ~ bg Gray . height 20 $ do
+    el ~ width (Pct p) . bg (light Info) $ do
       space
 
 
-iconButton :: (ViewAction (Action id)) => Action id -> Mod id -> View id () -> Text -> View id ()
-iconButton action f icon txt =
-  button action f $ do
-    row (gap 10) $ do
-      el (width 24) icon
+iconButton :: (ViewAction (Action id)) => Action id -> View id () -> Text -> View id ()
+iconButton action icon txt =
+  button action $ do
+    row ~ gap 10 $ do
+      el ~ width 24 $ icon
       text txt
 
 
-toggleBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> Mod id -> View id () -> View id ()
-toggleBtn toAction sel f =
-  button (toAction $ not sel) (f . Style.btn (if sel then on else off))
+toggleBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> View id () -> View id ()
+toggleBtn toAction sel =
+  button (toAction $ not sel) ~ Style.btn (if sel then on else off)
  where
   on = Primary
   off = Gray
@@ -56,14 +55,14 @@ toggleBtn toAction sel f =
 
 checkBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> View id ()
 checkBtn toAction sel = do
-  View.button (onClick (toAction $ not sel)) $ do
-    checkCircle sel id
+  button (toAction $ not sel) $ do
+    checkCircle sel
 
 
-checkCircle :: Bool -> Mod c -> View c ()
-checkCircle sel f =
-  el (f . rounded 100 . border 1 . width 20 . height 20 . Style.alignMiddle) $ do
+checkCircle :: Bool -> View c ()
+checkCircle sel =
+  el ~ rounded 100 . border 1 . width 20 . height 20 . Style.alignMiddle $ do
     content sel
  where
-  content True = el (pad 2) Icons.check
+  content True = el ~ pad 2 $ Icons.check
   content False = ""

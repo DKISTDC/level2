@@ -4,7 +4,7 @@ module App.View.Icons where
 
 import Data.String.Interpolate
 import NSO.Prelude
-import Web.View
+import Web.Hyperbole
 
 
 checkCircle :: View c ()

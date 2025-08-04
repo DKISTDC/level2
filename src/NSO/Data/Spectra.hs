@@ -2,6 +2,7 @@ module NSO.Data.Spectra where
 
 import NSO.Data.Datasets hiding (find)
 import NSO.Prelude
+import NSO.Types.Wavelength
 
 
 -- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py

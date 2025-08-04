@@ -29,8 +29,10 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Qualify
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Status
+import NSO.Types.Wavelength
 
 
 loadAllProposals :: (Datasets :> es) => Eff es [Proposal]

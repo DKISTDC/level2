@@ -5,8 +5,6 @@ module NSO.Data.Datasets
   , Filter (..)
   , find
   , module NSO.Types.Dataset
-  , module NSO.Types.Common
-  , module NSO.Types.Wavelength
   , runDataDatasets
   )
 where
@@ -18,7 +16,6 @@ import NSO.Prelude hiding (find)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
-import NSO.Types.Wavelength
 
 
 -- Put all the operations here?

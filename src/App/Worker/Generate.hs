@@ -24,6 +24,7 @@ import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
 import Network.Globus qualified as Globus
@@ -138,7 +139,6 @@ readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   inp <- send $ Scratch.ReadFile $ filePath dir path
   Fits.decode inp
-
 
 
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]

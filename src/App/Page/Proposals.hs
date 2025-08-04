@@ -23,7 +23,9 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import Web.Atomic.CSS
 import Web.Hyperbole as H
 
 
@@ -117,11 +119,11 @@ instance (Datasets :> es, Inversions :> es) => HyperView AllProposals es where
 viewProposals :: Filters -> [Proposal] -> View AllProposals ()
 viewProposals fs props = do
   let sorted = sortOn (\p -> Down p.proposalId) $ filter (applyFilters fs.searchTerm) props
-  el (pad 15 . gap 20 . big flexRow . small flexCol . grow) $ do
-    row (big aside . gap 10) $ do
+  el ~ pad 15 . gap 20 . big flexRow . small flexCol . grow $ do
+    el ~ small flexRow . big aside . gap 10 $ do
       viewFilters fs
 
-    col (gap 40 . grow . minWidth 0) $ do
+    col ~ gap 40 . grow . minWidth 0 $ do
       forM_ sorted $ \prop ->
         hyper (ProposalCard prop.proposalId) $ viewProposalLoad fs prop
  where
@@ -137,21 +139,21 @@ viewProposals fs props = do
 
 viewFilters :: Filters -> View AllProposals ()
 viewFilters fs = do
-  col (gap 10) $ do
-    el bold "Proposal Id"
-    stack id $ do
-      layer id $ search FilterProposal 500 (att "placehodler" "1 118" . border 1 . pad 10 . grow)
+  col ~ gap 10 $ do
+    el ~ bold $ "Proposal Id"
+    el ~ stack $ do
+      search FilterProposal 500 @ placeholder "1 118" ~ border 1 . pad 10 . grow
 
-  col (gap 10) $ do
-    el bold "Instrument"
-    row (gap 5) $ do
-      View.toggleBtn (FilterInstrument VISP) fs.visp.value id "VISP"
-      View.toggleBtn (FilterInstrument VBI) fs.vbi id "VBI"
-      View.toggleBtn (FilterInstrument CRYO_NIRSP) fs.cryo id "Cryo-NIRSP"
+  col ~ gap 10 $ do
+    el ~ bold $ "Instrument"
+    row ~ gap 5 $ do
+      View.toggleBtn (FilterInstrument VISP) fs.visp.value "VISP"
+      View.toggleBtn (FilterInstrument VBI) fs.vbi "VBI"
+      View.toggleBtn (FilterInstrument CRYO_NIRSP) fs.cryo "Cryo-NIRSP"
 
-  col (gap 10) $ do
-    el bold "Status"
-    dropdown FilterStatus (== fs.status) (pad 5) $ do
+  col ~ gap 10 $ do
+    el ~ bold $ "Status"
+    dropdown FilterStatus (== fs.status) ~ pad 5 $ do
       option Any "Any"
       option Qualified "Qualified"
       option Active "Active"
@@ -195,7 +197,7 @@ instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView 
 
 viewProposalLoad :: Filters -> Proposal -> View ProposalCard ()
 viewProposalLoad filts prop = do
-  proposalCard prop $ el (onLoad (ProposalDetails filts) 100) ""
+  proposalCard prop $ el @ onLoad (ProposalDetails filts) 100 $ ""
 
 
 viewProposalDetails :: Filters -> UTCTime -> Proposal -> [ProgramFamily] -> View ProposalCard ()
@@ -207,7 +209,7 @@ viewProposalDetails fs now prop progs = do
     -- how many total programs?
     let ignored = length progs - length shown
     when (ignored > 0) $ do
-      appRoute (Route.Proposal prop.proposalId PropRoot) (fontSize 14 . color Black . gap 5) $ do
+      appRoute (Route.Proposal prop.proposalId PropRoot) ~ fontSize 14 . color Black . gap 5 $ do
         text $ cs (show ignored)
         text " Hidden Instrument Programs"
  where
@@ -232,27 +234,27 @@ viewProposalDetails fs now prop progs = do
 
 tableInstrumentPrograms :: UTCTime -> [Id InstrumentProgram] -> View ProposalCard ()
 tableInstrumentPrograms _ progIds = do
-  col id $ do
+  col $ do
     dataRows progIds $ \progId -> do
       hyper (ProgramRow progId) $ rowInstrumentProgramLoad progId
 
 
 proposalCard :: Proposal -> View c () -> View c ()
 proposalCard prop content = do
-  col (Style.card . gap 15 . pad 15) $ do
-    row id $ do
-      el bold $ do
+  col ~ Style.card . gap 15 . pad 15 $ do
+    row $ do
+      el ~ bold $ do
         text "Proposal "
-        appRoute (Route.Proposal prop.proposalId PropRoot) Style.link $ do
+        appRoute (Route.Proposal prop.proposalId PropRoot) ~ Style.link $ do
           text prop.proposalId.fromId
       space
-      el_ $ do
+      el $ do
         text $ showDate prop.startTime
 
-    View.hr (color Gray)
+    View.hr ~ color Gray
 
-    col (gap 10) $ do
-      el truncate $ text $ T.take 200 prop.description
+    col ~ gap 10 $ do
+      el ~ overflow Hidden $ text $ T.take 200 prop.description
       content
 
 
@@ -278,11 +280,11 @@ instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView ProgramRow 
 
 rowInstrumentProgramLoad :: Id InstrumentProgram -> View ProgramRow ()
 rowInstrumentProgramLoad _progId = do
-  el (onLoad ProgramDetails 100) $ text "..."
+  el @ onLoad ProgramDetails 100 $ text "..."
 
 
 rowInstrumentProgram :: UTCTime -> ProgramFamily -> View ProgramRow ()
 rowInstrumentProgram now psm = do
   let p = psm.program
-  appRoute (Route.Proposal p.proposalId $ Program p.programId Prog) id $ do
+  appRoute (Route.Proposal p.proposalId $ Program p.programId Prog) $ do
     viewProgramRow now psm

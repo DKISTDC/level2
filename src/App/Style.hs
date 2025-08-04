@@ -2,53 +2,52 @@ module App.Style where
 
 import App.Colors
 import NSO.Prelude
-import Web.View
-import Web.View.Style
+import Web.Atomic.CSS
 
 
-link :: Mod c
+link :: (Styleable h) => CSS h -> CSS h
 link = color Primary . hover (color (light Primary) . underline)
 
 
-page :: Mod c
+page :: (Styleable h) => CSS h -> CSS h
 page = pad 20 . gap 25
 
 
-header :: Mod c
+header :: (Styleable h) => CSS h -> CSS h
 header = fontSize 24 . bold
 
 
-code :: Mod c
+code :: (Styleable h) => CSS h -> CSS h
 code = fontSize 14
 
 
-subheader :: Mod c
+subheader :: (Styleable h) => CSS h -> CSS h
 subheader = fontSize 18 . bold
 
 
-card :: Mod c
-card = bg White . rounded 4 . truncate
+card :: (Styleable h) => CSS h -> CSS h
+card = bg White . rounded 4 . overflow Clip
 
 
-cardHeader :: (Contrast clr, ToColor clr) => clr -> Mod ctx
+cardHeader :: (Contrast clr, ToColor clr) => clr -> (Styleable h) => CSS h -> CSS h
 cardHeader c =
   bg c . color (contrast c) . textAlign AlignCenter . pad 10
 
 
-tag :: AppColor -> Mod c
+tag :: (Styleable h) => AppColor -> CSS h -> CSS h
 tag c =
   color (contrast c)
     . bg (light c)
 
 
-tagOutline :: (ToColor clr) => clr -> Mod ctx
+tagOutline :: (Styleable h) => (ToColor clr) => clr -> CSS h -> CSS h
 tagOutline c =
   color c
     . borderColor c
     . border 2
 
 
-btn :: AppColor -> Mod c
+btn :: (Styleable h) => AppColor -> CSS h -> CSS h
 btn c =
   btnBase
     . color (contrast c)
@@ -58,7 +57,7 @@ btn c =
     . rounded 3
 
 
-btnOutline :: AppColor -> Mod c
+btnOutline :: (Styleable h) => AppColor -> CSS h -> CSS h
 btnOutline c =
   btnBase
     . border 2
@@ -67,60 +66,36 @@ btnOutline c =
     . hover (borderColor (light c) . color (light c))
 
 
-btnLoading :: AppColor -> Mod c
+btnLoading :: (Styleable h) => AppColor -> CSS h -> CSS h
 btnLoading c =
   btnBase
     . border 2
     . borderColor c
     . color c
-    . att "disabled" ""
 
 
-btnBase :: Mod c
+btnBase :: (Styleable h) => CSS h -> CSS h
 btnBase =
   pad (XY 15 10)
     . rounded 3
     . shadow ()
 
 
-italic :: Mod c
-italic =
-  addClass $
-    cls "italic"
-      & prop @Text "font-style" "italic"
-
-
-input :: Mod c
+input :: (Styleable h) => CSS h -> CSS h
 input = pad 8 . border 1
 
 
 -- disabled :: Mod c
 -- disabled = opacity 0.5 . att "inert" ""
 
-disabled :: Mod c
+disabled :: (Styleable h) => CSS h -> CSS h
 disabled = noClick . opacity 0.5
 
 
-flexWrap :: Mod c
-flexWrap =
-  addClass $
-    cls "fwrap"
-      & prop @Text "flex-wrap" "wrap"
-
-
-alignMiddle :: Mod c
+alignMiddle :: (Styleable h) => CSS h -> CSS h
 alignMiddle =
-  addClass $
-    cls "amid"
-      & prop @Text "align-self" "center"
+  utility "amid" ["align-self" :. "center"]
 
 
-pointer :: Mod c
-pointer =
-  addClass $
-    cls "point"
-      & prop @Text "cursor" "pointer"
-
-
-noClick :: Mod c
-noClick = addClass $ cls "no-click" & prop @Text "pointer-events" "none"
+noClick :: (Styleable h) => CSS h -> CSS h
+noClick = utility "no-click" ["pointer-events" :. "none"]

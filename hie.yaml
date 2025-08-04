@@ -13,10 +13,10 @@ cradle:
       component: "lib:nso-level2-types"
 
     - path: "../atomic-css/src"
-      component: "lib:web-view"
+      component: "lib:atomic-css"
 
     - path: "../atomic-css/test/"
-      component: "web-view:test:test"
+      component: "atomic-css:test:test"
 
     - path: "../hyperbole/src"
       component: "lib:hyperbole"

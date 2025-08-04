@@ -15,7 +15,7 @@ import NSO.Types.Common as App
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Network.Globus as Globus (DataType (..), Id, Id' (..), SyncLevel (..), TransferItem (..), TransferRequest (..))
-import Web.View.Types.Url (Url)
+import Web.Hyperbole.Data.URI (URI)
 
 
 data Published a
@@ -31,7 +31,7 @@ publishedDir ip ii =
   baseDir </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
-fileManagerOpenPublish :: Path' Dir (Published Inversion) -> Url
+fileManagerOpenPublish :: Path' Dir (Published Inversion) -> URI
 fileManagerOpenPublish = fileManagerOpenDir (App.Id dkistEndpoint.unTagged)
 
 

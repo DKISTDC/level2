@@ -50,7 +50,6 @@ library
       DuplicateRecordFields
       NoImplicitPrelude
       NoFieldSelectors
-      StrictData
       LambdaCase
   ghc-options: -Wall
   build-depends:
@@ -67,7 +66,7 @@ library
     , http-api-data
     , http-client
     , http-types
-    , hyperbole ==0.4.3
+    , hyperbole ==0.5.0
     , lens
     , modern-uri
     , random
@@ -76,7 +75,7 @@ library
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.3
+    , telescope >=0.4
     , text
     , time
   default-language: GHC2021

@@ -1,7 +1,7 @@
 module App.Colors where
 
 import NSO.Prelude
-import Web.View
+import Web.Atomic.CSS hiding (Normal)
 
 
 data AppColor

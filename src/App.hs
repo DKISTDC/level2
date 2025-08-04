@@ -51,6 +51,7 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
+import Web.Hyperbole.Data.URI (Path (..), pathUri)
 
 
 main :: IO ()
@@ -166,7 +167,7 @@ webServer config auth fits asdf pubs sync =
   router (Datasets (Dataset d)) = runPage $ Dataset.page d
   router (Datasets (Sync d)) = runPage $ Sync.page d
   router Experiments = do
-    redirect (pathUrl . routePath $ Proposals)
+    redirect (pathUri . Path True $ routePath $ Proposals)
   router Logout = runPage Auth.logout
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth

@@ -3,35 +3,28 @@ module App.View.LiveInput where
 import App.Style qualified as Style
 import App.View.Icons qualified as Icons
 import NSO.Prelude
+import Web.Atomic.CSS
 import Web.Hyperbole
-import Web.View.Style (addClass, cls, prop)
 
 
-liveInput :: (ViewAction (Action id)) => (Text -> Action id) -> Mod id -> View id ()
-liveInput toAction f = do
-  row relative $ do
-    search toAction 250 (f . Style.input . onRequest Style.disabled)
-    row (absolute . right . Style.noClick) $ do
-      el (hide . onRequest flexRow) loader
+liveInput :: (ViewAction (Action id)) => (Text -> Action id) -> View id ()
+liveInput toAction = do
+  row ~ position Relative $ do
+    search toAction 250 ~ Style.input . whenLoading Style.disabled
+    row ~ position Absolute . alignRight . Style.noClick $ do
+      el ~ display None . whenLoading flexRow $ loader
  where
-  relative = addClass $ cls "pos-rel" & prop @Text "position" "relative"
-  absolute = addClass $ cls "pos-abs" & prop @Text "position" "absolute"
-  right =
-    addClass $
-      cls "pos-right"
-        & prop @PxRem "top" 5
-        & prop @PxRem "right" 5
-        & prop @PxRem "bottom" 5
+  alignRight = top 5 . right 5 . bottom 5
 
 
-liveTextArea :: (ViewAction (Action id)) => (Text -> Action id) -> Mod id -> Text -> View id ()
-liveTextArea toAction f t = do
-  stack id $ do
-    layer id $ tag "textarea" (f . onInput toAction 500 . Style.input) (text t)
-    layer (Style.noClick . pad 5 . hide . onRequest flexRow) $ do
+liveTextArea :: (ViewAction (Action id)) => (Text -> Action id) -> Text -> View id ()
+liveTextArea toAction t = do
+  el ~ stack $ do
+    tag "textarea" @ onInput toAction 500 ~ Style.input $ text t
+    row ~ Style.noClick . pad 5 . display None . whenLoading (display Flex) $ do
       space
-      el id loader
+      loader
 
 
 loader :: View c ()
-loader = el (grow . width 32 . height 32) Icons.spinnerCircle
+loader = el ~ grow . width 32 . height 32 $ Icons.spinnerCircle

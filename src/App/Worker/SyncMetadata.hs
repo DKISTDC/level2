@@ -11,6 +11,7 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Sync as Sync
 import NSO.Metadata
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 
 

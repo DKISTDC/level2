@@ -17,8 +17,10 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Status
+import Web.Atomic.CSS
 import Web.Hyperbole
 
 
@@ -32,7 +34,7 @@ page = do
 
   -- let sorted = sortOn sortInv ivs
   appLayout Inversions $ do
-    col Style.page $ do
+    col ~ Style.page $ do
       -- el (fontSize 24 . bold) "Completed"
       viewProposals allPropInvs
  where
@@ -70,7 +72,7 @@ data ProposalInversions = ProposalInversions
 
 viewProposals :: [ProposalInversions] -> View id ()
 viewProposals pis = do
-  col (gap 20) $ do
+  col ~ gap 20 $ do
     mapM_ viewProposal pis
 
 
@@ -85,10 +87,10 @@ viewProgram :: Group (Id InstrumentProgram) Inversion -> View id ()
 viewProgram g = do
   let inv = sample g
   let sorted = sortOn (Down . (.updated)) $ NE.toList g.items :: [Inversion]
-  col (gap 10) $ do
-    appRoute (Route.Proposal inv.proposalId $ Route.Program inv.programId Prog) Style.link $ do
+  col ~ gap 10 $ do
+    appRoute (Route.Proposal inv.proposalId $ Route.Program inv.programId Prog) ~ Style.link $ do
       text inv.programId.fromId
-    col id $ do
+    col $ do
       dataRows sorted rowInversion
 
 -- viewByProposal :: Proposal -> [Inversion] -> View id ()

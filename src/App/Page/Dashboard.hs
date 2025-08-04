@@ -22,6 +22,7 @@ import NSO.Data.Datasets
 import NSO.Data.Scratch (Scratch)
 import NSO.Prelude
 import Network.Globus (Token, Token' (..))
+import Web.Atomic.CSS
 import Web.Hyperbole
 
 
@@ -35,18 +36,18 @@ page = do
  where
   mainView :: AdminLogin -> View (Root '[Work]) ()
   mainView admin =
-    col (pad 20 . gap 20) $ do
-      col id $ do
-        el (fontSize 24 . bold) "Level 2"
-        el_ $ text $ cs appVersion
+    col ~ pad 20 . gap 20 $ do
+      col $ do
+        el ~ fontSize 24 . bold $ "Level 2"
+        el $ text $ cs appVersion
 
-      col id $ do
-        el (bold . fontSize 18) "Admin"
-        row id $ do
+      col $ do
+        el ~ bold . fontSize 18 $ "Admin"
+        row $ do
           case admin.token of
-            Nothing -> link admin.loginUrl (Style.btnOutline Danger) "Needs Globus Login"
+            Nothing -> link admin.loginUrl ~ Style.btnOutline Danger $ "Needs Globus Login"
             Just _ -> do
-              el (color Success) "System Access Token Saved!"
+              el ~ color Success $ "System Access Token Saved!"
 
       -- hyper Test testView
       hyper Work $ workView [] []
@@ -54,7 +55,7 @@ page = do
 
 data AdminLogin = AdminLogin
   { token :: Maybe (Token Access)
-  , loginUrl :: Url
+  , loginUrl :: URI
   }
 
 
@@ -76,17 +77,17 @@ instance (Concurrent :> es, Tasks GenFits :> es) => HyperView Work es where
 workView :: [GenFits] -> [(GenFits, GenFitsStatus)] -> View Work ()
 workView waiting working = do
   let allTasks = working <> fmap (,GenWaiting) waiting
-  col (gap 10 . onLoad Refresh 1000) $ do
-    col Style.card $ do
-      el (Style.cardHeader Colors.Info) $ do
-        el (bold . fontSize 18) "Fits Generation"
-      table View.table allTasks $ do
+  col ~ gap 10 @ onLoad Refresh 1000 $ do
+    col ~ Style.card $ do
+      el ~ Style.cardHeader Colors.Info $ do
+        el ~ bold . fontSize 18 $ "Fits Generation"
+      table allTasks ~ View.table $ do
         tcol (View.hd "Task") $ \w -> View.cell $ text $ pack $ show $ fst w
         tcol (View.hd "Status") $ \w -> View.cell $ status $ snd w
  where
   status GenWaiting =
-    el_ "Waiting"
+    el "Waiting"
   status s =
-    row (gap 5) $ do
-      el (width 20) Icons.spinnerCircle
-      el (color Colors.Info . italic) (text $ pack $ show s)
+    row ~ gap 5 $ do
+      el ~ width 20 $ Icons.spinnerCircle
+      el ~ color Colors.Info . italic $ text $ pack $ show s

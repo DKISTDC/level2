@@ -11,7 +11,9 @@ import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify (boxRadius)
 import NSO.Prelude
+import NSO.Types.Common
 import Numeric (showFFloat)
+import Web.Atomic.CSS
 import Web.Hyperbole
 
 
@@ -48,8 +50,8 @@ datasetsTable sortBy srt ds = do
 datasetsTableUnsorted :: forall id. (ViewAction (Action id)) => (SortField -> Action id) -> [Dataset] -> View id ()
 datasetsTableUnsorted sortBy ds = do
   -- is there a way to do alternating rows here?
-  table View.table ds $ do
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text . cs $ d.datasetId.fromId
+  table ds ~ View.table $ do
+    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
@@ -81,7 +83,7 @@ datasetsTableUnsorted sortBy ds = do
 
   sortBtn :: SortField -> Text -> View id ()
   sortBtn st t =
-    button (sortBy st) Style.link (text t)
+    button (sortBy st) ~ Style.link $ text t
 
   hd = View.hd
   cell = View.cell
@@ -89,10 +91,10 @@ datasetsTableUnsorted sortBy ds = do
 
 radiusBoundingBox :: Maybe BoundingBox -> View c ()
 radiusBoundingBox Nothing = none
-radiusBoundingBox (Just b) = row (gap 5) $ do
+radiusBoundingBox (Just b) = row ~ gap 5 $ do
   space
   forM_ (boundingPoints b) $ \c ->
-    code Style.code . cs $ showFFloat (Just 0) (boxRadius c) ""
+    code (cs $ showFFloat (Just 0) (boxRadius c) "") ~ Style.code
   space
 
 -- rowHeight :: PxRem

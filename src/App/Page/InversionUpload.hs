@@ -6,7 +6,8 @@ module App.Page.InversionUpload where
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager, requireLogin)
 import App.Effect.FileManager (FileLimit (Files))
-import App.Effect.Transfer as Transfer (TransferForm, UploadFiles (..), initUpload)
+import App.Effect.Transfer as Transfer (TransferForm)
+import App.Page.InversionUpload.UploadFiles (UploadFiles (..), UploadStatus (..), allUploadStatus, initUpload)
 import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
 import App.Route as Route
@@ -28,11 +29,13 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Scratch (Scratch)
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
+import Web.Atomic.CSS
 import Web.Hyperbole
-import Web.Hyperbole.Data.Param (ParamValue (..))
 import Web.Hyperbole.Data.QueryData (fromQueryData)
 import Web.Hyperbole.Data.QueryData qualified as QueryData
+import Web.Hyperbole.Data.URI (queryString)
 
 
 page
@@ -46,95 +49,29 @@ page propId progId invId = do
   dall <- Datasets.find (Datasets.ByProgram progId)
 
   appLayout Route.Inversions $ do
-    col Style.page $ do
-      col (gap 5) $ do
-        el Style.header $ do
+    col ~ Style.page $ do
+      col ~ gap 5 $ do
+        el ~ Style.header $ do
           text "Inversion Upload - "
           text invId.fromId
 
-        el_ $ do
+        el $ do
           text "Program - "
-          appRoute (Route.program propId progId) Style.link $ do
+          appRoute (Route.program propId progId) ~ Style.link $ do
             text progId.fromId
 
-        el_ $ do
+        el $ do
           text "Proposal - "
-          appRoute (Route.proposal propId) Style.link $ do
+          appRoute (Route.proposal propId) ~ Style.link $ do
             text propId.fromId
 
-      col (gap 25) $ do
+      col ~ gap 25 $ do
         Inversion.viewInversionContainer' Info $ do
-          col (gap 15) $ do
+          col ~ gap 15 $ do
             hyper (Uploads propId progId invId) $ viewUpload dall qs.uploads qs.metadata
 
         hyper (Manage propId progId) $ do
-          View.iconButton Cancel (Style.btnOutline Secondary) Icons.xMark "Cancel"
-
-
------------------------------------------------------------------
---- UPLOAD STATUS
------------------------------------------------------------------
-
-data UploadStatus a
-  = NoUpload
-  | Uploaded
-  | Uploading (Id Task)
-  deriving (Show, Eq)
-instance Semigroup (UploadStatus a) where
-  Uploaded <> _ = Uploaded
-  _ <> Uploaded = Uploaded
-  Uploading taskId <> _ = Uploading taskId
-  _ <> Uploading taskId = Uploading taskId
-  _ <> _ = NoUpload
-instance Monoid (UploadStatus a) where
-  mempty = NoUpload
-instance Default (UploadStatus a) where
-  def = NoUpload
-instance ToParam (UploadStatus a) where
-  toParam NoUpload = ""
-  toParam (Uploading tid) = ParamValue tid.fromId
-  toParam Uploaded = "Uploaded"
-instance FromParam (UploadStatus a) where
-  parseParam "Uploaded" = pure Uploaded
-  parseParam "" = pure NoUpload
-  parseParam (ParamValue t) = pure $ Uploading $ Id t
-type instance Field UploadStatus a = UploadStatus a
-
-
-instance Monoid (UploadFiles c UploadStatus) where
-  mempty = UploadFiles def def def
-instance Semigroup (UploadFiles c UploadStatus) where
-  up1 <> up2 =
-    UploadFiles
-      { quantities = up1.quantities <> up2.quantities
-      , profileFit = up1.profileFit <> up2.profileFit
-      , profileOrig = up1.profileOrig <> up2.profileOrig
-      }
-instance ToQuery (UploadFiles c UploadStatus)
-instance FromQuery (UploadFiles c UploadStatus)
-
-
-allUploadStatus :: UploadFiles Filename UploadStatus -> UploadStatus ()
-allUploadStatus files =
-  case anyUploadTask files of
-    Just taskId -> Uploading taskId
-    Nothing ->
-      if allUploaded
-        then Uploaded
-        else NoUpload
- where
-  allUploaded =
-    uploaded files.quantities && uploaded files.profileFit && uploaded files.profileOrig
-
-  anyUploadTask up =
-    uploadTask up.quantities <|> uploadTask up.profileFit <|> uploadTask up.profileOrig
-
-  uploaded = \case
-    Uploaded -> True
-    _ -> False
-
-  uploadTask (Uploading taskId) = Just taskId
-  uploadTask _ = Nothing
+          View.iconButton Cancel Icons.xMark "Cancel" ~ Style.btnOutline Secondary
 
 
 -----------------------------------------------------------------
@@ -155,11 +92,11 @@ submitUpload propId progId invId = do
   tup <- formData @(UploadFiles Filename Maybe)
   log Debug $ dump "Form" tup
 
-  taskId <- requireLogin $ Transfer.initUpload tfrm tup propId invId
+  taskId <- requireLogin $ initUpload tfrm tup propId invId
   let new = uploads taskId tup
 
   files <- query
-  redirect $ setUploadQuery (files <> new) $ routeUrl $ Route.inversionUpload propId progId invId
+  redirect $ setUploadQuery (files <> new) $ routeUri $ Route.inversionUpload propId progId invId
  where
   uploads :: Id Task -> UploadFiles Filename Maybe -> UploadFiles Filename UploadStatus
   uploads taskId up =
@@ -175,10 +112,10 @@ submitUpload propId progId invId = do
       Nothing -> NoUpload
 
 
-setUploadQuery :: UploadFiles Filename UploadStatus -> Url -> Url
-setUploadQuery files Url{scheme, domain, path} =
+setUploadQuery :: UploadFiles Filename UploadStatus -> URI -> URI
+setUploadQuery files URI{uriAuthority, uriScheme, uriPath} =
   let q = fromQueryData $ toQuery files
-   in Url{query = q, scheme, domain, path}
+   in URI{uriQuery = queryString q, uriAuthority, uriScheme, uriPath, uriFragment = ""}
 
 
 data QueryState = QueryState
@@ -240,7 +177,7 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es,
     QueryState uploads metadata <- query @QueryState
     case action of
       Upload -> do
-        let u = setUploadQuery uploads $ routeUrl $ Route.submitUpload propId progId invId
+        let u = setUploadQuery uploads $ routeUri $ Route.submitUpload propId progId invId
         openFileManager (Files 3) ("Transfer Inversion Results " <> invId.fromId) u
       UpTransfer taskId trans -> do
         dall <- Datasets.find (Datasets.ByProgram progId)
@@ -248,7 +185,7 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es,
           TaskFailed -> do
             pure $ viewUploadWithTransfer dall uploads metadata $ do
               Transfer.viewTransferFailed taskId
-              View.iconButton Upload (Style.btn Primary) Icons.upTray "Select New Files"
+              View.iconButton Upload Icons.upTray "Select New Files" ~ Style.btn Primary
           TaskSucceeded -> do
             let uploads' = filesUploaded uploads
             setQuery $ QueryState uploads' def
@@ -260,7 +197,7 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es,
                 Right vw -> vw
                 Left err -> do
                   Transfer.viewTransferError taskId err
-                  View.iconButton Upload (Style.btn Primary) Icons.upTray "Select New Files"
+                  View.iconButton Upload Icons.upTray "Select New Files" ~ Style.btn Primary
    where
     filesUploaded :: UploadFiles Filename UploadStatus -> UploadFiles Filename UploadStatus
     filesUploaded up =
@@ -280,17 +217,17 @@ viewUpload dall files meta = do
       Uploading taskId -> do
         Transfer.viewLoadTransfer (UpTransfer taskId)
       NoUpload ->
-        View.iconButton Upload (Style.btn Primary) Icons.upTray "Select Files"
+        View.iconButton Upload Icons.upTray "Select Files" ~ Style.btn Primary
       Uploaded ->
-        View.iconButton Upload (Style.btnOutline Success) Icons.upTray "Select New Files"
+        View.iconButton Upload Icons.upTray "Select New Files" ~ Style.btnOutline Success
 
 
 viewUploadWithTransfer :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> View Uploads () -> View Uploads ()
 viewUploadWithTransfer dall uploads meta xfer = do
   Uploads propId progId invId <- viewId
-  el (Style.subheader . headerColor) "Upload Inversion Results"
-  col (pad 10 . gap 10) $ do
-    col (gap 5) $ do
+  el ~ Style.subheader . headerColor $ "Upload Inversion Results"
+  col ~ pad 10 . gap 10 $ do
+    col ~ gap 5 $ do
       uploadedFile uploads.quantities "inv_res_pre.fits"
       uploadedFile uploads.profileFit "inv_res_mod.fits"
       uploadedFile uploads.profileOrig "per_ori.fits"
@@ -302,9 +239,10 @@ viewUploadWithTransfer dall uploads meta xfer = do
   -- stepGenerate StepNext none
   -- stepPublish StepNext none
 
+  uploadedFile :: UploadStatus a -> Text -> View Uploads ()
   uploadedFile file lbl =
-    row (gap 5 . uploadColor file) $ do
-      el (width 15 . height 15 . Style.alignMiddle) $ do
+    row ~ gap 5 . uploadColor file $ do
+      el ~ width 15 . height 15 . Style.alignMiddle $ do
         uploadIcon file
       text lbl
 
@@ -314,7 +252,7 @@ viewUploadWithTransfer dall uploads meta xfer = do
     _ -> color Black
 
   uploadIcon = \case
-    Uploaded -> el_ Icons.check
+    Uploaded -> el Icons.check
     Uploading _ -> Icons.arrowPath
     _ -> none
 
@@ -375,7 +313,7 @@ instance (Log :> es, Inversions :> es, Datasets :> es) => HyperView MetadataForm
 
         unless (anyInvalid val) $ do
           _ <- send $ Inversions.Create propId progId invId qs.metadata.commit qs.metadata.datasets
-          redirect $ routeUrl $ Route.inversion propId invId
+          redirect $ routeUri $ Route.inversion propId invId
 
         pure $ viewMetadataForm' dall qs.uploads qs.metadata val
    where
@@ -398,11 +336,11 @@ viewMetadataForm' :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata 
 viewMetadataForm' dall uploads meta valid = do
   case allUploadStatus uploads of
     Uploaded -> do
-      el (Style.subheader . color Info) "Metadata"
-      col (gap 15 . pad 10) $ do
+      el ~ Style.subheader . color Info $ "Metadata"
+      col ~ gap 15 . pad 10 $ do
         viewDatasets dall meta.datasets valid.datasets
         commitForm SaveCommit meta.commit (convert valid.commit)
-        button Submit (Style.btn Primary) "Create Inversion"
+        button Submit ~ Style.btn Primary $ "Create Inversion"
     _ -> none
  where
   convert (Invalid t) = Invalid t
@@ -412,14 +350,14 @@ viewMetadataForm' dall uploads meta valid = do
 
 viewDatasets :: [Dataset] -> [Id Dataset] -> Validated [Id Dataset] -> View MetadataForm ()
 viewDatasets dall dsel valid = do
-  col (gap 5) $ do
-    el (bold . validColor valid) "Datasets Used"
+  col ~ gap 5 $ do
+    el ~ bold . validColor valid $ "Datasets Used"
     forM_ dall $ \d -> do
-      row (gap 10) $ do
+      row ~ gap 10 $ do
         View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` dsel)
-        appRoute (Route.Datasets $ Route.Dataset d.datasetId) Style.link $ text d.datasetId.fromId
+        appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text d.datasetId.fromId
     case valid of
-      Invalid t -> el (color Danger) (text t)
+      Invalid t -> el ~ color Danger $ text t
       _ -> none
  where
   validColor = \case
@@ -459,4 +397,4 @@ instance HyperView Manage es where
 
   update Cancel = do
     Manage propId progId <- viewId
-    redirect $ routeUrl $ Route.program propId progId
+    redirect $ routeUri $ Route.program propId progId

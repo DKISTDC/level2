@@ -6,6 +6,8 @@ import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
 import Data.Void (Void)
 import NSO.Data.Datasets
 import NSO.Prelude
+import NSO.Types.Common
+import NSO.Types.Wavelength
 import Text.Megaparsec hiding (ParseError, Token)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer

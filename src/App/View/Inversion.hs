@@ -9,7 +9,8 @@ import App.View.Icons qualified as Icons
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
-import Web.View
+import Web.Atomic.CSS
+import Web.Hyperbole
 
 
 inversionStepLabel :: Inversion -> Text
@@ -35,7 +36,7 @@ inversionStepColor inv
 
 inversionStepTag :: Inversion -> View c ()
 inversionStepTag inv =
-  el (textAlign AlignCenter . stat (inversionStepColor inv)) (text $ inversionStepLabel inv)
+  el ~ textAlign AlignCenter . stat (inversionStepColor inv) $ text $ inversionStepLabel inv
  where
   stat c = tagCell . Style.tag c
 
@@ -47,21 +48,21 @@ viewInversionContainer inv =
 
 viewInversionContainer' :: AppColor -> View c () -> View c ()
 viewInversionContainer' clr cnt =
-  col (Style.card . gap 15) $ do
-    el (Style.cardHeader clr) "Inversion"
-    col (gap 0 . pad 15) $ do
+  col ~ Style.card . gap 15 $ do
+    el ~ Style.cardHeader clr $ "Inversion"
+    col ~ gap 0 . pad 15 $ do
       cnt
 
 
 rowInversion :: Inversion -> View id ()
 rowInversion inv = do
-  appRoute (Route.inversion inv.proposalId inv.inversionId) id $ do
-    row (gap 10) $ do
+  appRoute (Route.inversion inv.proposalId inv.inversionId) $ do
+    row ~ gap 10 $ do
       inversionStepTag inv
-      el (Style.link . width 100) $ text $ cs inv.inversionId.fromId
+      el ~ Style.link . width 100 $ text $ cs inv.inversionId.fromId
       -- el (width 150) $ text $ cs inv.programId.fromId
       space
-      el dataCell $ text $ cs $ showDate inv.updated
+      el ~ dataCell $ text $ cs $ showDate inv.updated
 
 
 -------------------------------------------------------------------
@@ -85,12 +86,12 @@ viewStepEnd num stepName step = viewStep' num stepName step none
 
 viewStep' :: Int -> Text -> Step -> View c () -> View c () -> View c ()
 viewStep' num stepName step line content =
-  row (gap 10 . stepEnabled) $ do
-    col id $ do
+  row ~ gap 10 . stepEnabled $ do
+    col $ do
       stepCircle step num
       line
-    col (gap 10 . grow . pad (TRBL 0 0 40 0)) $ do
-      el (bold . color (stepColor step) . fontSize 22) (text stepName)
+    col ~ gap 10 . grow . pad (TRBL 0 0 40 0) $ do
+      el ~ bold . color (stepColor step) . fontSize 22 $ text stepName
       content
  where
   stepEnabled =
@@ -106,12 +107,12 @@ stepLine = \case
   StepDone -> line Success
   StepError -> line Danger
  where
-  line clr = el (grow . border (TRBL 0 2 0 0) . width 18 . borderColor clr) ""
+  line clr = el ~ grow . border (TRBL 0 2 0 0) . width 18 . borderColor clr $ ""
 
 
 stepCircle :: Step -> Int -> View c ()
 stepCircle step num =
-  el (circle . bg (stepColor step)) stepIcon
+  el ~ circle . bg (stepColor step) $ stepIcon
  where
   circle = rounded 50 . pad 5 . color White . textAlign AlignCenter . width 34 . height 34
   stepIcon =

@@ -7,6 +7,7 @@ import Effectful
 import Effectful.Error.Static
 import NSO.Prelude
 import Network.Globus (GlobusError (..))
+import Web.Atomic.CSS
 import Web.Hyperbole
 import Web.Hyperbole.Effect.Hyperbole
 
@@ -24,20 +25,20 @@ userFacingError eff = do
   val <- runErrorNoCallStack @err eff
   case val of
     Left err -> do
-      vw <- view $ viewError err
-      send $ RespondEarly vw
+      r <- view $ viewError err
+      send $ RespondNow r
     Right a -> pure a
 
 
 errorMessage :: Text -> View c () -> View c ()
 errorMessage msg cnt = do
-  col (gap 10) $ do
-    el (bold . color White . bg (light Danger) . pad 15) $ (text msg)
-    col (gap 10 . pad 10) $ cnt
+  col ~ gap 10 $ do
+    el ~ bold . color White . bg (light Danger) . pad 15 $ text msg
+    col ~ gap 10 . pad 10 $ cnt
 
 
 codeDump :: Text -> View c ()
-codeDump content = code id content
+codeDump = code
 
 
 instance UserFacingError GlobusError where

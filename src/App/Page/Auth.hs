@@ -10,19 +10,21 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Globus
 import Effectful.Log
 import NSO.Prelude
+import Web.Atomic.CSS
 import Web.Hyperbole
+import Web.Hyperbole.Data.URI (Path (..), pathUri)
 
 
 -- show the page, then handle the login second
 login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Eff es (Page '[AuthRed])
 login = do
   authCode <- Tagged <$> param "code"
-  pure $ col (pad 20 . gap 10) $ do
-    el bold "Login"
+  pure $ col ~ pad 20 . gap 10 $ do
+    el ~ bold $ "Login"
     hyper AuthRed $ do
-      col (gap 10 . onLoad (LazyAuth authCode) 0) $ do
-        el_ "Authenticating..."
-        el (width 200 . color Primary) Icons.spinner
+      col ~ gap 10 @ onLoad (LazyAuth authCode) 0 $ do
+        el "Authenticating..."
+        el ~ width 200 . color Primary $ Icons.spinner
 
 
 logout :: (Hyperbole :> es, Auth :> es) => Eff es (Page '[])
@@ -32,10 +34,10 @@ logout = do
   redirect u
 
 
-redirectTo :: (Hyperbole :> es) => Eff es Url
+redirectTo :: (Hyperbole :> es) => Eff es URI
 redirectTo = do
   mu <- getLastUrl
-  pure $ fromMaybe (pathUrl $ routePath Proposals) mu
+  pure $ fromMaybe (pathUri $ Path True $ routePath Proposals) mu
 
 
 data AuthRed = AuthRed
@@ -52,5 +54,5 @@ instance (Globus :> es, Auth :> es, Log :> es) => HyperView AuthRed es where
     u <- send $ AuthWithCode authCode
     saveAccessToken u.transfer
 
-    uri <- redirectTo
-    redirect uri
+    url <- redirectTo
+    redirect url

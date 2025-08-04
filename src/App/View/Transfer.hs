@@ -14,8 +14,9 @@ import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import Network.Globus qualified as Globus
 import Numeric (showFFloat)
+import Web.Atomic.CSS
 import Web.Hyperbole
-import Web.View qualified as WebView
+import Web.Hyperbole.Data.URI (path, (./.))
 
 
 -----------------------------------------------------
@@ -38,29 +39,29 @@ checkTransfer toAction it = do
 
 viewLoadTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> View id ()
 viewLoadTransfer toAction = do
-  el (height 45 . onLoad (toAction CheckTransfer) 0) Icons.spinner
+  el ~ height 45 @ onLoad (toAction CheckTransfer) 0 $ Icons.spinner
 
 
 viewTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
 viewTransfer toAction it task =
   case task.status of
-    Succeeded -> el (onLoad (toAction TaskSucceeded) 0) none
-    Failed -> el (onLoad (toAction TaskFailed) 0) none
+    Succeeded -> el @ onLoad (toAction TaskSucceeded) 0 $ none
+    Failed -> el @ onLoad (toAction TaskFailed) 0 $ none
     _ ->
       viewPollTransfer toAction it task
 
 
 viewPollTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
 viewPollTransfer toAction it task = do
-  col (onLoad (toAction CheckTransfer) 1000) $ do
+  col @ onLoad (toAction CheckTransfer) 1000 $ do
     viewTransferProgress it task
 
 
 viewTransferProgress :: Id Task -> Task -> View c ()
 viewTransferProgress it task = do
-  row (gap 5) $ do
-    el (width 20) Icons.spinnerCircle
-    el_ $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
+  row ~ gap 5 $ do
+    el ~ width 20 $ Icons.spinnerCircle
+    el $ text $ "Transferring... (" <> cs rate <> " Mb/s)"
     space
     activityLink it
   View.progress (Globus.taskPercentComplete task)
@@ -86,15 +87,15 @@ viewTransferFailed = do
 
 viewTransferFailed' :: Text -> Id Task -> View c ()
 viewTransferFailed' msg it = do
-  row Style.flexWrap $ do
-    el (color Danger) (text msg)
+  row ~ flexWrap Wrap $ do
+    el ~ color Danger $ text msg
     space
     activityLink it
 
 
 activityLink :: Id Task -> View c ()
 activityLink it =
-  WebView.link activityUrl (Style.link . newTab) "View Transfer on Globus"
+  link activityUrl ~ Style.link @ newTab $ "View Transfer on Globus"
  where
-  activityUrl = Url "https://" "app.globus.org" ["activity", it.fromId] []
+  activityUrl = [uri|https://app.globus.org/activity|] ./. path it.fromId
   newTab = att "target" "_blank"

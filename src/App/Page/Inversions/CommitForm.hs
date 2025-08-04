@@ -7,6 +7,7 @@ import App.Style qualified as Style
 import App.View.LiveInput (liveInput)
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
+import Web.Atomic.CSS
 import Web.Hyperbole
 
 
@@ -30,9 +31,9 @@ instance Show (CommitForm Validated) where
 
 commitForm :: (ViewAction (Action id)) => (GitCommit -> Action id) -> Maybe GitCommit -> Validated GitCommit -> View id ()
 commitForm saveCommit gc vf = do
-  col (gap 5) $ do
-    link "https://github.com/DKISTDC/ViSP-Inversion" (att "target" "_blank" . Style.link . bold) $ text "ViSP-Inversion Git Commit"
-    liveInput (saveCommit . GitCommit) (valStyle vf . inputValue gc . Style.input . att "placeholder" "6ed37aa902969d8e3420159b2f9cfb032d00cf82")
+  col ~ gap 5 $ do
+    link [uri|https://github.com/DKISTDC/ViSP-Inversion|] @ att "target" "_blank" ~ Style.link . bold $ text "ViSP-Inversion Git Commit"
+    liveInput (saveCommit . GitCommit) ~ valStyle vf . Style.input @ inputValue gc . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82"
     invalidMessage vf
  where
   inputValue Nothing = id
@@ -41,8 +42,8 @@ commitForm saveCommit gc vf = do
   valStyle v = color (valColor v) . grow
 
   invalidMessage = \case
-    Invalid msg -> el (color Danger . onRequest hide) (text msg)
-    _ -> none
+    Invalid msg -> el ~ color Danger . whenLoading (display None) $ text msg
+    _ -> pure ()
 
   valColor (Invalid _) = Danger
   valColor Valid = Success

@@ -8,7 +8,7 @@ import GHC.Generics
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
 import Telescope.Fits (Value (..))
-import Web.View
+import Web.Hyperbole
 
 
 docKey :: forall a. (KeywordInfo a, IsKeyword a) => DocKey

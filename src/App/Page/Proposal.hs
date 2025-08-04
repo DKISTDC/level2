@@ -19,7 +19,9 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import Web.Atomic.CSS
 import Web.Hyperbole
 
 
@@ -31,14 +33,14 @@ page propId = do
   ds <- Datasets.find (Datasets.ByProposal propId) >>= expectFound
   fs <- query
   appLayout Proposals $ do
-    col Style.page $ do
-      el Style.header $ do
+    col ~ Style.page $ do
+      el ~ Style.header $ do
         text "Proposal - "
         text propId.fromId
 
       viewExperimentDescription (head ds).experimentDescription
 
-      el Style.subheader $ text "Instrument Programs"
+      el ~ Style.subheader $ text "Instrument Programs"
 
       hyper (Programs propId) $ viewPrograms fs (grouped (.instrumentProgramId) $ NE.toList ds)
 
@@ -81,8 +83,8 @@ instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView Programs es
 viewPrograms :: Filters -> [Group (Id InstrumentProgram) Dataset] -> View Programs ()
 viewPrograms fs gds = do
   Programs propId <- viewId
-  col (gap 25) $ do
-    search SearchTerm 250 (Style.input . att "placeholder" "search: BEEMM")
+  col ~ gap 25 $ do
+    search SearchTerm 250 ~ Style.input @ att "placeholder" "search: BEEMM"
     forM_ (filter (isMatch fs.term) gds) $ \ds -> do
       let d = sample ds
       hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
@@ -116,22 +118,22 @@ instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSumm
 
 viewProgramSummaryLoad :: View ProgramSummary ()
 viewProgramSummaryLoad = do
-  programCard (onLoad (ProgramDetails ByLatest) 0) $ do
-    el (pad 20 . width 600) skeleton
+  programCard @ onLoad (ProgramDetails ByLatest) 0 $ do
+    el ~ pad 20 . width 600 $ skeleton
 
 
 viewProgramSummary :: SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
 viewProgramSummary srt now pf = do
   let ds = pf.datasets.items
-  programCard id $ do
+  programCard $ do
     viewProgramDetails pf now pf.datasets
-    col (pad (TRBL 0 15 15 15)) $ do
+    col ~ pad (TRBL 0 15 15 15) $ do
       DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds)
 
 
-programCard :: Mod ProgramSummary -> View ProgramSummary () -> View ProgramSummary ()
-programCard m content = do
+programCard :: View ProgramSummary () -> View ProgramSummary ()
+programCard content = do
   ProgramSummary propId progId <- viewId
-  col (Style.card . minHeight 200 . m) $ do
-    appRoute (Route.Proposal propId $ Program progId Prog) (Style.cardHeader Secondary) $ text $ "Instrument Program - " <> progId.fromId
+  col ~ Style.card . minHeight 200 $ do
+    appRoute (Route.Proposal propId $ Program progId Prog) ~ Style.cardHeader Secondary $ text $ "Instrument Program - " <> progId.fromId
     content

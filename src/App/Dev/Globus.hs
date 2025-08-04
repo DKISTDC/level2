@@ -11,9 +11,8 @@ import NSO.Prelude
 import NSO.Types.Common (Path' (..), PathType (..), (</>))
 import Network.Globus.Auth
 import Network.Globus.Types qualified as Globus
-import Network.URI.Static (uri)
 import Web.Hyperbole
-import Web.View.Types.Url qualified as Url
+import Web.Hyperbole.Data.URI qualified as URI
 
 
 runGlobusDev
@@ -79,29 +78,29 @@ runGlobusDev dkistDir = interpret $ \_ -> \case
     error "Not Implemented"
  where
   localCopy :: (Scratch :> es, Log :> es) => Id Collection -> Path' any src -> Path' any dest -> Eff es ()
-  localCopy cl src dest = do
-    log Debug $ "(Globus Dev) localCopy: " <> "\n\tsrc= " <> src.filePath <> "\n\tdst= " <> dest.filePath
+  localCopy cl src' dest = do
+    log Debug $ "(Globus Dev) localCopy: " <> "\n\tsrc= " <> src'.filePath <> "\n\tdst= " <> dest.filePath
     if cl == dkistEndpoint
-      then symLinkDir (dkistDir </> src) dest
+      then symLinkDir (dkistDir </> src') dest
       else do
-        isDir <- send $ DirExists (Path src.filePath)
+        isDir <- send $ DirExists (Path src'.filePath)
         if isDir
-          then symLinkDir src dest
-          else localCopyFile src dest
+          then symLinkDir src' dest
+          else localCopyFile src' dest
 
-  symLinkDir (Path src) (Path dest) = do
-    log Debug $ "(Globus Dev) symLinkDir " <> src <> " - " <> dest
-    Scratch.symLink (Path src) (Path dest)
+  symLinkDir (Path src') (Path dest) = do
+    log Debug $ "(Globus Dev) symLinkDir " <> src' <> " - " <> dest
+    Scratch.symLink (Path src') (Path dest)
 
-  localCopyFile (Path src) (Path dest) = do
-    log Debug $ "(Globus Dev) localCopyFile " <> src <> " - " <> dest
-    Scratch.copyFile (Path src) (Path dest)
+  localCopyFile (Path src') (Path dest) = do
+    log Debug $ "(Globus Dev) localCopyFile " <> src' <> " - " <> dest
+    Scratch.copyFile (Path src') (Path dest)
 
 
 globusDevAuth :: (Hyperbole :> es) => Eff es Response
 globusDevAuth = do
-  red <- url <$> param @Text "redirect"
-  redirect $ red{Url.query = [("code", Just "dev_auth")]}
+  red <- param @URI "redirect"
+  redirect $ red{URI.uriQuery = "code=dev_auth"}
 
 
 data DKIST

@@ -24,19 +24,22 @@ import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
 import NSO.Prelude
+import NSO.Types.Common
+import NSO.Types.Wavelength
+import Web.Atomic.CSS
 import Web.Hyperbole
 
 
 viewExperimentDescription :: Text -> View c ()
 viewExperimentDescription t = do
   let ps = Text.splitOn "\\n" t
-  col (gap 10) $ do
-    mapM_ (el_ . text) ps
+  col ~ gap 10 $ do
+    mapM_ (el . text) ps
 
 
 viewDataRow :: View c () -> View c ()
 viewDataRow =
-  row (gap 10 . textAlign AlignCenter . grow)
+  row ~ gap 10 . textAlign AlignCenter . grow
 
 
 viewProgramRow :: forall c. UTCTime -> ProgramFamily -> View c ()
@@ -50,13 +53,13 @@ viewProgramStats now prog = viewDataRow $ do
   let ip = prog.program
   -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
-  el dataCell $ text $ cs $ show ip.instrument
+  el ~ dataCell $ text $ cs $ show ip.instrument
   -- not worth showing Stokes in the row. They seem to be present for all VISP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
-  code (cell . color Secondary) $ cs $ showTimestamp ip.startTime
+  code (cs $ showTimestamp ip.startTime) ~ cell . color Secondary
 
-  row (dataCell . gap 5 . fontSize 14) $ do
+  row ~ dataCell . gap 5 . fontSize 14 $ do
     maybe none embargoTag ip.embargo
     if ip.onDisk then diskTag else none
     mapM_ spectralLineTag $ L.sort ip.spectralLines
@@ -64,36 +67,39 @@ viewProgramStats now prog = viewDataRow $ do
 
   space
 
-  code (cellData . color Secondary . minWidth 0) ip.programId.fromId
+  code ip.programId.fromId ~ cellData . color Secondary . minWidth 0
  where
+  cellData :: (Styleable h) => CSS h -> CSS h
   cellData = fontSize 14 . pad 2
+
+  cell :: (Styleable h) => CSS h -> CSS h
   cell = dataCell . cellData
 
-  diskTag = el (dataTag . Style.tagOutline (light Primary)) "On Disk"
+  diskTag = el ~ dataTag . Style.tagOutline (light Primary) $ "On Disk"
 
   embargoTag utc =
     if utc > now
-      then el (dataTag . Style.tagOutline (dark Warning)) "Embargoed"
+      then el ~ dataTag . Style.tagOutline (dark Warning) $ "Embargoed"
       else none
 
   midTag mid =
-    code (pad 2 . color (light Secondary)) $ cs (show (round mid :: Integer) <> "nm")
+    code (cs (show (round mid :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
 
 
 spectralLineTag :: SpectralLine -> View c ()
-spectralLineTag s = tag "pre" (dataTag . Style.tagOutline (light Secondary)) $ text $ cs $ show s
+spectralLineTag s = tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs $ show s
 
 
-dataTag :: Mod c
+dataTag :: (Styleable h) => CSS h -> CSS h
 dataTag = pad (XY 6 1)
 
 
 statusTag :: ProgramStatus -> View c ()
 statusTag = \case
-  StatusInvalid -> el (tagCell . color (light Secondary)) $ text "-"
-  StatusQualified -> el (stat Primary) $ text "Qualified"
+  StatusInvalid -> el ~ tagCell . color (light Secondary) $ text "-"
+  StatusQualified -> el ~ stat Primary $ text "Qualified"
   StatusInversion step -> inversionStepTag step
-  StatusError _ -> el (stat Danger) $ text "Error"
+  StatusError _ -> el ~ stat Danger $ text "Error"
  where
   stat c = tagCell . Style.tag c
 
@@ -103,7 +109,7 @@ statusTag = \case
 
 viewCriteria :: ProgramFamily -> Group (Id InstrumentProgram) Dataset -> View c ()
 viewCriteria ip gd = do
-  col id $ do
+  col $ do
     case ip.program.instrument of
       VISP -> vispCriteria gd ip.program.spectralLines
       VBI -> vbiCriteria
@@ -111,9 +117,9 @@ viewCriteria ip gd = do
  where
   vispCriteria :: Group (Id InstrumentProgram) Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
-    col (gap 10) $ do
-      el bold "VISP Criteria"
-      row (gap 10 . Style.flexWrap) $ do
+    col ~ gap 10 $ do
+      el ~ bold $ "VISP Criteria"
+      row ~ gap 10 . flexWrap Wrap $ do
         criteria "Stokes IQUV" $ qualifyStokes ds
         criteria "On Disk" $ qualifyOnDisk ds
         criteria "Spectra: FeI 630" $ qualifyLine FeI630 sls
@@ -123,11 +129,11 @@ viewCriteria ip gd = do
         criteria "AO Lock" $ qualifyAO ds
 
   vbiCriteria = do
-    el bold "VBI Criteria"
+    el ~ bold $ "VBI Criteria"
     criteria "Not Supported" False
 
   cryoCriteria = do
-    el bold "CRYO NIRSP Criteria"
+    el ~ bold $ "CRYO NIRSP Criteria"
     criteria "Not Supported" False
 
   -- criteriaRowHeight :: Length
@@ -135,12 +141,12 @@ viewCriteria ip gd = do
 
   criteria :: Text -> Bool -> View c ()
   criteria msg b =
-    row (gap 2 . color (if b then Success else Danger)) $ do
-      el id checkmark
-      el id (text msg)
+    row ~ gap 2 . color (if b then Success else Danger) $ do
+      el checkmark
+      el (text msg)
    where
     checkmark =
-      el (width 24 . height 24) $
+      el ~ width 24 . height 24 $
         if b
           then Icons.checkCircle
           else Icons.xMark
@@ -155,11 +161,11 @@ viewProgramDetails' :: (ProgramFamily -> View c ()) -> ProgramFamily -> Group (I
 viewProgramDetails' progRow prog gd = do
   let p = prog.program :: InstrumentProgram
 
-  row (textAlign AlignCenter . pad 10) $ do
-    appRoute (Proposal p.proposalId $ Program p.programId Prog) grow $ do
+  row ~ textAlign AlignCenter . pad 10 $ do
+    appRoute (Proposal p.proposalId $ Program p.programId Prog) ~ grow $ do
       progRow prog
 
-  View.hr (color Gray)
+  View.hr ~ color Gray
 
-  col (pad 15) $ do
+  col ~ pad 15 $ do
     viewCriteria prog gd

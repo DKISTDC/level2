@@ -39,10 +39,13 @@ import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Network.Globus (Task)
+import Web.Atomic.CSS
 import Web.Hyperbole
 import Web.Hyperbole.Data.QueryData (fromQueryData)
+import Web.Hyperbole.Data.URI (Query, queryString)
 
 
 page
@@ -58,34 +61,34 @@ page propId progId = do
   ActiveDownload download <- query
 
   appLayout Route.Proposals $ do
-    col (Style.page . gap 30) $ do
+    col ~ Style.page . gap 30 $ do
       viewPageHeader (head ds)
 
       hyper (ProgramInversions propId progId) $ viewProgramInversions prog
 
-      col Style.card $ do
-        el (Style.cardHeader Secondary) $ text "Program"
+      col ~ Style.card $ do
+        el ~ Style.cardHeader Secondary $ text "Program"
         viewProgramDetails' (viewProgramStats now) prog prog.datasets
 
         hyper (ProgramDatasets propId progId) $ viewDatasets (NE.toList prog.datasets.items) ByLatest download
 
-      col (gap 10) $ do
-        el bold "Experiment"
+      col ~ gap 10 $ do
+        el ~ bold $ "Experiment"
         viewExperimentDescription (head ds).experimentDescription
  where
   viewPageHeader :: Dataset -> View c ()
   viewPageHeader ds = do
-    col (gap 5) $ do
-      el Style.header $ do
+    col ~ gap 5 $ do
+      el ~ Style.header $ do
         text "Instrument Program - "
         text progId.fromId
       experimentLink ds
 
   experimentLink :: Dataset -> View c ()
   experimentLink d = do
-    el_ $ do
+    el $ do
       text "Proposal - "
-      appRoute (Route.Proposal d.primaryProposalId Route.PropRoot) Style.link $ do
+      appRoute (Route.Proposal d.primaryProposalId Route.PropRoot) ~ Style.link $ do
         text d.primaryProposalId.fromId
 
 
@@ -109,12 +112,13 @@ submitDownload propId progId = do
 
   let dwn = ActiveDownload (Just taskId)
 
-  redirect $ activeDownloadQuery dwn $ routeUrl (Route.Proposal propId $ Route.Program progId Route.Prog)
+  redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
  where
-  setUrlQuery q Url{scheme, domain, path} =
-    Url{scheme, domain, path, query = q}
+  setUrlQuery :: Query -> URI -> URI
+  setUrlQuery q URI{uriAuthority, uriScheme, uriPath} =
+    URI{uriScheme, uriAuthority, uriPath, uriQuery = queryString q, uriFragment = ""}
 
-  activeDownloadQuery :: ActiveDownload -> Url -> Url
+  activeDownloadQuery :: ActiveDownload -> URI -> URI
   activeDownloadQuery ad =
     setUrlQuery (fromQueryData $ toQuery ad)
 
@@ -140,7 +144,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => Hy
     CreateInversion -> do
       ProgramInversions propId progId <- viewId
       invId <- send Inversions.NewId
-      redirect $ routeUrl $ Route.inversionUpload propId progId invId
+      redirect $ routeUri $ Route.inversionUpload propId progId invId
 
 
 viewProgramInversions :: ProgramFamily -> View ProgramInversions ()
@@ -150,20 +154,20 @@ viewProgramInversions prog =
     [] -> firstInversion
  where
   viewInversions = do
-    col Style.card $ do
-      el (Style.cardHeader invHeaderColor) $ text "Inversions"
-      col (gap 10 . pad 15) $ do
-        col id $ do
+    col ~ Style.card $ do
+      el ~ Style.cardHeader invHeaderColor $ text "Inversions"
+      col ~ gap 10 . pad 15 $ do
+        col $ do
           dataRows prog.inversions rowInversion
-        iconButton CreateInversion (Style.btnOutline Primary) Icons.plus "Create New Inversion"
+        iconButton CreateInversion Icons.plus "Create New Inversion" ~ Style.btnOutline Primary
 
   firstInversion = do
     let res = qualify prog.datasets
-    iconButton CreateInversion (Style.btn Primary . qualified res) Icons.plus "Create Inversion"
+    iconButton CreateInversion Icons.plus "Create Inversion" ~ Style.btn Primary . qualified res
     qualifyMessage res
 
   qualifyMessage = \case
-    Left _ -> el italic "This Instrument Program failed to qualify for inversion. See below."
+    Left _ -> el ~ italic $ "This Instrument Program failed to qualify for inversion. See below."
     Right _ -> none
 
   qualified = \case
@@ -239,7 +243,7 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
   update GoDownload = do
     ProgramDatasets propId progId <- viewId
     -- r <- request
-    let submitUrl = routeUrl $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
+    let submitUrl = routeUri $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
     Auth.openFileManager (Folders 1) ("Transfer Instrument Program " <> progId.fromId) submitUrl
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
@@ -253,10 +257,10 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
 viewDatasets :: [Dataset] -> SortField -> Maybe (Id Task) -> View ProgramDatasets ()
 viewDatasets ds srt xfer = do
   ProgramDatasets propId progId <- viewId
-  col (gap 15 . pad 15) $ do
+  col ~ gap 15 . pad 15 $ do
     DatasetsTable.datasetsTable SortDatasets srt ds
     case xfer of
-      Nothing -> iconButton GoDownload (Style.btn Primary) Icons.downTray "Download Datasets"
+      Nothing -> iconButton GoDownload Icons.downTray "Download Datasets" ~ Style.btn Primary
       Just taskId -> hyper (DownloadTransfer propId progId taskId) viewDownloadLoad
 
 
@@ -281,32 +285,32 @@ instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView Down
     DownloadTransfer _ progId taskId <- viewId
     case action of
       TaskFailed -> do
-        pure $ col (gap 10) $ do
-          redownloadBtn (Style.btn Primary) "Download Datasets"
+        pure $ col ~ gap 10 $ do
+          redownloadBtn ~ Style.btn Primary $ "Download Datasets"
           Transfer.viewTransferFailed taskId
       TaskSucceeded -> do
         ds <- Datasets.find (Datasets.ByProgram progId)
-        pure $ col (gap 10) $ do
-          redownloadBtn (Style.btn Primary) "Download Datasets"
-          row (gap 10 . color Success) $ do
-            el_ "Successfully Downloaded: "
-            el_ $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
+        pure $ col ~ gap 10 $ do
+          redownloadBtn ~ Style.btn Primary $ "Download Datasets"
+          row ~ gap 10 . color Success $ do
+            el "Successfully Downloaded: "
+            el $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
       CheckTransfer -> do
         res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer DwnTransfer taskId
-        pure $ col (gap 10) $ do
-          redownloadBtn (Style.btnLoading Secondary) "Downloading"
+        pure $ col ~ gap 10 $ do
+          redownloadBtn ~ Style.btnLoading Secondary . Style.disabled $ "Downloading"
           either (Transfer.viewTransferError taskId) id res
 
 
 viewDownloadLoad :: View DownloadTransfer ()
 viewDownloadLoad = do
-  col (gap 10) $ do
-    redownloadBtn (Style.btn Secondary . att "disabled" "") "Download Datasets"
+  col ~ gap 10 $ do
+    redownloadBtn ~ Style.btn Secondary @ att "disabled" "" $ "Download Datasets"
     Transfer.viewLoadTransfer DwnTransfer
 
 
-redownloadBtn :: Mod ProgramDatasets -> Text -> View DownloadTransfer ()
-redownloadBtn f lbl = do
+redownloadBtn :: Text -> View DownloadTransfer ()
+redownloadBtn lbl = do
   DownloadTransfer propId progId _ <- viewId
   target (ProgramDatasets propId progId) $ do
-    iconButton GoDownload f Icons.downTray lbl
+    iconButton GoDownload Icons.downTray lbl

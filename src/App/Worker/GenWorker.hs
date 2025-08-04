@@ -37,6 +37,7 @@ import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Types.Frame (Arms (..), Frames (..))
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Telescope.Data.Parser (ParseError)
 import Telescope.Fits (BinTableHDU (..))
