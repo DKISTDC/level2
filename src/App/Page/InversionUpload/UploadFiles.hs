@@ -41,10 +41,10 @@ instance FromForm (UploadFiles Filename Maybe) where
    where
     files :: FUE.Form -> Either Text [Path' Filename ()]
     files frm = do
-      f0 <- FUE.parseUnique "file[0]" frm
-      f1 <- FUE.parseUnique "file[1]" frm
-      f2 <- FUE.parseUnique "file[2]" frm
-      f3 <- FUE.parseUnique "file[3]" frm
+      f0 <- FUE.parseMaybe "file[0]" frm
+      f1 <- FUE.parseMaybe "file[1]" frm
+      f2 <- FUE.parseMaybe "file[2]" frm
+      f3 <- FUE.parseMaybe "file[3]" frm
       pure $ catMaybes [f0, f1, f2, f3]
 
     findFile :: Path' Filename a -> [Path' Filename ()] -> Maybe (Path' Filename a)

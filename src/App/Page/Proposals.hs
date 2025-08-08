@@ -127,7 +127,7 @@ viewProposals fs props = do
       forM_ sorted $ \prop ->
         hyper (ProposalCard prop.proposalId) $ viewProposalLoad fs prop
  where
-  aside = width 250 . flexCol
+  aside = width 315 . flexCol
   big = media (MinWidth 1000)
   small = media (MaxWidth 1000)
 

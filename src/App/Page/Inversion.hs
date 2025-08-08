@@ -15,14 +15,14 @@ import App.View.Common qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Inversion (Step (..), stepGenerate, stepMetadata, stepPublish, stepUpload, viewInversionContainer)
 import App.View.Layout
-import App.View.LiveInput (liveTextArea)
+import App.View.Loading (inputLoader)
 import App.View.ProposalDetails (spectralLineTag)
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
-import Debug.Trace
 import Effectful
+import Effectful.Debug (delay, Debug)
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError, Task)
@@ -207,7 +207,7 @@ data InversionMeta = InversionMeta (Id Proposal) (Id InstrumentProgram) (Id Inve
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es) => HyperView InversionMeta es where
+instance (Inversions :> es, Debug :> es) => HyperView InversionMeta es where
   data Action InversionMeta
     = SetNotes Text
     | Delete
@@ -221,6 +221,7 @@ instance (Inversions :> es) => HyperView InversionMeta es where
     InversionMeta propId progId invId <- viewId
     case action of
       SetNotes notes -> do
+        delay 1000
         Inversions.setNotes invId notes
         inv <- loadInversion invId
         pure $ viewInversionMeta inv
@@ -245,7 +246,8 @@ viewInversionMeta' inv delContent = do
   col ~ gap 20 $ do
     col ~ gap 5 $ do
       el ~ bold $ "Notes"
-      liveTextArea SetNotes @ att "rows" "3" $ inv.notes
+      inputLoader $ do
+        tag "textarea" @ onInput SetNotes 500 . att "rows" "3" ~ Style.input $ text inv.notes
     delContent
 
 

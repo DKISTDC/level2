@@ -55,7 +55,6 @@ library
       App.View.Icons
       App.View.Inversion
       App.View.Layout
-      App.View.LiveInput
       App.View.Loading
       App.View.ProposalDetails
       App.View.Transfer

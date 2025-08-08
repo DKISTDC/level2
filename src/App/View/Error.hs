@@ -25,7 +25,7 @@ userFacingError eff = do
   val <- runErrorNoCallStack @err eff
   case val of
     Left err -> do
-      r <- view $ viewError err
+      let r = viewResponse $ viewError err
       send $ RespondNow r
     Right a -> pure a
 

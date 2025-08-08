@@ -4,7 +4,7 @@ module App.Page.Inversions.CommitForm where
 
 import App.Colors
 import App.Style qualified as Style
-import App.View.LiveInput (liveInput)
+import App.View.Loading (inputLoader)
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import Web.Atomic.CSS
@@ -33,7 +33,8 @@ commitForm :: (ViewAction (Action id)) => (GitCommit -> Action id) -> Maybe GitC
 commitForm saveCommit gc vf = do
   col ~ gap 5 $ do
     link [uri|https://github.com/DKISTDC/ViSP-Inversion|] @ att "target" "_blank" ~ Style.link . bold $ text "ViSP-Inversion Git Commit"
-    liveInput (saveCommit . GitCommit) ~ valStyle vf . Style.input @ inputValue gc . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82"
+    inputLoader $ do
+      search (saveCommit . GitCommit) 250 ~ valStyle vf . Style.input @ inputValue gc . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82"
     invalidMessage vf
  where
   inputValue Nothing = id

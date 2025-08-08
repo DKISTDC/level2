@@ -18,7 +18,6 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Network.Globus (UserEmail (..), UserInfo (..), UserInfoResponse (..), UserProfile (..))
-import Network.URI qualified as URI
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI
 
@@ -54,11 +53,6 @@ instance Default GlobusAuth where
   def = GlobusAuth mempty Nothing
 
 
--- instance ToJSON URI where
---   toJSON u = String $ renderUrl u
--- instance FromJSON URI where
---   parseJSON = withText "Url" $ \t -> do
---     pure $ Url.url t
 
 type instance DispatchOf Auth = 'Dynamic
 

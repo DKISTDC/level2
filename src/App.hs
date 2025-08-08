@@ -167,7 +167,7 @@ webServer config auth fits asdf pubs sync =
   router (Datasets (Dataset d)) = runPage $ Dataset.page d
   router (Datasets (Sync d)) = runPage $ Sync.page d
   router Experiments = do
-    redirect (pathUri . Path True $ routePath $ Proposals)
+    redirect (pathUri . Path True $ routePath Proposals)
   router Logout = runPage Auth.logout
   router Redirect = runPage Auth.login
   router (Dev DevAuth) = globusDevAuth
