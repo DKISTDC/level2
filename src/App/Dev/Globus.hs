@@ -10,6 +10,7 @@ import NSO.Data.Scratch as Scratch
 import NSO.Prelude
 import NSO.Types.Common (Path' (..), PathType (..), (</>))
 import Network.Globus.Auth
+import Network.Globus.Scope (Scopes (..))
 import Network.Globus.Types qualified as Globus
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI qualified as URI
@@ -34,7 +35,7 @@ runGlobusDev dkistDir = interpret $ \_ -> \case
     pure $
       singleton $
         TokenItem
-          { scope = Scopes $ TransferAll :| [Identity OpenId]
+          { scope = Scopes $ TransferAll [] :| [Identity OpenId]
           , access_token = Tagged "access"
           , expires_in = 3600
           , state = State "state"

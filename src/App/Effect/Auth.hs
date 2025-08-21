@@ -53,7 +53,6 @@ instance Default GlobusAuth where
   def = GlobusAuth mempty Nothing
 
 
-
 type instance DispatchOf Auth = 'Dynamic
 
 
@@ -204,7 +203,7 @@ openFileManager files lbl submitUrl = do
 
 authUrl :: (Globus :> es) => Uri Redirect -> Eff es URI
 authUrl red = do
-  url <- send $ AuthUrl red [TransferAll, Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
+  url <- send $ AuthUrl red [TransferAll [hardCodedCUBoulderBLANCACollection], Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
   pure $ convertUrl url
  where
   convertUrl :: Uri a -> URI
@@ -225,10 +224,15 @@ data UserLoginInfo = UserLoginInfo
   deriving (Show)
 
 
+hardCodedCUBoulderBLANCACollection :: Id Collection
+hardCodedCUBoulderBLANCACollection = "4718fe94-aafd-498a-8bae-6bd430bb50a0"
+
+
 userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
 userInfo tis = do
   oid <- requireScopeToken (Identity OpenId) tis
-  Tagged trn <- requireScopeToken TransferAll tis
+  -- TEST: does this use the same token for everything? Will CU Boulder work?
+  Tagged trn <- requireScopeToken (TransferAll []) tis
 
   ur <- send $ GetUserInfo oid
   pure $
