@@ -5,7 +5,6 @@ module App.Page.Program where
 import App.Colors
 import App.Effect.Auth as Auth
 import App.Effect.FileManager (FileLimit (Folders))
-import App.Effect.Transfer (DownloadFolder, TransferForm)
 import App.Effect.Transfer qualified as Transfer
 import App.Error (expectFound)
 import App.Route as Route
@@ -38,6 +37,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
+import NSO.Files
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
@@ -102,17 +102,18 @@ data ActiveDownload = ActiveDownload
   deriving (Generic, ToQuery, FromQuery)
 
 
-submitDownload :: (Log :> es, Hyperbole :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
+submitDownload :: (Hyperbole :> es, Log :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
 submitDownload propId progId = do
   log Debug $ dump "Submit Download" (propId, progId)
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
-  ds <- Datasets.find $ Datasets.ByProgram progId
-  taskId <- requireLogin $ userFacingError @GlobusError $ Transfer.initDownloadL1Inputs tfrm tfls ds
-
-  let dwn = ActiveDownload (Just taskId)
-
-  redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
+  dss <- Datasets.find $ Datasets.ByProgram progId
+  case dss of
+    [] -> notFound
+    (d : ds) -> do
+      taskId <- requireLogin $ userFacingError @GlobusError $ Transfer.userDownloadDatasets tfrm tfls (d :| ds)
+      let dwn = ActiveDownload (Just taskId)
+      redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
  where
   setUrlQuery :: Query -> URI -> URI
   setUrlQuery q URI{uriAuthority, uriScheme, uriPath} =

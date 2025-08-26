@@ -13,6 +13,7 @@ import Effectful.Error.Static
 import GHC.Generics (Rep, from)
 import NSO.Data.Spectra (midPoint)
 import NSO.Data.Spectra qualified as Spectra
+import NSO.Files
 import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
@@ -145,7 +146,7 @@ instance ToAsdf InversionInventory where
   anchor _ = Just $ Anchor (knownText @InversionInventory)
 
 
-newtype Fileuris = Fileuris [Path' Filename L2FrameFits]
+newtype Fileuris = Fileuris [Path Scratch Filename L2FrameFits]
 
 
 instance ToAsdf Fileuris where

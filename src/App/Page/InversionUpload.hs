@@ -6,8 +6,8 @@ module App.Page.InversionUpload where
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager, requireLogin)
 import App.Effect.FileManager (FileLimit (Files))
-import App.Effect.Transfer as Transfer (TransferForm)
-import App.Page.InversionUpload.UploadFiles (UploadFiles (..), UploadStatus (..), allUploadStatus, initUpload)
+import App.Effect.Transfer qualified as Transfer
+import App.Effect.Transfer.UploadStatus
 import App.Page.Inversions.CommitForm (commitForm)
 import App.Page.Inversions.CommitForm qualified as CommitForm
 import App.Route as Route
@@ -27,7 +27,7 @@ import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
-import NSO.Data.Scratch (Scratch)
+import NSO.Files
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
@@ -80,7 +80,7 @@ page propId progId invId = do
 
 submitUpload
   :: forall es
-   . (Hyperbole :> es, Log :> es, Error GlobusError :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es, Log :> es)
+   . (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Scratch :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
@@ -89,18 +89,18 @@ submitUpload propId progId invId = do
   log Debug "submitUpload"
   tfrm <- formData @TransferForm
   log Debug $ dump "Transfer" tfrm
-  tup <- formData @(UploadFiles Filename Maybe)
+  tup <- formData @(InversionFiles Maybe Filename)
   log Debug $ dump "Form" tup
 
-  taskId <- requireLogin $ initUpload tfrm tup propId invId
+  taskId <- requireLogin $ Transfer.uploadInversionResults tfrm tup propId invId
   let new = uploads taskId tup
 
   files <- query
   redirect $ setUploadQuery (files <> new) $ routeUri $ Route.inversionUpload propId progId invId
  where
-  uploads :: Id Task -> UploadFiles Filename Maybe -> UploadFiles Filename UploadStatus
+  uploads :: Id Task -> InversionFiles Maybe Filename -> InversionFiles UploadStatus Filename
   uploads taskId up =
-    UploadFiles
+    InversionFiles
       { quantities = uploadStatus up.quantities
       , profileFit = uploadStatus up.profileFit
       , profileOrig = uploadStatus up.profileOrig
@@ -112,14 +112,14 @@ submitUpload propId progId invId = do
       Nothing -> NoUpload
 
 
-setUploadQuery :: UploadFiles Filename UploadStatus -> URI -> URI
+setUploadQuery :: InversionFiles UploadStatus Filename -> URI -> URI
 setUploadQuery files URI{uriAuthority, uriScheme, uriPath} =
   let q = fromQueryData $ toQuery files
    in URI{uriQuery = queryString q, uriAuthority, uriScheme, uriPath, uriFragment = ""}
 
 
 data QueryState = QueryState
-  { uploads :: UploadFiles Filename UploadStatus
+  { uploads :: InversionFiles UploadStatus Filename
   , metadata :: Metadata Identity
   }
 instance ToQuery QueryState where
@@ -132,7 +132,7 @@ instance FromQuery QueryState where
    where
     parseUploaded =
       case QueryData.lookup @Text "uploaded" qd of
-        Just _ -> pure $ UploadFiles Uploaded Uploaded Uploaded
+        Just _ -> pure $ InversionFiles Uploaded Uploaded Uploaded
         Nothing -> parseQuery qd
 
 
@@ -162,7 +162,7 @@ data Uploads = Uploads (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Generic, ViewId)
 
 
-instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es, Reader App :> es) => HyperView Uploads es where
+instance (Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Reader App :> es, Globus :> es) => HyperView Uploads es where
   data Action Uploads
     = Upload
     | UpTransfer (Id Task) TransferAction
@@ -199,9 +199,9 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es,
                   Transfer.viewTransferError taskId err
                   View.iconButton Upload Icons.upTray "Select New Files" ~ Style.btn Primary
    where
-    filesUploaded :: UploadFiles Filename UploadStatus -> UploadFiles Filename UploadStatus
+    filesUploaded :: InversionFiles UploadStatus Filename -> InversionFiles UploadStatus Filename
     filesUploaded up =
-      UploadFiles
+      InversionFiles
         { quantities = fileUploaded up.quantities
         , profileFit = fileUploaded up.profileFit
         , profileOrig = fileUploaded up.profileOrig
@@ -210,7 +210,7 @@ instance (Auth :> es, Log :> es, Globus :> es, Inversions :> es, Datasets :> es,
     fileUploaded s = s
 
 
-viewUpload :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> View Uploads ()
+viewUpload :: [Dataset] -> InversionFiles UploadStatus Filename -> Metadata Identity -> View Uploads ()
 viewUpload dall files meta = do
   viewUploadWithTransfer dall files meta $ do
     case allUploadStatus files of
@@ -222,7 +222,7 @@ viewUpload dall files meta = do
         View.iconButton Upload Icons.upTray "Select New Files" ~ Style.btnOutline Success
 
 
-viewUploadWithTransfer :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> View Uploads () -> View Uploads ()
+viewUploadWithTransfer :: [Dataset] -> InversionFiles UploadStatus Filename -> Metadata Identity -> View Uploads () -> View Uploads ()
 viewUploadWithTransfer dall uploads meta xfer = do
   Uploads propId progId invId <- viewId
   el ~ Style.subheader . headerColor $ "Upload Inversion Results"
@@ -327,12 +327,12 @@ instance (Log :> es, Inversions :> es, Datasets :> es) => HyperView MetadataForm
 
 -- Feedback on the datasets missing?
 
-viewMetadataForm :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> View MetadataForm ()
+viewMetadataForm :: [Dataset] -> InversionFiles UploadStatus Filename -> Metadata Identity -> View MetadataForm ()
 viewMetadataForm dall uploads meta = do
   viewMetadataForm' dall uploads meta (Metadata NotInvalid (CommitForm.existingCommit meta.commit))
 
 
-viewMetadataForm' :: [Dataset] -> UploadFiles Filename UploadStatus -> Metadata Identity -> Metadata Validated -> View MetadataForm ()
+viewMetadataForm' :: [Dataset] -> InversionFiles UploadStatus Filename -> Metadata Identity -> Metadata Validated -> View MetadataForm ()
 viewMetadataForm' dall uploads meta valid = do
   case allUploadStatus uploads of
     Uploaded -> do

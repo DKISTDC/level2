@@ -5,6 +5,7 @@ import Data.Time.Calendar (Day, fromGregorian)
 import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
 import Data.Void (Void)
 import NSO.Data.Datasets
+import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
@@ -15,7 +16,7 @@ import Text.Read (readMaybe)
 
 
 data L1Frame = L1Frame
-  { file :: Path' Filename L1Frame
+  { file :: Path Scratch Filename L1Frame
   , timestamp :: UTCTime
   , wavelength :: Wavelength Nm
   , stokes :: Stokes
@@ -37,7 +38,7 @@ type Parser = Parsec Void FilePath
 type ParseErr = ParseErrorBundle FilePath Void
 
 
-runParseFileName :: Path' Filename Dataset -> Maybe L1Frame
+runParseFileName :: Path Scratch Filename Dataset -> Maybe L1Frame
 runParseFileName (Path f) =
   case runParser parseL1FileName f f of
     Left _ -> Nothing

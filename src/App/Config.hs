@@ -13,10 +13,8 @@ module App.Config
   , AppDomain
   , document
   , GlobusConfig (..)
-  , GlobusDevConfig (..)
   ) where
 
-import App.Dev.Globus (DKIST)
 import App.Types
 import App.Worker.CPU
 import Data.ByteString.Lazy qualified as BL
@@ -32,7 +30,7 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
-import NSO.Data.Scratch qualified as Scratch
+import NSO.Files.Scratch qualified as Scratch
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
@@ -68,13 +66,6 @@ data Services = Services
 
 data GlobusConfig
   = GlobusLive GlobusClient
-  | GlobusDev GlobusDevConfig
-
-
-data GlobusDevConfig = GlobusDevConfig
-  { dkist :: Path' Dir DKIST
-  }
-  deriving (Show)
 
 
 initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
@@ -98,8 +89,6 @@ initAuth = \case
   GlobusLive _ -> do
     adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
     pure $ AuthInfo{admins, adminToken}
-  GlobusDev _ -> do
-    pure $ AuthInfo{admins, adminToken = Just "BOOP!"}
  where
   admins = [UserEmail "shess@nso.edu"]
 
@@ -143,22 +132,9 @@ initScratch = do
 
 initGlobus :: (Environment :> es, Log :> es) => Eff es GlobusConfig
 initGlobus = do
-  res <- runErrorNoCallStack @GlobusDevConfig $ do
-    checkGlobusDev
-    clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
-    clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
-    pure $ GlobusClient{clientId, clientSecret}
-  case res of
-    Left dev -> do
-      log Debug "Using DEV GLOBUS"
-      pure $ GlobusDev dev
-    Right cfg -> pure $ GlobusLive cfg
- where
-  checkGlobusDev = do
-    dkist <- fmap Path <$> lookupEnv "DEV_GLOBUS_DKIST_DIR"
-    case dkist of
-      Nothing -> pure ()
-      Just d -> throwError $ GlobusDevConfig d
+  clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
+  clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
+  pure $ GlobusLive $ GlobusClient{clientId, clientSecret}
 
 
 initDb :: (Environment :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection

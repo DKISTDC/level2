@@ -20,7 +20,6 @@ data AppRoute
   | Datasets DatasetRoute
   | Redirect
   | Logout
-  | Dev DevRoute
   deriving (Show, Generic, Eq)
 instance Route AppRoute where
   baseRoute = Just Dashboard
@@ -77,13 +76,6 @@ instance Route DatasetRoute where
   routePath DatasetRoot = []
   routePath (Dataset d) = [d.fromId]
   routePath (Sync s) = ["sync", cs $ iso8601Show s]
-
-
-data DevRoute
-  = DevAuth
-  deriving (Show, Generic, Eq)
-instance Route DevRoute where
-  baseRoute = Just DevAuth
 
 
 inversion :: Id Proposal -> Id Inversion -> AppRoute

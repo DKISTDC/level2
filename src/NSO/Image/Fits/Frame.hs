@@ -8,8 +8,8 @@ import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Data.Scratch (Scratch (..))
-import NSO.Image.Files qualified as Files
+import NSO.Files.Image qualified as Files
+import NSO.Files.Scratch (Scratch (..))
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers
@@ -48,12 +48,12 @@ instance Show L2FrameInputs where
      in [i| L2FrameInputs { quantities = , profiles = #{ps}, l1Frame = #{length ks}} |]
 
 
-outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path L2FrameFits
+outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path Scratch File L2FrameFits
 outputL2Fits ip ii dt =
   filePath (Files.outputL2Dir ip ii) $ filenameL2Fits ii dt
 
 
-filenameL2Fits :: Id Inversion -> LocalTime -> Path' Filename L2FrameFits
+filenameL2Fits :: Id Inversion -> LocalTime -> Path Scratch Filename L2FrameFits
 filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
 
 

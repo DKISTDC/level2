@@ -1,7 +1,6 @@
 module App where
 
 import App.Config
-import App.Dev.Globus (globusDevAuth, runGlobusDev)
 import App.Effect.Auth as Auth
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
@@ -42,8 +41,8 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
-import NSO.Data.Scratch (Scratch, runScratch)
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
+import NSO.Files.Scratch (Scratch, runScratch)
 import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.HTTP.Client qualified as Http
@@ -170,7 +169,6 @@ webServer config auth fits asdf pubs sync =
     redirect (pathUri . Path True $ routePath Proposals)
   router Logout = runPage Auth.logout
   router Redirect = runPage Auth.login
-  router (Dev DevAuth) = globusDevAuth
 
   runApp :: (IOE :> es, Concurrent :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
@@ -203,7 +201,6 @@ webServer config auth fits asdf pubs sync =
 -- runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
 runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
-runGlobus' (GlobusDev (GlobusDevConfig dkist)) _ action = runGlobusDev dkist action
 runGlobus' (GlobusLive g) mgr action =
   -- catchHttpGlobus (runGlobus g action)
   -- come up with a better way to do this. This catches all IO errors right now

@@ -7,9 +7,7 @@ import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons as Icons
 import Effectful
-import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError (..), Task, TaskStatus (..))
-import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import Network.Globus qualified as Globus
@@ -31,7 +29,7 @@ data TransferAction
 
 
 -- I want it to reload itself and call these when necessary
-checkTransfer :: (Log :> es, ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es, Error GlobusError :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
+checkTransfer :: (ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer toAction it = do
   task <- requireLogin $ Transfer.transferStatus it
   pure $ viewTransfer toAction it task

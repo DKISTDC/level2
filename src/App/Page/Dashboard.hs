@@ -19,7 +19,7 @@ import Effectful.FileSystem
 import Effectful.Log
 import Effectful.Tasks
 import NSO.Data.Datasets
-import NSO.Data.Scratch (Scratch)
+import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
 import Network.Globus (Token, Token' (..))
 import Web.Atomic.CSS

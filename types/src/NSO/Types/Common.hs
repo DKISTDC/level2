@@ -114,35 +114,31 @@ instrumentFromName "CRYO-NIRSP" = pure CRYO_NIRSP
 instrumentFromName t = readMaybe . cs $ t
 
 
-newtype Path' (t :: PathType) a = Path {filePath :: FilePath}
+newtype Path system pathType a = Path {filePath :: FilePath}
   deriving newtype (Show, Read, Eq, Ord, IsString, DBType, FromHttpApiData)
-type Path = Path' File
+  deriving (Generic)
 
+
+-- type Path = Path' File
 
 -- we don't want to use the default "String = [Char]" instance
-instance FromParam (Path' Filename a) where
+instance FromParam (Path s x a) where
   parseParam t = do
-    f <- parseParam @Text t
-    pure $ Path (takeFileName $ cs f)
+    Path . cs <$> parseParam @Text t
 
 
-instance FromParam (Path' Dir a) where
-  parseParam t = do
-    f <- parseParam @Text t
-    pure $ Path (takeDirectory $ cs f)
-
-
-(</>) :: Path' x a -> Path' y b -> Path' z c
+-- combine a directory with... something
+(</>) :: Path s Dir a -> Path s x b -> Path s y c
 Path dir </> Path x = Path $ (FP.</>) dir x
 infixr 5 </>
 
 
-isPathAbsolute :: Path' x a -> Bool
+isPathAbsolute :: Path s x a -> Bool
 isPathAbsolute (Path fp) = take 1 fp == ['/']
 
 
-filePath :: Path' Dir a -> Path' Filename b -> Path b
-filePath = (</>)
+filePath :: Path s Dir a -> Path s Filename b -> Path s File c
+filePath (Path a) (Path b) = Path $ (FP.</>) a b
 
 
 data PathType

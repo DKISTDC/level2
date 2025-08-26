@@ -4,8 +4,7 @@ module App.Page.Inversion where
 
 import App.Colors
 import App.Effect.Auth
-import App.Effect.FileManager (fileManagerOpenInv)
-import App.Effect.Publish qualified as Publish
+import App.Effect.FileManager qualified as FileManager
 import App.Error (expectFound)
 import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
@@ -22,7 +21,7 @@ import App.View.Transfer qualified as Transfer
 import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
 import Effectful
-import Effectful.Debug (delay, Debug)
+import Effectful.Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Globus (Globus, GlobusError, Task)
@@ -31,9 +30,10 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Scratch (Scratch (..))
 import NSO.Data.Spectra qualified as Spectra
-import NSO.Image.Files qualified as Files
+import NSO.Files.DKIST qualified as DKIST
+import NSO.Files.Image qualified as Files
+import NSO.Files.Scratch (Scratch (..))
 import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
 import NSO.Types.Common
@@ -45,7 +45,7 @@ import Web.Hyperbole.Data.URI as URI (Path (..), pathUri)
 
 
 page
-  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Globus :> es, Tasks GenFits :> es, Time :> es, Tasks PublishTask :> es)
+  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Tasks PublishTask :> es)
   => Id Proposal
   -> Id Inversion
   -> Eff es (Page (InversionStatus : MoreInversions : InversionViews))
@@ -504,7 +504,7 @@ data GenerateTransfer = GenerateTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView GenerateTransfer es where
+instance (Tasks GenFits :> es, Inversions :> es, Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView GenerateTransfer es where
   type Require GenerateTransfer = '[GenerateStep]
   data Action GenerateTransfer
     = GenTransfer TransferAction
@@ -530,7 +530,7 @@ instance (Tasks GenFits :> es, Inversions :> es, Globus :> es, Auth :> es, Datas
 
 viewGeneratedFiles :: Inversion -> View c ()
 viewGeneratedFiles inv =
-  link (fileManagerOpenInv $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
+  link (FileManager.openInversion $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
 
 
 -- ----------------------------------------------------------------
@@ -548,7 +548,7 @@ data PublishStep = PublishStep (Id Proposal) (Id InstrumentProgram) (Id Inversio
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es) => HyperView PublishStep es where
+instance (Inversions :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Globus :> es) => HyperView PublishStep es where
   type Require PublishStep = '[InversionStatus]
 
 
@@ -617,5 +617,5 @@ viewPublishTransfer taskId = do
 
 viewPublished :: Id Proposal -> Id Inversion -> View PublishStep ()
 viewPublished propId invId = do
-  link (Publish.fileManagerOpenPublish $ Publish.publishedDir propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
+  link (FileManager.openPublish $ DKIST.publishedDir propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
     "View Published Files"

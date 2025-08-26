@@ -3,10 +3,12 @@ module App.Effect.FileManager where
 import App.Types (AppDomain)
 import Data.Tagged
 import Effectful.Globus hiding (Id)
+import NSO.Files.DKIST as DKIST
+import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
-import Web.Hyperbole.Data.URI
+import Web.Hyperbole.Data.URI hiding (Path)
 
 
 -- File Manager ----------------------------
@@ -47,13 +49,8 @@ fileManagerSelectUrl lmt lbl domain submitUrl cancelUrl =
     URI "https://" (Just $ URIAuth "" (cs domain.unTagged) "") u.uriPath u.uriQuery ""
 
 
--- DEBUG ONLY: hard coded aasgard
-fileManagerOpenInv :: Path' Dir Inversion -> URI
-fileManagerOpenInv = fileManagerOpenDir (Id "20fa4840-366a-494c-b009-063280ecf70d")
-
-
-fileManagerOpenDir :: Id Collection -> Path' Dir a -> URI
-fileManagerOpenDir origin dir =
+openDir :: Id Collection -> Path s Dir a -> URI
+openDir origin dir =
   [uri|https://app.globus.org/file-manager|]
     { uriQuery =
         queryString
@@ -61,3 +58,15 @@ fileManagerOpenDir origin dir =
           , ("origin_path", Just $ "/" <> cs dir.filePath)
           ]
     }
+
+
+-- Specific File Locations ------------------------------------------
+
+openPublish :: Path DKIST Dir Inversion -> URI
+openPublish = openDir (Id DKIST.endpoint.unTagged)
+
+
+-- DEBUG ONLY: hard coded aasgard
+-- TODO: switch to scratch
+openInversion :: Path Scratch Dir Inversion -> URI
+openInversion = openDir (Id "20fa4840-366a-494c-b009-063280ecf70d")

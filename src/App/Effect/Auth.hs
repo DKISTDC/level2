@@ -4,6 +4,7 @@
 module App.Effect.Auth where
 
 import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
+import App.Effect.Transfer (Transfer, runTransfer)
 import App.Types
 import Control.Monad (void)
 import Data.Aeson (FromJSON (..), withText)
@@ -152,10 +153,10 @@ runWithAccess :: Token Access -> Eff (Reader (Token Access) : es) a -> Eff es a
 runWithAccess = runReader
 
 
-requireLogin :: (Hyperbole :> es, Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
+requireLogin :: (Hyperbole :> es, Auth :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) a -> Eff es a
 requireLogin eff = do
   acc <- getAccessToken >>= expectAuth
-  runWithAccess acc eff
+  runWithAccess acc $ runTransfer eff
 
 
 newtype RedirectPath = RedirectPath [Segment]
@@ -191,7 +192,7 @@ getLastUrl = do
   pure $ (.uri) <$> auth.currentUrl
 
 
-openFileManager :: (Hyperbole :> es, Auth :> es, Reader App :> es) => FileLimit -> Text -> URI -> Eff es a
+openFileManager :: (Hyperbole :> es, Auth :> es, Globus :> es, Reader App :> es) => FileLimit -> Text -> URI -> Eff es a
 openFileManager files lbl submitUrl = do
   cancelUrl <- currentUrl
   app <- ask @App
@@ -204,6 +205,7 @@ openFileManager files lbl submitUrl = do
 authUrl :: (Globus :> es) => Uri Redirect -> Eff es URI
 authUrl red = do
   url <- send $ AuthUrl red [TransferAll [hardCodedCUBoulderBLANCACollection], Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
+  -- url <- send $ AuthUrl red [TransferAll [], Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
   pure $ convertUrl url
  where
   convertUrl :: Uri a -> URI

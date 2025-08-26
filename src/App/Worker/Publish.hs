@@ -1,6 +1,6 @@
 module App.Worker.Publish where
 
-import App.Effect.Publish (transferSoftPublish)
+import App.Effect.Transfer (Transfer, transferSoftPublish)
 import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception)
 import Control.Monad.Loops
@@ -8,13 +8,12 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (Globus, GlobusError, Task, Token, Token' (Access))
+import Effectful.Globus (GlobusError, Task)
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Scratch as Scratch
+import NSO.Files.Scratch as Scratch
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -44,8 +43,7 @@ startSoftPublish propId invId = do
 
 publishTask
   :: forall es
-   . ( Reader (Token Access) :> es
-     , Globus :> es
+   . ( Transfer :> es
      , Inversions :> es
      , Time :> es
      , Scratch :> es
@@ -86,7 +84,7 @@ data PublishError
   deriving (Show, Eq, Exception)
 
 
-isTransferComplete :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Error PublishError :> es, Error GlobusError :> es) => Id Task -> Eff es Bool
+isTransferComplete :: (Log :> es, Transfer :> es, Error PublishError :> es) => Id Task -> Eff es Bool
 isTransferComplete it = do
   task <- Transfer.transferStatus it
   case task.status of

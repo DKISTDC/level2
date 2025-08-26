@@ -2,6 +2,7 @@
 
 module App.Worker.GenWorker where
 
+import App.Effect.Transfer (Transfer, runTransfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
@@ -26,10 +27,11 @@ import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Scratch as Scratch
+import NSO.Files as Files
+import NSO.Files.Image qualified as Files
+import NSO.Files.Scratch as Scratch
 import NSO.Image.Asdf as Asdf
 import NSO.Image.Blanca qualified as Blanca
-import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Meta qualified as Meta
 import NSO.Image.Fits.Quantity (QuantityError, decodeQuantitiesFrames)
@@ -91,30 +93,31 @@ fitsTask
   => GenFits
   -> Eff es ()
 fitsTask task = do
-  res <- runErrorNoCallStack $ catch workWithError onCaughtError
+  res <- runErrorNoCallStack $ runTransfer $ catch workWithError onCaughtError
   either (failed task.inversionId) pure res
  where
-  workWithError :: Eff (Error GenerateError : es) ()
+  workWithError :: Eff (Transfer : Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     log Debug "START"
     send $ TaskSetStatus task GenStarted
 
     -- Load Metadata ----------------
-    let u = Files.inversionUploads $ Files.blanca task.proposalId task.inversionId
+    let u = Files.inversionFiles $ Files.blancaInput task.proposalId task.inversionId
     log Debug $ dump "InvResults" u.quantities
     log Debug $ dump "InvProfile" u.profileFit
     log Debug $ dump "OrigProfile" u.profileOrig
     slice <- sliceMeta u
 
     inv <- loadInversion task.inversionId
-    ds <- Datasets.find $ Datasets.ByIds inv.datasets
+    dss :: [Dataset] <- Datasets.find $ Datasets.ByIds inv.datasets
+    ds :: NonEmpty Dataset <- requireDatasets inv.datasets dss
 
     -- Download Canonical Dataset
     log Debug $ dump "Meta Complete" slice
     downloadL1Frames task inv ds
 
     log Debug $ dump "Downloaded L1" (fmap Files.dataset ds)
-    dc <- requireCanonicalDataset slice ds
+    dc <- requireCanonicalDataset slice $ NE.toList ds
 
     log Debug $ dump "Canonical Dataset:" dc.datasetId
 
@@ -146,13 +149,17 @@ fitsTask task = do
     log Debug $ dump "SKIPPED: " (length $ NE.filter isNothing metas.frames)
     log Debug $ dump "WRITTEN: " (length $ NE.filter isJust metas.frames)
     Inversions.setGeneratedFits task.inversionId
+   where
+    requireDatasets ids = \case
+      [] -> throwError $ NoDatasets ids
+      (d : ds) -> pure $ d :| ds
 
 
 downloadL1Frames
-  :: (IOE :> es, Log :> es, Error GlobusError :> es, Inversions :> es, Datasets :> es, Concurrent :> es, Tasks GenFits :> es, Time :> es, Error GenerateError :> es, Reader (Token Access) :> es, Scratch :> es, Globus :> es)
+  :: (IOE :> es, Log :> es, Inversions :> es, Datasets :> es, Concurrent :> es, Tasks GenFits :> es, Time :> es, Error GenerateError :> es, Scratch :> es, Transfer :> es)
   => GenFits
   -> Inversion
-  -> [Dataset]
+  -> NonEmpty Dataset
   -> Eff es ()
 downloadL1Frames task inv ds = do
   case inv.generate.transfer of
@@ -160,7 +167,7 @@ downloadL1Frames task inv ds = do
     Nothing -> transfer
  where
   transfer = do
-    taskId <- Transfer.initScratchDatasets ds
+    taskId <- Transfer.scratchDownloadDatasets ds
     log Debug $ dump "Task" taskId
 
     send $ TaskSetStatus task $ GenTransferring taskId
@@ -264,6 +271,7 @@ asdfTask
   :: forall es
    . ( Reader (Token Access) :> es
      , Globus :> es
+     , Error GlobusError :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es
@@ -276,16 +284,16 @@ asdfTask
   => GenAsdf
   -> Eff es ()
 asdfTask t = do
-  res <- runErrorNoCallStack $ catch workWithError onCaughtError
+  res <- runErrorNoCallStack $ runTransfer $ catch workWithError onCaughtError
   either (failed t.inversionId) pure res
  where
-  workWithError :: Eff (Error GenerateError : es) ()
+  workWithError :: Eff (Transfer : Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     log Debug "ASDF!"
     log Debug $ dump "Task" t
 
     -- Load Metadata
-    let u = Files.inversionUploads $ Files.blanca t.proposalId t.inversionId
+    let u = Files.inversionFiles $ Files.blancaInput t.proposalId t.inversionId
     slice <- sliceMeta u
 
     inv <- loadInversion t.inversionId
@@ -341,7 +349,7 @@ requireMetas propId invId slice arms l1fits = do
     paths <- l2FramePaths propId invId
     zipWithM loadL2FitsMeta paths l1fits
 
-  loadL2FitsMeta :: Path' Filename L2FrameFits -> BinTableHDU -> Eff es L2FitsMeta
+  loadL2FitsMeta :: Path Scratch Filename L2FrameFits -> BinTableHDU -> Eff es L2FitsMeta
   loadL2FitsMeta path l1 = do
     fits <- readLevel2Fits propId invId path
     Meta.frameMetaFromL2Fits path slice arms l1 fits
@@ -353,6 +361,6 @@ failed iid err = do
   Inversions.setError iid (cs $ show err)
 
 
-onCaughtError :: IOError -> Eff (Error GenerateError : es) a
+onCaughtError :: IOError -> Eff (Transfer : Error GenerateError : es) a
 onCaughtError e = do
   throwError $ GenIOError e

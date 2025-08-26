@@ -8,12 +8,11 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Scratch (Scratch)
-import NSO.Data.Scratch qualified as Scratch
+import NSO.Files
+import NSO.Files.Image qualified as Files
+import NSO.Files.Scratch qualified as Scratch
 import NSO.Image.Blanca (BlancaError (..))
 import NSO.Image.Blanca as Blanca (collateFramesArms)
-import NSO.Image.Files (UploadFiles (..))
-import NSO.Image.Files qualified as Files
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
 import NSO.Image.GWCS.L1GWCS
@@ -94,25 +93,25 @@ datasetVISPArmId d = do
 
 
 -- | read all downloaded files in the L1 scratch directory
-canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Scratch :> es) => Path' Dir Dataset -> Eff es [BinTableHDU]
+canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [BinTableHDU]
 canonicalL1Frames fdir = do
   -- VSPARMID, see datasetVISPArmId and requireCanonicalDataset
   fs <- allL1IntensityFrames fdir
   mapM (readLevel1File fdir) fs
 
 
-allL1IntensityFrames :: (Scratch :> es) => Path' Dir Dataset -> Eff es [L1Frame]
+allL1IntensityFrames :: (Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Frame]
 allL1IntensityFrames dir = do
   fs <- send $ Scratch.ListDirectory dir
   pure $ L.sort $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
  where
-  isL1IntensityFile :: Path' Filename Dataset -> Bool
+  isL1IntensityFile :: Path Scratch Filename Dataset -> Bool
   isL1IntensityFile (Path f) =
     -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
     isFits (Path f) && "_I_" `L.isInfixOf` f
 
 
-readLevel1File :: forall es. (Scratch :> es, Log :> es, Error FetchError :> es) => Path' Dir Dataset -> L1Frame -> Eff es BinTableHDU
+readLevel1File :: forall es. (Scratch :> es, Log :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es BinTableHDU
 readLevel1File dir frame = do
   inp <- send $ Scratch.ReadFile $ filePath dir frame.file
   fits <- Fits.decode inp
@@ -121,7 +120,7 @@ readLevel1File dir frame = do
     _ -> throwError $ MissingL1HDU frame.file.filePath
 
 
-readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path' Dir Dataset -> Eff es L1Asdf
+readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> Eff es L1Asdf
 readLevel1Asdf dir = do
   files <- Scratch.listDirectory dir
   case filter Files.isAsdf files of
@@ -134,14 +133,14 @@ readLevel1Asdf dir = do
     _ -> throwError $ MissingL1Asdf dir.filePath
 
 
-readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path' Filename L2FrameFits -> Eff es Fits
+readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2FrameFits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   inp <- send $ Scratch.ReadFile $ filePath dir path
   Fits.decode inp
 
 
-l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path' Filename L2FrameFits]
+l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2FrameFits]
 l2FramePaths pid iid = do
   let dir = Files.outputL2Dir pid iid
   fmap (fmap (\p -> Path p.filePath)) $ filter isFits <$> Scratch.listDirectory dir
@@ -149,6 +148,7 @@ l2FramePaths pid iid = do
 
 data FetchError
   = NoCanonicalDataset [Id Dataset]
+  | NoDatasets [Id Dataset]
   | MissingFrames (Id Dataset)
   | MissingL1HDU FilePath
   | L1AsdfParse AsdfError
@@ -157,12 +157,12 @@ data FetchError
   deriving (Show, Exception, Eq)
 
 
-isFits :: Path' Filename a -> Bool
+isFits :: Path s Filename a -> Bool
 isFits (Path f) =
   takeExtensions f == ".fits"
 
 
-sliceMeta :: (Error GenerateError :> es, Scratch :> es) => UploadFiles File -> Eff es SliceXY
+sliceMeta :: (Error GenerateError :> es, Scratch :> es) => InversionFiles Identity File -> Eff es SliceXY
 sliceMeta u = do
   inp <- Scratch.readFile u.profileFit
   f :: Fits <- decode inp

@@ -24,11 +24,10 @@ library
       App
       App.Colors
       App.Config
-      App.Dev.Globus
       App.Effect.Auth
       App.Effect.FileManager
-      App.Effect.Publish
       App.Effect.Transfer
+      App.Effect.Transfer.UploadStatus
       App.Error
       App.Mock
       App.Page.Auth
@@ -39,7 +38,6 @@ library
       App.Page.Inversions
       App.Page.Inversions.CommitForm
       App.Page.InversionUpload
-      App.Page.InversionUpload.UploadFiles
       App.Page.Program
       App.Page.Proposal
       App.Page.Proposals
@@ -77,16 +75,21 @@ library
       NSO.Data.Inversions.Update
       NSO.Data.Programs
       NSO.Data.Qualify
-      NSO.Data.Scratch
       NSO.Data.Spectra
       NSO.Data.Sync
+      NSO.Files
+      NSO.Files.DKIST
+      NSO.Files.Image
+      NSO.Files.Inversion
+      NSO.Files.RemoteFolder
+      NSO.Files.Scratch
+      NSO.Files.TransferForm
       NSO.Image.Asdf
       NSO.Image.Asdf.FileManager
       NSO.Image.Asdf.HeaderTable
       NSO.Image.Asdf.NDCollection
       NSO.Image.Asdf.Ref
       NSO.Image.Blanca
-      NSO.Image.Files
       NSO.Image.Fits
       NSO.Image.Fits.Frame
       NSO.Image.Fits.Meta
