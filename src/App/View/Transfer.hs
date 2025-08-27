@@ -45,8 +45,7 @@ viewTransfer toAction it task =
   case task.status of
     Succeeded -> el @ onLoad (toAction TaskSucceeded) 0 $ none
     Failed -> el @ onLoad (toAction TaskFailed) 0 $ none
-    _ ->
-      viewPollTransfer toAction it task
+    _ -> viewPollTransfer toAction it task
 
 
 viewPollTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()

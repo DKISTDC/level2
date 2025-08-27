@@ -25,7 +25,11 @@ instance FromForm (InversionFiles Maybe Filename) where
     let quantities = findFile Files.fileQuantities fs
     let profileFit = findFile Files.fileProfileFit fs
     let profileOrig = findFile Files.fileProfileOrig fs
-    pure InversionFiles{quantities, profileFit, profileOrig}
+    let inv = InversionFiles{quantities, profileFit, profileOrig}
+    case inv of
+      InversionFiles Nothing Nothing Nothing ->
+        Left "Must provide at least one file"
+      _ -> pure inv
    where
     files :: FUE.Form -> Either Text [Path s Filename ()]
     files frm = do
