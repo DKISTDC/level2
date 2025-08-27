@@ -1,13 +1,13 @@
 module App.View.Transfer where
 
 import App.Colors
-import App.Effect.Auth
 import App.Effect.Transfer as Transfer
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons as Icons
 import Effectful
-import Effectful.Globus (Globus, GlobusError (..), Task, TaskStatus (..))
+import Effectful.Globus (Task, TaskStatus (..))
+import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import Network.Globus qualified as Globus
@@ -29,9 +29,9 @@ data TransferAction
 
 
 -- I want it to reload itself and call these when necessary
-checkTransfer :: (ViewAction (Action id), Globus :> es, Hyperbole :> es, Auth :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
+checkTransfer :: (ViewAction (Action id), Hyperbole :> es, Transfer :> es, Log :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer toAction it = do
-  task <- requireLogin $ Transfer.transferStatus it
+  task <- Transfer.transferStatus it
   pure $ viewTransfer toAction it task
 
 
@@ -68,15 +68,14 @@ viewTransferProgress it task = do
   rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
 
 
-viewTransferError :: Id Task -> GlobusError -> View c ()
-viewTransferError taskId err =
-  viewTransferFailed' message taskId
- where
-  message =
-    case err of
-      Unauthorized req _ -> "Unauthorized: " <> cs (show req)
-      _ -> cs $ show err
-
+-- viewTransferError :: Id Task -> GlobusError -> View c ()
+-- viewTransferError taskId err =
+--   viewTransferFailed' message taskId
+--  where
+--   message =
+--     case err of
+--       Unauthorized req _ -> "Unauthorized: " <> cs (show req)
+-- _ -> cs $ show err
 
 viewTransferFailed :: Id Task -> View c ()
 viewTransferFailed = do

@@ -4,7 +4,6 @@
 module App.Effect.Auth where
 
 import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
-import App.Effect.Transfer (Transfer, runTransfer)
 import App.Types
 import Control.Monad (void)
 import Data.Aeson (FromJSON (..), withText)
@@ -13,9 +12,10 @@ import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Exception
 import Effectful.Globus
 import Effectful.Globus qualified as Globus
-import Effectful.Log
+import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Network.Globus (UserEmail (..), UserInfo (..), UserInfoResponse (..), UserProfile (..))
@@ -58,7 +58,7 @@ type instance DispatchOf Auth = 'Dynamic
 
 
 runAuth
-  :: (Globus :> es, Route r, Concurrent :> es, Log :> es, Error GlobusError :> es)
+  :: (Globus :> es, Route r, Concurrent :> es, Log :> es)
   => AppDomain
   -> r
   -> AuthState
@@ -70,7 +70,8 @@ runAuth dom r auth = interpret $ \_ -> \case
   AuthWithCode authCode -> do
     let red = redirectUri dom r
     ts <- accessTokens red authCode
-    u <- userInfo ts
+    res <- runErrorNoCallStack @GlobusError $ userInfo ts
+    u :: UserLoginInfo <- either throwIO pure res
     when (isAdmin u) $ do
       log Debug $ dump "FOUND ADMIN" u.transfer
       void $ atomically $ tryPutTMVar auth.adminToken u.transfer
@@ -86,6 +87,24 @@ runAuth dom r auth = interpret $ \_ -> \case
       Just ue -> ue `elem` auth.admins
       Nothing -> False
 
+  userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
+  userInfo tis = do
+    oid <- requireScopeToken (Identity OpenId) tis
+    -- TEST: does this use the same token for everything? Will CU Boulder work?
+    Tagged trn <- requireScopeToken (TransferAll []) tis
+
+    ur <- send $ GetUserInfo oid
+    pure $
+      UserLoginInfo
+        { info = ur.info
+        , email = ur.email
+        , profile = ur.profile
+        , transfer = Tagged trn
+        }
+
+
+-- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
+-- accessToken (Token cid) (Token sec) red (Token code) =
 
 data AuthState = AuthState
   { adminToken :: TMVar (Token Access)
@@ -153,10 +172,10 @@ runWithAccess :: Token Access -> Eff (Reader (Token Access) : es) a -> Eff es a
 runWithAccess = runReader
 
 
-requireLogin :: (Hyperbole :> es, Auth :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) a -> Eff es a
+requireLogin :: (Hyperbole :> es, Auth :> es, Log :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
 requireLogin eff = do
   acc <- getAccessToken >>= expectAuth
-  runWithAccess acc $ runTransfer eff
+  runWithAccess acc eff
 
 
 newtype RedirectPath = RedirectPath [Segment]
@@ -192,12 +211,11 @@ getLastUrl = do
   pure $ (.uri) <$> auth.currentUrl
 
 
-openFileManager :: (Hyperbole :> es, Auth :> es, Globus :> es, Reader App :> es) => FileLimit -> Text -> URI -> Eff es a
+openFileManager :: (Hyperbole :> es, Auth :> es, Reader App :> es, Log :> es) => FileLimit -> Text -> URI -> Eff es a
 openFileManager files lbl submitUrl = do
   cancelUrl <- currentUrl
   app <- ask @App
-  requireLogin $ do
-    redirect $ fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl
+  redirect $ fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl
 
 
 -- Globus stuff -------------------------------------------------------------
@@ -228,22 +246,3 @@ data UserLoginInfo = UserLoginInfo
 
 hardCodedCUBoulderBLANCACollection :: Id Collection
 hardCodedCUBoulderBLANCACollection = "4718fe94-aafd-498a-8bae-6bd430bb50a0"
-
-
-userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
-userInfo tis = do
-  oid <- requireScopeToken (Identity OpenId) tis
-  -- TEST: does this use the same token for everything? Will CU Boulder work?
-  Tagged trn <- requireScopeToken (TransferAll []) tis
-
-  ur <- send $ GetUserInfo oid
-  pure $
-    UserLoginInfo
-      { info = ur.info
-      , email = ur.email
-      , profile = ur.profile
-      , transfer = Tagged trn
-      }
-
--- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
--- accessToken (Token cid) (Token sec) red (Token code) =

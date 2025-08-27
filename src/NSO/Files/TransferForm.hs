@@ -30,7 +30,7 @@ data DownloadFolder = DownloadFolder
   deriving (Generic)
 instance FromForm DownloadFolder where
   fromForm f = do
-    DownloadFolder <$> FUE.parseUnique "folder[0]" f
+    DownloadFolder <$> FUE.parseMaybe "folder[0]" f
 
 
 transferFormFolder :: TransferForm -> DownloadFolder -> Path User Dir TransferForm
@@ -48,7 +48,7 @@ remoteTransfer tform =
    in RemoteFolder (Tagged tform.endpoint_id) (Path p)
 
 
-remoteDatasets :: TransferForm -> DownloadFolder -> Dataset -> RemoteFolder User Dataset
-remoteDatasets tform df d =
-  RemoteFolder (Tagged tform.endpoint_id) $
-    transferFormFolder tform df </> Path (cs d.instrumentProgramId.fromId)
+remoteDatasets :: TransferForm -> DownloadFolder -> RemoteFolder User Dataset
+remoteDatasets tform df =
+  let Path dest = transferFormFolder tform df
+   in RemoteFolder (Tagged tform.endpoint_id) $ Path dest

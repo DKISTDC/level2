@@ -18,7 +18,7 @@ import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
-import Effectful.Globus (Globus, GlobusError, Task, TaskStatus (..), Token, Token' (Access))
+import Effectful.Globus (Globus, Task, TaskStatus (..), Token, Token' (Access))
 import Effectful.Globus qualified as Globus
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -78,7 +78,6 @@ fitsTask
    . ( Reader (Token Access) :> es
      , Reader CPUWorkers :> es
      , Globus :> es
-     , Error GlobusError :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es
@@ -271,7 +270,6 @@ asdfTask
   :: forall es
    . ( Reader (Token Access) :> es
      , Globus :> es
-     , Error GlobusError :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es

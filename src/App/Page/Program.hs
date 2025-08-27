@@ -5,6 +5,7 @@ module App.Page.Program where
 import App.Colors
 import App.Effect.Auth as Auth
 import App.Effect.FileManager (FileLimit (Folders))
+import App.Effect.Transfer
 import App.Effect.Transfer qualified as Transfer
 import App.Error (expectFound)
 import App.Route as Route
@@ -27,7 +28,8 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (Globus, GlobusError)
+import Effectful.Exception
+import Effectful.Globus (Globus, GlobusClient, GlobusError)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import Effectful.Tasks
@@ -102,19 +104,21 @@ data ActiveDownload = ActiveDownload
   deriving (Generic, ToQuery, FromQuery)
 
 
-submitDownload :: (Hyperbole :> es, Log :> es, Globus :> es, Datasets :> es, Inversions :> es, Auth :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
+submitDownload :: (Hyperbole :> es, Log :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
 submitDownload propId progId = do
   log Debug $ dump "Submit Download" (propId, progId)
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
-  dss <- Datasets.find $ Datasets.ByProgram progId
-  case dss of
-    [] -> notFound
-    (d : ds) -> do
-      taskId <- requireLogin $ userFacingError @GlobusError $ Transfer.userDownloadDatasets tfrm tfls (d :| ds)
-      let dwn = ActiveDownload (Just taskId)
-      redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
+  ds <- requireNonEmpty =<< Datasets.find (Datasets.ByProgram progId)
+  taskId <- requireTransfer $ Transfer.userDownloadDatasets tfrm tfls ds
+  let dwn = ActiveDownload (Just taskId)
+  redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
  where
+  requireNonEmpty dss =
+    case dss of
+      [] -> notFound
+      (d : ds) -> pure (d :| ds)
+
   setUrlQuery :: Query -> URI -> URI
   setUrlQuery q URI{uriAuthority, uriScheme, uriPath} =
     URI{uriScheme, uriAuthority, uriPath, uriQuery = queryString q, uriFragment = ""}
@@ -132,7 +136,7 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
+instance (Inversions :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
     deriving (Generic, ViewAction)
@@ -231,7 +235,7 @@ data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es) => HyperView ProgramDatasets es where
+instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
     = GoDownload
     | SortDatasets SortField
@@ -243,9 +247,10 @@ instance (Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Time :> es
 
   update GoDownload = do
     ProgramDatasets propId progId <- viewId
+    ds <- Datasets.find $ Datasets.ByProgram progId
     -- r <- request
     let submitUrl = routeUri $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
-    Auth.openFileManager (Folders 1) ("Transfer Instrument Program " <> progId.fromId) submitUrl
+    Auth.openFileManager (Folders 1) ("Download Datasets: " <> T.intercalate "," (fmap (\d -> d.datasetId.fromId) ds)) submitUrl
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
     progs <- Programs.loadProgram progId
@@ -273,7 +278,7 @@ data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Generic, ViewId)
 
 
-instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView DownloadTransfer es where
+instance (Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView DownloadTransfer es where
   data Action DownloadTransfer
     = DwnTransfer TransferAction
     deriving (Generic, ViewAction)
@@ -297,10 +302,10 @@ instance (Globus :> es, Auth :> es, Datasets :> es, Log :> es) => HyperView Down
             el "Successfully Downloaded: "
             el $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
       CheckTransfer -> do
-        res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer DwnTransfer taskId
+        tview <- requireTransfer $ Transfer.checkTransfer DwnTransfer taskId
         pure $ col ~ gap 10 $ do
           redownloadBtn ~ Style.btnLoading Secondary . Style.disabled $ "Downloading"
-          either (Transfer.viewTransferError taskId) id res
+          tview
 
 
 viewDownloadLoad :: View DownloadTransfer ()

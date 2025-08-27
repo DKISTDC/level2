@@ -16,7 +16,7 @@ import Web.Hyperbole.Data.URI (Path (..), pathUri)
 
 
 -- show the page, then handle the login second
-login :: (Log :> es, Globus :> es, Hyperbole :> es, Auth :> es) => Eff es (Page '[AuthRed])
+login :: (Log :> es, Hyperbole :> es, Auth :> es) => Eff es (Page '[AuthRed])
 login = do
   authCode <- Tagged <$> param "code"
   pure $ col ~ pad 20 . gap 10 $ do
@@ -44,7 +44,7 @@ data AuthRed = AuthRed
   deriving (Generic, ViewId)
 
 
-instance (Globus :> es, Auth :> es, Log :> es) => HyperView AuthRed es where
+instance (Auth :> es, Log :> es) => HyperView AuthRed es where
   data Action AuthRed
     = LazyAuth (Token Exchange)
     deriving (Generic, ViewAction)

@@ -8,7 +8,7 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (GlobusError, Task)
+import Effectful.Globus (Task)
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time
@@ -54,13 +54,12 @@ publishTask
   => PublishTask
   -> Eff es ()
 publishTask task = do
-  res <- runErrorNoCallStack @GlobusError . runErrorNoCallStack @PublishError $ workWithError
+  res <- runErrorNoCallStack @PublishError $ workWithError
   case res of
     Left err -> failed err
-    Right (Left err) -> failed err
-    Right (Right a) -> pure a
+    Right a -> pure a
  where
-  workWithError :: Eff (Error PublishError : Error GlobusError : es) ()
+  workWithError :: Eff (Error PublishError : es) ()
   workWithError = do
     log Debug "Publish Task"
 

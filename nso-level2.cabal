@@ -26,6 +26,7 @@ library
       App.Config
       App.Effect.Auth
       App.Effect.FileManager
+      App.Effect.Globus
       App.Effect.Transfer
       App.Effect.Transfer.UploadStatus
       App.Error

@@ -4,8 +4,9 @@
 module App.Page.InversionUpload where
 
 import App.Colors
-import App.Effect.Auth (Auth, openFileManager, requireLogin)
+import App.Effect.Auth (Auth, openFileManager)
 import App.Effect.FileManager (FileLimit (Files))
+import App.Effect.Transfer (requireTransfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Effect.Transfer.UploadStatus
 import App.Page.Inversions.CommitForm (commitForm)
@@ -19,9 +20,7 @@ import App.View.Inversion qualified as Inversion
 import App.View.Layout
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import Effectful
-import Effectful.Error.Static
-import Effectful.Globus (Globus, GlobusError, Task)
+import Effectful.Globus (Globus, Task)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
@@ -39,7 +38,7 @@ import Web.Hyperbole.Data.URI (queryString)
 
 
 page
-  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es)
+  :: (Hyperbole :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
@@ -80,7 +79,7 @@ page propId progId invId = do
 
 submitUpload
   :: forall es
-   . (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Scratch :> es)
+   . (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es, Globus :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
@@ -92,7 +91,7 @@ submitUpload propId progId invId = do
   tup <- formData @(InversionFiles Maybe Filename)
   log Debug $ dump "Form" tup
 
-  taskId <- requireLogin $ Transfer.uploadInversionResults tfrm tup propId invId
+  taskId <- requireTransfer $ Transfer.uploadInversionResults tfrm tup propId invId
   let new = uploads taskId tup
 
   files <- query
@@ -191,13 +190,9 @@ instance (Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Reader App :>
             setQuery $ QueryState uploads' def
             pure $ viewUpload dall uploads' metadata
           CheckTransfer -> do
-            res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer (UpTransfer taskId) taskId
+            tview <- requireTransfer $ Transfer.checkTransfer (UpTransfer taskId) taskId
             pure $ viewUploadWithTransfer dall uploads metadata $ do
-              case res of
-                Right vw -> vw
-                Left err -> do
-                  Transfer.viewTransferError taskId err
-                  View.iconButton Upload Icons.upTray "Select New Files" ~ Style.btn Primary
+              tview
    where
     filesUploaded :: InversionFiles UploadStatus Filename -> InversionFiles UploadStatus Filename
     filesUploaded up =

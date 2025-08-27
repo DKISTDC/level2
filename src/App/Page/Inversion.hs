@@ -5,6 +5,7 @@ module App.Page.Inversion where
 import App.Colors
 import App.Effect.Auth
 import App.Effect.FileManager qualified as FileManager
+import App.Effect.Transfer (Transfer, runTransfer, requireTransfer)
 import App.Error (expectFound)
 import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
@@ -97,7 +98,7 @@ data MoreInversions = MoreInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Globus :> es, Auth :> es, Tasks GenFits :> es) => HyperView MoreInversions es where
+instance (Inversions :> es, Auth :> es, Tasks GenFits :> es) => HyperView MoreInversions es where
   data Action MoreInversions
     = CreateInversion
     deriving (Generic, ViewAction)
@@ -125,7 +126,7 @@ data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id 
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Datasets :> es, Globus :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
+instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Reload
     | SetDataset (Id Dataset) Bool
@@ -278,7 +279,7 @@ data Metadata = Metadata (Id Proposal) (Id Inversion)
   deriving (Generic, ViewId)
 
 
-instance (Log :> es, Inversions :> es, Globus :> es, Time :> es) => HyperView Metadata es where
+instance (Log :> es, Inversions :> es, Time :> es) => HyperView Metadata es where
   data Action Metadata
     = SaveCommit GitCommit
     deriving (Generic, ViewAction)
@@ -353,7 +354,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Globus :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
+instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = ReloadGen
     | RegenError
@@ -524,8 +525,7 @@ instance (Tasks GenFits :> es, Inversions :> es, Auth :> es, Datasets :> es, Log
           target (GenerateStep propId progId invId) $ do
             el @ onLoad ReloadGen 1000 $ "SUCCEEDED"
       CheckTransfer -> do
-        res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer GenTransfer taskId
-        pure $ either (Transfer.viewTransferError taskId) id res
+        requireTransfer $ Transfer.checkTransfer GenTransfer taskId
 
 
 viewGeneratedFiles :: Inversion -> View c ()
@@ -579,8 +579,7 @@ instance (Inversions :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Ta
       PublishTransfer _ TaskSucceeded -> do
         refreshInversion
       PublishTransfer taskId CheckTransfer -> do
-        res <- runErrorNoCallStack @GlobusError $ Transfer.checkTransfer (PublishTransfer taskId) taskId
-        pure $ either (Transfer.viewTransferError taskId) id res
+        requireTransfer $ Transfer.checkTransfer (PublishTransfer taskId) taskId
    where
     refreshInversion = do
       PublishStep propId progId invId <- viewId

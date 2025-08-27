@@ -43,7 +43,7 @@ dataset d =
 
 datasetParentFolder :: Dataset -> Path Scratch ewDir Dataset
 datasetParentFolder d =
-  input </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.instrumentProgramId.fromId)
+  input </> Path (cs d.primaryProposalId.fromId)
 
 
 isAsdf :: Path Scratch Filename Dataset -> Bool

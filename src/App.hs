@@ -20,19 +20,20 @@ import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import App.Worker.SyncMetadata as Sync
 import Control.Monad (forever)
-import Control.Monad.Catch (Exception, throwM)
+import Control.Monad.Catch (Exception, catch, throwM)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
 import Effectful.Concurrent.STM
 import Effectful.Debug (Debug, runDebugIO)
+import Effectful.Dispatch.Dynamic
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
 import Effectful.Fetch
 import Effectful.FileSystem
 import Effectful.GenRandom
-import Effectful.Globus (Globus, GlobusError, Token, Token' (..), runGlobus)
+import Effectful.Globus (Globus (..), GlobusError, Token, Token' (..), runGlobus)
 import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -110,7 +111,6 @@ main = do
   runInit =
     runLogger "Init"
       . runErrorWith @Rel8Error crashWithError
-      . runErrorWith @GlobusError crashWithError
       . runErrorWith @GraphQLError crashWithError
       . runFailIO
       . runEnvironment
@@ -170,12 +170,11 @@ webServer config auth fits asdf pubs sync =
   router Logout = runPage Auth.logout
   router Redirect = runPage Auth.login
 
-  runApp :: (IOE :> es, Concurrent :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
-      . runErrorWith @GlobusError crashWithError
       . runErrorWith @GraphQLError crashWithError
       . runFileSystem
       . runScratch config.scratch
@@ -200,11 +199,8 @@ webServer config auth fits asdf pubs sync =
 -- runGraphQL' True = runFetchMock mockMetadata . runGraphQL
 -- runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
-runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
-runGlobus' (GlobusLive g) mgr action =
-  -- catchHttpGlobus (runGlobus g action)
-  -- come up with a better way to do this. This catches all IO errors right now
-  -- maybe I just need a generic handler...
+runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
+runGlobus' (GlobusLive g) mgr action = do
   runGlobus g mgr action
 
 

@@ -2,6 +2,7 @@ module NSO.Files.RemoteFolder where
 
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
+import NSO.Prelude
 import NSO.Types.Common as App
 
 
@@ -14,3 +15,4 @@ data RemoteFolder sys a = RemoteFolder
   { collection :: Globus.Id Collection
   , directory :: Path sys Dir a
   }
+  deriving (Show)

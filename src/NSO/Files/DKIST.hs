@@ -33,11 +33,15 @@ datasetParentFolder :: Dataset -> Path DKIST Dir Dataset
 datasetParentFolder d = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId)
 
 
+-- dataset :: Dataset -> Path DKIST File Dataset
+-- dataset d = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+
 -- Publish --------------------------------------
 
 data SoftPublish
 
 
+-- is this part of the *PATH* ?
 baseDir :: Path DKIST Dir SoftPublish
 baseDir = Path "etc/data1653/L2"
 
@@ -47,5 +51,16 @@ proposalPublishDir ip =
   baseDir </> Path (cs ip.fromId)
 
 
+-- the path of the inversion is the same for both?
+-- sure....
 inversion :: Id Inversion -> Path s Filename Inversion
 inversion invId = Path (cs invId.fromId)
+
+
+publishedDir :: Id Proposal -> Id Inversion -> Path DKIST Dir Inversion
+publishedDir propId invId = proposalPublishDir propId </> inversion invId
+
+-- Download: DKIST -> [Datasets] to local folder
+-- Upload: local inversion files -> Scratch (inversion path)
+-- Generate: DKIST -> Scratch
+-- Publish: Scratch -> DKIST
