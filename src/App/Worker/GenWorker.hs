@@ -166,7 +166,7 @@ downloadL1Frames task inv ds = do
     Nothing -> transfer
  where
   transfer = do
-    taskId <- Transfer.scratchDownloadDatasets ds
+    taskId <- Transfer.scratchDownloadDatasets $ NE.toList ds
     log Debug $ dump "Task" taskId
 
     send $ TaskSetStatus task $ GenTransferring taskId

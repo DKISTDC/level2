@@ -16,3 +16,9 @@ data RemoteFolder sys a = RemoteFolder
   , directory :: Path sys Dir a
   }
   deriving (Show)
+
+
+data Remote sys = Remote {collection :: Globus.Id Collection}
+  deriving (Show)
+
+

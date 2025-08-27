@@ -4,8 +4,6 @@ module NSO.Files
   , DKIST
   , TransferForm (..)
   , DownloadFolder (..)
-  , remoteTransfer
-  , remoteDatasets
   , InversionFiles (..)
   , inversionFiles
   ) where
@@ -13,6 +11,6 @@ module NSO.Files
 import NSO.Files.DKIST
 import NSO.Files.Inversion
 import NSO.Files.Scratch
-import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..), User, remoteDatasets, remoteTransfer)
+import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..), User)
 import NSO.Prelude ()
 

@@ -33,7 +33,7 @@ instance FromForm DownloadFolder where
     DownloadFolder <$> FUE.parseMaybe "folder[0]" f
 
 
-transferFormFolder :: TransferForm -> DownloadFolder -> Path User Dir TransferForm
+transferFormFolder :: TransferForm -> DownloadFolder -> Path User Dir a
 transferFormFolder tform df =
   let Path fp = tform.path
    in -- If they didn't select a folder, use the current folder
@@ -42,13 +42,14 @@ transferFormFolder tform df =
         Nothing -> Path fp
 
 
-remoteTransfer :: TransferForm -> RemoteFolder User a
-remoteTransfer tform =
-  let Path p = tform.path
-   in RemoteFolder (Tagged tform.endpoint_id) (Path p)
+-- remoteTransfer :: TransferForm -> RemoteFolder User a
+-- remoteTransfer tform =
+--   let Path p = tform.path
+--    in RemoteFolder (Tagged tform.endpoint_id) (Path p)
+
+remote :: TransferForm -> Remote User
+remote tform = Remote $ Tagged tform.endpoint_id
 
 
-remoteDatasets :: TransferForm -> DownloadFolder -> RemoteFolder User Dataset
-remoteDatasets tform df =
-  let Path dest = transferFormFolder tform df
-   in RemoteFolder (Tagged tform.endpoint_id) $ Path dest
+dataset :: TransferForm -> DownloadFolder -> Dataset -> Path User File Dataset
+dataset tform df d = transferFormFolder tform df </> Path (cs d.datasetId.fromId)

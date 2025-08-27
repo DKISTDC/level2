@@ -36,14 +36,9 @@ input :: Path Scratch Dir Input
 input = Scratch.baseDir </> "input"
 
 
-dataset :: Dataset -> Path Scratch Dir Dataset
+dataset :: Dataset -> Path Scratch f Dataset
 dataset d =
-  datasetParentFolder d </> Path (cs d.datasetId.fromId)
-
-
-datasetParentFolder :: Dataset -> Path Scratch ewDir Dataset
-datasetParentFolder d =
-  input </> Path (cs d.primaryProposalId.fromId)
+  input </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
 isAsdf :: Path Scratch Filename Dataset -> Bool
@@ -56,6 +51,10 @@ blancaInput ip ii =
   input </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
+blancaFile :: Path Scratch Dir Inversion -> Path s Filename a -> Path Scratch File Inversion
+blancaFile folder (Path filename) = folder </> Path filename
+
+
 -- GENRATED OUTPUTS -------------------------------------------------------------------------------------------
 
 generated :: Path Scratch Dir Generate
@@ -64,12 +63,7 @@ generated = Scratch.baseDir </> "generated"
 
 outputL2Dir :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
 outputL2Dir ip ii =
-  outputParentProposalDir ip </> Path (cs ii.fromId)
-
-
-outputParentProposalDir :: Id Proposal -> Path Scratch Dir Inversion
-outputParentProposalDir propId =
-  generated </> Path (cs propId.fromId)
+  generated </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
 data L2Asdf

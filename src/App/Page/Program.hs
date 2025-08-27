@@ -106,16 +106,11 @@ submitDownload propId progId = do
   log Debug $ dump "Submit Download" (propId, progId)
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
-  ds <- requireNonEmpty =<< Datasets.find (Datasets.ByProgram progId)
+  ds <- Datasets.find (Datasets.ByProgram progId)
   taskId <- requireTransfer $ Transfer.userDownloadDatasets tfrm tfls ds
   let dwn = ActiveDownload (Just taskId)
   redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
  where
-  requireNonEmpty dss =
-    case dss of
-      [] -> notFound
-      (d : ds) -> pure (d :| ds)
-
   setUrlQuery :: Query -> URI -> URI
   setUrlQuery q URI{uriAuthority, uriScheme, uriPath} =
     URI{uriScheme, uriAuthority, uriPath, uriQuery = queryString q, uriFragment = ""}

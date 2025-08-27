@@ -119,8 +119,5 @@ collection = do
 
 -- Remote Folder ----------------------------------------
 
-remote :: (Scratch :> es) => Path Scratch Dir a -> Eff es (RemoteFolder Scratch a)
-remote dir = do
-  scratch <- collection
-  Path mpath <- mountedPath dir
-  pure $ RemoteFolder scratch (Path mpath)
+remote :: (Scratch :> es) => Eff es (Remote Scratch)
+remote = Remote <$> collection
