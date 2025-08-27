@@ -15,6 +15,7 @@ import App.Page.Proposals qualified as Proposals
 import App.Page.Sync qualified as Sync
 import App.Route
 import App.Version
+import App.View.Error
 import App.Worker.GenWorker as Gen
 import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
@@ -32,7 +33,7 @@ import Effectful.Fail
 import Effectful.Fetch
 import Effectful.FileSystem
 import Effectful.GenRandom
-import Effectful.Globus (Globus (..), Token, Token' (..), runGlobus)
+import Effectful.Globus (Globus (..), GlobusError, Token, Token' (..), runGlobus)
 import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -51,6 +52,7 @@ import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (Path (..), pathUri)
+import Web.Hyperbole.Effect.Hyperbole
 
 
 main :: IO ()
@@ -111,6 +113,7 @@ main = do
     runLogger "Init"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @GraphQLError crashWithError
+      . runErrorWith @GlobusError crashWithError
       . runFailIO
       . runEnvironment
       . runConcurrent
@@ -169,11 +172,12 @@ webServer config auth fits asdf pubs sync =
   router Logout = runPage Auth.logout
   router Redirect = runPage Auth.login
 
-  runApp :: (IOE :> es, Concurrent :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
+      . runErrorWith @GlobusError crashAndPrint
       . runErrorWith @GraphQLError crashWithError
       . runFileSystem
       . runScratch config.scratch
@@ -198,9 +202,16 @@ webServer config auth fits asdf pubs sync =
 -- runGraphQL' True = runFetchMock mockMetadata . runGraphQL
 -- runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
-runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
+runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusLive g) mgr action = do
   runGlobus g mgr action
+
+
+crashAndPrint :: (UserFacingError e, IOE :> es, Log :> es, Show e, Exception e, Hyperbole :> es) => CallStack -> e -> Eff es a
+crashAndPrint _callstack err = do
+  log Err "Crash and Print"
+  let r = viewResponse $ viewError err
+  send $ RespondNow r
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

@@ -1,8 +1,6 @@
 module App.Effect.Transfer where
 
-import App.Effect.Auth
-import App.View.Error (userFacingError)
-import Control.Monad.Catch
+import App.Effect.Auth as Auth
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
@@ -94,7 +92,7 @@ runTransfer = interpret $ \_ -> \case
 -- | Run Transfer, requiring auth, catching and displaying globus errors
 requireTransfer :: (Log :> es, Auth :> es, Globus :> es, Hyperbole :> es) => Eff (Transfer : Reader (Token Access) : es) a -> Eff es a
 requireTransfer eff =
-  catch (requireLogin $ runTransfer eff) (userFacingError @GlobusError)
+  Auth.requireLogin $ runTransfer eff
 
 
 transferStatus :: (Transfer :> es) => Id Task -> Eff es Task

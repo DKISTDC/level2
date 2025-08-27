@@ -14,7 +14,7 @@ packages:
 source-repository-package
   type: git
   location: https://github.com/dkistdc/globus.hs
-  tag: 71ec5ca6bafb
+  tag: 187c4ecd7db0
 
 -- source-repository-package
 --   type: git
