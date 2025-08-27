@@ -14,7 +14,6 @@ import App.Types (App)
 import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.DatasetsTable as DatasetsTable
-import App.View.Error
 import App.View.Icons qualified as Icons
 import App.View.Inversion (rowInversion)
 import App.View.Layout
@@ -27,9 +26,7 @@ import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Error.Static
-import Effectful.Exception
-import Effectful.Globus (Globus, GlobusClient, GlobusError)
+import Effectful.Globus (Globus)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import Effectful.Tasks

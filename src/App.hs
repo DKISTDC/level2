@@ -20,20 +20,19 @@ import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import App.Worker.SyncMetadata as Sync
 import Control.Monad (forever)
-import Control.Monad.Catch (Exception, catch, throwM)
+import Control.Monad.Catch (Exception, throwM)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
 import Effectful.Concurrent.STM
 import Effectful.Debug (Debug, runDebugIO)
-import Effectful.Dispatch.Dynamic
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
 import Effectful.Fetch
 import Effectful.FileSystem
 import Effectful.GenRandom
-import Effectful.Globus (Globus (..), GlobusError, Token, Token' (..), runGlobus)
+import Effectful.Globus (Globus (..), Token, Token' (..), runGlobus)
 import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
