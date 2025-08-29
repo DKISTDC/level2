@@ -11,6 +11,7 @@ import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers.Keywords (IsKeyword (keyword))
 import NSO.Image.Headers.Types (ProfIon (..), ProfType (..), SliceXY)
+import NSO.Image.L1Input (L1Fits (..))
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arms (..))
 import NSO.Image.Types.Profile
@@ -91,7 +92,7 @@ frameMetaFromL2Fits
   => Path Scratch Filename L2FrameFits
   -> SliceXY
   -> Arms ArmWavMeta
-  -> BinTableHDU
+  -> L1Fits
   -> Fits
   -> Eff es L2FitsMeta
 frameMetaFromL2Fits path slice arms l1 fits = runParser $ do

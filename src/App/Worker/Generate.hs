@@ -1,6 +1,8 @@
 module App.Worker.Generate where
 
+import App.Effect.Transfer (Transfer)
 import Control.Exception (Exception)
+import Data.ByteString qualified as BS
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Effectful
@@ -8,6 +10,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
+import NSO.Data.Inversions as Inversions
 import NSO.Files
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch qualified as Scratch
@@ -25,20 +28,39 @@ import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
-import NSO.Types.Inversion (Inversion)
 import Network.Globus qualified as Globus
 import System.FilePath (takeExtensions)
 import Telescope.Asdf qualified as Asdf
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
+import Telescope.Fits.Encoding as Fits
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> [BinTableHDU] -> Eff es (Frames L2FrameInputs)
-collateFrames qs metas pfs pos ts = do
+loadInversion :: (Inversions :> es, Error GenerateError :> es) => Id Inversion -> Eff es Inversion
+loadInversion ii = do
+  is <- send $ Inversions.ById ii
+  case is of
+    [inv] -> pure inv
+    _ -> throwError $ MissingInversion ii
+
+
+onCaughtError :: IOError -> Eff (Transfer : Error GenerateError : es) a
+onCaughtError e = do
+  throwError $ GenIOError e
+
+
+failed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()
+failed iid err = do
+  log Err $ dump "GenerateError" err
+  Inversions.setError iid (cs $ show err)
+
+
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> [L1Fits] -> Eff es (Frames L2FrameInputs)
+collateFrames qs metas pfs pos l1s = do
   unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
   let pframes :: Frames (Arms ArmProfileImages) = Blanca.collateFramesArms metas pfs pos
-  frames $ L.zipWith3 L2FrameInputs qs (NE.toList pframes.frames) ts
+  frames $ L.zipWith3 L2FrameInputs qs (NE.toList pframes.frames) l1s
  where
   frames [] = throwError $ NoFrames frameSizes
   frames (f : fs) = pure $ Frames $ f :| fs
@@ -54,7 +76,7 @@ collateFrames qs metas pfs pos ts = do
       { quantities = length qs
       , fit = armFramesLength pfs
       , original = armFramesLength pos
-      , l1 = length ts
+      , l1 = length l1s
       }
 
 
@@ -85,15 +107,16 @@ datasetVISPArmId d = do
       (f : _) -> pure f
 
   frameArmId f = do
-    hdu :: BinTableHDU <- readLevel1File (Files.dataset d) f
-    res <- runErrorNoCallStack @ParseError $ requireKey "VSPARMID" hdu.header
+    let path = Files.dataset d
+    fits :: L1Fits <- readLevel1File path f
+    res <- runErrorNoCallStack @ParseError $ requireKey "VSPARMID" fits.header
     case res of
-      Left err -> throwError (FetchParse err)
+      Left err -> throwError (FetchParse path.filePath err)
       Right a -> pure a
 
 
 -- | read all downloaded files in the L1 scratch directory
-canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [BinTableHDU]
+canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Fits]
 canonicalL1Frames fdir = do
   -- VSPARMID, see datasetVISPArmId and requireCanonicalDataset
   fs <- allL1IntensityFrames fdir
@@ -111,13 +134,21 @@ allL1IntensityFrames dir = do
     isFits (Path f) && "_I_" `L.isInfixOf` f
 
 
-readLevel1File :: forall es. (Scratch :> es, Log :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es BinTableHDU
+readLevel1File :: forall es. (Scratch :> es, Log :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
 readLevel1File dir frame = do
-  inp <- send $ Scratch.ReadFile $ filePath dir frame.file
-  fits <- Fits.decode inp
+  let path = filePath dir frame.file
+  inp <- send $ Scratch.ReadFile path
+  fits <- runErrorNoCallStackWith (throwError . FetchParse path.filePath) $ fitsDecode inp
   case fits.extensions of
-    [BinTable b] -> pure b
+    [BinTable b] -> pure $ L1Fits path b.header
     _ -> throwError $ MissingL1HDU frame.file.filePath
+
+
+fitsDecode :: (Error ParseError :> es) => BS.ByteString -> Eff es Fits
+fitsDecode inp =
+  case Fits.runFitsParse Fits.parseFits inp of
+    Left e -> throwError e
+    Right f -> pure f
 
 
 readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> Eff es L1Asdf
@@ -133,13 +164,6 @@ readLevel1Asdf dir = do
     _ -> throwError $ MissingL1Asdf dir.filePath
 
 
-readLevel2Fits :: forall es. (Scratch :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2FrameFits -> Eff es Fits
-readLevel2Fits pid iid path = do
-  let dir = Files.outputL2Dir pid iid
-  inp <- send $ Scratch.ReadFile $ filePath dir path
-  Fits.decode inp
-
-
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2FrameFits]
 l2FramePaths pid iid = do
   let dir = Files.outputL2Dir pid iid
@@ -153,7 +177,7 @@ data FetchError
   | MissingL1HDU FilePath
   | L1AsdfParse AsdfError
   | MissingL1Asdf FilePath
-  | FetchParse ParseError
+  | FetchParse FilePath ParseError
   deriving (Show, Exception, Eq)
 
 
@@ -216,7 +240,7 @@ data GenerateError
   | ProfileError ProfileError
   | QuantityError QuantityError
   | PrimaryError PrimaryError
-  | ParseError ParseError
+  | ParseError FilePath ParseError
   | AsdfError AsdfError
   | BlancaError BlancaError
   | MismatchedFrames FrameSizes
@@ -227,7 +251,7 @@ data GenerateError
   deriving (Show, Exception)
 
 
-type GenerateErrors es = (Error ParseError : Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : Error BlancaError : es)
+type GenerateErrors es = (Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : Error BlancaError : es)
 
 
 runGenerateError
@@ -241,4 +265,3 @@ runGenerateError =
     . runErrorNoCallStackWith @FetchError (throwError . L1FetchError)
     . runErrorNoCallStackWith @QuantityError (throwError . QuantityError)
     . runErrorNoCallStackWith @ProfileError (throwError . ProfileError)
-    . runErrorNoCallStackWith @ParseError (throwError . ParseError)

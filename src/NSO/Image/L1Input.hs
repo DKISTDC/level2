@@ -9,6 +9,7 @@ import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
+import Telescope.Fits (Header)
 import Text.Megaparsec hiding (ParseError, Token)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer
@@ -30,6 +31,12 @@ instance Ord L1Frame where
 
 newtype DateBegTimestamp = DateBegTimestamp {time :: UTCTime}
   deriving newtype (Eq, Show)
+
+
+data L1Fits = L1Fits
+  { path :: Path Scratch File L1Frame
+  , header :: Header
+  }
 
 
 -- Filename Parser ----------------------------------------

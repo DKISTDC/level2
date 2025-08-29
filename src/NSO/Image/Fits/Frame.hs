@@ -14,6 +14,7 @@ import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers
 import NSO.Image.Headers.Types (SliceXY)
+import NSO.Image.L1Input (L1Fits (..))
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arms (..), Depth, SlitX)
 import NSO.Image.Types.Profile
@@ -39,7 +40,7 @@ data L2FrameFits = L2FrameFits
 data L2FrameInputs = L2FrameInputs
   { quantities :: Quantities (QuantityImage [SlitX, Depth])
   , profiles :: Arms ArmProfileImages
-  , l1Frame :: BinTableHDU
+  , l1Frame :: L1Fits
   }
 instance Show L2FrameInputs where
   show inp =

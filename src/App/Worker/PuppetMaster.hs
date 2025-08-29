@@ -1,6 +1,7 @@
 module App.Worker.PuppetMaster where
 
-import App.Worker.GenWorker
+import App.Worker.GenAsdf
+import App.Worker.GenFits
 import App.Worker.SyncMetadata
 import Data.Maybe (isJust, isNothing)
 import Effectful

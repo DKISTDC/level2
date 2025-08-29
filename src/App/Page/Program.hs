@@ -20,7 +20,7 @@ import App.View.Layout
 import App.View.ProposalDetails
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import App.Worker.GenWorker
+import App.Worker.GenFits
 import Data.Grouped (Group (..))
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T

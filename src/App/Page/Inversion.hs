@@ -19,7 +19,7 @@ import App.View.Loading (inputLoader)
 import App.View.ProposalDetails (spectralLineTag)
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import App.Worker.GenWorker as Gen (GenFits (..), GenFitsStatus (..))
+import App.Worker.GenFits as Gen (GenFits (..), GenFitsStatus (..))
 import App.Worker.Publish as Publish
 import Effectful
 import Effectful.Debug (Debug, delay)
