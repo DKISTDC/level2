@@ -16,7 +16,8 @@ import App.Page.Sync qualified as Sync
 import App.Route
 import App.Version
 import App.View.Error
-import App.Worker.GenWorker as Gen
+import App.Worker.GenAsdf as Gen
+import App.Worker.GenFits as Gen
 import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import App.Worker.SyncMetadata as Sync

@@ -49,7 +49,7 @@ checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Tasks SyncMetad
 checkMetadataSync = do
   b <- needsMetadataSync
   when b $ do
-    log Debug "QUEUE - Metadata Sync"
+    log Debug "Metadata Sync"
     s <- send Sync.Create
     send $ TaskAdd $ SyncMetadataTask s
 

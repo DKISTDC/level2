@@ -58,8 +58,9 @@ library
       App.View.ProposalDetails
       App.View.Transfer
       App.Worker.CPU
+      App.Worker.GenAsdf
       App.Worker.Generate
-      App.Worker.GenWorker
+      App.Worker.GenFits
       App.Worker.Publish
       App.Worker.PuppetMaster
       App.Worker.SyncMetadata
