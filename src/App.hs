@@ -96,6 +96,11 @@ main = do
       waitForGlobusAccess $ do
         startWorker Gen.generateTask
 
+  startPublish = do
+    runLogger "Publish" $
+      waitForGlobusAccess $ do
+        startWorker Publish.publishTask
+
   startWorkers =
     mapConcurrently_
       id
@@ -103,6 +108,7 @@ main = do
       , startGen
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
+      , startPublish
       ]
 
   runInit =

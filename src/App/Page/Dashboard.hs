@@ -85,7 +85,7 @@ workView gens = do
   col ~ gap 20 @ onLoad Refresh 1000 $ do
     col ~ Style.card $ do
       el ~ Style.cardHeader Colors.Info $ do
-        el ~ bold . fontSize 18 $ "Inverion Generation"
+        el ~ bold . fontSize 18 $ "Inversion Generation"
       taskTable gens
 
 

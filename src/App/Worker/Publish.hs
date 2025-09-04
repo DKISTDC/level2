@@ -1,6 +1,6 @@
 module App.Worker.Publish where
 
-import App.Effect.Transfer (Transfer, transferSoftPublish)
+import App.Effect.Transfer (Transfer, runTransfer, transferSoftPublish)
 import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception)
 import Control.Monad.Loops
@@ -8,8 +8,9 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (Task)
+import Effectful.Globus (Globus, Task, Token, Token' (Access))
 import Effectful.Log
+import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Inversions as Inversions
@@ -43,7 +44,8 @@ startSoftPublish propId invId = do
 
 publishTask
   :: forall es
-   . ( Transfer :> es
+   . ( Reader (Token Access) :> es
+     , Globus :> es
      , Inversions :> es
      , Time :> es
      , Scratch :> es
@@ -54,12 +56,12 @@ publishTask
   => PublishTask
   -> Eff es ()
 publishTask task = do
-  res <- runErrorNoCallStack @PublishError $ workWithError
+  res <- runErrorNoCallStack @PublishError $ runTransfer workWithError
   case res of
     Left err -> failed err
     Right a -> pure a
  where
-  workWithError :: Eff (Error PublishError : es) ()
+  workWithError :: Eff (Transfer : Error PublishError : es) ()
   workWithError = do
     log Debug "Publish Task"
 

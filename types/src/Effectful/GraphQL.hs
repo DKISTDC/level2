@@ -181,8 +181,6 @@ newtype ReqType = ReqType Text
 sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :> es, IOE :> es) => Manager -> Service -> ReqType -> r -> Eff es (Data r)
 sendRequest mgr (Service sv) rt r = do
   let requestHeaders = [("Content-Type", "application/json")]
-  putStrLn "REQ"
-  putStrLn $ cs $ request r
   let requestBody = RequestBodyLBS $ body rt $ request r
   let req = sv{method = methodPost, requestHeaders, requestBody}
   res <- liftIO $ Http.httpLbs req mgr

@@ -1,5 +1,3 @@
-{-# LANGUAGE QuasiQuotes #-}
-
 module App.Worker.Generate where
 
 import App.Effect.Transfer (Transfer, runTransfer)
@@ -7,15 +5,13 @@ import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate.Asdf qualified as Asdf
-import App.Worker.Generate.Error (GenerateError (..), generateFailed, onCaughtError, onCaughtGlobus, runGenerateError)
+import App.Worker.Generate.Error (GenerateError (..), generateFailed, onCaughtGlobus, runGenerateError)
 import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
 import App.Worker.Generate.Inputs (DownloadComplete (..))
 import App.Worker.Generate.Inputs qualified as Inputs
 import App.Worker.Generate.Level1 (Canonical (..))
 import App.Worker.Generate.Level1 qualified as Level1
-import Control.Exception (throwIO)
-import Control.Monad.Catch (catch, throwM)
 import Control.Monad.Loops (untilM_)
 import Data.Either (isRight)
 import Data.List.NonEmpty qualified as NE
