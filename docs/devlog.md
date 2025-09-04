@@ -1,4 +1,6 @@
 
+- [ ] Inversion Generate Step - shows Generate ASDF even if it is actually generating FITS files, as long as the Inversion has the generated fits set. In reality the status is based on the task itself though. Reproduce by deleting a fits while on ASDF step and restarting. The view should report the fits generation process with the skips, etc
+
 Thu, Sep 4
 ----------
 - [ ] Bug: Globus Errors are crashing the server: Reproduce: kill server in the middle of transfer and restart. you get the “Identical Transfer” error

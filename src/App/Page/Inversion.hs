@@ -424,7 +424,6 @@ viewGenerate' inv admin status =
     case (inv.invError, inv.generate.fits, inv.generate.asdf) of
       (Just e, _, _) -> viewGenError e
       (_, Just f, Just a) -> viewGenComplete f a
-      (_, Just f, _) -> viewGenAsdf f
       (_, _, _) -> viewGenerateStep status
 
   viewGenError e = do
@@ -439,11 +438,6 @@ viewGenerate' inv admin status =
       viewGeneratedFiles inv
       button RegenFits ~ Style.btnOutline Secondary $ "Regen FITS"
       button RegenAsdf ~ Style.btnOutline Secondary $ "Regen ASDF"
-
-  viewGenAsdf :: UTCTime -> View GenerateStep ()
-  viewGenAsdf _fits = do
-    loadingMessage "Generating ASDF"
-    el @ onLoad ReloadGen 1000 $ none
 
   viewGenerateStep Nothing =
     row @ onLoad ReloadGen 1000 $ do
@@ -481,8 +475,9 @@ viewGenerate' inv admin status =
             el " / "
             el $ text $ cs $ show gen.total
           View.progress (fromIntegral done / fromIntegral total)
-      GenAsdf ->
+      GenAsdf -> do
         loadingMessage "Generating ASDF"
+        el @ onLoad ReloadGen 1000 $ none
 
   speedMessage throughput = do
     case throughput of
