@@ -160,5 +160,6 @@ documentHead :: View DocumentHead ()
 documentHead = do
   title "Level2"
   script' scriptEmbed
+  script' scriptLiveReload
   style (cs cssEmbed)
   style "body { background-color: #d3dceb }"
