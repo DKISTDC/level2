@@ -429,8 +429,9 @@ viewGenerate' inv admin status =
 
   viewGenError e = do
     row ~ overflow Hidden $ View.systemError $ cs e
-    button RegenError ~ Style.btn Primary $ "Retry"
-    button RegenFits ~ Style.btnOutline Secondary $ "Restart Transfer"
+    row ~ gap 10 $ do
+      button RegenError ~ Style.btn Primary $ "Retry"
+      button RegenFits ~ Style.btnOutline Secondary $ "Start Over"
 
   viewGenComplete :: UTCTime -> UTCTime -> View GenerateStep ()
   viewGenComplete _fits _asdf = do

@@ -1,14 +1,32 @@
 module App.Worker.Generate where
 
-import App.Effect.Transfer (Transfer)
+import App.Effect.Transfer (Transfer, runTransfer)
+import App.Effect.Transfer qualified as Transfer
+import App.Worker.CPU (CPUWorkers (..))
+import App.Worker.CPU qualified as CPU
+import App.Worker.Generate.Error (FetchError (..), GenerateError (..), generateFailed, onCaughtError, runGenerateError)
+import App.Worker.Generate.Fits (Skipped)
+import App.Worker.Generate.Fits qualified as Fits
+import App.Worker.Generate.Inputs (DownloadComplete (..))
+import App.Worker.Generate.Inputs qualified as Inputs
 import Control.Exception (Exception)
+import Control.Monad.Catch (catch)
+import Control.Monad.Loops (untilM_)
 import Data.ByteString qualified as BS
+import Data.Either (isRight)
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
+import Data.Time.Clock (diffUTCTime)
 import Effectful
+import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.GenRandom
+import Effectful.Globus (Globus, Task, TaskStatus (..), Token, Token' (Access))
 import Effectful.Log
+import Effectful.Reader.Dynamic
+import Effectful.Tasks
+import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files
@@ -18,7 +36,6 @@ import NSO.Image.Blanca (BlancaError (..))
 import NSO.Image.Blanca as Blanca (collateFramesArms)
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
-import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.Parse (requireKey, runParseError)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
@@ -37,231 +54,150 @@ import Telescope.Fits as Fits
 import Telescope.Fits.Encoding as Fits
 
 
-loadInversion :: (Inversions :> es, Error GenerateError :> es) => Id Inversion -> Eff es Inversion
-loadInversion ii = do
-  is <- send $ Inversions.ById ii
-  case is of
-    [inv] -> pure inv
-    _ -> throwError $ MissingInversion ii
+data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
+  deriving (Eq)
 
 
-onCaughtError :: IOError -> Eff (Transfer : Error GenerateError : es) a
-onCaughtError e = do
-  throwError $ GenIOError e
+instance Show GenTask where
+  show g = "GenTask " <> show g.proposalId <> " " <> show g.inversionId
 
 
-failed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()
-failed iid err = do
-  log Err $ dump "GenerateError" err
-  Inversions.setError iid (cs $ show err)
+instance WorkerTask GenTask where
+  type Status GenTask = GenStatus
+  idle = GenWaiting
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> [L1Fits] -> Eff es (Frames L2FrameInputs)
-collateFrames qs metas pfs pos l1s = do
-  unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
-  let pframes :: Frames (Arms ArmProfileImages) = Blanca.collateFramesArms metas pfs pos
-  frames $ L.zipWith3 L2FrameInputs qs (NE.toList pframes.frames) l1s
+data GenStatus
+  = GenWaiting
+  | GenStarted
+  | GenTransferring (Id Task)
+  | GenFrames {started :: UTCTime, skipped :: Int, complete :: Int, total :: Int, throughput :: Float}
+  | GenAsdf
+  deriving (Eq, Ord)
+
+
+instance Show GenStatus where
+  show GenWaiting = "GenFits Waiting"
+  show GenStarted = "GenFits Started"
+  show (GenTransferring _) = "GenFits Transferring"
+  show GenFrames{complete, total} = "GenFits Creating " <> show complete <> " " <> show total
+  show GenAsdf = "GenAsdf"
+
+
+generateTask
+  :: forall es
+   . ( Reader (Token Access) :> es
+     , Reader CPUWorkers :> es
+     , Globus :> es
+     , Datasets :> es
+     , Inversions :> es
+     , Time :> es
+     , Scratch :> es
+     , Log :> es
+     , IOE :> es
+     , Concurrent :> es
+     , Tasks GenTask :> es
+     , GenRandom :> es
+     , IOE :> es
+     )
+  => GenTask
+  -> Eff es ()
+generateTask task = do
+  res <- runErrorNoCallStack $ runTransfer $ catch workWithError onCaughtError
+  either (generateFailed task.inversionId) pure res
  where
-  frames [] = throwError $ NoFrames frameSizes
-  frames (f : fs) = pure $ Frames $ f :| fs
+  workWithError :: Eff (Transfer : Error GenerateError : es) ()
+  workWithError = runGenerateError $ do
+    send $ TaskSetStatus task GenStarted
 
-  allFramesEqual :: Bool
-  allFramesEqual =
-    frameSizes.fit == frameSizes.quantities
-      && frameSizes.original == frameSizes.quantities
-      && (frameSizes.l1 - frameSizes.quantities <= 1) -- one frame may be dropped, always at the end
-  frameSizes :: FrameSizes
-  frameSizes =
-    FrameSizes
-      { quantities = length qs
-      , fit = armFramesLength pfs
-      , original = armFramesLength pos
-      , l1 = length l1s
-      }
+    (files, slice, inv, datasets) <- Inputs.loadInputs task.proposalId task.inversionId
+    down <- downloadL1Frames task inv datasets
+    Inversions.setGenTransferred inv.inversionId
 
+    frames <- Inputs.loadFrameInputs task.proposalId task.inversionId files slice inv datasets down
 
-armFramesLength :: Arms (Frames (ProfileImage fit)) -> Int
-armFramesLength as = length . head $ as.arms
+    now <- currentTime
+    send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length frames, throughput = 0}
+
+    -- Generate them in parallel with N = available CPUs
+    metas :: Frames (Either Skipped L2FitsMeta) <- CPU.parallelize $ fmap (workFrame task slice) frames
+
+    log Debug $ dump "WRITTEN: " (length $ NE.filter isRight metas.frames)
+    Inversions.setGeneratedFits task.inversionId
 
 
-data FrameSizes = FrameSizes {quantities :: Int, fit :: Int, original :: Int, l1 :: Int}
-  deriving (Show, Eq)
-
-
-requireCanonicalDataset :: (Error FetchError :> es, Scratch :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es Dataset
-requireCanonicalDataset slice ds = do
-  vas :: [VISPArmId] <- mapM datasetVISPArmId ds
-  let canon = L.find ((== slice.fiducialArmId) . snd) $ zip ds vas
-  maybe (throwError (NoCanonicalDataset $ fmap (.datasetId) ds)) (pure . fst) canon
-
-
-datasetVISPArmId :: (Error FetchError :> es, Scratch :> es, Log :> es) => Dataset -> Eff es VISPArmId
-datasetVISPArmId d = do
-  f <- sampleIntensityFrame d
-  frameArmId f
+-- | Generate a single frame
+workFrame
+  :: ( Tasks GenTask :> es
+     , Time :> es
+     , GenRandom :> es
+     , Log :> es
+     , Scratch :> es
+     , Error GenerateError :> es
+     , Error QuantityError :> es
+     , Error ProfileError :> es
+     , Error PrimaryError :> es
+     )
+  => GenTask
+  -> SliceXY
+  -> L2FrameInputs
+  -> Eff es (Either Skipped L2FitsMeta)
+workFrame t slice frameInputs = do
+  res <- Fits.genFrame t.proposalId t.inversionId slice frameInputs
+  case res of
+    Left _ -> do
+      send $ TaskModStatus @GenTask t addSkipped
+    _ -> do
+      now <- currentTime
+      send $ TaskModStatus @GenTask t (addComplete now)
+  pure res
  where
-  sampleIntensityFrame d' = do
-    fs <- allL1IntensityFrames (Files.dataset d')
-    case fs of
-      [] -> throwError (MissingFrames d'.datasetId)
-      (f : _) -> pure f
+  addComplete :: UTCTime -> GenStatus -> GenStatus
+  addComplete now = \case
+    GenFrames{started, skipped, complete, total} ->
+      GenFrames{started, skipped, complete = complete + 1, total, throughput = throughputPerSecond (complete + 1) now started}
+    gs -> gs
 
-  frameArmId f = do
-    let path = Files.dataset d
-    fits :: L1Fits <- readLevel1File path f
-    res <- runErrorNoCallStack @ParseError $ requireKey "VSPARMID" fits.header
-    case res of
-      Left err -> throwError (FetchParse path.filePath err)
-      Right a -> pure a
+  addSkipped :: GenStatus -> GenStatus
+  addSkipped = \case
+    GenFrames{started, skipped, complete, total, throughput} ->
+      GenFrames{started, skipped = skipped + 1, complete, total, throughput}
+    gs -> gs
 
-
--- | read all downloaded files in the L1 scratch directory
-canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Fits]
-canonicalL1Frames fdir = do
-  -- VSPARMID, see datasetVISPArmId and requireCanonicalDataset
-  fs <- allL1IntensityFrames fdir
-  mapM (readLevel1File fdir) fs
+  throughputPerSecond :: Int -> UTCTime -> UTCTime -> Float
+  throughputPerSecond complete now started =
+    fromIntegral complete / realToFrac (diffUTCTime now started)
 
 
-allL1IntensityFrames :: (Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Frame]
-allL1IntensityFrames dir = do
-  fs <- send $ Scratch.ListDirectory dir
-  pure $ L.sort $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
+downloadL1Frames
+  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch :> es, Transfer :> es, Tasks GenTask :> es)
+  => GenTask
+  -> Inversion
+  -> NonEmpty Dataset
+  -> Eff es DownloadComplete
+downloadL1Frames task inv ds = do
+  case inv.generate.transfer of
+    Just _ -> pure DownloadComplete
+    Nothing -> transfer
  where
-  isL1IntensityFile :: Path Scratch Filename Dataset -> Bool
-  isL1IntensityFile (Path f) =
-    -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
-    isFits (Path f) && "_I_" `L.isInfixOf` f
+  transfer = do
+    downloadTaskId <- Transfer.scratchDownloadDatasets $ NE.toList ds
+    log Debug $ dump "Download" downloadTaskId
+
+    send $ TaskSetStatus task $ GenTransferring downloadTaskId
+
+    log Debug " - waiting..."
+    untilM_ delay (taskComplete downloadTaskId)
+
+    pure DownloadComplete
+   where
+    taskComplete downloadTaskId = do
+      tsk <- Transfer.transferStatus downloadTaskId
+      case tsk.status of
+        Failed -> throwError $ L1TransferFailed downloadTaskId
+        Succeeded -> pure True
+        _ -> pure False
 
 
-readLevel1File :: forall es. (Scratch :> es, Log :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
-readLevel1File dir frame = do
-  let path = filePath dir frame.file
-  inp <- send $ Scratch.ReadFile path
-  fits <- runErrorNoCallStackWith (throwError . FetchParse path.filePath) $ fitsDecode inp
-  case fits.extensions of
-    [BinTable b] -> pure $ L1Fits path b.header
-    _ -> throwError $ MissingL1HDU frame.file.filePath
-
-
-fitsDecode :: (Error ParseError :> es) => BS.ByteString -> Eff es Fits
-fitsDecode inp =
-  case Fits.runFitsParse Fits.parseFits inp of
-    Left e -> throwError e
-    Right f -> pure f
-
-
-readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> Eff es L1Asdf
-readLevel1Asdf dir = do
-  files <- Scratch.listDirectory dir
-  case filter Files.isAsdf files of
-    [asdfFile] -> do
-      inp <- send $ Scratch.ReadFile $ filePath dir asdfFile
-      res <- runErrorNoCallStack @AsdfError $ Asdf.decode @L1Asdf inp
-      case res of
-        Left e -> throwError $ L1AsdfParse e
-        Right a -> pure a
-    _ -> throwError $ MissingL1Asdf dir.filePath
-
-
-l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2FrameFits]
-l2FramePaths pid iid = do
-  let dir = Files.outputL2Dir pid iid
-  fmap (fmap (\p -> Path p.filePath)) $ filter isFits <$> Scratch.listDirectory dir
-
-
-data FetchError
-  = NoCanonicalDataset [Id Dataset]
-  | NoDatasets [Id Dataset]
-  | MissingFrames (Id Dataset)
-  | MissingL1HDU FilePath
-  | L1AsdfParse AsdfError
-  | MissingL1Asdf FilePath
-  | FetchParse FilePath ParseError
-  deriving (Show, Exception, Eq)
-
-
-isFits :: Path s Filename a -> Bool
-isFits (Path f) =
-  takeExtensions f == ".fits"
-
-
-sliceMeta :: (Error GenerateError :> es, Scratch :> es) => InversionFiles Identity File -> Eff es SliceXY
-sliceMeta u = do
-  inp <- Scratch.readFile u.profileFit
-  f :: Fits <- decode inp
-  slice :: SliceXY <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
-  pure slice
- where
-  requireSlice h = do
-    pixelsPerBin <- requireKey "DESR-BIN" h
-    fiducialArmId <- requireKey "DESR-FID" h
-    pure $ SliceXY{pixelsPerBin, fiducialArmId}
-
-
--- decodeProfileFit :: (Error ProfileError :> es) => BS.ByteString -> Eff es ProfileFit
--- decodeProfileFit inp = do
---   f <- decode inp
---   profile <- profileFrames f
---   slice <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
---   pure $ ProfileFit{profile, slice}
-
--- isFrameUsed :: NonEmpty DateBegTimestamp -> BinTableHDU -> Bool
--- isFrameUsed dbts hdu = fromMaybe False $ do
---   String s <- Fits.lookup "DATE-BEG" hdu.header
---   d <- iso8601ParseM $ T.unpack s <> "Z"
---   pure $ DateBegTimestamp d `elem` dbts
-
--- readTimestamps :: (Scratch :> es, Log :> es, Error GenerateError :> es) => Path Timestamps -> Eff es (NonEmpty DateBegTimestamp)
--- readTimestamps f = do
---   inp <- send $ Scratch.ReadFile f
---   dts <- parseTimestampsFile inp
---   case dts of
---     [] -> throwError $ ZeroValidTimestamps f.filePath
---     (t : ts) -> pure $ t :| ts
-
--- parseTimestampsFile :: (Error GenerateError :> es) => ByteString -> Eff es [DateBegTimestamp]
--- parseTimestampsFile inp = do
---   mapM parseTimestamp $ filter (not . T.null) $ T.splitOn "\n" $ cs inp
---  where
---   parseTimestamp t = do
---     case iso8601ParseM $ T.unpack $ t <> "Z" of
---       Nothing -> throwError $ InvalidTimestamp t
---       Just u -> pure $ DateBegTimestamp u
-
-----------------------------------------------------------------
--- Generate Error
------------------------------------------------------------------
-
-data GenerateError
-  = L1TransferFailed (Id Globus.Task)
-  | L1FetchError FetchError
-  | MissingInversion (Id Inversion)
-  | ProfileError ProfileError
-  | QuantityError QuantityError
-  | PrimaryError PrimaryError
-  | ParseError FilePath ParseError
-  | AsdfError AsdfError
-  | BlancaError BlancaError
-  | MismatchedFrames FrameSizes
-  | NoFrames FrameSizes
-  | GenIOError IOError
-  | MissingL2Fits
-  | InvalidSliceKeys ParseError
-  deriving (Show, Exception)
-
-
-type GenerateErrors es = (Error ProfileError : Error QuantityError : Error FetchError : Error PrimaryError : Error AsdfError : Error BlancaError : es)
-
-
-runGenerateError
-  :: (Error GenerateError :> es)
-  => Eff (GenerateErrors es) a
-  -> Eff es a
-runGenerateError =
-  runErrorNoCallStackWith @BlancaError (throwError . BlancaError)
-    . runErrorNoCallStackWith @AsdfError (throwError . AsdfError)
-    . runErrorNoCallStackWith @PrimaryError (throwError . PrimaryError)
-    . runErrorNoCallStackWith @FetchError (throwError . L1FetchError)
-    . runErrorNoCallStackWith @QuantityError (throwError . QuantityError)
-    . runErrorNoCallStackWith @ProfileError (throwError . ProfileError)
+delay :: (Concurrent :> es) => Eff es ()
+delay = threadDelay $ 2 * 1000 * 1000

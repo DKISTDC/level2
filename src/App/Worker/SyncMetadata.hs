@@ -88,16 +88,17 @@ data SyncProgress
 
 syncProposalTask :: (Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
-  log Info $ dump "SyncProposalTask" (task.proposalId, task.syncId)
-  send $ TaskSetStatus task Scan
-  scan <- Sync.runScanProposal task.proposalId
+  logContext ("Sync " <> cs task.proposalId.fromId) $ do
+    log Info $ "started " <> show task.syncId
+    send $ TaskSetStatus task Scan
+    scan <- Sync.runScanProposal task.proposalId
 
-  send $ Sync.SetScan task.syncId task.proposalId scan
+    send $ Sync.SetScan task.syncId task.proposalId scan
 
-  forM_ scan.errors $ \err ->
-    log Err $ dump "ScanError" err
+    forM_ scan.errors $ \err ->
+      log Err $ dump "ScanError" err
 
-  send $ TaskSetStatus task $ Exec scan.errors scan.datasets
+    send $ TaskSetStatus task $ Exec scan.errors scan.datasets
 
-  Sync.execSync scan.datasets
-  pure ()
+    Sync.execSync scan.datasets
+    pure ()
