@@ -20,7 +20,7 @@ import App.View.Layout
 import App.View.ProposalDetails
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import App.Worker.GenFits
+import App.Worker.Generate
 import Data.Grouped (Group (..))
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
@@ -48,7 +48,7 @@ import Web.Hyperbole.Data.URI (Query, queryString)
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es '[ProgramInversions, ProgramDatasets, DownloadTransfer]
@@ -128,7 +128,7 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Tasks GenFits :> es) => HyperView ProgramInversions es where
+instance (Inversions :> es, Auth :> es, Tasks GenTask :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
     deriving (Generic, ViewAction)

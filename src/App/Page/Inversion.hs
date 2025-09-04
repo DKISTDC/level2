@@ -19,7 +19,7 @@ import App.View.Loading (inputLoader)
 import App.View.ProposalDetails (spectralLineTag)
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import App.Worker.GenFits as Gen (GenFits (..), GenFitsStatus (..))
+import App.Worker.Generate as Gen (GenStatus (..), GenTask (..))
 import App.Worker.Publish as Publish
 import Effectful
 import Effectful.Debug (Debug, delay)
@@ -45,7 +45,7 @@ import Web.Hyperbole.Data.URI as URI (Path (..), pathUri)
 
 
 page
-  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Tasks PublishTask :> es)
+  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es)
   => Id Proposal
   -> Id Inversion
   -> Page es (InversionStatus : MoreInversions : InversionViews)
@@ -55,7 +55,7 @@ page propId invId = do
   mtok <- send AdminToken
   login <- send LoginUrl
   let admin = AdminLogin mtok login
-  gen <- send $ TaskLookupStatus $ GenFits propId invId
+  gen <- send $ TaskLookupStatus $ GenTask propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
   appLayout Inversions $ do
     col ~ Style.page $ do
@@ -97,7 +97,7 @@ data MoreInversions = MoreInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Tasks GenFits :> es) => HyperView MoreInversions es where
+instance (Inversions :> es, Auth :> es, Tasks GenTask :> es) => HyperView MoreInversions es where
   data Action MoreInversions
     = CreateInversion
     deriving (Generic, ViewAction)
@@ -125,7 +125,7 @@ data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id 
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
+instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Reload
     | SetDataset (Id Dataset) Bool
@@ -155,12 +155,12 @@ instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenFits :> es, Tim
       mtok <- send AdminToken
       login <- send LoginUrl
       inv <- loadInversion invId
-      gen <- send $ TaskLookupStatus $ GenFits propId invId
+      gen <- send $ TaskLookupStatus $ GenTask propId invId
       pub <- send $ TaskLookupStatus $ PublishTask propId invId
       pure $ viewInversion inv ds (AdminLogin mtok login) gen pub
 
 
-viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenFitsStatus -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenStatus -> Maybe PublishStatus -> View InversionStatus ()
 viewInversion inv ds admin gen pub = do
   col ~ gap 30 $ do
     if inv.deleted
@@ -297,13 +297,13 @@ instance (Log :> es, Inversions :> es, Time :> es) => HyperView Metadata es wher
         pure $ commitForm SaveCommit (Just commit) invalidCommit
 
 
--- invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
+-- invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenTask :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
 -- invertReload propId invId vw = do
 --   inv <- loadInversion invId
 --   pure $ target (InversionStatus inv.proposalId inv.inversionId) $ onLoad Reload 0 none
 
 -- -- | Check to see if we are have all the inversion fields filled out and need to reload
--- checkInvertReload :: (HyperViewHandled InversionStatus id, Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenFits :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
+-- checkInvertReload :: (HyperViewHandled InversionStatus id, Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenTask :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
 -- checkInvertReload propId invId vw = do
 --   inv <- loadInversion invId
 --   pure $ case inv.step of
@@ -353,7 +353,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
+instance (Tasks GenTask :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = ReloadGen
     | RegenError
@@ -391,7 +391,7 @@ instance (Tasks GenFits :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Da
     loadGenerate = do
       GenerateStep propId _ invId <- viewId
       inv <- loadInversion invId
-      status <- send $ TaskLookupStatus $ GenFits propId invId
+      status <- send $ TaskLookupStatus $ GenTask propId invId
       mtok <- send AdminToken
       login <- send LoginUrl
       pure $ do
@@ -409,14 +409,14 @@ generateStep inv
   | otherwise = StepNext
 
 
-viewGenerate :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
+viewGenerate :: Inversion -> AdminLogin -> Maybe GenStatus -> View GenerateStep ()
 viewGenerate inv admin status
   | inv.deleted = none
   | isInverted inv = viewGenerate' inv admin status
   | otherwise = none
 
 
-viewGenerate' :: Inversion -> AdminLogin -> Maybe GenFitsStatus -> View GenerateStep ()
+viewGenerate' :: Inversion -> AdminLogin -> Maybe GenStatus -> View GenerateStep ()
 viewGenerate' inv admin status =
   col ~ gap 10 $ viewGen
  where
@@ -481,6 +481,8 @@ viewGenerate' inv admin status =
             el " / "
             el $ text $ cs $ show gen.total
           View.progress (fromIntegral done / fromIntegral total)
+      GenAsdf ->
+        loadingMessage "Generating ASDF"
 
   speedMessage throughput = do
     case throughput of
@@ -505,7 +507,7 @@ data GenerateTransfer = GenerateTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenFits :> es, Inversions :> es, Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView GenerateTransfer es where
+instance (Tasks GenTask :> es, Inversions :> es, Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView GenerateTransfer es where
   type Require GenerateTransfer = '[GenerateStep]
   data Action GenerateTransfer
     = GenTransfer TransferAction

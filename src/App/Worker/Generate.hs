@@ -1,20 +1,23 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module App.Worker.Generate where
 
 import App.Effect.Transfer (Transfer, runTransfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
-import App.Worker.Generate.Error (FetchError (..), GenerateError (..), generateFailed, onCaughtError, runGenerateError)
+import App.Worker.Generate.Asdf qualified as Asdf
+import App.Worker.Generate.Error (GenerateError (..), generateFailed, onCaughtError, onCaughtGlobus, runGenerateError)
 import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
 import App.Worker.Generate.Inputs (DownloadComplete (..))
 import App.Worker.Generate.Inputs qualified as Inputs
-import Control.Exception (Exception)
-import Control.Monad.Catch (catch)
+import App.Worker.Generate.Level1 (Canonical (..))
+import App.Worker.Generate.Level1 qualified as Level1
+import Control.Exception (throwIO)
+import Control.Monad.Catch (catch, throwM)
 import Control.Monad.Loops (untilM_)
-import Data.ByteString qualified as BS
 import Data.Either (isRight)
-import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Time.Clock (diffUTCTime)
 import Effectful
@@ -22,7 +25,7 @@ import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
-import Effectful.Globus (Globus, Task, TaskStatus (..), Token, Token' (Access))
+import Effectful.Globus (Globus, GlobusError (..), Task, TaskStatus (..), Token, Token' (Access))
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
@@ -30,28 +33,15 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files
-import NSO.Files.Image qualified as Files
-import NSO.Files.Scratch qualified as Scratch
-import NSO.Image.Blanca (BlancaError (..))
-import NSO.Image.Blanca as Blanca (collateFramesArms)
 import NSO.Image.Fits as Fits
-import NSO.Image.Fits.Quantity (QuantityError, QuantityImage)
-import NSO.Image.Headers.Parse (requireKey, runParseError)
-import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
-import NSO.Image.L1Input
+import NSO.Image.Fits.Quantity (QuantityError)
+import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Primary (PrimaryError)
-import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
-import NSO.Image.Types.Quantity
+import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Network.Globus qualified as Globus
-import System.FilePath (takeExtensions)
-import Telescope.Asdf qualified as Asdf
-import Telescope.Asdf.Error (AsdfError)
-import Telescope.Data.Parser (ParseError)
-import Telescope.Fits as Fits
-import Telescope.Fits.Encoding as Fits
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
@@ -88,10 +78,11 @@ generateTask
   :: forall es
    . ( Reader (Token Access) :> es
      , Reader CPUWorkers :> es
-     , Globus :> es
+     , Error GlobusError :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es
+     , Globus :> es
      , Scratch :> es
      , Log :> es
      , IOE :> es
@@ -103,27 +94,39 @@ generateTask
   => GenTask
   -> Eff es ()
 generateTask task = do
-  res <- runErrorNoCallStack $ runTransfer $ catch workWithError onCaughtError
+  -- catch globus static errors!
+  res <- runErrorNoCallStack $ runTransfer $ workWithError `catchError` (\_ e -> onCaughtGlobus e)
   either (generateFailed task.inversionId) pure res
  where
   workWithError :: Eff (Transfer : Error GenerateError : es) ()
   workWithError = runGenerateError $ do
-    send $ TaskSetStatus task GenStarted
+    logContext ("GEN " <> cs task.inversionId.fromId) $ do
+      log Info "start"
+      send $ TaskSetStatus task GenStarted
 
-    (files, slice, inv, datasets) <- Inputs.loadInputs task.proposalId task.inversionId
-    down <- downloadL1Frames task inv datasets
-    Inversions.setGenTransferred inv.inversionId
+      files <- Inputs.inversionFiles task.proposalId task.inversionId
+      slice <- Inputs.sliceMeta files
 
-    frames <- Inputs.loadFrameInputs task.proposalId task.inversionId files slice inv datasets down
+      inv <- Inputs.loadInversion task.inversionId
+      dcanon <- Level1.canonicalDataset slice inv.datasets
 
-    now <- currentTime
-    send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length frames, throughput = 0}
+      down <- downloadL1Frames task inv dcanon
+      Inversions.setGenTransferred inv.inversionId
 
-    -- Generate them in parallel with N = available CPUs
-    metas :: Frames (Either Skipped L2FitsMeta) <- CPU.parallelize $ fmap (workFrame task slice) frames
+      frames <- Inputs.loadFrameInputs files dcanon down
+      log Info $ dump "Fits Frames" (length frames)
 
-    log Debug $ dump "WRITTEN: " (length $ NE.filter isRight metas.frames)
-    Inversions.setGeneratedFits task.inversionId
+      now <- currentTime
+      send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length frames, throughput = 0}
+
+      -- Generate them in parallel with N = available CPUs
+      metas :: Frames (Either Skipped L2FitsMeta) <- CPU.parallelize $ fmap (workFrame task slice) frames
+
+      log Debug $ dump "WRITTEN: " (length $ NE.filter isRight metas.frames)
+      Inversions.setGeneratedFits task.inversionId
+
+      Asdf.generateAsdf files inv dcanon slice
+      Inversions.setGeneratedAsdf inv.inversionId
 
 
 -- | Generate a single frame
@@ -173,15 +176,15 @@ downloadL1Frames
   :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch :> es, Transfer :> es, Tasks GenTask :> es)
   => GenTask
   -> Inversion
-  -> NonEmpty Dataset
+  -> Canonical Dataset
   -> Eff es DownloadComplete
-downloadL1Frames task inv ds = do
+downloadL1Frames task inv (Canonical ds) = do
   case inv.generate.transfer of
     Just _ -> pure DownloadComplete
     Nothing -> transfer
  where
   transfer = do
-    downloadTaskId <- Transfer.scratchDownloadDatasets $ NE.toList ds
+    downloadTaskId <- Transfer.scratchDownloadDatasets [ds]
     log Debug $ dump "Download" downloadTaskId
 
     send $ TaskSetStatus task $ GenTransferring downloadTaskId

@@ -2,19 +2,13 @@
 
 module App.Worker.Generate.Asdf where
 
-import App.Effect.Transfer (Transfer, runTransfer)
-import App.Worker.Generate as Gen
 import App.Worker.Generate.Error
-import App.Worker.Generate.Level1 (canonicalL1Frames, fitsDecode, isFits, readLevel1Asdf, requireCanonicalDataset)
+import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames, fitsDecode, isFits, readLevel1Asdf)
 import Control.Monad (zipWithM)
-import Control.Monad.Catch (catch)
 import Data.List.NonEmpty qualified as NE
 import Effectful
-import Effectful.Concurrent
 import Effectful.Error.Static
-import Effectful.Globus (Globus, Token, Token' (Access))
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Datasets qualified as Datasets
@@ -41,14 +35,10 @@ import Telescope.Fits (Fits)
 
 generateAsdf
   :: forall es
-   . ( Reader (Token Access) :> es
-     , Globus :> es
-     , Datasets :> es
-     , Inversions :> es
+   . ( Datasets :> es
      , Time :> es
      , Scratch :> es
      , Log :> es
-     , Concurrent :> es
      , IOE :> es
      , Error FetchError :> es
      , Error GenerateError :> es
@@ -59,17 +49,14 @@ generateAsdf
      )
   => InversionFiles Identity File
   -> Inversion
-  -> NonEmpty Dataset
+  -> Canonical Dataset
   -> SliceXY
   -> Eff es ()
-generateAsdf files inv datasets slice = do
+generateAsdf files inv (Canonical dcanon) slice = do
   logContext ("ASDF " <> cs inv.inversionId.fromId) $ do
     log Debug "started"
 
-    let ds = NE.toList datasets
-    dc <- requireCanonicalDataset slice ds
-    log Debug $ dump "Canonical Dataset:" dc.datasetId
-
+    ds :: [Dataset] <- Datasets.find $ Datasets.ByIds inv.datasets
     fitHDUs <- Blanca.decodeProfileHDUs =<< readFile files.profileFit
     -- origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
 
@@ -78,9 +65,9 @@ generateAsdf files inv datasets slice = do
     -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
 
     log Debug "Got Blanca"
-    l1fits <- canonicalL1Frames (Files.dataset dc)
+    l1fits <- canonicalL1Frames (Files.dataset dcanon)
     log Debug "Got Gfits"
-    l1asdf <- readLevel1Asdf (Files.dataset dc)
+    l1asdf <- readLevel1Asdf (Files.dataset dcanon)
     log Debug "Got L1Asdf"
 
     (metas :: Frames L2FitsMeta) <- requireMetas inv.proposalId inv.inversionId slice arms l1fits
@@ -88,13 +75,12 @@ generateAsdf files inv datasets slice = do
     log Debug $ dump "metas" (length metas)
 
     now <- currentTime
-    let tree = asdfDocument inv.inversionId dc ds slice.pixelsPerBin now l1asdf $ Frames $ NE.sort metas.frames
+    let tree = asdfDocument inv.inversionId dcanon ds slice.pixelsPerBin now l1asdf $ Frames $ NE.sort metas.frames
     let path = Files.outputL2AsdfPath inv.proposalId inv.inversionId
     output <- Asdf.encodeL2 tree
     Scratch.writeFile path output
 
     log Debug $ dump "WROTE" (takeFileName path.filePath)
-    Inversions.setGeneratedAsdf inv.inversionId
 
 
 requireMetas

@@ -10,8 +10,7 @@ import App.Version
 import App.View.DataRow qualified as View
 import App.View.Icons qualified as Icons
 import App.View.Layout
-import App.Worker.GenAsdf
-import App.Worker.GenFits
+import App.Worker.Generate
 import Data.Text (pack)
 import Effectful
 import Effectful.Concurrent.STM
@@ -28,7 +27,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenFits :> es)
+  :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenTask :> es)
   => Page es '[Work]
 page = do
   login <- loginUrl
@@ -51,7 +50,7 @@ page = do
               el ~ color Success $ "System Access Token Saved!"
 
       -- hyper Test testView
-      hyper Work $ workView [] []
+      hyper Work $ workView []
 
 
 data AdminLogin = AdminLogin
@@ -64,15 +63,14 @@ data Work = Work
   deriving (Generic, ViewId)
 
 
-instance (Concurrent :> es, Tasks GenFits :> es, Tasks GenAsdf :> es) => HyperView Work es where
+instance (Concurrent :> es, Tasks GenTask :> es) => HyperView Work es where
   data Action Work = Refresh
     deriving (Generic, ViewAction)
 
 
   update Refresh = do
-    fits <- allTasks
-    asdf <- allTasks
-    pure $ workView fits asdf
+    gens <- allTasks
+    pure $ workView gens
 
 
 allTasks :: forall task es. (Tasks task :> es, WorkerTask task) => Eff es [(task, Status task)]
@@ -82,17 +80,13 @@ allTasks = do
   pure $ fmap (,idle @task) wait <> work
 
 
-workView :: [(GenFits, GenFitsStatus)] -> [(GenAsdf, ())] -> View Work ()
-workView fits asdf = do
+workView :: [(GenTask, GenStatus)] -> View Work ()
+workView gens = do
   col ~ gap 20 @ onLoad Refresh 1000 $ do
     col ~ Style.card $ do
       el ~ Style.cardHeader Colors.Info $ do
-        el ~ bold . fontSize 18 $ "Fits Generation"
-      taskTable fits
-    col ~ Style.card $ do
-      el ~ Style.cardHeader Colors.Info $ do
-        el ~ bold . fontSize 18 $ "Asdf Generation"
-      taskTable asdf
+        el ~ bold . fontSize 18 $ "Inverion Generation"
+      taskTable gens
 
 
 taskTable :: forall task. (WorkerTask task, Eq (Status task), Show (Status task), Show task) => [(task, Status task)] -> View Work ()

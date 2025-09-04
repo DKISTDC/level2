@@ -1,7 +1,7 @@
 module App.Worker.Generate.Error where
 
 import App.Effect.Transfer (Transfer)
-import Control.Exception (Exception)
+import Control.Exception (Exception, SomeException)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log
@@ -13,14 +13,22 @@ import NSO.Image.Fits.Quantity (QuantityError)
 import NSO.Image.Primary (PrimaryError)
 import NSO.Prelude
 import NSO.Types.Common
+import Network.Globus (GlobusError)
 import Network.Globus qualified as Globus
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
 
 
-onCaughtError :: IOError -> Eff (Transfer : Error GenerateError : es) a
+onCaughtError :: (Log :> es) => SomeException -> Eff (Transfer : Error GenerateError : es) a
 onCaughtError e = do
+  log Err "Catch Any Exception"
   throwError $ GenIOError e
+
+
+onCaughtGlobus :: (Log :> es) => GlobusError -> Eff (Transfer : Error GenerateError : es) a
+onCaughtGlobus e = do
+  log Err "Catch GLOBUS"
+  throwError $ GlobusError e
 
 
 generateFailed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()
@@ -51,6 +59,7 @@ data FetchError
 data GenerateError
   = L1TransferFailed (Id Globus.Task)
   | L1FetchError FetchError
+  | GlobusError GlobusError
   | MissingInversion (Id Inversion)
   | ProfileError ProfileError
   | QuantityError QuantityError
@@ -60,7 +69,7 @@ data GenerateError
   | BlancaError BlancaError
   | MismatchedFrames FrameSizes
   | NoFrames FrameSizes
-  | GenIOError IOError
+  | GenIOError SomeException
   | MissingL2Fits
   | InvalidSliceKeys ParseError
   deriving (Show, Exception)

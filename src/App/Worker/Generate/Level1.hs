@@ -25,11 +25,26 @@ import Telescope.Fits as Fits
 import Telescope.Fits.Encoding as Fits
 
 
-requireCanonicalDataset :: (Error FetchError :> es, Scratch :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es Dataset
+newtype Canonical a = Canonical {value :: a}
+
+
+canonicalDataset :: (Datasets :> es, Error FetchError :> es, Scratch :> es, Log :> es) => SliceXY -> [Id Dataset] -> Eff es (Canonical Dataset)
+canonicalDataset slice ids = do
+  dss :: [Dataset] <- Datasets.find $ Datasets.ByIds ids
+  when (null dss) $ do
+    throwError $ NoDatasets ids
+  dc <- requireCanonicalDataset slice dss
+  log Debug $ dump "Canonical Dataset:" dc.value.datasetId
+  pure dc
+
+
+requireCanonicalDataset :: (Error FetchError :> es, Scratch :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es (Canonical Dataset)
 requireCanonicalDataset slice ds = do
   vas :: [VISPArmId] <- mapM datasetVISPArmId ds
   let canon = L.find ((== slice.fiducialArmId) . snd) $ zip ds vas
-  maybe (throwError (NoCanonicalDataset $ fmap (.datasetId) ds)) (pure . fst) canon
+  case canon of
+    Nothing -> throwError (NoCanonicalDataset $ fmap (.datasetId) ds)
+    Just (d, _) -> pure $ Canonical d
 
 
 datasetVISPArmId :: (Error FetchError :> es, Scratch :> es, Log :> es) => Dataset -> Eff es VISPArmId

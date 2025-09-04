@@ -1,9 +1,8 @@
 module App.Worker.PuppetMaster where
 
-import App.Worker.GenAsdf
-import App.Worker.GenFits
+import App.Worker.Generate
 import App.Worker.SyncMetadata
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isNothing)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -24,8 +23,7 @@ manageMinions
      , Datasets :> es
      , MetadataSync :> es
      , Log :> es
-     , Tasks GenFits :> es
-     , Tasks GenAsdf :> es
+     , Tasks GenTask :> es
      , Tasks SyncMetadataTask :> es
      )
   => Eff es ()
@@ -39,9 +37,6 @@ manageMinions = do
   let gfs = generateFits ivs
   send $ TasksAdd gfs
 
-  let gas = generateAsdf ivs
-  send $ TasksAdd gas
-
   checkMetadataSync
 
 
@@ -54,28 +49,14 @@ checkMetadataSync = do
     send $ TaskAdd $ SyncMetadataTask s
 
 
-generateFits :: [Inversion] -> [GenFits]
+generateFits :: [Inversion] -> [GenTask]
 generateFits ivs = do
-  map genTask $ filter isFitsGen ivs
+  map genTask $ filter isNeedsGen ivs
  where
-  genTask inv = GenFits inv.proposalId inv.inversionId
+  genTask inv = GenTask inv.proposalId inv.inversionId
 
-  isFitsGen inv =
+  isNeedsGen inv =
     isInverted inv
       && not (isError inv)
       && not inv.deleted
-      && isNothing inv.generate.fits
-
-
-generateAsdf :: [Inversion] -> [GenAsdf]
-generateAsdf ivs = do
-  map genTask $ filter isAsdfGen ivs
- where
-  genTask inv = GenAsdf inv.proposalId inv.inversionId
-
-  isAsdfGen inv =
-    isInverted inv
-      && not (isError inv)
-      && not inv.deleted
-      && isJust inv.generate.fits
-      && isNothing inv.generate.asdf
+      && (isNothing inv.generate.fits || isNothing inv.generate.asdf)

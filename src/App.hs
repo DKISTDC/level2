@@ -16,8 +16,7 @@ import App.Page.Sync qualified as Sync
 import App.Route
 import App.Version
 import App.View.Error
-import App.Worker.GenAsdf as Gen
-import App.Worker.GenFits as Gen
+import App.Worker.Generate as Gen
 import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import App.Worker.SyncMetadata as Sync
@@ -65,7 +64,6 @@ main = do
     config <- initConfig
 
     fits <- atomically taskChanNew
-    asdf <- atomically taskChanNew
     pubs <- atomically taskChanNew
     metas <- atomically taskChanNew
     props <- atomically taskChanNew
@@ -73,8 +71,8 @@ main = do
     auth <- initAuth config.auth.admins config.auth.adminToken
 
     concurrently_
-      (startWebServer config auth fits asdf pubs sync)
-      (runWorkers config auth fits asdf pubs sync metas props startWorkers)
+      (startWebServer config auth fits pubs sync)
+      (runWorkers config auth fits pubs sync metas props startWorkers)
 
     pure ()
  where
@@ -83,22 +81,20 @@ main = do
       forever
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> TaskChan PublishTask -> Sync.History -> Eff es ()
-  startWebServer config auth fits asdf pubs sync =
+  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
+  startWebServer config auth fits pubs sync =
     runLogger "Server" $ do
       -- log Debug $ "Starting on :" <> show config.app.port
       log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
       liftIO $
         Warp.run config.app.port $
           addHeaders [("app-version", cs appVersion)] $
-            webServer config auth fits asdf pubs sync
+            webServer config auth fits pubs sync
 
   startGen = do
-    runLogger "FitsGen" $
+    runLogger "Generate" $
       waitForGlobusAccess $ do
-        mapConcurrently_
-          id
-          [startWorker Gen.fitsTask, startWorker Gen.asdfTask]
+        startWorker Gen.generateTask
 
   startWorkers =
     mapConcurrently_
@@ -118,7 +114,7 @@ main = do
       . runEnvironment
       . runConcurrent
 
-  runWorkers config auth fits asdf pubs sync metas props =
+  runWorkers config auth fits pubs sync metas props =
     runFileSystem
       . runReader config.scratch
       . runReader config.cpuWorkers
@@ -133,8 +129,7 @@ main = do
       . runTime
       . runDataInversions
       . runDataDatasets
-      . runTasks @GenFits fits
-      . runTasks @GenAsdf asdf
+      . runTasks @GenTask fits
       . runTasks @PublishTask pubs
       . runTasks @SyncMetadataTask metas
       . runTasks @SyncProposalTask props
@@ -147,8 +142,8 @@ waitForGlobusAccess work = do
   Auth.waitForAccess work
 
 
-webServer :: Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> TaskChan PublishTask -> Sync.History -> Application
-webServer config auth fits asdf pubs sync =
+webServer :: Config -> AuthState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Application
+webServer config auth fits pubs sync =
   liveApp
     (document documentHead)
     (runApp . routeRequest $ router)
@@ -172,7 +167,7 @@ webServer config auth fits asdf pubs sync =
   router Logout = runPage Auth.logout
   router Redirect = runPage Auth.login
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenAsdf : Tasks GenFits : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenTask : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runLogger "App"
@@ -192,15 +187,10 @@ webServer config auth fits asdf pubs sync =
       . runDataInversions
       . runAuth config.app.domain Redirect auth
       . runTasks fits
-      . runTasks asdf
       . runTasks pubs
       . runMetadataSync sync
       . runDebugIO
 
-
--- runGraphQL' :: (IOE :> es, Error GraphQLError :> es) => Bool -> Eff (GraphQL : Fetch : es) a -> Eff es a
--- runGraphQL' True = runFetchMock mockMetadata . runGraphQL
--- runGraphQL' False = runFetchHttp config.manager . runGraphQL
 
 runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusLive g) mgr action = do
@@ -215,7 +205,6 @@ crashAndPrint _callstack err = do
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a
 crashWithError c e = do
-  log Err "Caught: Crashing"
-  log Err $ show e
+  log Err $ dump "Uncaught Error" e
   log Err $ prettyCallStack c
   liftIO $ throwM e
