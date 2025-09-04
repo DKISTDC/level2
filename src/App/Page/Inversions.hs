@@ -24,7 +24,7 @@ import Web.Atomic.CSS
 import Web.Hyperbole
 
 
-page :: (Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es) => Eff es (Page '[])
+page :: (Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es) => Page es '[]
 page = do
   AllInversions ivs <- send Inversions.All
   props <- Programs.loadProposalPrograms

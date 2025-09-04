@@ -3,7 +3,6 @@
 module NSO.Image.GWCS where
 
 import Data.List.NonEmpty qualified as NE
-import Debug.Trace
 import NSO.Image.Asdf.Ref (Ref (..))
 import NSO.Image.Fits.Profile (ProfileAxes (..), ProfileAxis (..))
 import NSO.Image.Fits.Quantity
@@ -107,7 +106,7 @@ transformOpticalDepth wcsOD =
   -- linear (wcsIntercept wcsOD) (Scale $ factor1digit wcsOD.cdelt)
   let Intercept i = wcsIntercept wcsOD
       s = wcsOD.cdelt
-   in trace ("OD:" <> show wcsOD) $ transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
+   in transform $ LinearOpticalDepth (Quantity Pixel (factor1digit i)) (Quantity (Unit "pix.pixel**-1") (factor1digit s))
 
 
 factor1digit :: Double -> Value

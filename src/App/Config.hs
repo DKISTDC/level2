@@ -11,14 +11,12 @@ module App.Config
   , AuthInfo (..)
   , Tagged (..)
   , AppDomain
-  , document
+  , documentHead
   , GlobusConfig (..)
   ) where
 
 import App.Types
 import App.Worker.CPU
-import Data.ByteString.Lazy qualified as BL
-import Data.String.Interpolate (i)
 import Data.Tagged
 import Data.Text
 import Effectful
@@ -158,14 +156,9 @@ readEnv e = do
     Just a -> pure a
 
 
-document :: BL.ByteString -> BL.ByteString
-document cnt =
-  [i|<html>
-    <head>
-      <title>Level2</title>
-      <script type="text/javascript">#{scriptEmbed}</script>
-      <style type="text/css">#{cssResetEmbed}</style>
-      <style type="text/css">body { background-color: \#d3dceb }</style>
-    </head>
-    <body>#{cnt}</body>
-  </html>|]
+documentHead :: View DocumentHead ()
+documentHead = do
+  title "Level2"
+  script' scriptEmbed
+  style (cs cssEmbed)
+  style "body { background-color: #d3dceb }"

@@ -9,7 +9,7 @@ import App.Worker.CPU qualified as CPU
 import App.Worker.Generate as Gen
 import Control.Monad.Catch (catch)
 import Control.Monad.Loops
-import Data.Either (isLeft, isRight)
+import Data.Either (isRight)
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe
 import Data.Time.Clock (diffUTCTime)
@@ -35,11 +35,12 @@ import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (decodeQuantitiesFrames)
 import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..))
-import NSO.Image.L1Input (L1Fits (..), L1Frame)
+import NSO.Image.L1Input (L1Fits (..))
 import NSO.Image.Types.Frame (Arms (..), Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import System.FilePath (takeFileName)
 import Telescope.Data.Parser (ParseError)
 import Telescope.Fits (Fits (..))
 
@@ -203,20 +204,19 @@ workFrame t slice frameInputs = do
     start <- currentTime
     dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
     let path = Fits.outputL2Fits t.proposalId t.inversionId dateBeg
-    guardAlreadyExists path
 
-    log Debug $ dump "FRAME start" path.filePath
-    log Debug $ dump " - inputs.profiles.arms" (length frameInputs.profiles.arms)
-    frame <- Fits.generateL2FrameFits start t.inversionId slice frameInputs
-    let fits = Fits.frameToFits frame
-    -- log Debug $ dump " - fits" fits
-    Scratch.writeFile path $ Fits.encodeL2 fits
-    log Debug $ dump " - wroteframe" path.filePath
+    logContext (takeFileName path.filePath) $ do
+      guardAlreadyExists path
+      log Debug $ "start: inputs.profiles.arms=" <> show (length frameInputs.profiles.arms)
+      frame <- Fits.generateL2FrameFits start t.inversionId slice frameInputs
+      let fits = Fits.frameToFits frame
+      Scratch.writeFile path $ Fits.encodeL2 fits
+      log Debug "WROTE"
 
-    now <- currentTime
-    send $ TaskModStatus @GenFits t (addComplete now)
+      now <- currentTime
+      send $ TaskModStatus @GenFits t (addComplete now)
 
-    pure $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
+      pure $ Fits.frameMeta frame (filenameL2Fits t.inversionId dateBeg)
  where
   guardAlreadyExists path = do
     alreadyExists <- Scratch.pathExists path
@@ -227,7 +227,7 @@ workFrame t slice frameInputs = do
         -- file is bad, do not skip, regenerate
         Left _ -> pure ()
         Right fits -> do
-          log Debug $ dump "SKIP frame" (path.filePath, length fits.extensions)
+          log Debug $ dump "SKIP frame" (length fits.extensions)
           send $ TaskModStatus @GenFits t addSkipped
           throwError ()
 

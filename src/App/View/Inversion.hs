@@ -10,7 +10,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
 import Web.Atomic.CSS
-import Web.Hyperbole
+import Web.Hyperbole hiding (content)
 
 
 inversionStepLabel :: Inversion -> Text

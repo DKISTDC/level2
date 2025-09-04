@@ -16,7 +16,7 @@ import Web.Atomic.CSS
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Eff es (Page '[])
+page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Page es '[]
 page di = do
   ds <- Datasets.find (ByIds [di])
 

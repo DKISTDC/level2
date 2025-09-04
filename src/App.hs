@@ -53,7 +53,6 @@ import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (Path (..), pathUri)
-import Web.Hyperbole.Effect.Hyperbole
 
 
 main :: IO ()
@@ -151,7 +150,7 @@ waitForGlobusAccess work = do
 webServer :: Config -> AuthState -> TaskChan GenFits -> TaskChan GenAsdf -> TaskChan PublishTask -> Sync.History -> Application
 webServer config auth fits asdf pubs sync =
   liveApp
-    document
+    (document documentHead)
     (runApp . routeRequest $ router)
  where
   router Dashboard = runPage Dashboard.page
@@ -208,11 +207,10 @@ runGlobus' (GlobusLive g) mgr action = do
   runGlobus g mgr action
 
 
-crashAndPrint :: (UserFacingError e, IOE :> es, Log :> es, Show e, Exception e, Hyperbole :> es) => CallStack -> e -> Eff es a
+crashAndPrint :: forall e es a. (UserFacingError e, IOE :> es, Log :> es, Show e, Exception e, Hyperbole :> es) => CallStack -> e -> Eff es a
 crashAndPrint _callstack err = do
   log Err "Crash and Print"
-  let r = viewResponse $ viewError err
-  send $ RespondNow r
+  respondErrorView (errorType @e) $ viewError err
 
 
 crashWithError :: (IOE :> es, Log :> es, Show e, Exception e) => CallStack -> e -> Eff es a

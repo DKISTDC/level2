@@ -16,7 +16,7 @@ import Web.Hyperbole.Data.URI (Path (..), pathUri)
 
 
 -- show the page, then handle the login second
-login :: (Log :> es, Hyperbole :> es, Auth :> es) => Eff es (Page '[AuthRed])
+login :: (Log :> es, Hyperbole :> es, Auth :> es) => Page es '[AuthRed]
 login = do
   authCode <- Tagged <$> param "code"
   pure $ col ~ pad 20 . gap 10 $ do
@@ -27,7 +27,7 @@ login = do
         el ~ width 200 . color Primary $ Icons.spinner
 
 
-logout :: (Hyperbole :> es, Auth :> es) => Eff es (Page '[])
+logout :: (Hyperbole :> es, Auth :> es) => Page es '[]
 logout = do
   clearAccessToken
   u <- redirectTo

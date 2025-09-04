@@ -26,12 +26,12 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Web.Atomic.CSS
-import Web.Hyperbole as H
+import Web.Hyperbole as H hiding (content)
 
 
 page
   :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es, Debug :> es)
-  => Eff es (Page '[AllProposals, ProposalCard, ProgramRow])
+  => Page es '[AllProposals, ProposalCard, ProgramRow]
 page = do
   fs <- query
   props <- Programs.loadAllProposals

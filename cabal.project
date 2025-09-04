@@ -24,12 +24,12 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/seanhess/hyperbole
-  tag: 0cd30fdd8cae
+  tag: 0ad68b62fe25
 
 source-repository-package
   type: git
-  location: https://github.com/seanhess/atomic-css.git
-  tag: d76d9bf4ea61
+  location: https://github.com/seanhess/atomic-css
+  tag: bfc1f9cd15be
 
 source-repository-package
   type: git

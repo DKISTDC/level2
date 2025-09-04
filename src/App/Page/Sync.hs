@@ -19,7 +19,7 @@ import Web.Atomic.CSS
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => SyncId -> Eff es (Page '[SyncDetails])
+page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => SyncId -> Page es '[SyncDetails]
 page syncId = do
   sc <- send $ Sync.Get syncId
   appLayout (Route.Datasets Route.DatasetRoot) $ do

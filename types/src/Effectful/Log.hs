@@ -11,11 +11,13 @@ import Data.Time.Clock
 import Data.Time.Format.ISO8601
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Reader.Dynamic
 import Prelude
 
 
 data Log :: Effect where
   Log :: LogLevel -> String -> Log m ()
+  Context :: String -> m a -> Log m a
 
 
 data LogLevel
@@ -43,14 +45,20 @@ runLogger
   => ThreadName
   -> Eff (Log : es) a
   -> Eff es a
-runLogger (ThreadName tname) = interpret $ \_ -> \case
+runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $ \env -> \case
   Log lvl msg -> do
+    mctx <- ask @(Maybe String)
     liftIO $ do
       now <- datetime <$> getCurrentTime
       let nm = padSpace 8 $ take 8 $ cs tname
-      putStrLn [i|| #{nm} | #{now} | #{lvl} | #{msg} |]
+      putStrLn [i|| #{nm} | #{now} | #{lvl} |#{messageContext mctx} #{msg} |]
       pure ()
+  Context ctx m -> do
+    localSeqUnlift env $ \unlift -> local (const $ Just ctx) (unlift m)
  where
+  messageContext Nothing = ""
+  messageContext (Just ctx) = " [" <> ctx <> "]"
+
   datetime :: UTCTime -> String
   datetime =
     map noLetter . take 23 . iso8601Show
@@ -67,6 +75,13 @@ dump n a = n <> ": " <> show a
 
 log :: (Log :> es) => LogLevel -> String -> Eff es ()
 log ll = send . Log ll
+
+
+type LogContext = String
+
+
+logContext :: (Log :> es) => String -> Eff es a -> Eff es a
+logContext ctx eff = send $ Context ctx eff
 
 
 -- debug :: (Log :> es) => String ->

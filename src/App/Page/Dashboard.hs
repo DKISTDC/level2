@@ -29,7 +29,7 @@ import Web.Hyperbole
 
 page
   :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenFits :> es)
-  => Eff es (Page '[Work])
+  => Page es '[Work]
 page = do
   login <- loginUrl
   mtok <- send AdminToken

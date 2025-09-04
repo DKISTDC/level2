@@ -31,7 +31,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Atomic.CSS
-import Web.Hyperbole
+import Web.Hyperbole hiding (meta)
 import Web.Hyperbole.Data.QueryData (fromQueryData)
 import Web.Hyperbole.Data.QueryData qualified as QueryData
 import Web.Hyperbole.Data.URI (queryString)
@@ -42,7 +42,7 @@ page
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
-  -> Eff es (Page '[Uploads, Manage, MetadataForm])
+  -> Page es '[Uploads, Manage, MetadataForm]
 page propId progId invId = do
   qs <- query @QueryState
   dall <- Datasets.find (Datasets.ByProgram progId)

@@ -32,8 +32,8 @@ import NSO.Image.Types.Frame (Arms (..), Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
-import Telescope.Data.Parser (ParseError)
-import Telescope.Fits (BinTableHDU (..), Fits)
+import System.FilePath (takeFileName)
+import Telescope.Fits (Fits)
 
 
 data GenAsdf = GenAsdf {proposalId :: Id Proposal, inversionId :: Id Inversion}
@@ -70,44 +70,43 @@ asdfTask t = do
  where
   workWithError :: Eff (Transfer : Error GenerateError : es) ()
   workWithError = runGenerateError $ do
-    log Debug "ASDF!"
-    log Debug $ dump "Task" t
+    logContext ("ASDF " <> cs t.inversionId.fromId) $ do
+      log Debug "started"
 
-    -- Load Metadata
-    let u = Files.inversionFiles $ Files.blancaInput t.proposalId t.inversionId
-    slice <- sliceMeta u
+      -- Load Metadata
+      let u = Files.inversionFiles $ Files.blancaInput t.proposalId t.inversionId
+      slice <- sliceMeta u
 
-    inv <- Gen.loadInversion t.inversionId
-    ds <- Datasets.find $ Datasets.ByIds inv.datasets
-    dc <- requireCanonicalDataset slice ds
-    log Debug $ dump "Canonical Dataset:" dc.datasetId
+      inv <- Gen.loadInversion t.inversionId
+      ds <- Datasets.find $ Datasets.ByIds inv.datasets
+      dc <- requireCanonicalDataset slice ds
+      log Debug $ dump "Canonical Dataset:" dc.datasetId
 
-    fitHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileFit
-    -- origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
+      fitHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileFit
+      -- origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
 
-    arms <- Blanca.decodeArmWavMeta fitHDUs
-    -- profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileArms arms fitHDUs
-    -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
+      arms <- Blanca.decodeArmWavMeta fitHDUs
+      -- profileFit :: Arms [ProfileImage Fit] <- Blanca.decodeProfileArms arms fitHDUs
+      -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
 
-    log Debug "Got Blanca"
-    l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
-    log Debug "Got Gfits"
-    l1asdf <- Gen.readLevel1Asdf (Files.dataset dc)
-    log Debug "Got L1Asdf"
+      log Debug "Got Blanca"
+      l1fits <- Gen.canonicalL1Frames (Files.dataset dc)
+      log Debug "Got Gfits"
+      l1asdf <- Gen.readLevel1Asdf (Files.dataset dc)
+      log Debug "Got L1Asdf"
 
-    (metas :: Frames L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
+      (metas :: Frames L2FitsMeta) <- requireMetas t.proposalId t.inversionId slice arms l1fits
 
-    log Debug $ dump "metas" (length metas)
+      log Debug $ dump "metas" (length metas)
 
-    now <- currentTime
-    let tree = asdfDocument inv.inversionId dc ds slice.pixelsPerBin now l1asdf $ Frames $ NE.sort metas.frames
-    let path = Files.outputL2AsdfPath inv.proposalId inv.inversionId
-    output <- Asdf.encodeL2 tree
-    Scratch.writeFile path output
+      now <- currentTime
+      let tree = asdfDocument inv.inversionId dc ds slice.pixelsPerBin now l1asdf $ Frames $ NE.sort metas.frames
+      let path = Files.outputL2AsdfPath inv.proposalId inv.inversionId
+      output <- Asdf.encodeL2 tree
+      Scratch.writeFile path output
 
-    log Debug " - Generated ASDF"
-    log Debug " - done"
-    Inversions.setGeneratedAsdf t.inversionId
+      log Debug $ dump "WROTE" (takeFileName path.filePath)
+      Inversions.setGeneratedAsdf t.inversionId
 
 
 requireMetas

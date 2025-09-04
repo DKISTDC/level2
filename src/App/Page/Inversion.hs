@@ -48,7 +48,7 @@ page
   :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenFits :> es, Time :> es, Tasks PublishTask :> es)
   => Id Proposal
   -> Id Inversion
-  -> Eff es (Page (InversionStatus : MoreInversions : InversionViews))
+  -> Page es (InversionStatus : MoreInversions : InversionViews)
 page propId invId = do
   inv <- loadInversion invId
   ds <- Datasets.find (Datasets.ByProgram inv.programId)

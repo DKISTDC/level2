@@ -6,7 +6,7 @@ import App.View.Icons qualified as Icons
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import NSO.Prelude
 import Web.Atomic.CSS
-import Web.Hyperbole hiding (input, label)
+import Web.Hyperbole hiding (content, input, label)
 
 
 showDate :: UTCTime -> Text

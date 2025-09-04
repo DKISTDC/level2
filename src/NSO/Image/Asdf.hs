@@ -46,7 +46,7 @@ import Text.Casing (quietSnake)
 -- DONE: fit/orig separate GWCS + anchors
 -- DONE: fix gwcs
 -- DONE: labeled meta.axes for profiles
--- TODO: Reuse varyingCelestialTransform as an anchor...
+-- DONE: Reuse varyingCelestialTransform as an anchor...
 -- DONE: 2x Profile GWCS, one per Arm. But the spatial is the same for both
 -- DONE: Profile Spectral GWCS - doesn't line up with L1 at all!
 -- DONE: Profiles Spectral WCS-based
@@ -118,7 +118,9 @@ data InversionTree = InversionTree
   , quantities :: QuantitiesSection
   , profiles :: ProfilesSection
   }
-  deriving (Generic, ToAsdf)
+  deriving (Generic)
+instance ToAsdf InversionTree where
+  schema _ = "asdf://dkist.nso.edu/tags/inversion-0.1.0"
 
 
 data InversionMeta = InversionMeta

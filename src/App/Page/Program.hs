@@ -51,7 +51,7 @@ page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenFits :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Eff es (Page '[ProgramInversions, ProgramDatasets, DownloadTransfer])
+  -> Page es '[ProgramInversions, ProgramDatasets, DownloadTransfer]
 page propId progId = do
   ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
   progs <- Programs.loadProgram progId >>= expectFound

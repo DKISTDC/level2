@@ -1,29 +1,24 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DefaultSignatures #-}
 
 module App.View.Error where
 
 import App.Colors
-import Effectful
-import Effectful.Exception
 import NSO.Prelude
 import Network.Globus (GlobusError (..))
 import Web.Atomic.CSS
 import Web.Hyperbole
-import Web.Hyperbole.Effect.Hyperbole
 
 
 class UserFacingError err where
+  errorType :: Text
+
+
   viewError :: forall c. err -> View c ()
   default viewError :: forall c. (Show err) => err -> View c ()
   viewError err = do
     errorMessage "Server Error" $ do
       codeDump $ cs $ show err
-
-
-userFacingError :: (Exception err, Hyperbole :> es, UserFacingError err) => err -> Eff es a
-userFacingError err = do
-  let r = viewResponse $ viewError err
-  send $ RespondNow r
 
 
 errorMessage :: Text -> View c () -> View c ()
@@ -38,6 +33,9 @@ codeDump = code
 
 
 instance UserFacingError GlobusError where
+  errorType = "GlobusError"
+
+
   viewError :: GlobusError -> View c ()
   viewError err =
     case err of

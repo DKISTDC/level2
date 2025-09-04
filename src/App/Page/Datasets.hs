@@ -1,4 +1,3 @@
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module App.Page.Datasets where
@@ -19,16 +18,16 @@ import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Sync as Sync
-import NSO.Types.Common
 import NSO.Metadata (Metadata)
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Atomic.CSS
-import Web.Hyperbole
+import Web.Hyperbole hiding (content)
 
 
-page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Eff es (Page '[Current, Syncs, ScanProp, DatasetRow])
+page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Page es '[Current, Syncs, ScanProp, DatasetRow]
 page = do
   ids <- send Datasets.Ids
   syncs <- loadSyncs

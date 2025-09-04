@@ -28,7 +28,7 @@ import Web.Hyperbole
 page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
   => Id Proposal
-  -> Eff es (Page '[Programs, ProgramSummary])
+  -> Page es '[Programs, ProgramSummary]
 page propId = do
   ds <- Datasets.find (Datasets.ByProposal propId) >>= expectFound
   fs <- query
@@ -132,8 +132,8 @@ viewProgramSummary srt now pf = do
 
 
 programCard :: View ProgramSummary () -> View ProgramSummary ()
-programCard content = do
+programCard cnt = do
   ProgramSummary propId progId <- viewId
   col ~ Style.card . minHeight 200 $ do
     appRoute (Route.Proposal propId $ Program progId Prog) ~ Style.cardHeader Secondary $ text $ "Instrument Program - " <> progId.fromId
-    content
+    cnt

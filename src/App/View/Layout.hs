@@ -8,7 +8,7 @@ import Effectful
 import Effectful.Globus
 import NSO.Prelude
 import Web.Atomic.CSS
-import Web.Hyperbole
+import Web.Hyperbole hiding (content)
 
 
 appLayout :: forall es c. (Auth :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
