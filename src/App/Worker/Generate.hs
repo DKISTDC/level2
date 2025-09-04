@@ -125,6 +125,7 @@ generateTask task = do
       log Debug $ dump "WRITTEN: " (length $ NE.filter isRight metas.frames)
       Inversions.setGeneratedFits task.inversionId
 
+      send $ TaskSetStatus task GenAsdf
       Asdf.generateAsdf files inv dcanon slice
       Inversions.setGeneratedAsdf inv.inversionId
 
