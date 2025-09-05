@@ -1,5 +1,6 @@
 module App.Worker.Generate.Inputs where
 
+import App.Worker.Generate.Decode
 import App.Worker.Generate.Error (FetchError (..), FrameSizes (..), GenerateError (..))
 import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames)
 import Data.List qualified as L
@@ -48,8 +49,7 @@ inversionFiles propId invId = do
 
 sliceMeta :: (Error GenerateError :> es, Scratch :> es, Log :> es) => InversionFiles Identity File -> Eff es SliceXY
 sliceMeta u = do
-  inp <- Scratch.readFile u.profileFit
-  f :: Fits <- Fits.decode inp
+  f <- readFits u.profileFit
   slice :: SliceXY <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
   log Debug $ dump "Slice" slice
   pure slice

@@ -2,8 +2,8 @@
 
 module App.Worker.Generate.Fits where
 
+import App.Worker.Generate.Decode
 import App.Worker.Generate.Error (GenerateError (..))
-import App.Worker.Generate.Level1 (fitsDecode)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom

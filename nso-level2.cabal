@@ -60,6 +60,7 @@ library
       App.Worker.CPU
       App.Worker.Generate
       App.Worker.Generate.Asdf
+      App.Worker.Generate.Decode
       App.Worker.Generate.Error
       App.Worker.Generate.Fits
       App.Worker.Generate.Inputs

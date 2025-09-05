@@ -1,7 +1,7 @@
 module App.Worker.Generate.Level1 where
 
-import App.Worker.Generate.Error (FetchError (..))
-import Data.ByteString qualified as BS
+import App.Worker.Generate.Decode
+import App.Worker.Generate.Error (FetchError (..), GenerateError (..))
 import Data.List qualified as L
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -22,13 +22,12 @@ import Telescope.Asdf qualified as Asdf
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
 import Telescope.Fits as Fits
-import Telescope.Fits.Encoding as Fits
 
 
 newtype Canonical a = Canonical {value :: a}
 
 
-canonicalDataset :: (Datasets :> es, Error FetchError :> es, Scratch :> es, Log :> es) => SliceXY -> [Id Dataset] -> Eff es (Canonical Dataset)
+canonicalDataset :: (Datasets :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => SliceXY -> [Id Dataset] -> Eff es (Canonical Dataset)
 canonicalDataset slice ids = do
   dss :: [Dataset] <- Datasets.find $ Datasets.ByIds ids
   when (null dss) $ do
@@ -38,7 +37,7 @@ canonicalDataset slice ids = do
   pure dc
 
 
-requireCanonicalDataset :: (Error FetchError :> es, Scratch :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es (Canonical Dataset)
+requireCanonicalDataset :: (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es (Canonical Dataset)
 requireCanonicalDataset slice ds = do
   vas :: [VISPArmId] <- mapM datasetVISPArmId ds
   let canon = L.find ((== slice.fiducialArmId) . snd) $ zip ds vas
@@ -47,7 +46,7 @@ requireCanonicalDataset slice ds = do
     Just (d, _) -> pure $ Canonical d
 
 
-datasetVISPArmId :: (Error FetchError :> es, Scratch :> es, Log :> es) => Dataset -> Eff es VISPArmId
+datasetVISPArmId :: (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => Dataset -> Eff es VISPArmId
 datasetVISPArmId d = do
   f <- sampleIntensityFrame d
   frameArmId f
@@ -68,7 +67,7 @@ datasetVISPArmId d = do
 
 
 -- | read all downloaded files in the L1 scratch directory
-canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Fits]
+canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Fits]
 canonicalL1Frames fdir = do
   -- VSPARMID, see datasetVISPArmId and requireCanonicalDataset
   fs <- allL1IntensityFrames fdir
@@ -86,21 +85,13 @@ allL1IntensityFrames dir = do
     isFits (Path f) && "_I_" `L.isInfixOf` f
 
 
-readLevel1File :: forall es. (Scratch :> es, Log :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
+readLevel1File :: forall es. (Scratch :> es, Log :> es, Error GenerateError :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
 readLevel1File dir frame = do
   let path = filePath dir frame.file
-  inp <- send $ Scratch.ReadFile path
-  fits <- runErrorNoCallStackWith (throwError . FetchParse path.filePath) $ fitsDecode inp
+  fits <- readFits path
   case fits.extensions of
     [BinTable b] -> pure $ L1Fits path b.header
     _ -> throwError $ MissingL1HDU frame.file.filePath
-
-
-fitsDecode :: (Error ParseError :> es) => BS.ByteString -> Eff es Fits
-fitsDecode inp =
-  case Fits.runFitsParse Fits.parseFits inp of
-    Left e -> throwError e
-    Right f -> pure f
 
 
 readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> Eff es L1Asdf

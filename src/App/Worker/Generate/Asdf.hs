@@ -2,8 +2,9 @@
 
 module App.Worker.Generate.Asdf where
 
+import App.Worker.Generate.Decode
 import App.Worker.Generate.Error
-import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames, fitsDecode, isFits, readLevel1Asdf)
+import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames, isFits, readLevel1Asdf)
 import Control.Monad (zipWithM)
 import Data.List.NonEmpty qualified as NE
 import Effectful
@@ -121,8 +122,7 @@ loadL2FitsMeta propId invId slice arms path l1 = do
 readLevel2Fits :: forall es. (Scratch :> es, Error GenerateError :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2FrameFits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
-  inp <- send $ Scratch.ReadFile $ filePath dir path
-  runErrorNoCallStackWith (throwError . ParseError path.filePath) $ fitsDecode inp
+  readFits $ filePath dir path
 
 
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2FrameFits]
