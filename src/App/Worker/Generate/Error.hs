@@ -18,9 +18,9 @@ import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
 
 
-onCaughtError :: (Log :> es) => SomeException -> Eff (Error GenerateError : es) a
+onCaughtError :: (Log :> es) => IOError -> Eff (Error GenerateError : es) a
 onCaughtError e = do
-  log Err "Catch Any Exception"
+  log Err "Catch IO Error"
   throwError $ GenIOError e
 
 
@@ -68,7 +68,7 @@ data GenerateError
   | BlancaError BlancaError
   | MismatchedFrames FrameSizes
   | NoFrames FrameSizes
-  | GenIOError SomeException
+  | GenIOError IOError
   | MissingL2Fits
   | InvalidSliceKeys ParseError
   deriving (Show, Exception)

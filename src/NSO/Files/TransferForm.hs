@@ -42,10 +42,9 @@ transferFormFolder tform df =
         Nothing -> Path fp
 
 
--- remoteTransfer :: TransferForm -> RemoteFolder User a
--- remoteTransfer tform =
---   let Path p = tform.path
---    in RemoteFolder (Tagged tform.endpoint_id) (Path p)
+directory :: TransferForm -> Path User Dir ()
+directory tform = tform.path
+
 
 remote :: TransferForm -> Remote User
 remote tform = Remote $ Tagged tform.endpoint_id

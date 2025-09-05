@@ -147,8 +147,8 @@ clearAccessToken :: (Hyperbole :> es) => Eff es ()
 clearAccessToken = deleteSession @GlobusAuth
 
 
-waitForAccess :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
-waitForAccess eff = do
+waitForAdmin :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
+waitForAdmin eff = do
   acc <- send AdminTokenWait
   runWithAccess acc eff
 

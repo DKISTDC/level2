@@ -20,7 +20,7 @@ import App.View.Inversion qualified as Inversion
 import App.View.Layout
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import Effectful.Globus (Globus, Task)
+import Effectful.Globus (Task)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
@@ -95,7 +95,7 @@ submitUpload propId progId invId = do
   log Debug $ dump "Upload" taskId
   let new = uploads taskId tup
   files <- query
-  redirect $ setUploadQuery (files <> new) $ routeUri $ Route.inversionUpload propId progId invId
+  redirect $ setUploadQuery (allClearUploading files <> new) $ routeUri $ Route.inversionUpload propId progId invId
  where
   uploads :: Id Task -> InversionFiles Maybe Filename -> InversionFiles UploadStatus Filename
   uploads taskId up =

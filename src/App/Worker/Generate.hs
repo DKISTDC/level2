@@ -5,7 +5,7 @@ import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate.Asdf qualified as Asdf
-import App.Worker.Generate.Error (GenerateError (..), generateFailed, onCaughtGlobus, runGenerateError)
+import App.Worker.Generate.Error (GenerateError (..), generateFailed, onCaughtError, onCaughtGlobus, runGenerateError)
 import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
 import App.Worker.Generate.Inputs (DownloadComplete (..))
@@ -20,6 +20,7 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Exception (catch)
 import Effectful.GenRandom
 import Effectful.Globus (Globus, GlobusError (..), Task, TaskStatus (..), Token, Token' (Access))
 import Effectful.Log
@@ -90,7 +91,7 @@ generateTask
   -> Eff es ()
 generateTask task = do
   -- catch globus static errors!
-  res <- runErrorNoCallStack $ workWithError `catchError` (\_ e -> onCaughtGlobus e)
+  res <- runErrorNoCallStack $ workWithError `catchError` (\_ e -> onCaughtGlobus e) `catch` onCaughtError
   either (generateFailed task.inversionId) pure res
  where
   workWithError :: Eff (Error GenerateError : es) ()

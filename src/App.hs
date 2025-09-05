@@ -1,7 +1,7 @@
 module App where
 
 import App.Config
-import App.Effect.Auth as Auth (AdminState (..), Auth, getAccessToken, getAdminToken, initAdmin, runAuth, waitForAccess)
+import App.Effect.Auth as Auth (AdminState (..), Auth, getAccessToken, getAdminToken, initAdmin, runAuth, waitForAdmin)
 import App.Effect.Transfer (Transfer, runTransfer)
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
@@ -13,7 +13,6 @@ import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
-import App.Page.Root qualified as Root
 import App.Page.Sync qualified as Sync
 import App.Route
 import App.Version
@@ -55,7 +54,6 @@ import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (Path (..), pathUri)
 import Web.Hyperbole.Effect.Request (reqPath)
-import Web.Hyperbole.Effect.Response (view)
 
 
 main :: IO ()
@@ -97,12 +95,12 @@ main = do
 
   startGen = do
     runLogger "Generate" $
-      waitForGlobusAccess $ do
+      waitForAdminAccess $ do
         startWorker Gen.generateTask
 
   startPublish = do
     runLogger "Publish" $
-      waitForGlobusAccess $ do
+      waitForAdminAccess $ do
         startWorker Publish.publishTask
 
   startWorkers =
@@ -146,10 +144,10 @@ main = do
       . runMetadataSync sync
 
 
-waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
-waitForGlobusAccess work = do
+waitForAdminAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
+waitForAdminAccess work = do
   log Debug "Waiting for Admin Globus Access Token"
-  Auth.waitForAccess $ do
+  Auth.waitForAdmin $ do
     tok <- ask @(Token Access)
     runTransfer tok work
 
@@ -231,7 +229,7 @@ runGlobus' (GlobusLive g) mgr action = do
 
 crashAndPrint :: forall e es a. (UserFacingError e, IOE :> es, Log :> es, Show e, Exception e, Hyperbole :> es) => CallStack -> e -> Eff es a
 crashAndPrint _callstack err = do
-  log Err "Crash and Print"
+  log Err $ dump "Error Shown To User" err
   respondErrorView (errorType @e) $ viewError err
 
 

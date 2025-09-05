@@ -38,6 +38,13 @@ instance FromParam (UploadStatus a) where
 type instance Field UploadStatus a = UploadStatus a
 
 
+clearUploading :: UploadStatus a -> UploadStatus a
+clearUploading up =
+  case up of
+    Uploading _ -> NoUpload
+    other -> other
+
+
 instance Monoid (InversionFiles UploadStatus c) where
   mempty = InversionFiles def def def
 instance Semigroup (InversionFiles UploadStatus c) where
@@ -49,6 +56,15 @@ instance Semigroup (InversionFiles UploadStatus c) where
       }
 instance ToQuery (InversionFiles UploadStatus c)
 instance FromQuery (InversionFiles UploadStatus c)
+
+
+allClearUploading :: InversionFiles UploadStatus f -> InversionFiles UploadStatus f
+allClearUploading inv =
+  InversionFiles
+    { quantities = clearUploading inv.quantities
+    , profileFit = clearUploading inv.profileFit
+    , profileOrig = clearUploading inv.profileOrig
+    }
 
 
 allUploadStatus :: InversionFiles UploadStatus Filename -> UploadStatus ()

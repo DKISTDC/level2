@@ -6,9 +6,11 @@ Fri, Sep 5
 
 - [ ] +Crash and Print should print to the console as well
 - [ ] Upload from CU Boulder Research Computing. Works, but uploading is broken
+- [x] Require login immediately: all application code can expect Transfer
   - [x] accessing CU Boulder Research works
-  - [ ] can't upload! Something wrong with transfer, not getting the local path
+  - [x] can't upload! Something wrong with transfer, not getting the local path
 - [x] Bug: "Hyperbole internal error" lots of places: when clicking upload, start over with new inversion. Was a bug with hyperbole redirects
+- [x] Bug: File missing exception crashes app
 
 
 Thu, Sep 4

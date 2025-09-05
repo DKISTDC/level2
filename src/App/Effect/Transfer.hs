@@ -138,16 +138,20 @@ uploadInversionResults
 uploadInversionResults tform upfiles propId invId = do
   scratch <- Scratch.remote
   let source = TransferForm.remote tform
-  let xfers = catMaybes [fmap fileTransfer upfiles.quantities, fmap fileTransfer upfiles.profileFit, fmap fileTransfer upfiles.profileOrig]
+  xfers <- sequence $ catMaybes [fileTransfer upfiles.quantities, fileTransfer upfiles.profileFit, fileTransfer upfiles.profileOrig]
   send $ TransferFiles tform.label source scratch xfers
  where
-  fileTransfer :: Path Scratch Filename a -> FileTransfer User Scratch File Inversion
-  fileTransfer p@(Path a) =
-    FileTransfer
-      { sourcePath = Path a
-      , destPath = Image.blancaFile (Image.blancaInput propId invId) p
-      , recursive = False
-      }
+  fileTransfer :: (Scratch :> es) => Maybe (Path Scratch Filename a) -> Maybe (Eff es (FileTransfer User Scratch File Inversion))
+  fileTransfer Nothing = Nothing
+  fileTransfer (Just p@(Path a)) =
+    pure $ do
+      Path mp <- Scratch.mountedPath $ Image.blancaFile (Image.blancaInput propId invId) p
+      pure $
+        FileTransfer
+          { sourcePath = TransferForm.directory tform </> Path a
+          , destPath = Path mp
+          , recursive = False
+          }
 
 
 -- sourceBlanca :: Path User Dir a -> Path User Dir User

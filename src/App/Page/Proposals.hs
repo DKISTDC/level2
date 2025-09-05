@@ -11,6 +11,7 @@ import App.Style qualified as Style
 import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.Layout
+import App.View.Loading (loadingCard)
 import App.View.ProposalDetails (viewProgramRow)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
@@ -197,7 +198,7 @@ instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView 
 
 viewProposalLoad :: Filters -> Proposal -> View ProposalCard ()
 viewProposalLoad filts prop = do
-  proposalCard prop $ el @ onLoad (ProposalDetails filts) 100 $ ""
+  proposalCard prop $ el @ onLoad (ProposalDetails filts) 300 $ loadingCard
 
 
 viewProposalDetails :: Filters -> UTCTime -> Proposal -> [ProgramFamily] -> View ProposalCard ()
