@@ -92,8 +92,8 @@ submitUpload propId progId invId = do
   log Debug $ dump "Form" tup
 
   taskId <- requireTransfer $ Transfer.uploadInversionResults tfrm tup propId invId
+  log Debug $ dump "Upload" taskId
   let new = uploads taskId tup
-
   files <- query
   redirect $ setUploadQuery (files <> new) $ routeUri $ Route.inversionUpload propId progId invId
  where

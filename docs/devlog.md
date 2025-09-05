@@ -1,9 +1,20 @@
 
 - [ ] Inversion Generate Step - shows Generate ASDF even if it is actually generating FITS files, as long as the Inversion has the generated fits set. In reality the status is based on the task itself though. Reproduce by deleting a fits while on ASDF step and restarting. The view should report the fits generation process with the skips, etc
 
+
+Fri, Sep 5
+----------
+
+- [ ] +Crash and Print should print to the console as well
+- [ ] Upload from CU Boulder Research Computing. Works, but uploading is broken
+  - [x] accessing CU Boulder Research works
+  - [ ] can't upload! Something wrong with transfer, not getting the local path
+- [x] Bug: "Hyperbole internal error" lots of places: when clicking upload, start over with new inversion. Was a bug with hyperbole redirects
+
+
 Thu, Sep 4
 ----------
-- [ ] Bug: Globus Errors are crashing the server: Reproduce: kill server in the middle of transfer and restart. you get the “Identical Transfer” error
+- [x] Bug: Globus Errors are crashing the server: Reproduce: kill server in the middle of transfer and restart. you get the “Identical Transfer” error
 - [x] Refactored Generate
 
 
