@@ -6,7 +6,7 @@ module App.Page.InversionUpload where
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager)
 import App.Effect.FileManager (FileLimit (Files))
-import App.Effect.Transfer (requireTransfer)
+import App.Effect.Transfer (Transfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Effect.Transfer.UploadStatus
 import App.Page.Inversions.CommitForm (commitForm)
@@ -79,7 +79,7 @@ page propId progId invId = do
 
 submitUpload
   :: forall es
-   . (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Auth :> es, Scratch :> es, Globus :> es)
+   . (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Scratch :> es, Transfer :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
@@ -91,7 +91,7 @@ submitUpload propId progId invId = do
   tup <- formData @(InversionFiles Maybe Filename)
   log Debug $ dump "Form" tup
 
-  taskId <- requireTransfer $ Transfer.uploadInversionResults tfrm tup propId invId
+  taskId <- Transfer.uploadInversionResults tfrm tup propId invId
   log Debug $ dump "Upload" taskId
   let new = uploads taskId tup
   files <- query
@@ -161,7 +161,7 @@ data Uploads = Uploads (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Generic, ViewId)
 
 
-instance (Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Reader App :> es, Globus :> es) => HyperView Uploads es where
+instance (Log :> es, Inversions :> es, Datasets :> es, Reader App :> es, Transfer :> es) => HyperView Uploads es where
   data Action Uploads
     = Upload
     | UpTransfer (Id Task) TransferAction
@@ -190,7 +190,7 @@ instance (Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Reader App :>
             setQuery $ QueryState uploads' def
             pure $ viewUpload dall uploads' metadata
           CheckTransfer -> do
-            tview <- requireTransfer $ Transfer.checkTransfer (UpTransfer taskId) taskId
+            tview <- Transfer.checkTransfer (UpTransfer taskId) taskId
             pure $ viewUploadWithTransfer dall uploads metadata $ do
               tview
    where

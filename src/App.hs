@@ -1,7 +1,8 @@
 module App where
 
 import App.Config
-import App.Effect.Auth as Auth
+import App.Effect.Auth as Auth (AdminState (..), Auth, getAccessToken, getAdminToken, initAdmin, runAuth, waitForAccess)
+import App.Effect.Transfer (Transfer, runTransfer)
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
@@ -12,6 +13,7 @@ import App.Page.Inversions qualified as Inversions
 import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
+import App.Page.Root qualified as Root
 import App.Page.Sync qualified as Sync
 import App.Route
 import App.Version
@@ -52,6 +54,8 @@ import Network.Wai.Middleware.AddHeaders (addHeaders)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (Path (..), pathUri)
+import Web.Hyperbole.Effect.Request (reqPath)
+import Web.Hyperbole.Effect.Response (view)
 
 
 main :: IO ()
@@ -68,11 +72,11 @@ main = do
     metas <- atomically taskChanNew
     props <- atomically taskChanNew
     sync <- initMetadataSync
-    auth <- initAuth config.auth.admins config.auth.adminToken
+    admin <- initAdmin config.auth.admins config.auth.adminToken
 
     concurrently_
-      (startWebServer config auth fits pubs sync)
-      (runWorkers config auth fits pubs sync metas props startWorkers)
+      (startWebServer config admin fits pubs sync)
+      (runWorkers config admin fits pubs sync metas props startWorkers)
 
     pure ()
  where
@@ -81,7 +85,7 @@ main = do
       forever
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es) => Config -> AuthState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
+  startWebServer :: (IOE :> es) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
   startWebServer config auth fits pubs sync =
     runLogger "Server" $ do
       -- log Debug $ "Starting on :" <> show config.app.port
@@ -120,7 +124,7 @@ main = do
       . runEnvironment
       . runConcurrent
 
-  runWorkers config auth fits pubs sync metas props =
+  runWorkers config admin fits pubs sync metas props =
     runFileSystem
       . runReader config.scratch
       . runReader config.cpuWorkers
@@ -128,7 +132,7 @@ main = do
       . runScratch config.scratch
       . runGlobus' config.globus config.manager
       . runFetchHttp config.manager
-      . runAuth config.app.domain Redirect auth
+      . runAuth config.app.domain Login admin
       . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
@@ -142,17 +146,19 @@ main = do
       . runMetadataSync sync
 
 
-waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es) => Eff (Reader (Token Access) : es) () -> Eff es ()
+waitForGlobusAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
 waitForGlobusAccess work = do
   log Debug "Waiting for Admin Globus Access Token"
-  Auth.waitForAccess work
+  Auth.waitForAccess $ do
+    tok <- ask @(Token Access)
+    runTransfer tok work
 
 
-webServer :: Config -> AuthState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Application
-webServer config auth fits pubs sync =
+webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Application
+webServer config admin fits pubs sync =
   liveApp
     (document documentHead)
-    (runApp . routeRequest $ router)
+    respond
  where
   router Dashboard = runPage Dashboard.page
   router Proposals = runPage Proposals.page
@@ -171,19 +177,39 @@ webServer config auth fits pubs sync =
   router Experiments = do
     redirect (pathUri . Path True $ routePath Proposals)
   router Logout = runPage Auth.logout
-  router Redirect = runPage Auth.login
+  router Login = runPage Auth.login
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff (Debug : MetadataSync : Tasks PublishTask : Tasks GenTask : Auth : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Reader App : Globus : Scratch : FileSystem : Error GraphQLError : Error GlobusError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
-  runApp =
-    runTime
-      . runLogger "App"
-      . runErrorWith @Rel8Error crashWithError
+  respond :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff es Response
+  respond = do
+    pth <- reqPath
+    runBasic $ do
+      case pth of
+        -- allow /redirect past to process the login
+        "/redirect" -> runPage Auth.login
+        -- otherwise, check login status and redirect to the auth page
+        _ -> do
+          muser <- Auth.getAccessToken
+          madmin <- Auth.getAdminToken
+          case (muser, madmin) of
+            (Just tok, Just _) -> runApp tok . routeRequest $ router
+            _ -> runPage Auth.page
+
+  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : es) a -> Eff es a
+  runBasic =
+    runLogger "AppBasic"
       . runErrorWith @GlobusError crashAndPrint
-      . runErrorWith @GraphQLError crashWithError
       . runFileSystem
       . runScratch config.scratch
       . runGlobus' config.globus config.manager
+      . runAuth config.app.domain Login admin
       . runReader config.app
+
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es) => Token Access -> Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp tok =
+    runTime
+      . runLogger "App"
+      . runErrorWith @Rel8Error crashWithError
+      . runErrorWith @GraphQLError crashWithError
       . runGenRandom
       . runRel8 config.db
       . runFetchHttp config.manager
@@ -191,10 +217,10 @@ webServer config auth fits pubs sync =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
-      . runAuth config.app.domain Redirect auth
       . runTasks fits
       . runTasks pubs
       . runMetadataSync sync
+      . runTransfer tok
       . runDebugIO
 
 

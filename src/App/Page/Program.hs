@@ -101,13 +101,13 @@ data ActiveDownload = ActiveDownload
   deriving (Generic, ToQuery, FromQuery)
 
 
-submitDownload :: (Hyperbole :> es, Log :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
+submitDownload :: (Hyperbole :> es, Log :> es, Datasets :> es, Inversions :> es, Transfer :> es) => Id Proposal -> Id InstrumentProgram -> Eff es Response
 submitDownload propId progId = do
   log Debug $ dump "Submit Download" (propId, progId)
   tfrm <- formData @TransferForm
   tfls <- formData @DownloadFolder
   ds <- Datasets.find (Datasets.ByProgram progId)
-  taskId <- requireTransfer $ Transfer.userDownloadDatasets tfrm tfls ds
+  taskId <- Transfer.userDownloadDatasets tfrm tfls ds
   let dwn = ActiveDownload (Just taskId)
   redirect $ activeDownloadQuery dwn $ routeUri (Route.Proposal propId $ Route.Program progId Route.Prog)
  where
@@ -270,7 +270,7 @@ data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Generic, ViewId)
 
 
-instance (Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView DownloadTransfer es where
+instance (Datasets :> es, Log :> es, Transfer :> es) => HyperView DownloadTransfer es where
   data Action DownloadTransfer
     = DwnTransfer TransferAction
     deriving (Generic, ViewAction)
@@ -294,7 +294,7 @@ instance (Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView Down
             el "Successfully Downloaded: "
             el $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
       CheckTransfer -> do
-        tview <- requireTransfer $ Transfer.checkTransfer DwnTransfer taskId
+        tview <- Transfer.checkTransfer DwnTransfer taskId
         pure $ col ~ gap 10 $ do
           redownloadBtn ~ Style.btnLoading Secondary . Style.disabled $ "Downloading"
           tview

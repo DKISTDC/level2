@@ -30,12 +30,11 @@ page
   :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenTask :> es)
   => Page es '[Work]
 page = do
-  login <- loginUrl
-  mtok <- send AdminToken
-  appLayout Dashboard (mainView $ AdminLogin mtok login)
+  -- login <- loginUrl
+  appLayout Dashboard mainView
  where
-  mainView :: AdminLogin -> View (Root '[Work]) ()
-  mainView admin =
+  mainView :: View (Root '[Work]) ()
+  mainView =
     col ~ pad 20 . gap 20 $ do
       col $ do
         el ~ fontSize 24 . bold $ "Level 2"
@@ -43,15 +42,16 @@ page = do
 
       col $ do
         el ~ bold . fontSize 18 $ "Admin"
-        row $ do
-          case admin.token of
-            Nothing -> link admin.loginUrl ~ Style.btnOutline Danger $ "Needs Globus Login"
-            Just _ -> do
-              el ~ color Success $ "System Access Token Saved!"
 
       -- hyper Test testView
       hyper Work $ workView []
 
+
+-- row $ do
+-- case admin.token of
+--   Nothing -> link admin.loginUrl ~ Style.btnOutline Danger $ "Needs Globus Login"
+--   Just _ -> do
+--     el ~ color Success $ "System Access Token Saved!"
 
 data AdminLogin = AdminLogin
   { token :: Maybe (Token Access)

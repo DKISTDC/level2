@@ -72,29 +72,28 @@ instance Show GenStatus where
 
 generateTask
   :: forall es
-   . ( Reader (Token Access) :> es
-     , Reader CPUWorkers :> es
+   . ( Reader CPUWorkers :> es
      , Error GlobusError :> es
      , Datasets :> es
      , Inversions :> es
      , Time :> es
-     , Globus :> es
      , Scratch :> es
      , Log :> es
      , IOE :> es
      , Concurrent :> es
      , Tasks GenTask :> es
      , GenRandom :> es
+     , Transfer :> es
      , IOE :> es
      )
   => GenTask
   -> Eff es ()
 generateTask task = do
   -- catch globus static errors!
-  res <- runErrorNoCallStack $ runTransfer $ workWithError `catchError` (\_ e -> onCaughtGlobus e)
+  res <- runErrorNoCallStack $ workWithError `catchError` (\_ e -> onCaughtGlobus e)
   either (generateFailed task.inversionId) pure res
  where
-  workWithError :: Eff (Transfer : Error GenerateError : es) ()
+  workWithError :: Eff (Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     logContext ("GEN " <> cs task.inversionId.fromId) $ do
       log Info "start"

@@ -18,11 +18,23 @@ data AppRoute
   | Inversions
   | Proposal (Id Proposal) ProposalRoute
   | Datasets DatasetRoute
-  | Redirect
+  | Login
   | Logout
   deriving (Show, Generic, Eq)
 instance Route AppRoute where
   baseRoute = Just Dashboard
+
+
+  matchRoute = \case
+    [] -> pure Dashboard
+    ["redirect"] -> pure Login
+    ss -> genMatchRoute ss
+
+
+  routePath = \case
+    Dashboard -> []
+    Login -> ["redirect"]
+    r -> genRoutePath r
 
 
 data ProposalRoute

@@ -5,7 +5,7 @@ module App.Page.Inversion where
 import App.Colors
 import App.Effect.Auth
 import App.Effect.FileManager qualified as FileManager
-import App.Effect.Transfer (requireTransfer)
+import App.Effect.Transfer (Transfer)
 import App.Error (expectFound)
 import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
@@ -52,9 +52,6 @@ page
 page propId invId = do
   inv <- loadInversion invId
   ds <- Datasets.find (Datasets.ByProgram inv.programId)
-  mtok <- send AdminToken
-  login <- send LoginUrl
-  let admin = AdminLogin mtok login
   gen <- send $ TaskLookupStatus $ GenTask propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
   appLayout Inversions $ do
@@ -74,7 +71,7 @@ page propId invId = do
           appRoute (Route.Proposal inv.proposalId PropRoot) ~ Style.link $ do
             text inv.proposalId.fromId
 
-      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds admin gen pub
+      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds gen pub
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
@@ -152,16 +149,14 @@ instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Tim
     refresh = do
       InversionStatus propId progId invId <- viewId
       ds <- Datasets.find (Datasets.ByProgram progId)
-      mtok <- send AdminToken
-      login <- send LoginUrl
       inv <- loadInversion invId
       gen <- send $ TaskLookupStatus $ GenTask propId invId
       pub <- send $ TaskLookupStatus $ PublishTask propId invId
-      pure $ viewInversion inv ds (AdminLogin mtok login) gen pub
+      pure $ viewInversion inv ds gen pub
 
 
-viewInversion :: Inversion -> [Dataset] -> AdminLogin -> Maybe GenStatus -> Maybe PublishStatus -> View InversionStatus ()
-viewInversion inv ds admin gen pub = do
+viewInversion :: Inversion -> [Dataset] -> Maybe GenStatus -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion inv ds gen pub = do
   col ~ gap 30 $ do
     if inv.deleted
       then restoreButton
@@ -176,7 +171,7 @@ viewInversion inv ds admin gen pub = do
 
         stepGenerate (generateStep inv) $ do
           hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
-            viewGenerate inv admin gen
+            viewGenerate inv gen
 
         stepPublish (publishStep inv) $ do
           hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
@@ -392,10 +387,8 @@ instance (Tasks GenTask :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Da
       GenerateStep propId _ invId <- viewId
       inv <- loadInversion invId
       status <- send $ TaskLookupStatus $ GenTask propId invId
-      mtok <- send AdminToken
-      login <- send LoginUrl
       pure $ do
-        viewGenerate inv (AdminLogin mtok login) status
+        viewGenerate inv status
 
     refreshInversion = do
       GenerateStep propId progId invId <- viewId
@@ -409,15 +402,15 @@ generateStep inv
   | otherwise = StepNext
 
 
-viewGenerate :: Inversion -> AdminLogin -> Maybe GenStatus -> View GenerateStep ()
-viewGenerate inv admin status
+viewGenerate :: Inversion -> Maybe GenStatus -> View GenerateStep ()
+viewGenerate inv status
   | inv.deleted = none
-  | isInverted inv = viewGenerate' inv admin status
+  | isInverted inv = viewGenerate' inv status
   | otherwise = none
 
 
-viewGenerate' :: Inversion -> AdminLogin -> Maybe GenStatus -> View GenerateStep ()
-viewGenerate' inv admin status =
+viewGenerate' :: Inversion -> Maybe GenStatus -> View GenerateStep ()
+viewGenerate' inv status =
   col ~ gap 10 $ viewGen
  where
   viewGen =
@@ -448,9 +441,6 @@ viewGenerate' inv admin status =
         row @ onLoad ReloadGen 1000 $ do
           loadingMessage "Waiting for job to start"
           space
-          case admin.token of
-            Nothing -> link admin.loginUrl ~ Style.btnOutline Danger $ "Needs Globus Login"
-            Just _ -> pure ()
       GenStarted ->
         row @ onLoad ReloadGen 1000 $ do
           loadingMessage "Started"
@@ -502,7 +492,7 @@ data GenerateTransfer = GenerateTransfer (Id Proposal) (Id InstrumentProgram) (I
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenTask :> es, Inversions :> es, Auth :> es, Datasets :> es, Log :> es, Globus :> es) => HyperView GenerateTransfer es where
+instance (Tasks GenTask :> es, Inversions :> es, Datasets :> es, Log :> es, Transfer :> es) => HyperView GenerateTransfer es where
   type Require GenerateTransfer = '[GenerateStep]
   data Action GenerateTransfer
     = GenTransfer TransferAction
@@ -522,7 +512,7 @@ instance (Tasks GenTask :> es, Inversions :> es, Auth :> es, Datasets :> es, Log
           target (GenerateStep propId progId invId) $ do
             el @ onLoad ReloadGen 1000 $ "SUCCEEDED"
       CheckTransfer -> do
-        requireTransfer $ Transfer.checkTransfer GenTransfer taskId
+        Transfer.checkTransfer GenTransfer taskId
 
 
 viewGeneratedFiles :: Inversion -> View c ()
@@ -545,7 +535,7 @@ data PublishStep = PublishStep (Id Proposal) (Id InstrumentProgram) (Id Inversio
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Globus :> es) => HyperView PublishStep es where
+instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Transfer :> es) => HyperView PublishStep es where
   type Require PublishStep = '[InversionStatus]
 
 
@@ -560,9 +550,8 @@ instance (Inversions :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Ta
     PublishStep propId _ invId <- viewId
     case action of
       StartSoftPublish -> do
-        requireLogin $ do
-          Publish.startSoftPublish propId invId
-          pure viewPublishWait
+        Publish.startSoftPublish propId invId
+        pure viewPublishWait
       CheckPublish -> do
         status <- send $ TaskGetStatus $ PublishTask propId invId
         pure $ do
@@ -576,7 +565,7 @@ instance (Inversions :> es, Auth :> es, IOE :> es, Scratch :> es, Time :> es, Ta
       PublishTransfer _ TaskSucceeded -> do
         refreshInversion
       PublishTransfer taskId CheckTransfer -> do
-        requireTransfer $ Transfer.checkTransfer (PublishTransfer taskId) taskId
+        Transfer.checkTransfer (PublishTransfer taskId) taskId
    where
     refreshInversion = do
       PublishStep propId progId invId <- viewId

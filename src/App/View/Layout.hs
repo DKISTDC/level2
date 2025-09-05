@@ -1,42 +1,32 @@
 module App.View.Layout where
 
 import App.Colors
-import App.Effect.Auth
 import App.Route
-import App.Style qualified as Style
 import Effectful
-import Effectful.Globus
 import NSO.Prelude
 import Web.Atomic.CSS
 import Web.Hyperbole hiding (content)
 
 
-appLayout :: forall es c. (Auth :> es, Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
+appLayout :: forall es c. (Hyperbole :> es) => AppRoute -> View c () -> Eff es (View c ())
 appLayout r content = do
-  login <- loginUrl
-  saveCurrentUrl
-  mtok <- getAccessToken
-  madmin <- send AdminToken
-
-  pure $ layout login r mtok madmin content
+  pure $ layout r content
 
 
-layout :: URI -> AppRoute -> Maybe (Token Access) -> Maybe (Token Access) -> View c () -> View c ()
-layout login rc tok madmin content = do
+layout :: AppRoute -> View c () -> View c ()
+layout rc content = do
   col ~ color Black . grow $ do
     nav ~ gap 0 . bg Primary . color White . topbar $ do
       row ~ pad 15 $ do
         space
-        route Dashboard ~ bold . fontSize 24 . pad (XY 20 0) $ "Level 2"
+        route Dashboard ~ bold . fontSize 24 . pad (XY 20 0) $ "NSO Level 2"
         space
       -- nav Dashboard "Dashboard"
       item Proposals "Proposals"
       item Inversions "Inversions"
       item (Datasets DatasetRoot) "Datasets"
       space
-      adminLink
-      loginLink tok
-    -- WebView.link login center "Login"
+      route Logout ~ center $ "Log Out"
 
     col ~ grow . overflow Scroll $ do
       -- el_ $ text $ cs $ show tok
@@ -46,18 +36,6 @@ layout login rc tok madmin content = do
     route
       r
       ~ (center . hover (borderColor White . color White) . if r == rc then current else other)
-
-  loginLink Nothing =
-    link login ~ center $ "Login"
-  loginLink (Just _) =
-    route Logout ~ center $ "Log Out"
-
-  adminLink = do
-    case madmin of
-      Nothing -> do
-        row ~ pad 10 $ do
-          link login ~ Style.btn Warning $ "Needs Globus Login"
-      Just _ -> pure ()
 
   center = pad 20
 

@@ -44,24 +44,16 @@ startSoftPublish propId invId = do
 
 publishTask
   :: forall es
-   . ( Reader (Token Access) :> es
-     , Globus :> es
-     , Inversions :> es
-     , Time :> es
-     , Scratch :> es
-     , Log :> es
-     , Concurrent :> es
-     , Tasks PublishTask :> es
-     )
+   . (Inversions :> es, Time :> es, Scratch :> es, Log :> es, Concurrent :> es, Tasks PublishTask :> es, Transfer :> es)
   => PublishTask
   -> Eff es ()
 publishTask task = do
-  res <- runErrorNoCallStack @PublishError $ runTransfer workWithError
+  res <- runErrorNoCallStack @PublishError workWithError
   case res of
     Left err -> failed err
     Right a -> pure a
  where
-  workWithError :: Eff (Transfer : Error PublishError : es) ()
+  workWithError :: Eff (Error PublishError : es) ()
   workWithError = do
     log Debug "Publish Task"
 

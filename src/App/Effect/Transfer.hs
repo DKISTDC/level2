@@ -41,23 +41,22 @@ type instance DispatchOf Transfer = 'Dynamic
 
 
 runTransfer
-  :: (Globus :> es, Reader (Token Access) :> es, Log :> es)
-  => Eff (Transfer : es) a
+  :: (Globus :> es, Log :> es)
+  => Token Access
+  -> Eff (Transfer : es) a
   -> Eff es a
-runTransfer = interpret $ \_ -> \case
+runTransfer acc = interpret $ \_ -> \case
   TransferStatus taskId -> do
-    acc <- ask @(Token Access)
     send $ StatusTask acc (Tagged taskId.fromId)
   TransferFiles lbl source dest files ->
     transferFiles lbl source dest files
  where
-  transferFiles :: (Log :> es, Reader (Token Access) :> es, Globus :> es) => Text -> Remote src -> Remote dest -> [FileTransfer src dest f a] -> Eff es (Id Task)
+  transferFiles :: (Log :> es, Globus :> es) => Text -> Remote src -> Remote dest -> [FileTransfer src dest f a] -> Eff es (Id Task)
   transferFiles lbl source dest files = do
     log Debug "TRANSFER"
     log Debug $ dump " source: " source
     log Debug $ dump " dest: " dest
     log Debug $ dump " files: " files
-    acc <- ask
     sub <- send $ Globus.GetSubmissionId acc
     let items = fmap transferItem files
     let req = transferRequest sub
@@ -89,12 +88,11 @@ runTransfer = interpret $ \_ -> \case
             }
 
 
--- | Run Transfer, requiring auth, catching and displaying globus errors
+{- | Run Transfer, requiring auth, catching and displaying globus errors
 requireTransfer :: (Log :> es, Auth :> es, Globus :> es, Hyperbole :> es) => Eff (Transfer : Reader (Token Access) : es) a -> Eff es a
 requireTransfer eff =
   Auth.requireLogin $ runTransfer eff
-
-
+-}
 transferStatus :: (Transfer :> es) => Id Task -> Eff es Task
 transferStatus = send . TransferStatus
 

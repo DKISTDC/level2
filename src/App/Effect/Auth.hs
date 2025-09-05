@@ -3,6 +3,7 @@
 
 module App.Effect.Auth where
 
+import App.Config (App (..))
 import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
 import App.Types
 import Control.Monad (void)
@@ -25,10 +26,10 @@ import Web.Hyperbole.Data.URI as URI
 
 -- Authentication!
 data Auth :: Effect where
-  LoginUrl :: Auth m URI
   AuthWithCode :: Token Exchange -> Auth m UserLoginInfo
   AdminToken :: Auth m (Maybe (Token Access))
   AdminTokenWait :: Auth m (Token Access)
+type instance DispatchOf Auth = 'Dynamic
 
 
 -- https://github.com/haskell/aeson/pull/1144
@@ -54,39 +55,28 @@ instance Default GlobusAuth where
   def = GlobusAuth mempty Nothing
 
 
-type instance DispatchOf Auth = 'Dynamic
-
-
 runAuth
   :: (Globus :> es, Route r, Concurrent :> es, Log :> es)
   => AppDomain
   -> r
-  -> AuthState
+  -> AdminState
   -> Eff (Auth : es) a
   -> Eff es a
-runAuth dom r auth = interpret $ \_ -> \case
-  LoginUrl -> do
-    authUrl $ redirectUri dom r
+runAuth dom r admin = reinterpret id $ \_ -> \case
+  AdminToken -> do
+    atomically $ tryReadTMVar admin.adminToken
+  AdminTokenWait -> do
+    atomically $ readTMVar admin.adminToken
   AuthWithCode authCode -> do
     let red = redirectUri dom r
     ts <- accessTokens red authCode
     res <- runErrorNoCallStack @GlobusError $ userInfo ts
-    u :: UserLoginInfo <- either throwIO pure res
-    when (isAdmin u) $ do
-      log Debug $ dump "FOUND ADMIN" u.transfer
-      void $ atomically $ tryPutTMVar auth.adminToken u.transfer
-    pure u
-  AdminToken -> do
-    atomically $ tryReadTMVar auth.adminToken
-  AdminTokenWait -> do
-    atomically $ readTMVar auth.adminToken
+    user :: UserLoginInfo <- either throwIO pure res
+    when (isAdmin user) $ do
+      log Debug $ dump "FOUND ADMIN" user.transfer
+      void $ atomically $ tryPutTMVar admin.adminToken user.transfer
+    pure user
  where
-  isAdmin :: UserLoginInfo -> Bool
-  isAdmin u = do
-    case u.email of
-      Just ue -> ue `elem` auth.admins
-      Nothing -> False
-
   userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo
   userInfo tis = do
     oid <- requireScopeToken (Identity OpenId) tis
@@ -102,20 +92,23 @@ runAuth dom r auth = interpret $ \_ -> \case
         , transfer = Tagged trn
         }
 
+  isAdmin :: UserLoginInfo -> Bool
+  isAdmin u = do
+    case u.email of
+      Just ue -> ue `elem` admin.admins
+      Nothing -> False
 
--- accessToken :: Globus -> Uri Redirect -> Token Exchange -> m TokenResponse
--- accessToken (Token cid) (Token sec) red (Token code) =
 
-data AuthState = AuthState
+data AdminState = AdminState
   { adminToken :: TMVar (Token Access)
   , admins :: [UserEmail]
   }
 
 
-initAuth :: (Concurrent :> es) => [UserEmail] -> Maybe (Token Access) -> Eff es AuthState
-initAuth admins mtok = do
+initAdmin :: (Concurrent :> es) => [UserEmail] -> Maybe (Token Access) -> Eff es AdminState
+initAdmin admins mtok = do
   adminToken <- token mtok
-  pure $ AuthState{admins, adminToken}
+  pure $ AdminState{admins, adminToken}
  where
   token Nothing = newEmptyTMVarIO
   token (Just t) = newTMVarIO t
@@ -127,29 +120,21 @@ redirectUri dom r = do
   Tagged $ URI "https:" (Just $ URIAuth "" (cs dom.unTagged) "") (cs $ pathToText $ Path True $ routePath r) "" ""
 
 
--- let path = T.intercalate "/" rp
--- Uri Https (cs dom.unTagged) (routePath r) (Query []) -- (Query [("path", Just path)])
+-- expectAuth :: (Hyperbole :> es, Auth :> es) => Maybe a -> Eff es a
+-- expectAuth Nothing = do
+--   u <- loginUrl
+--   redirect u
+-- expectAuth (Just a) = pure a
 
--- getRedirectUri :: (Hyperbole :> es, Auth :> es) => Eff es (Uri Globus.Redirect)
--- getRedirectUri = do
---   send RedirectUri
-
-expectAuth :: (Hyperbole :> es, Auth :> es) => Maybe a -> Eff es a
-expectAuth Nothing = do
-  u <- loginUrl
-  redirect u
-expectAuth (Just a) = pure a
-
-
-loginUrl :: (Hyperbole :> es, Auth :> es) => Eff es URI
-loginUrl = do
-  send LoginUrl
-
-
-getAccessToken :: (Hyperbole :> es, Auth :> es) => Eff es (Maybe (Token Access))
+getAccessToken :: (Hyperbole :> es) => Eff es (Maybe (Token Access))
 getAccessToken = do
   auth <- session @GlobusAuth
   pure auth.token
+
+
+getAdminToken :: (Auth :> es) => Eff es (Maybe (Token Access))
+getAdminToken = do
+  send AdminToken
 
 
 saveAccessToken :: (Hyperbole :> es) => Token Access -> Eff es ()
@@ -172,11 +157,10 @@ runWithAccess :: Token Access -> Eff (Reader (Token Access) : es) a -> Eff es a
 runWithAccess = runReader
 
 
-requireLogin :: (Hyperbole :> es, Auth :> es, Log :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
-requireLogin eff = do
-  acc <- getAccessToken >>= expectAuth
-  runWithAccess acc eff
-
+-- requireLogin :: (Hyperbole :> es, Auth :> es, Log :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
+-- requireLogin eff = do
+--   acc <- getAccessToken >>= expectAuth
+--   runWithAccess acc eff
 
 newtype RedirectPath = RedirectPath [Segment]
   deriving (Show, Eq)
@@ -211,7 +195,7 @@ getLastUrl = do
   pure $ (.uri) <$> auth.currentUrl
 
 
-openFileManager :: (Hyperbole :> es, Auth :> es, Reader App :> es, Log :> es) => FileLimit -> Text -> URI -> Eff es a
+openFileManager :: (Hyperbole :> es, Reader App :> es) => FileLimit -> Text -> URI -> Eff es a
 openFileManager files lbl submitUrl = do
   cancelUrl <- currentUrl
   app <- ask @App
@@ -219,6 +203,12 @@ openFileManager files lbl submitUrl = do
 
 
 -- Globus stuff -------------------------------------------------------------
+
+loginUrl :: (Globus :> es, Route r, Reader App :> es) => r -> Eff es URI
+loginUrl r = do
+  app <- ask @App
+  authUrl $ redirectUri app.domain r
+
 
 authUrl :: (Globus :> es) => Uri Redirect -> Eff es URI
 authUrl red = do

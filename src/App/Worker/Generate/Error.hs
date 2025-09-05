@@ -1,6 +1,5 @@
 module App.Worker.Generate.Error where
 
-import App.Effect.Transfer (Transfer)
 import Control.Exception (Exception, SomeException)
 import Effectful
 import Effectful.Error.Static
@@ -19,13 +18,13 @@ import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
 
 
-onCaughtError :: (Log :> es) => SomeException -> Eff (Transfer : Error GenerateError : es) a
+onCaughtError :: (Log :> es) => SomeException -> Eff (Error GenerateError : es) a
 onCaughtError e = do
   log Err "Catch Any Exception"
   throwError $ GenIOError e
 
 
-onCaughtGlobus :: (Log :> es) => GlobusError -> Eff (Transfer : Error GenerateError : es) a
+onCaughtGlobus :: (Log :> es) => GlobusError -> Eff (Error GenerateError : es) a
 onCaughtGlobus e = do
   log Err "Catch GLOBUS"
   throwError $ GlobusError e
