@@ -1,6 +1,6 @@
 module App.Worker.Publish where
 
-import App.Effect.Transfer (Transfer, runTransfer, transferSoftPublish)
+import App.Effect.Transfer (Transfer, transferSoftPublish)
 import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception)
 import Control.Monad.Loops
@@ -8,9 +8,8 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (Globus, Task, Token, Token' (Access))
+import Effectful.Globus (Task)
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Inversions as Inversions

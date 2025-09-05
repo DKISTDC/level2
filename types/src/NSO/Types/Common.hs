@@ -11,7 +11,6 @@ import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
-import System.FilePath (takeDirectory, takeFileName)
 import System.FilePath qualified as FP
 import Telescope.Asdf
 import Telescope.Asdf.GWCS (ToAxes)

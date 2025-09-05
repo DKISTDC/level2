@@ -3,7 +3,6 @@
 
 module App.Effect.Auth where
 
-import App.Config (App (..))
 import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
 import App.Types
 import Control.Monad (void)

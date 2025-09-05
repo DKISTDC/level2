@@ -1,6 +1,5 @@
 module App.Effect.Transfer where
 
-import App.Effect.Auth as Auth
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
@@ -8,7 +7,6 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import NSO.Files as Files
 import NSO.Files.DKIST as DKIST
 import NSO.Files.Image qualified as Image
@@ -20,7 +18,6 @@ import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
-import Web.Hyperbole
 
 
 data FileTransfer sys dest f a = FileTransfer

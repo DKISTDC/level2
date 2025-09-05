@@ -1,6 +1,6 @@
 module App.Worker.Generate.Error where
 
-import Control.Exception (Exception, SomeException)
+import Control.Exception (Exception)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log

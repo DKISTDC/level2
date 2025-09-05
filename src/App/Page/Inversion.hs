@@ -7,7 +7,6 @@ import App.Effect.Auth
 import App.Effect.FileManager qualified as FileManager
 import App.Effect.Transfer (Transfer)
 import App.Error (expectFound)
-import App.Page.Dashboard (AdminLogin (..))
 import App.Page.Inversions.CommitForm as CommitForm
 import App.Route as Route
 import App.Style qualified as Style
@@ -24,7 +23,7 @@ import App.Worker.Publish as Publish
 import Effectful
 import Effectful.Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
-import Effectful.Globus (Globus, Task)
+import Effectful.Globus (Task)
 import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import Effectful.Time
