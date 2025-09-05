@@ -58,6 +58,7 @@ data GenStatus
   = GenWaiting
   | GenStarted
   | GenTransferring (Id Task)
+  | GenTransferComplete
   | GenFrames {started :: UTCTime, skipped :: Int, complete :: Int, total :: Int, throughput :: Float}
   | GenAsdf
   deriving (Eq, Ord)
@@ -67,6 +68,7 @@ instance Show GenStatus where
   show GenWaiting = "GenFits Waiting"
   show GenStarted = "GenFits Started"
   show (GenTransferring _) = "GenFits Transferring"
+  show GenTransferComplete = "GenFits Transfer Complete"
   show GenFrames{complete, total} = "GenFits Creating " <> show complete <> " " <> show total
   show GenAsdf = "GenAsdf"
 
@@ -107,6 +109,7 @@ generateTask task = do
       dcanon <- Level1.canonicalDataset slice inv.datasets
 
       down <- downloadL1Frames task inv dcanon
+      send $ TaskSetStatus task GenTransferComplete
       Inversions.setGenTransferred inv.inversionId
 
       frames <- Inputs.loadFrameInputs files dcanon down

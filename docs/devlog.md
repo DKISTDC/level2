@@ -1,11 +1,13 @@
 
 
+- [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
 
 Fri, Sep 5
 ----------
 
-- [ ] +Crash and Print should print to the console as well
-- [ ] Upload from CU Boulder Research Computing. Works, but uploading is broken
+- [x] Can upload from CU Boulder Research Computing and goes through
+- [x] +Crash and Print should print to the console as well
+- [x] Upload from CU Boulder Research Computing. Works, but uploading is broken
 - [x] Require login immediately: all application code can expect Transfer
   - [x] accessing CU Boulder Research works
   - [x] can't upload! Something wrong with transfer, not getting the local path

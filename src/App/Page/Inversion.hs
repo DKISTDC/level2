@@ -447,6 +447,11 @@ viewGenerate' inv status =
         el "Generating FITS - Transferring L1 Files"
         hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
           Transfer.viewLoadTransfer GenTransfer
+      GenTransferComplete -> do
+        el "Generating FITS - Transfer Complete"
+        row @ onLoad ReloadGen 1000 $ do
+          loadingMessage "Waiting for frame generation to start"
+          space
       GenFrames{complete, total, throughput, skipped} -> do
         loadingMessage "Generating FITS"
         col @ onLoad ReloadGen 1000 $ do
