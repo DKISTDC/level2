@@ -12,7 +12,7 @@ data Dest
 
 -- | The location of standard files on different systems.
 data RemoteFolder sys a = RemoteFolder
-  { collection :: Globus.Id Collection
+  { remote :: Remote sys
   , directory :: Path sys Dir a
   }
   deriving (Show)
@@ -20,5 +20,3 @@ data RemoteFolder sys a = RemoteFolder
 
 data Remote sys = Remote {collection :: Globus.Id Collection}
   deriving (Show)
-
-

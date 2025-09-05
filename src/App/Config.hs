@@ -125,7 +125,8 @@ initScratch :: (Environment :> es) => Eff es Scratch.Config
 initScratch = do
   collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT"
   mount <- Path . cs <$> getEnv "SCRATCH_DIR"
-  pure $ Scratch.Config{collection, mount}
+  globus <- Path . cs <$> getEnv "SCRATCH_GLOBUS_DIR"
+  pure $ Scratch.Config{collection, mount, globus}
 
 
 initGlobus :: (Environment :> es, Log :> es) => Eff es GlobusConfig

@@ -17,6 +17,7 @@ import System.FilePath (takeDirectory)
 
 data Config = Config
   { collection :: Globus.Id Collection
+  , globus :: Path Scratch Dir ()
   , mount :: Path Scratch Dir ()
   }
 
@@ -33,7 +34,7 @@ data Scratch :: Effect where
   DirExists :: Path Scratch File a -> Scratch es Bool
   CreateDirectoryLink :: Path Scratch Dir a -> Path Scratch Dir b -> Scratch es ()
   RemoveDir :: Path Scratch Dir a -> Scratch es ()
-  Globus :: Scratch es (Id Collection)
+  Globus :: Scratch es (RemoteFolder Scratch ())
   MountedPath :: Path Scratch x a -> Scratch es (Path Scratch (Mounted x) a)
 type instance DispatchOf Scratch = 'Dynamic
 
@@ -69,7 +70,8 @@ runScratch cfg = interpret $ \_ -> \case
     exists <- FS.doesDirectoryExist (mounted dir)
     when exists $ do
       FS.removeDirectoryRecursive (mounted dir)
-  Globus -> pure $ Id cfg.collection.unTagged
+  Globus -> do
+    pure $ RemoteFolder (Remote $ Tagged cfg.collection.unTagged) cfg.globus
   MountedPath p -> pure $ mounted' p
  where
   mounted :: Path Scratch x a -> FilePath
@@ -111,13 +113,7 @@ mountedPath :: (Scratch :> es) => Path Scratch x a -> Eff es (Path Scratch (Moun
 mountedPath = send . MountedPath
 
 
-collection :: (Scratch :> es) => Eff es (Globus.Id Collection)
-collection = do
-  Id c <- send Globus
-  pure $ Tagged c
-
-
 -- Remote Folder ----------------------------------------
 
-remote :: (Scratch :> es) => Eff es (Remote Scratch)
-remote = Remote <$> collection
+remote :: (Scratch :> es) => Eff es (RemoteFolder Scratch ())
+remote = send Globus

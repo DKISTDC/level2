@@ -106,7 +106,7 @@ scratchDownloadDatasets :: (Transfer :> es, Scratch :> es) => [Dataset] -> Eff e
 scratchDownloadDatasets ds = do
   scratch <- Scratch.remote
   let lbl = "Sync Datasets: " <> T.intercalate "," (fmap (\d -> d.datasetId.fromId) ds)
-  downloadL1To lbl Image.dataset scratch ds
+  downloadL1To lbl Image.dataset scratch.remote ds
 
 
 downloadL1To :: forall dest es. (Transfer :> es) => Text -> (Dataset -> Path dest File Dataset) -> Remote dest -> [Dataset] -> Eff es (Id Task)
@@ -135,20 +135,18 @@ uploadInversionResults
 uploadInversionResults tform upfiles propId invId = do
   scratch <- Scratch.remote
   let source = TransferForm.remote tform
-  xfers <- sequence $ catMaybes [fileTransfer upfiles.quantities, fileTransfer upfiles.profileFit, fileTransfer upfiles.profileOrig]
-  send $ TransferFiles tform.label source scratch xfers
+  send $ TransferFiles tform.label source scratch.remote (fileTransfers scratch)
  where
-  fileTransfer :: (Scratch :> es) => Maybe (Path Scratch Filename a) -> Maybe (Eff es (FileTransfer User Scratch File Inversion))
-  fileTransfer Nothing = Nothing
-  fileTransfer (Just p@(Path a)) =
-    pure $ do
-      Path mp <- Scratch.mountedPath $ Image.blancaFile (Image.blancaInput propId invId) p
-      pure $
-        FileTransfer
-          { sourcePath = TransferForm.directory tform </> Path a
-          , destPath = Path mp
-          , recursive = False
-          }
+  fileTransfers :: RemoteFolder Scratch () -> [FileTransfer User Scratch File Inversion]
+  fileTransfers scratch = catMaybes [fmap fileTransfer upfiles.quantities, fmap fileTransfer upfiles.profileFit, fmap fileTransfer upfiles.profileOrig]
+   where
+    fileTransfer :: Path Scratch Filename a -> FileTransfer User Scratch File Inversion
+    fileTransfer p@(Path a) =
+      FileTransfer
+        { sourcePath = TransferForm.directory tform </> Path a
+        , destPath = scratch.directory </> Image.blancaFile (Image.blancaInput propId invId) p
+        , recursive = False
+        }
 
 
 -- sourceBlanca :: Path User Dir a -> Path User Dir User
@@ -169,7 +167,7 @@ transferSoftPublish propId invId = do
   -- \$ DKIST.proposalPublishDir propId
   let lbl = "Inversion " <> invId.fromId
   -- let ft = DKIST.inversion invId
-  send $ TransferFiles lbl scratch DKIST.remote [fileTransfer]
+  send $ TransferFiles lbl scratch.remote DKIST.remote [fileTransfer]
  where
   fileTransfer :: FileTransfer Scratch DKIST Dir Inversion
   fileTransfer =

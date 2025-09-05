@@ -1,6 +1,6 @@
 module App.Worker.Generate where
 
-import App.Effect.Transfer (Transfer, runTransfer)
+import App.Effect.Transfer (Transfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
@@ -22,7 +22,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Exception (catch)
 import Effectful.GenRandom
-import Effectful.Globus (Globus, GlobusError (..), Task, TaskStatus (..), Token, Token' (Access))
+import Effectful.Globus (GlobusError (..), Task, TaskStatus (..))
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
