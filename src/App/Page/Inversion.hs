@@ -20,6 +20,7 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate as Gen (GenStatus (..), GenTask (..))
 import App.Worker.Publish as Publish
+import Data.Text qualified as T
 import Effectful
 import Effectful.Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
@@ -423,6 +424,8 @@ viewGenerate' inv status =
     row ~ gap 10 $ do
       button RegenError ~ Style.btn Primary $ "Retry"
       button RegenFits ~ Style.btnOutline Secondary $ "Start Over"
+      when ("GlobusError" `T.isPrefixOf` e) $ do
+        route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
   viewGenComplete :: UTCTime -> UTCTime -> View GenerateStep ()
   viewGenComplete _fits _asdf = do

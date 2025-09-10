@@ -98,13 +98,11 @@ main = do
 
   startGen = do
     runLogger "Generate" $
-      waitForAdminAccess $ do
-        startWorker Gen.generateTask
+      startWorker Gen.generateTask
 
   startPublish = do
     runLogger "Publish" $
-      waitForAdminAccess $ do
-        startWorker Publish.publishTask
+      startWorker Publish.publishTask
 
   startLogUpdater = do
     send $ Log.RowSet "logger" "start"
@@ -143,6 +141,7 @@ main = do
       . runGlobus' config.globus config.manager
       . runFetchHttp config.manager
       . runAuth config.app.domain Login admin
+      . runTransfer
       . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
@@ -156,23 +155,22 @@ main = do
       . runMetadataSync sync
 
 
-waitForAdminAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
-waitForAdminAccess work = do
-  checkAndWait $ do
-    tok <- ask @(Token Access)
-    runTransfer tok $ do
-      log Debug " - got admin token"
-      work
- where
-  checkAndWait next = do
-    admin <- Auth.getAdminToken
-    case admin of
-      Just tok -> do
-        Auth.runWithAccess tok next
-      Nothing -> do
-        log Debug "Waiting for Admin Globus Access Token"
-        Auth.waitForAdmin next
-
+-- waitForAdminAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
+-- waitForAdminAccess work = do
+--   checkAndWait $ do
+--     tok <- ask @(Token Access)
+--     runTransfer tok $ do
+--       log Debug " - got admin token"
+--       work
+--  where
+--   checkAndWait next = do
+--     admin <- Auth.getAdminToken
+--     case admin of
+--       Just tok -> do
+--         Auth.runWithAccess tok next
+--       Nothing -> do
+--         log Debug "Waiting for Admin Globus Access Token"
+--         Auth.waitForAdmin next
 
 webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> LogRows -> Application
 webServer config admin fits pubs sync rows =
@@ -211,22 +209,22 @@ webServer config admin fits pubs sync rows =
           muser <- Auth.getAccessToken
           madmin <- Auth.getAdminToken
           case (muser, madmin) of
-            (Just tok, Just _) -> runApp tok . routeRequest $ router
+            (Just _, Just _) -> runApp . routeRequest $ router
             _ -> runPage Auth.page
 
   runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : Reader LogRows : es) a -> Eff es a
   runBasic =
     runReader rows
       . runLogger "AppBasic"
-      . runErrorWith @GlobusError crashAndPrint
+      . runErrorWith @GlobusError onGlobus
       . runFileSystem
       . runScratch config.scratch
       . runGlobus' config.globus config.manager
       . runAuth config.app.domain Login admin
       . runReader config.app
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es, Reader LogRows :> es) => Token Access -> Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
-  runApp tok =
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es, Reader LogRows :> es) => Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp =
     runTime
       . runLogger "App"
       . runErrorWith @Rel8Error crashWithError
@@ -241,13 +239,23 @@ webServer config admin fits pubs sync rows =
       . runTasks fits
       . runTasks pubs
       . runMetadataSync sync
-      . runTransfer tok
+      . runTransfer
       . runDebugIO
 
 
 runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
 runGlobus' (GlobusLive g) mgr action = do
   runGlobus g mgr action
+
+
+onGlobus :: (IOE :> es, Log :> es, Hyperbole :> es) => CallStack -> GlobusError -> Eff es a
+onGlobus _callstack err = do
+  log Err $ dump "Globus Error" err
+
+  respondErrorView (errorType @GlobusError) $ do
+    Auth.layout $ do
+      Auth.loginButton (routeUri Logout) "Reauthenticate"
+      viewError err
 
 
 crashAndPrint :: forall e es a. (UserFacingError e, IOE :> es, Log :> es, Show e, Exception e, Hyperbole :> es) => CallStack -> e -> Eff es a

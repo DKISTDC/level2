@@ -73,7 +73,7 @@ runAuth dom r admin = reinterpret id $ \_ -> \case
     user :: UserLoginInfo <- either throwIO pure res
     when (isAdmin user) $ do
       log Debug $ dump "FOUND ADMIN" user.transfer
-      void $ atomically $ tryPutTMVar admin.adminToken user.transfer
+      void $ atomically $ writeTMVar admin.adminToken user.transfer
     pure user
  where
   userInfo :: (Globus :> es, Log :> es, Error GlobusError :> es) => NonEmpty TokenItem -> Eff es UserLoginInfo

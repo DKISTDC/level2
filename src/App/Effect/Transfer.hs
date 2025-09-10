@@ -1,5 +1,7 @@
 module App.Effect.Transfer where
 
+import App.Effect.Auth (Auth)
+import App.Effect.Auth qualified as Auth
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
@@ -7,6 +9,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import Effectful.Log
+import Effectful.Reader.Dynamic
 import NSO.Files as Files
 import NSO.Files.DKIST as DKIST
 import NSO.Files.Image qualified as Image
@@ -38,18 +41,21 @@ type instance DispatchOf Transfer = 'Dynamic
 
 
 runTransfer
-  :: (Globus :> es, Log :> es)
-  => Token Access
-  -> Eff (Transfer : es) a
+  :: (Globus :> es, Log :> es, Auth :> es)
+  => Eff (Transfer : es) a
   -> Eff es a
-runTransfer acc = interpret $ \_ -> \case
+runTransfer = interpret $ \_ -> \case
   TransferStatus taskId -> do
-    send $ StatusTask acc (Tagged taskId.fromId)
+    Auth.waitForAdmin $ do
+      acc <- ask @(Token Access)
+      send $ StatusTask acc (Tagged taskId.fromId)
   TransferFiles lbl source dest files ->
-    transferFiles lbl source dest files
+    Auth.waitForAdmin $ do
+      transferFiles lbl source dest files
  where
-  transferFiles :: (Log :> es, Globus :> es) => Text -> Remote src -> Remote dest -> [FileTransfer src dest f a] -> Eff es (Id Task)
+  transferFiles :: (Log :> es, Globus :> es, Reader (Token Access) :> es) => Text -> Remote src -> Remote dest -> [FileTransfer src dest f a] -> Eff es (Id Task)
   transferFiles lbl source dest files = do
+    acc <- ask @(Token Access)
     log Debug "TRANSFER"
     log Debug $ dump " source: " source
     log Debug $ dump " dest: " dest
@@ -85,11 +91,6 @@ runTransfer acc = interpret $ \_ -> \case
             }
 
 
-{- | Run Transfer, requiring auth, catching and displaying globus errors
-requireTransfer :: (Log :> es, Auth :> es, Globus :> es, Hyperbole :> es) => Eff (Transfer : Reader (Token Access) : es) a -> Eff es a
-requireTransfer eff =
-  Auth.requireLogin $ runTransfer eff
--}
 transferStatus :: (Transfer :> es) => Id Task -> Eff es Task
 transferStatus = send . TransferStatus
 
