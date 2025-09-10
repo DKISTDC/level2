@@ -2,6 +2,7 @@ module Effectful.Rel8
   ( Rel8 (..)
   , runRel8
   , connect
+  , connectionSettingFromUrl
   , run
   , run_
 
@@ -36,8 +37,10 @@ import Control.Exception (Exception)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Hasql.Connection (Connection, ConnectionError, Settings)
+import Hasql.Connection (Connection, ConnectionError)
 import Hasql.Connection qualified as Connection
+import Hasql.Connection.Setting as Connection (Setting, connection)
+import Hasql.Connection.Setting.Connection qualified as Connection
 import Hasql.Session (SessionError (..))
 import Hasql.Session qualified as Session
 import Hasql.Statement as Hasql
@@ -54,6 +57,10 @@ data Rel8 :: Effect where
 -- Delete :: Rel8.Delete () -> Rel8 m ()
 
 type instance DispatchOf Rel8 = 'Dynamic
+
+
+connectionSettingFromUrl :: Text -> Setting
+connectionSettingFromUrl url = Connection.connection $ Connection.string url
 
 
 runRel8
@@ -75,7 +82,7 @@ runRel8 conn = interpret $ \_ -> \case
 
 connect
   :: (IOE :> es, Error Rel8Error :> es)
-  => Settings
+  => [Setting]
   -> Eff es Connection
 connect settings = do
   er <- liftIO $ Connection.acquire settings

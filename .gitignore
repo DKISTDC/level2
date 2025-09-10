@@ -3,3 +3,4 @@ dist-newstyle/
 tags
 .env
 .envrc
+devlog.md

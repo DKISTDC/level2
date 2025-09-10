@@ -138,8 +138,8 @@ initGlobus = do
 
 initDb :: (Environment :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection
 initDb = do
-  postgres <- getEnv "DATABASE_URL"
-  Rel8.connect $ cs postgres
+  postgres <- cs <$> getEnv "DATABASE_URL"
+  Rel8.connect [Rel8.connectionSettingFromUrl postgres]
 
 
 initApp :: (Environment :> es, Fail :> es) => Eff es App
