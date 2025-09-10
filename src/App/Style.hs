@@ -99,3 +99,7 @@ alignMiddle =
 
 noClick :: (Styleable h) => CSS h -> CSS h
 noClick = utility "no-click" ["pointer-events" :. "none"]
+
+
+noWrap :: (Styleable h) => CSS h -> CSS h
+noWrap = utility "nowrap" ["text-wrap" :. "nowrap"]

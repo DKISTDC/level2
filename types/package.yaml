@@ -37,6 +37,7 @@ dependencies:
   - string-interpolate
   - string-conversions
   - filepath
+  - ansi-terminal
   - rel8
   - hasql
   - random

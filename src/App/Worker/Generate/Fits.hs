@@ -24,7 +24,6 @@ import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import System.FilePath (takeFileName)
 import Telescope.Data.Parser (ParseError)
-import Telescope.Fits (Fits (..))
 
 
 type Skipped = ()
@@ -52,13 +51,15 @@ genFrame propId invId slice frameInputs = do
     dateBeg <- requireKey "DATE-BEG" frameInputs.l1Frame.header
     let path = Fits.outputL2Fits propId invId dateBeg
 
-    logContext (takeFileName path.filePath) $ do
+    let ctx = takeFileName path.filePath
+    logContext ctx $ do
       guardAlreadyExists path
-      log Debug $ "start: inputs.profiles.arms=" <> show (length frameInputs.profiles.arms)
+      send $ RowSet ctx $ "start, arms=" <> show (length frameInputs.profiles.arms)
       frame <- Fits.generateL2FrameFits start invId slice frameInputs
       let fits = Fits.frameToFits frame
       Scratch.writeFile path $ Fits.encodeL2 fits
-      log Debug "WROTE"
+      send $ RowSet ctx "WROTE"
+      send $ RowDone ctx
 
       pure $ Fits.frameMeta frame (filenameL2Fits invId dateBeg)
  where
@@ -70,6 +71,6 @@ genFrame propId invId slice frameInputs = do
       case res of
         -- file is bad, do not skip, regenerate
         Left _ -> pure ()
-        Right fits -> do
-          log Debug $ dump "SKIP frame" (length fits.extensions)
+        Right _fits -> do
+          -- log Debug $ dump "SKIP frame" (length fits.extensions)
           throwError ()

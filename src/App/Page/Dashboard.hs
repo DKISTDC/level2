@@ -21,13 +21,13 @@ import Effectful.Tasks
 import NSO.Data.Datasets
 import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
-import Network.Globus (Token, Token' (..))
+import Network.Globus (Token, Token' (Access))
 import Web.Atomic.CSS
 import Web.Hyperbole
 
 
 page
-  :: (Concurrent :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenTask :> es)
+  :: (Concurrent :> es, IOE :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Scratch :> es, Tasks GenTask :> es)
   => Page es '[Work]
 page = do
   -- login <- loginUrl

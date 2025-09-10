@@ -28,8 +28,6 @@ manageMinions
      )
   => Eff es ()
 manageMinions = do
-  -- log Debug "GO FORTH MY MINIONS"
-
   -- 5 second delay
   threadDelay (5 * 1000 * 1000)
 

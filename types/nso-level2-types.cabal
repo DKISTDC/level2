@@ -54,6 +54,7 @@ library
   ghc-options: -Wall
   build-depends:
       aeson
+    , ansi-terminal
     , base >=4.18 && <5
     , bytestring
     , containers

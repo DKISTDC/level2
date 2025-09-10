@@ -1,7 +1,8 @@
 module App where
 
 import App.Config
-import App.Effect.Auth as Auth (AdminState (..), Auth, getAccessToken, getAdminToken, initAdmin, runAuth, waitForAdmin)
+import App.Effect.Auth as Auth (AdminState (..), Auth, initAdmin, runAuth)
+import App.Effect.Auth qualified as Auth
 import App.Effect.Transfer (Transfer, runTransfer)
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
@@ -36,9 +37,10 @@ import Effectful.FileSystem
 import Effectful.GenRandom
 import Effectful.Globus (Globus (..), GlobusError, Token, Token' (..), runGlobus)
 import Effectful.GraphQL hiding (Request (..), Response (..))
-import Effectful.Log
+import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
+import Effectful.State.Static.Shared as State
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
@@ -61,37 +63,38 @@ main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
 
-  runEff $ runInit $ do
-    log Info "NSO Level 2"
-    config <- initConfig
+  runEff $ runConcurrent $ do
+    rows <- Log.initRows
+    runReader rows $ runInit $ do
+      log Info "NSO Level 2"
+      config <- initConfig
 
-    fits <- atomically taskChanNew
-    pubs <- atomically taskChanNew
-    metas <- atomically taskChanNew
-    props <- atomically taskChanNew
-    sync <- initMetadataSync
-    admin <- initAdmin config.auth.admins config.auth.adminToken
+      fits <- atomically taskChanNew
+      pubs <- atomically taskChanNew
+      metas <- atomically taskChanNew
+      props <- atomically taskChanNew
+      sync <- initMetadataSync
+      admin <- initAdmin config.auth.admins config.auth.adminToken
 
-    concurrently_
-      (startWebServer config admin fits pubs sync)
-      (runWorkers config admin fits pubs sync metas props startWorkers)
-
-    pure ()
+      concurrently_
+        (startWebServer config admin fits pubs sync)
+        (runWorkers config admin fits pubs sync metas props startWorkers)
  where
   startPuppetMaster =
-    runLogger "Puppet" $
-      forever
+    runLogger "Puppet" $ do
+      forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
+  startWebServer :: (IOE :> es, Reader LogRows :> es, Concurrent :> es) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
   startWebServer config auth fits pubs sync =
     runLogger "Server" $ do
+      rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
       log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
       liftIO $
         Warp.run config.app.port $
           addHeaders [("app-version", cs appVersion)] $
-            webServer config auth fits pubs sync
+            webServer config auth fits pubs sync rows
 
   startGen = do
     runLogger "Generate" $
@@ -103,6 +106,15 @@ main = do
       waitForAdminAccess $ do
         startWorker Publish.publishTask
 
+  startLogUpdater = do
+    send $ Log.RowSet "logger" "start"
+    _ <- runState (0 :: Int) $ forever $ do
+      n <- State.get @Int
+      send $ Log.RowSet "logger" (show n)
+      State.put (n + 1)
+      threadDelay (1000 * 1000)
+    pure ()
+
   startWorkers =
     mapConcurrently_
       id
@@ -111,6 +123,7 @@ main = do
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
       , startPublish
+      , startLogUpdater
       ]
 
   runInit =
@@ -120,7 +133,6 @@ main = do
       . runErrorWith @GlobusError crashWithError
       . runFailIO
       . runEnvironment
-      . runConcurrent
 
   runWorkers config admin fits pubs sync metas props =
     runFileSystem
@@ -146,14 +158,24 @@ main = do
 
 waitForAdminAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
 waitForAdminAccess work = do
-  log Debug "Waiting for Admin Globus Access Token"
-  Auth.waitForAdmin $ do
+  checkAndWait $ do
     tok <- ask @(Token Access)
-    runTransfer tok work
+    runTransfer tok $ do
+      log Debug " - got admin token"
+      work
+ where
+  checkAndWait next = do
+    admin <- Auth.getAdminToken
+    case admin of
+      Just tok -> do
+        Auth.runWithAccess tok next
+      Nothing -> do
+        log Debug "Waiting for Admin Globus Access Token"
+        Auth.waitForAdmin next
 
 
-webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Application
-webServer config admin fits pubs sync =
+webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> LogRows -> Application
+webServer config admin fits pubs sync rows =
   liveApp
     (document documentHead)
     respond
@@ -192,9 +214,10 @@ webServer config admin fits pubs sync =
             (Just tok, Just _) -> runApp tok . routeRequest $ router
             _ -> runPage Auth.page
 
-  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : es) a -> Eff es a
+  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : Reader LogRows : es) a -> Eff es a
   runBasic =
-    runLogger "AppBasic"
+    runReader rows
+      . runLogger "AppBasic"
       . runErrorWith @GlobusError crashAndPrint
       . runFileSystem
       . runScratch config.scratch
@@ -202,7 +225,7 @@ webServer config admin fits pubs sync =
       . runAuth config.app.domain Login admin
       . runReader config.app
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es) => Token Access -> Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es, Reader LogRows :> es) => Token Access -> Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp tok =
     runTime
       . runLogger "App"

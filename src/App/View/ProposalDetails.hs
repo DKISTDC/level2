@@ -10,6 +10,7 @@ module App.View.ProposalDetails
 
 import App.Colors
 import App.Route as Route
+import App.Style (noWrap)
 import App.Style qualified as Style
 import App.View.Common (showTimestamp)
 import App.View.Common as View (hr)
@@ -57,7 +58,7 @@ viewProgramStats now prog = viewDataRow $ do
   -- not worth showing Stokes in the row. They seem to be present for all VISP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
-  code (cs $ showTimestamp ip.startTime) ~ cell . color Secondary
+  code (cs $ showTimestamp ip.startTime) ~ cell . noWrap . color Secondary
 
   row ~ dataCell . gap 5 . fontSize 14 $ do
     maybe none embargoTag ip.embargo
@@ -75,7 +76,7 @@ viewProgramStats now prog = viewDataRow $ do
   cell :: (Styleable h) => CSS h -> CSS h
   cell = dataCell . cellData
 
-  diskTag = el ~ dataTag . Style.tagOutline (light Primary) $ "On Disk"
+  diskTag = el ~ dataTag . noWrap . Style.tagOutline (light Primary) $ "On Disk"
 
   embargoTag utc =
     if utc > now
