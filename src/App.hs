@@ -35,7 +35,7 @@ import Effectful.Fail
 import Effectful.Fetch
 import Effectful.FileSystem
 import Effectful.GenRandom
-import Effectful.Globus (Globus (..), GlobusError, Token, Token' (..), runGlobus)
+import Effectful.Globus (Globus (..), GlobusError, runGlobus)
 import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log as Log
 import Effectful.Reader.Dynamic
@@ -64,8 +64,8 @@ main = do
   hSetBuffering stderr LineBuffering
 
   runEff $ runConcurrent $ do
-    rows <- Log.initRows
-    runReader rows $ runInit $ do
+    logs <- Log.init
+    runReader logs $ runInit $ do
       log Info "NSO Level 2"
       config <- initConfig
 
@@ -85,7 +85,7 @@ main = do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader LogRows :> es, Concurrent :> es) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
   startWebServer config auth fits pubs sync =
     runLogger "Server" $ do
       rows <- ask
@@ -110,7 +110,8 @@ main = do
       n <- State.get @Int
       send $ Log.RowSet "logger" (show n)
       State.put (n + 1)
-      threadDelay (1000 * 1000)
+      send Log.Render
+      threadDelay (250 * 1000)
     pure ()
 
   startWorkers =
@@ -172,7 +173,7 @@ main = do
 --         log Debug "Waiting for Admin Globus Access Token"
 --         Auth.waitForAdmin next
 
-webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> LogRows -> Application
+webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> TMVar LogState -> Application
 webServer config admin fits pubs sync rows =
   liveApp
     (document documentHead)
@@ -212,7 +213,7 @@ webServer config admin fits pubs sync rows =
             (Just _, Just _) -> runApp . routeRequest $ router
             _ -> runPage Auth.page
 
-  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : Reader LogRows : es) a -> Eff es a
+  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : Reader (TMVar LogState) : es) a -> Eff es a
   runBasic =
     runReader rows
       . runLogger "AppBasic"
@@ -223,7 +224,7 @@ webServer config admin fits pubs sync rows =
       . runAuth config.app.domain Login admin
       . runReader config.app
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es, Reader LogRows :> es) => Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Globus :> es, Reader (TMVar LogState) :> es) => Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runLogger "App"

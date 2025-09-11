@@ -2,6 +2,7 @@
 
 module Effectful.Log where
 
+import Control.Monad (forM_)
 import Data.Char (isAlpha)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
@@ -49,36 +50,43 @@ newtype ThreadName = ThreadName Text
 
 
 runLogger
-  :: (IOE :> es, Concurrent :> es, Reader LogRows :> es)
+  :: (IOE :> es, Concurrent :> es, Reader (TMVar LogState) :> es)
   => ThreadName
   -> Eff (Log : es) a
   -> Eff es a
 runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $ \env -> \case
   Log lvl msg -> do
     mctx <- ask @(Maybe String)
-    liftIO $ do
-      now <- datetime <$> getCurrentTime
-      let nm = padSpace 8 $ take 8 $ cs tname
-      putStrLn [i|| #{nm} | #{now} | #{lvl} |#{messageContext mctx} #{msg} |]
+    now <- liftIO $ datetime <$> getCurrentTime
+    let nm = padSpace 8 $ take 8 $ cs tname
+    putMessage [i|| #{nm} | #{now} | #{lvl} |#{messageContext mctx} #{msg} |]
 
-    displayRows
+  -- displayRows
   Context ctx m -> do
     localSeqUnlift env $ \unlift -> local (const $ Just ctx) (unlift m)
   RowSet rid s -> do
     _ <- modifyState $ \st -> st{rows = Map.insert rid s st.rows}
-    displayRows
+    pure ()
+  -- displayRows
   RowDone rid -> do
     mr <- getRow rid
     _ <- modifyState $ \st -> st{rows = Map.delete rid st.rows}
-    liftIO $ do
-      putStr $ "● [" <> rid <> "] "
-      case mr of
-        Nothing -> putStrLn ""
-        Just r -> putStrLn r
-    displayRows
+    pure ()
+  -- liftIO $ do
+  --   putStr $ "● [" <> rid <> "] "
+  --   case mr of
+  --     Nothing -> putStrLn ""
+  --     Just r -> putStrLn r
+  -- displayRows
   Render -> do
+    flushBuffer
     displayRows
  where
+  putMessage :: (Reader (TMVar LogState) :> es, Concurrent :> es) => String -> Eff es ()
+  putMessage msg = do
+    _ <- modifyState $ \st -> st{buffer = msg : st.buffer}
+    pure ()
+
   messageContext Nothing = ""
   messageContext (Just ctx) = " [" <> ctx <> "]"
 
@@ -91,7 +99,18 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
       then ' '
       else c
 
-  displayRows :: (Concurrent :> es, IOE :> es, Reader LogRows :> es) => Eff es ()
+  flushBuffer :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
+  flushBuffer = do
+    var <- ask
+    st <- atomically $ do
+      st <- readTMVar var
+      writeTMVar var $ st{buffer = []}
+      pure st
+    liftIO $ do
+      forM_ (reverse st.buffer) $ \msg -> do
+        putStrLn msg
+
+  displayRows :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
   displayRows = do
     st <- modifyState incrementCount
     liftIO $ do
@@ -101,7 +120,7 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
       mapM_ (displayRow st) $ Map.toList st.rows
       ANSI.cursorUp (length st.rows + 1)
 
-  displayRow :: RowState -> (RowId, String) -> IO ()
+  displayRow :: LogState -> (RowId, String) -> IO ()
   displayRow st (rid, r) = do
     let anim = animation st.count
     putStrLn $ anim : ' ' : " [" <> rid <> "] " <> r
@@ -113,37 +132,37 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     -- ◐◓◑◒
     "◐◓◑◒" !! (n `mod` 4)
 
-  getRow :: (Concurrent :> es, Reader LogRows :> es) => RowId -> Eff es (Maybe String)
+  getRow :: (Concurrent :> es, Reader (TMVar LogState) :> es) => RowId -> Eff es (Maybe String)
   getRow rid = do
-    rows <- ask @LogRows
+    rows <- ask @(TMVar LogState)
     st <- atomically $ readTMVar rows
     pure $ Map.lookup rid st.rows
 
-  modifyState :: (Concurrent :> es, Reader LogRows :> es) => (RowState -> RowState) -> Eff es RowState
+  modifyState :: (Concurrent :> es, Reader (TMVar LogState) :> es) => (LogState -> LogState) -> Eff es LogState
   modifyState f = do
     rows <- ask
     atomically $ do
-      st :: RowState <- readTMVar rows
+      st :: LogState <- readTMVar rows
       let st' = f st
       writeTMVar rows st'
       pure st'
 
-  incrementCount :: RowState -> RowState
+  incrementCount :: LogState -> LogState
   incrementCount st = st{count = st.count + 1}
 
 
-type LogRows = TMVar RowState
 type RowId = String
 
 
-data RowState = RowState
+data LogState = LogState
   { count :: Int
   , rows :: Map RowId String
+  , buffer :: [String]
   }
 
 
-initRows :: (Concurrent :> es) => Eff es LogRows
-initRows = newTMVarIO $ RowState 0 mempty
+init :: (Concurrent :> es) => Eff es (TMVar LogState)
+init = newTMVarIO $ LogState 0 mempty mempty
 
 
 dump :: (Show a) => String -> a -> String

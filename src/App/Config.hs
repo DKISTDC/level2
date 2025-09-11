@@ -111,10 +111,7 @@ initServices = do
 initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es, Log :> es) => Eff es CPUWorkers
 initCPUWorkers = do
   num <- readEnv "CPU_WORKERS"
-  cores <- getNumCapabilities
-  let numCPUWorkers = max 1 (min num (cores - 1))
-  log Debug $ dump "CPU Workers" numCPUWorkers
-  cpuWorkers $ min num (cores - 1)
+  cpuWorkers num
 
 
 parseService :: (MonadFail m) => String -> m Service

@@ -3,7 +3,7 @@ module App.Worker.CPU where
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
-import Effectful.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVar, readTVarIO, retry, writeTVar)
+import Effectful.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVar, readTVarIO, retry)
 import Effectful.Exception
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -23,17 +23,22 @@ data CPUWorkers = CPUWorkers
   }
 
 
-cpuWorkers :: (Concurrent :> es) => Int -> Eff es CPUWorkers
-cpuWorkers n =
-  CPUWorkers n <$> newTVarIO 0
+cpuWorkers :: (Concurrent :> es, Log :> es) => Int -> Eff es CPUWorkers
+cpuWorkers requested = do
+  cores <- getNumCapabilities
+  let totalWorkers = max 1 (min requested (cores - 1))
+  log Debug $ "CPU Workers (" <> show totalWorkers <> ") requested=" <> show requested <> " cores=" <> show cores
+  CPUWorkers totalWorkers <$> newTVarIO 0
 
 
-acquire :: (Concurrent :> es, IOE :> es) => CPUWorkers -> Int -> Eff es ()
+acquire :: (Concurrent :> es, IOE :> es, Log :> es) => CPUWorkers -> Int -> Eff es ()
 acquire cpus n = do
+  inUse' <- readTVarIO cpus.inUse
+  log Debug $ "Acquire: " <> show n <> " with " <> show inUse' <> " in use"
   atomically $ do
     inUse <- readTVar cpus.inUse
-    if inUse + n >= cpus.total
-      then writeTVar cpus.inUse (inUse + n)
+    if inUse + n <= cpus.total
+      then modifyTVar' cpus.inUse (+ n)
       else retry
 
 
@@ -42,5 +47,5 @@ release cpus n = atomically $ modifyTVar' cpus.inUse $ \inUse ->
   max 0 (inUse - n)
 
 
-withCPUs :: (Concurrent :> es, IOE :> es) => CPUWorkers -> Int -> Eff es a -> Eff es a
+withCPUs :: (Concurrent :> es, IOE :> es, Log :> es) => CPUWorkers -> Int -> Eff es a -> Eff es a
 withCPUs cpus n = bracket_ (acquire cpus n) (release cpus n)
