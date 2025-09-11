@@ -6,6 +6,7 @@ import Control.Monad (forM_)
 import Data.Char (isAlpha)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
+import Data.Maybe (fromMaybe)
 import Data.String (IsString)
 import Data.String.Conversions
 import Data.String.Interpolate (i)
@@ -24,8 +25,7 @@ import Prelude
 data Log :: Effect where
   Log :: LogLevel -> String -> Log m ()
   Context :: String -> m a -> Log m a
-  RowSet :: RowId -> String -> Log m ()
-  RowDone :: RowId -> Log m ()
+  RowSet :: String -> Log m ()
   Render :: Log m ()
 
 
@@ -61,19 +61,20 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     let nm = padSpace 8 $ take 8 $ cs tname
     putMessage [i|| #{nm} | #{now} | #{lvl} |#{messageContext mctx} #{msg} |]
   Context ctx m -> do
-    localSeqUnlift env $ \unlift -> local (const $ Just ctx) (unlift m)
-  RowSet rid s -> do
+    a <- localSeqUnlift env $ \unlift -> local (const $ Just ctx) (unlift m)
+
+    mr <- getRow ctx
+    removeRow ctx
+    case mr of
+      Nothing -> pure ()
+      Just r -> do
+        putMessage $ "● [" <> ctx <> "] " <> r
+    pure a
+  RowSet s -> do
+    ctx <- ask @(Maybe String)
+    let rid = fromMaybe "default" ctx
     _ <- modifyState $ \st -> st{rows = Map.insert rid s st.rows}
     pure ()
-  RowDone rid -> do
-    mr <- getRow rid
-    _ <- modifyState $ \st -> st{rows = Map.delete rid st.rows}
-    pure ()
-  -- liftIO $ do
-  --   putStr $ "● [" <> rid <> "] "
-  --   case mr of
-  --     Nothing -> putStrLn ""
-  --     Just r -> putStrLn r
   Render -> do
     flushBuffer
     displayRows
@@ -81,6 +82,11 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
   putMessage :: (Reader (TMVar LogState) :> es, Concurrent :> es) => String -> Eff es ()
   putMessage msg = do
     _ <- modifyState $ \st -> st{buffer = msg : st.buffer}
+    pure ()
+
+  removeRow :: (Reader (TMVar LogState) :> es, Concurrent :> es) => RowId -> Eff es ()
+  removeRow rid = do
+    _ <- modifyState $ \st -> st{rows = Map.delete rid st.rows}
     pure ()
 
   messageContext Nothing = ""

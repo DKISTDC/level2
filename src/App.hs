@@ -105,14 +105,16 @@ main = do
       startWorker Publish.publishTask
 
   startLogUpdater = do
-    send $ Log.RowSet "logger" "start"
-    _ <- runState (0 :: Int) $ forever $ do
-      n <- State.get @Int
-      send $ Log.RowSet "logger" (show n)
-      State.put (n + 1)
-      send Log.Render
-      threadDelay (250 * 1000)
-    pure ()
+    log Debug "start log updater"
+    logContext "logger" $ do
+      send $ Log.RowSet "start"
+      _ <- runState (0 :: Int) $ forever $ do
+        n <- State.get @Int
+        send $ Log.RowSet (show n)
+        State.put (n + 1)
+        send Log.Render
+        threadDelay (250 * 1000)
+      pure ()
 
   startWorkers =
     mapConcurrently_
