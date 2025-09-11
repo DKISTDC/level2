@@ -54,9 +54,9 @@ genFrame propId invId slice frameInputs = do
     let ctx = takeFileName path.filePath
     logContext ctx $ do
       guardAlreadyExists path
-      send $ RowSet ctx $ "start, arms=" <> show (length frameInputs.profiles.arms)
-      frame <- Fits.generateL2FrameFits start invId slice frameInputs
-      let fits = Fits.frameToFits frame
+      send $ RowSet ctx $ "generating... arms=" <> show (length frameInputs.profiles.arms)
+      !frame <- Fits.generateL2FrameFits start invId slice frameInputs
+      let !fits = Fits.frameToFits frame
       Scratch.writeFile path $ Fits.encodeL2 fits
       send $ RowSet ctx "WROTE"
       send $ RowDone ctx

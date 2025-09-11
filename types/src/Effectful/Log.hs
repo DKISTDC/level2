@@ -60,14 +60,11 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     now <- liftIO $ datetime <$> getCurrentTime
     let nm = padSpace 8 $ take 8 $ cs tname
     putMessage [i|| #{nm} | #{now} | #{lvl} |#{messageContext mctx} #{msg} |]
-
-  -- displayRows
   Context ctx m -> do
     localSeqUnlift env $ \unlift -> local (const $ Just ctx) (unlift m)
   RowSet rid s -> do
     _ <- modifyState $ \st -> st{rows = Map.insert rid s st.rows}
     pure ()
-  -- displayRows
   RowDone rid -> do
     mr <- getRow rid
     _ <- modifyState $ \st -> st{rows = Map.delete rid st.rows}
@@ -77,7 +74,6 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
   --   case mr of
   --     Nothing -> putStrLn ""
   --     Just r -> putStrLn r
-  -- displayRows
   Render -> do
     flushBuffer
     displayRows
