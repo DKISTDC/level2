@@ -107,10 +107,10 @@ main = do
   startLogUpdater = do
     log Debug "start log updater"
     logContext "logger" $ do
-      send $ Log.RowSet "start"
+      logStatus "start"
       _ <- runState (0 :: Int) $ forever $ do
         n <- State.get @Int
-        send $ Log.RowSet (show n)
+        logStatus (show n)
         State.put (n + 1)
         send Log.Render
         threadDelay (250 * 1000)

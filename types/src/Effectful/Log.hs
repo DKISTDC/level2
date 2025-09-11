@@ -25,7 +25,7 @@ import Prelude
 data Log :: Effect where
   Log :: LogLevel -> String -> Log m ()
   Context :: String -> m a -> Log m a
-  RowSet :: String -> Log m ()
+  Status :: String -> Log m ()
   Render :: Log m ()
 
 
@@ -70,7 +70,7 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
       Just r -> do
         putMessage $ "● [" <> ctx <> "] " <> r
     pure a
-  RowSet s -> do
+  Status s -> do
     ctx <- ask @(Maybe String)
     let rid = fromMaybe "default" ctx
     _ <- modifyState $ \st -> st{rows = Map.insert rid s st.rows}
@@ -111,6 +111,8 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     liftIO $ do
       forM_ (reverse st.buffer) $ \msg -> do
         putStrLn msg
+        -- TEST: should this go before putStrLn?
+        ANSI.clearFromCursorToLineEnd
 
   displayRows :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
   displayRows = do
@@ -125,7 +127,7 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
   displayRow :: LogState -> (RowId, String) -> IO ()
   displayRow st (rid, r) = do
     let anim = animation st.count
-    putStrLn $ anim : ' ' : " [" <> rid <> "] " <> r
+    putStrLn $ anim : ' ' : "[" <> rid <> "] " <> r
     ANSI.clearFromCursorToLineEnd
 
   animation :: Int -> Char
@@ -180,6 +182,9 @@ type LogContext = String
 
 logContext :: (Log :> es) => String -> Eff es a -> Eff es a
 logContext ctx eff = send $ Context ctx eff
+
+logStatus :: Log :> es => String -> Eff es ()
+logStatus = send . Status
 
 
 -- debug :: (Log :> es) => String ->

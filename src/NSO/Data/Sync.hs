@@ -137,7 +137,7 @@ runScanProposal' exs propId = do
   now <- currentTime
   pds <- send $ DatasetsByProposal propId
   ds <- indexed <$> Datasets.find (Datasets.ByProposal propId)
-  log Debug $ dump " Datasets:" $ length ds
+  logStatus $ dump " Datasets:" $ length ds
   pure $ scanProposal $ scanResult now exs ds pds
  where
   scanProposal ScanResult{..} = ScanProposal{proposalId = propId, datasets, errors}
@@ -189,11 +189,11 @@ execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
 execSync sds = do
   -- replace all the datasets!
   let new = fmap (.dataset) $ filter (\s -> s.sync == New) sds
-  log Debug $ " new " <> show (length new)
+  logStatus $ " new " <> show (length new)
   send $ Datasets.Create new
 
   let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
-  log Debug $ " update " <> show (length ups)
+  logStatus $ " update " <> show (length ups)
   mapM_ (send . Datasets.Save) ups
 
 
