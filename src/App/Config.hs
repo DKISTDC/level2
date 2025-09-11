@@ -108,10 +108,13 @@ initServices = do
   parseMockService s = parseService s
 
 
-initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es) => Eff es CPUWorkers
+initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es, Log :> es) => Eff es CPUWorkers
 initCPUWorkers = do
   num <- readEnv "CPU_WORKERS"
-  cpuWorkers num
+  cores <- getNumCapabilities
+  let numCPUWorkers = max 1 (min num (cores - 1))
+  log Debug $ dump "CPU Workers" numCPUWorkers
+  cpuWorkers $ min num (cores - 1)
 
 
 parseService :: (MonadFail m) => String -> m Service
