@@ -9,6 +9,7 @@ module NSO.Data.Inversions
   , isInverted
   , findByProgram
   , inversionStep
+  , distinctProgramIds
   , InversionStep (..)
   ) where
 
@@ -72,3 +73,8 @@ findByProgram ip = do
   pure $ sortOn latest $ filter (\i -> not i.deleted) invs
  where
   latest = Down . (.updated)
+
+
+distinctProgramIds :: [Inversion] -> [Id InstrumentProgram]
+distinctProgramIds inv =
+  L.nub $ fmap (.programId) inv

@@ -27,7 +27,10 @@ import Web.Hyperbole
 page :: (Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es) => Page es '[]
 page = do
   AllInversions ivs <- send Inversions.All
-  props <- Programs.loadProposalPrograms
+  let progIds = Inversions.distinctProgramIds ivs
+  progs <- mapM Programs.loadProgram progIds
+  let props = toProposals $ mconcat progs
+
   -- let actv = groupProposals props $ filter activeInvs ivs
   -- let cmpl = groupProposals props $ filter completeInvs ivs
   let allPropInvs = groupProposals props ivs
