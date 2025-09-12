@@ -75,7 +75,7 @@ data ProposalInversions = ProposalInversions
 
 viewProposals :: [ProposalInversions] -> View id ()
 viewProposals pis = do
-  col ~ gap 20 $ do
+  col $ do
     mapM_ viewProposal pis
 
 
