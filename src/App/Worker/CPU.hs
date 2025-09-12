@@ -3,7 +3,7 @@ module App.Worker.CPU where
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
-import Effectful.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVar, readTVarIO, retry)
+import Effectful.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVar, retry)
 import Effectful.Exception
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -33,8 +33,8 @@ cpuWorkers requested = do
 
 acquire :: (Concurrent :> es, IOE :> es, Log :> es) => CPUWorkers -> Int -> Eff es ()
 acquire cpus n = do
-  inUse' <- readTVarIO cpus.inUse
-  log Debug $ "Acquire: " <> show n <> " with " <> show inUse' <> " in use"
+  -- inUse' <- readTVarIO cpus.inUse
+  -- log Debug $ "Acquire: " <> show n <> " with " <> show inUse' <> " in use"
   atomically $ do
     inUse <- readTVar cpus.inUse
     if inUse + n <= cpus.total

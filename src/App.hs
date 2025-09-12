@@ -50,11 +50,16 @@ import NSO.Files.Scratch (Scratch, runScratch)
 import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.HTTP.Client qualified as Http
+import Network.HTTP.Types (status200)
+import Network.Wai (ResponseReceived)
+import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
+import Network.Wai.Middleware.Static as Static (addBase)
+import Network.Wai.Middleware.Static qualified as Static
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
-import Web.Hyperbole.Data.URI (Path (..), pathUri)
+import Web.Hyperbole.Data.URI (pathUri)
 import Web.Hyperbole.Effect.Request (reqPath)
 
 
@@ -93,8 +98,21 @@ main = do
       log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
       liftIO $
         Warp.run config.app.port $
-          addHeaders [("app-version", cs appVersion)] $
-            webServer config auth fits pubs sync rows
+          Static.staticPolicy (addBase "app") $
+            javascript $
+              addHeaders [("app-version", cs appVersion)] $
+                webServer config auth fits pubs sync rows
+
+  javascript :: Application -> Application
+  javascript app req respond = do
+    case Wai.rawPathInfo req of
+      "/hyperbole.js" -> staticFile "text/javascript" scriptEmbed
+      "/hyperbole.js.map" -> staticFile "application/json" scriptEmbedSourceMap
+      "/live-reload.js" -> staticFile "text/javascript" scriptLiveReload
+      _ -> app req respond
+   where
+    staticFile mime dat = do
+      respond $ Wai.responseLBS status200 [("Content-Type", mime)] (cs dat)
 
   startGen = do
     runLogger "Generate" $
@@ -196,7 +214,7 @@ webServer config admin fits pubs sync rows =
   router (Datasets (Dataset d)) = runPage $ Dataset.page d
   router (Datasets (Sync d)) = runPage $ Sync.page d
   router Experiments = do
-    redirect (pathUri . Path True $ routePath Proposals)
+    redirect (pathUri $ routePath Proposals)
   router Logout = runPage Auth.logout
   router Login = runPage Auth.login
 

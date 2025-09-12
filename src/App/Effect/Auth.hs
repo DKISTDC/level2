@@ -116,7 +116,7 @@ initAdmin admins mtok = do
 -- WARNING:  doesn't support querystring
 redirectUri :: (Route r) => AppDomain -> r -> Uri Redirect
 redirectUri dom r = do
-  Tagged $ URI "https:" (Just $ URIAuth "" (cs dom.unTagged) "") (cs $ pathToText $ Path True $ routePath r) "" ""
+  Tagged $ URI "https:" (Just $ URIAuth "" (cs dom.unTagged) "") (cs $ pathToText True $ routePath r) "" ""
 
 
 -- expectAuth :: (Hyperbole :> es, Auth :> es) => Maybe a -> Eff es a
@@ -161,20 +161,20 @@ runWithAccess = runReader
 --   acc <- getAccessToken >>= expectAuth
 --   runWithAccess acc eff
 
-newtype RedirectPath = RedirectPath [Segment]
+newtype RedirectPath = RedirectPath Path
   deriving (Show, Eq)
 
 
 instance Route RedirectPath where
   baseRoute = Just (RedirectPath [])
-  routePath (RedirectPath ss) = ss
-  matchRoute ss = Just $ RedirectPath ss
+  routePath (RedirectPath p) = p
+  matchRoute p = Just $ RedirectPath p
 
 
 currentUrl :: (Hyperbole :> es) => Eff es URI
 currentUrl = do
   r <- request
-  pure $ URI "" Nothing (cs $ pathToText r.path) (queryString $ filter isNotHyperbole r.query) ""
+  pure $ URI "" Nothing (cs $ pathToText True r.path) (queryString $ filter isNotHyperbole r.query) ""
  where
   isNotHyperbole (p, _) =
     p /= "hyp-id"

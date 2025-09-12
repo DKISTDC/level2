@@ -1,0 +1,36 @@
+body { background-color: #d3dceb }
+
+.skeleton {
+  /* size of your original SVG */
+  height: 2rem;
+
+  /* base color */
+  background: #f3f3f3;
+  border-radius: 3px;       /* match the rounded rects */
+
+  /* optional clip-like layout: stack “rows” */
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+
+  /* moving gradient */
+  background: linear-gradient(
+    90deg,
+    #f3f3f3 0%,
+    #ecebeb 50%,
+    #f3f3f3 100%
+  );
+
+  /* animate the gradient */
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

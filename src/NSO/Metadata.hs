@@ -53,9 +53,7 @@ runMetadata
   -> Eff es a
 runMetadata ms =
   runMetadataInversions ms.inversions
-    . case ms.datasets of
-      Nothing -> runMetadataDatasetsMock
-      Just s -> runMetadataDatasets s
+    . maybe runMetadataDatasetsMock runMetadataDatasets ms.datasets
 
 
 runMetadataDatasetsMock

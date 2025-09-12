@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedLists #-}
+
 module App.Route where
 
 import Data.Time.Format.ISO8601 (iso8601ParseM, iso8601Show)
@@ -8,6 +10,7 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import Web.Hyperbole
+import Web.Hyperbole.Data.URI as URI (Path (..))
 import Web.Hyperbole.Route (genMatchRoute, genRoutePath)
 
 
@@ -28,13 +31,13 @@ instance Route AppRoute where
   matchRoute = \case
     [] -> pure Dashboard
     ["redirect"] -> pure Login
-    ss -> genMatchRoute ss
+    ss -> genMatchRoute ss.segments
 
 
   routePath = \case
     Dashboard -> []
     Login -> ["redirect"]
-    r -> genRoutePath r
+    r -> URI.Path $ genRoutePath r
 
 
 data ProposalRoute
@@ -64,12 +67,12 @@ instance Route ProgramRoute where
 
 
   routePath (InvUpload invId) = ["upload", invId.fromId]
-  routePath other = genRoutePath other
+  routePath other = URI.Path (genRoutePath other)
 
 
   matchRoute [] = Just Prog
   matchRoute ["upload", invId] = Just $ InvUpload $ Id invId
-  matchRoute segs = genMatchRoute segs
+  matchRoute segs = genMatchRoute segs.segments
 
 
 data DatasetRoute

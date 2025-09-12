@@ -15,7 +15,7 @@ import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Web.Atomic.CSS
 import Web.Hyperbole
-import Web.Hyperbole.Data.URI (Path (..), pathUri)
+import Web.Hyperbole.Data.URI (pathUri)
 
 
 -- LOGGGED OUT PAGE
@@ -78,7 +78,7 @@ logout = do
 redirectTo :: (Hyperbole :> es) => Eff es URI
 redirectTo = do
   mu <- getLastUrl
-  pure $ fromMaybe (pathUri $ Path True $ routePath Proposals) mu
+  pure $ fromMaybe (pathUri $ routePath Proposals) mu
 
 
 data AuthRed = AuthRed

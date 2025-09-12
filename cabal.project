@@ -4,7 +4,7 @@ packages:
   ./types/
   -- ../globus.hs/
   -- ../telescope.hs/
-  -- ../hyperbole/
+  ../hyperbole/
   -- ../atomic-css/
   -- ../globus.hs
   -- https://hackage.haskell.org/package/telescope-0.1.2/candidate/telescope-0.1.2.tar.gz
@@ -19,18 +19,13 @@ source-repository-package
 
 -- source-repository-package
 --   type: git
---   location: https://github.com/dkistdc/telescope.hs
---   tag: 917e622dea99
- 
-source-repository-package
-  type: git
-  location: https://github.com/seanhess/hyperbole
-  tag: 23c620442e54
+--   location: https://github.com/seanhess/hyperbole
+--   tag: b4b9769a80c3
 
-source-repository-package
-  type: git
-  location: https://github.com/seanhess/atomic-css
-  tag: bfc1f9cd15be
+-- source-repository-package
+--   type: git
+--   location: https://github.com/seanhess/atomic-css
+--   tag: bfc1f9cd15be
 
 source-repository-package
   type: git

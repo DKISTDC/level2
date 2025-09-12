@@ -41,7 +41,7 @@ import NSO.Types.InstrumentProgram
 import Numeric (showFFloat)
 import Web.Atomic.CSS
 import Web.Hyperbole
-import Web.Hyperbole.Data.URI as URI (Path (..), pathUri)
+import Web.Hyperbole.Data.URI as URI (pathUri)
 
 
 page
@@ -83,7 +83,7 @@ loadInversion invId = do
 
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())
 redirectHome = do
-  redirect $ pathUri . URI.Path True $ routePath Inversions
+  redirect $ pathUri $ routePath Inversions
 
 
 -------------------------------------------------------------------

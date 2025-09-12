@@ -173,7 +173,9 @@ library
     , time
     , unordered-containers
     , uuid
+    , wai
     , wai-extra
+    , wai-middleware-static
     , warp >=3.4
   default-language: GHC2021
 
@@ -236,7 +238,9 @@ executable level2
     , time
     , unordered-containers
     , uuid
+    , wai
     , wai-extra
+    , wai-middleware-static
     , warp >=3.4
   default-language: GHC2021
 
@@ -311,6 +315,8 @@ test-suite spec
     , time
     , unordered-containers
     , uuid
+    , wai
     , wai-extra
+    , wai-middleware-static
     , warp >=3.4
   default-language: GHC2021

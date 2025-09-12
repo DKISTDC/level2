@@ -40,7 +40,9 @@ dependencies:
   - nso-level2-types
   - atomic-css >= 0.1.0
   - warp >= 3.4
+  - wai
   - wai-extra
+  - wai-middleware-static
   - http-types
   - http-client
   - http-client-tls

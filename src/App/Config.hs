@@ -160,7 +160,8 @@ readEnv e = do
 documentHead :: View DocumentHead ()
 documentHead = do
   title "Level2"
-  script' scriptEmbed
-  script' scriptLiveReload
+  script "/hyperbole.js"
+  script "/live-reload.js"
   style (cs cssEmbed)
-  style "body { background-color: #d3dceb }"
+  -- style "body { background-color: #d3dceb }"
+  stylesheet "/level2.css"
