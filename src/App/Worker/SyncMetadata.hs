@@ -59,13 +59,6 @@ syncMetadataTask task = do
   send $ TasksAdd tasks
 
 
--- -- -- maybe I don't need this at all? But it would be nice to catch things...
--- saveErrorAndCrash :: (MetadataSync :> es) => SyncId -> IOError -> Eff es a
--- saveErrorAndCrash s e = do
---   send $ Sync.SetError s (show e)
---   -- doesn't matter because we crash anyway!
---   throwM e
-
 -- SYNC PROPOSAL -------------------------------------------------------------------------------------------------------------------
 
 data SyncProposalTask = SyncProposalTask
