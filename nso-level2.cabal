@@ -199,7 +199,7 @@ executable level2
       NoImplicitPrelude
       NoFieldSelectors
       LambdaCase
-  ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -fdefer-typed-holes -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
     , amqp-worker >=2.0.1
