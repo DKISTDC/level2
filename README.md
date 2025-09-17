@@ -3,7 +3,8 @@ Level 2 Inversion
 
 *Admin tool to manage the creation of Level 2 data for the DKIST solar telescope.*
 
-See [DEVELOPMENT.md](./DEVELOPMENT.md)
+* See [DEVELOPMENT.md](./DEVELOPMENT.md)
+* See [AGENTS.md](./AGENTS.md)
 
 
 Project Structure
