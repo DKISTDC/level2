@@ -1,5 +1,11 @@
 # Repository Guidelines
 
+IMPORTANT: Test that your changes compile every time!
+
+```
+cabal test
+```
+
 ## Project Structure & Module Organization
 - `src/App` hosts Hyperbole web UI handlers; `src/NSO/Data|Image|Files` cover NSO integrations and file orchestration.
 - `types/` is the shared library; move cross-project types and anything that might belong on hackage here before reusing them in `src/`.
@@ -9,10 +15,8 @@
 - Helper scripts reside in `bin/`; treat them as the canonical local workflow.
 
 ## Build, Test, and Development Commands
-- `ghcid` - starts an ongoing compilation checker
 - `cabal test` - checks compilation once and runs tests
-- `cabal build` compiles the app for release; artifacts land in `dist-newstyle/` for packaging.
-- `sqlx migrate run` applies pending migrations against the configured database.
+- `sqlx migrate run` applies pending migrations against the configured database. Don't run this
 
 ## Coding Style & Naming Conventions
 - Format Haskell with Fourmolu (`fourmolu --mode inplace src/**/*.hs`) to satisfy `fourmolu.yaml`.
