@@ -20,11 +20,14 @@ extra-doc-files:
 library
   exposed-modules:
       Data.Grouped
+      Data.List.Ext
       Effectful.Debug
+      Effectful.Fetch
       Effectful.GenRandom
       Effectful.GraphQL
       Effectful.Log
       Effectful.Rel8
+      Effectful.Tasks
       Effectful.Time
       NSO.Prelude
       NSO.Types.Common
@@ -70,6 +73,7 @@ library
     , hyperbole ==0.5.0
     , lens
     , modern-uri
+    , network-uri
     , random
     , rel8
     , scientific

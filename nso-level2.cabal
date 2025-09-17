@@ -68,12 +68,6 @@ library
       App.Worker.Publish
       App.Worker.PuppetMaster
       App.Worker.SyncMetadata
-      Data.List.Ext
-      Effectful.Fetch
-      Effectful.Tasks
-      Flow
-      Flow.Example
-      Flow.Node
       NSO.Data.Datasets
       NSO.Data.Inversions
       NSO.Data.Inversions.Commit

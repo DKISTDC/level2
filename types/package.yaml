@@ -57,6 +57,7 @@ dependencies:
   - globus >= 0.2.1
   - telescope >= 0.4
   - scientific
+  - network-uri
 
 
 library:
