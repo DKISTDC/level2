@@ -1,8 +1,8 @@
-# # Number of spaces per indentation step
-# indentation: 4
+# Number of spaces per indentation step
+indentation: 2
 #
-# # Max line length for automatic line breaking
-# column-limit: none
+# Max line length for automatic line breaking
+column-limit: none
 
 # Styling of arrows in type signatures (choices: trailing, leading, or leading-args)
 function-arrows: leading
@@ -41,10 +41,11 @@ newlines-between-decls: 2
 # unicode: never
 #
 # # Give the programmer more choice on where to insert blank lines
-# respectful: true
+respectful: true
 #
-# # Fixity information for operators
-# fixities: []
+# Fixity information for operators
+# Fixity information for operators
+fixities: []
 #
 # # Module reexports Fourmolu should know about
 # reexports: []

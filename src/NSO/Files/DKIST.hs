@@ -24,18 +24,19 @@ endpoint = Tagged "d26bd00b-62dc-40d2-9179-7aece2b8c437"
 
 
 -- datasetSourcePath :: Dataset -> Path DKIST Dir Dataset
--- datasetSourcePath d = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+-- datasetSourcePath d = Path (cs d.bucket.bucketName) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 -- datasetParentFolder :: Dataset -> Path DKIST Dir Dataset
--- datasetParentFolder d = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId)
+-- datasetParentFolder d = Path (cs d.bucket.bucketName) </> Path (cs d.primaryProposalId.fromId)
 
 dataset :: Dataset -> Path DKIST File Dataset
-dataset d = Path (cs d.bucket) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+dataset d = Path (cs d.bucket.bucketName) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 
 -- Publish --------------------------------------
 
 data SoftPublish
+data Publish
 
 
 -- is this part of the *PATH* ?
@@ -43,5 +44,14 @@ baseDir :: Path DKIST Dir SoftPublish
 baseDir = Path "etc/data1653/L2"
 
 
-publishedDir :: Id Proposal -> Id Inversion -> Path DKIST Dir Inversion
-publishedDir propId invId = baseDir </> Path (cs propId.fromId) </> Path (cs invId.fromId)
+softPublishDir :: Id Proposal -> Id Inversion -> Path DKIST Dir Inversion
+softPublishDir propId invId = baseDir </> Path (cs propId.fromId) </> Path (cs invId.fromId)
+
+
+publishDir :: Bucket -> Id Proposal -> Id Inversion -> Path DKIST Dir Inversion
+publishDir bucket propId invId =
+  publishRoot bucket </> Path (cs propId.fromId) </> Path (cs invId.fromId)
+
+
+publishRoot :: Bucket -> Path DKIST Dir Publish
+publishRoot bucket = Path (cs bucket.bucketName)

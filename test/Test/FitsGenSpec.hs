@@ -1,6 +1,6 @@
 module Test.FitsGenSpec where
 
-import App.Worker.Generate (GenerateError, runGenerateError)
+import App.Worker.Generate.Error (GenerateError, runGenerateError)
 import Control.Monad.Catch (throwM)
 import Data.ByteString qualified as BS
 import Data.Massiv.Array as M (Comp (..), P)

@@ -609,5 +609,5 @@ viewPublishTransfer taskId = do
 
 viewPublished :: Id Proposal -> Id Inversion -> View PublishStep ()
 viewPublished propId invId = do
-  link (FileManager.openPublish $ DKIST.publishedDir propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
+  link (FileManager.openPublish $ DKIST.softPublishDir propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
     "View Published Files"

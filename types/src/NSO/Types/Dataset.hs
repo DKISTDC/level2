@@ -13,6 +13,11 @@ import Rel8
 import Text.Read (readEither)
 
 
+newtype Bucket = Bucket {bucketName :: Text}
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving newtype (ToJSON, FromJSON, DBType)
+
+
 type Dataset = Dataset' Identity
 data Dataset' f = Dataset'
   { datasetId :: Column f (Id Dataset)
@@ -23,7 +28,6 @@ data Dataset' f = Dataset'
   , stokesParameters :: Column f StokesParameters
   , createDate :: Column f UTCTime
   , updateDate :: Column f UTCTime
-  , bucket :: Column f Text
   , wavelengthMin :: Column f (Wavelength Nm)
   , wavelengthMax :: Column f (Wavelength Nm)
   , startTime :: Column f UTCTime
@@ -42,6 +46,7 @@ data Dataset' f = Dataset'
   , friedParameter :: Column f (Maybe Distribution)
   , embargo :: Column f (Maybe UTCTime)
   , spectralLines :: Column f [Text]
+  , bucket :: Column f Bucket
   }
   deriving (Generic, Rel8able)
 
