@@ -183,7 +183,8 @@ type LogContext = String
 logContext :: (Log :> es) => String -> Eff es a -> Eff es a
 logContext ctx eff = send $ Context ctx eff
 
-logStatus :: Log :> es => String -> Eff es ()
+
+logStatus :: (Log :> es) => String -> Eff es ()
 logStatus = send . Status
 
 

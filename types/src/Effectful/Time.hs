@@ -10,13 +10,17 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Prelude
 
+
 data Time :: Effect where
   CurrentTime :: Time m UTCTime
 
+
 type instance DispatchOf Time = 'Dynamic
+
 
 currentTime :: (Time :> es) => Eff es UTCTime
 currentTime = send CurrentTime
+
 
 runTime
   :: (IOE :> es)
