@@ -24,6 +24,7 @@ fourmolu --mode inplace <myfiles>
 - Format Haskell with Fourmolu
 
 ## Testing Guidelines
+- Always run `cabal test` with `with_escalated_permissions=true`.
 - Tests use Skeletest; add suites in `test/Test/...`
 - Mirror module names in test files (`Test/App/UploadSpec.hs`)
 - Do not test live databases
