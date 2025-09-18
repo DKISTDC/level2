@@ -1,0 +1,54 @@
+
+- [ ] error in publish step displays in 
+- [ ] mag Inclination, Azimuth - negative values +360 degrees
+- [ ] Send Han my notebook, and verify QQ
+- [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
+
+## Thu, Sep 18
+- [ ] publish button does real transfer
+
+## Wed, Sep 17
+- [x] Messed around with codex
+- [x] implemented new transferPublish
+
+
+## Tue, Sep 6
+- [ ] Refresh globus access token when it expires...
+
+Tue, Sep 6
+----------
+- [ ] Refresh globus access token when it expires...
+- Hyperbole documentation
+- Hyperbole path refactor
+- Hyperbole example links
+(didn't start on the report globus task)
+
+Mon, Sep 6
+----------
+- Hyperbole
+
+Fri, Sep 5
+----------
+
+- [x] Can upload from CU Boulder Research Computing and goes through
+- [x] +Crash and Print should print to the console as well
+- [x] Upload from CU Boulder Research Computing. Works, but uploading is broken
+- [x] Require login immediately: all application code can expect Transfer
+  - [x] accessing CU Boulder Research works
+  - [x] can't upload! Something wrong with transfer, not getting the local path
+- [x] Bug: "Hyperbole internal error" lots of places: when clicking upload, start over with new inversion. Was a bug with hyperbole redirects
+- [x] Bug: File missing exception crashes app
+
+
+Thu, Sep 4
+----------
+- [x] Bug: Globus Errors are crashing the server: Reproduce: kill server in the middle of transfer and restart. you get the “Identical Transfer” error
+- [x] Refactored Generate
+- [x] Inversion Generate Step - shows Generate ASDF even if it is actually generating FITS files, as long as the Inversion has the generated fits set. In reality the status is based on the task itself though. Reproduce by deleting a fits while on ASDF step and restarting. The view should report the fits generation process with the skips, etc
+
+
+Previous
+----------
+What did I decide about Globus Errors? I reverted the change to switch to throw. Globus catches errors, then uses throwError, which it requires before it can be run.
+* Maybe I decided it was ok, because we can create a generate Hyperbole handler
+* Created that Transfer effect
