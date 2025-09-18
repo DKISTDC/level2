@@ -14,7 +14,7 @@ import NSO.Files.DKIST as DKIST
 import NSO.Files.Image qualified as Image
 import NSO.Files.Inversion (InversionFiles (..))
 import NSO.Files.RemoteFolder
-import NSO.Files.Scratch (Scratch)
+import NSO.Files.Scratch (Mounted, Scratch)
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..), User)
 import NSO.Files.TransferForm qualified as TransferForm
@@ -166,16 +166,14 @@ transferSoftPublish
   -> Eff es (App.Id Task)
 transferSoftPublish propId invId = do
   scratch <- Scratch.remote
-  -- \$ Files.outputParentProposalDir propId
-  -- \$ DKIST.proposalPublishDir propId
+  source <- Scratch.mountedPath (Image.outputL2Dir propId invId)
   let lbl = "Inversion " <> invId.fromId
-  -- let ft = DKIST.inversion invId
-  send $ TransferFiles lbl scratch.remote DKIST.remote [fileTransfer]
+  send $ TransferFiles lbl scratch.remote DKIST.remote [fileTransfer source]
  where
-  fileTransfer :: FileTransfer Scratch DKIST Dir Inversion
-  fileTransfer =
+  fileTransfer :: Path Scratch (Mounted Dir) Inversion -> FileTransfer Scratch DKIST Dir Inversion
+  fileTransfer src =
     FileTransfer
-      { sourcePath = Image.outputL2Dir propId invId
+      { sourcePath = Path src.filePath
       , destPath = DKIST.softPublishDir propId invId
       , recursive = True
       }
@@ -194,13 +192,14 @@ transferPublish
 transferPublish bucket propId invId = do
   scratch <- Scratch.remote
   let lbl = "Publish " <> invId.fromId
-  let source = Image.outputL2Dir propId invId
+  source <- Scratch.mountedPath (Image.outputL2Dir propId invId)
   let dest = DKIST.publishDir bucket propId invId
   send $ TransferFiles lbl scratch.remote DKIST.remote [fileTransfer source dest]
  where
+  fileTransfer :: Path Scratch (Mounted Dir) Inversion -> Path DKIST Dir Inversion -> FileTransfer Scratch DKIST Dir Inversion
   fileTransfer src destPath =
     FileTransfer
-      { sourcePath = src
+      { sourcePath = Path src.filePath
       , destPath = destPath
       , recursive = True
       }
