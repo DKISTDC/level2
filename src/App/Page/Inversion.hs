@@ -572,6 +572,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
     PublishStep propId _ invId <- viewId
     case action of
       StartSoftPublish -> do
+        Inversions.clearError invId
         Publish.startSoftPublish propId invId
         pure viewPublishWait
       CheckPublish -> do
