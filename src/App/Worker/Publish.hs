@@ -8,7 +8,8 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (Task)
+import Effectful.Exception (catch)
+import Effectful.Globus (GlobusError, Task)
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time
@@ -46,11 +47,25 @@ startSoftPublish propId invId = do
 
 publishTask
   :: forall es
-   . (Datasets :> es, Inversions :> es, Time :> es, Scratch :> es, Log :> es, Concurrent :> es, Tasks PublishTask :> es, Transfer :> es)
+   . ( Datasets :> es
+     , Inversions :> es
+     , Time :> es
+     , Scratch :> es
+     , Log :> es
+     , Concurrent :> es
+     , Tasks PublishTask :> es
+     , Transfer :> es
+     , Error GlobusError :> es
+     , IOE :> es
+     )
   => PublishTask
   -> Eff es ()
 publishTask task = do
-  res <- runErrorNoCallStack @PublishError workWithError
+  res <-
+    runErrorNoCallStack @PublishError $
+      workWithError
+        `catchError` (\_ e -> onCaughtGlobus e)
+        `catch` onCaughtError
   case res of
     Left err -> failed err
     Right a -> pure a
@@ -79,7 +94,9 @@ data PublishError
   = TransferFailed (Id Task)
   | MissingProposalDatasets (Id Proposal)
   | MixedProposalBuckets (Id Proposal)
-  deriving (Show, Eq, Exception)
+  | GlobusError GlobusError
+  | PublishIOError IOError
+  deriving (Show, Exception)
 
 
 isTransferComplete :: (Log :> es, Transfer :> es, Error PublishError :> es) => Id Task -> Eff es Bool
@@ -91,6 +108,18 @@ isTransferComplete it = do
     _ -> do
       log Debug $ dump "Transfer" $ taskPercentComplete task
       pure False
+
+
+onCaughtError :: (Log :> es) => IOError -> Eff (Error PublishError : es) a
+onCaughtError e = do
+  log Err "Catch IO Error"
+  throwError $ PublishIOError e
+
+
+onCaughtGlobus :: (Log :> es) => GlobusError -> Eff (Error PublishError : es) a
+onCaughtGlobus e = do
+  log Err "Catch GLOBUS"
+  throwError $ GlobusError e
 
 
 proposalBucket
