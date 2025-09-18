@@ -1,6 +1,6 @@
 module App.Worker.Publish where
 
-import App.Effect.Transfer (Transfer, transferSoftPublish)
+import App.Effect.Transfer (Transfer, transferPublish)
 import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception)
 import Control.Monad.Loops
@@ -12,10 +12,13 @@ import Effectful.Globus (Task)
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time
+import NSO.Data.Datasets (Datasets)
+import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files.Scratch as Scratch
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Dataset (Bucket)
 import NSO.Types.InstrumentProgram
 import Network.Globus (taskPercentComplete)
 import Network.Globus qualified as Globus
@@ -43,7 +46,7 @@ startSoftPublish propId invId = do
 
 publishTask
   :: forall es
-   . (Inversions :> es, Time :> es, Scratch :> es, Log :> es, Concurrent :> es, Tasks PublishTask :> es, Transfer :> es)
+   . (Datasets :> es, Inversions :> es, Time :> es, Scratch :> es, Log :> es, Concurrent :> es, Tasks PublishTask :> es, Transfer :> es)
   => PublishTask
   -> Eff es ()
 publishTask task = do
@@ -56,7 +59,8 @@ publishTask task = do
   workWithError = do
     log Debug "Publish Task"
 
-    taskId <- transferSoftPublish task.proposalId task.inversionId
+    bucket <- proposalBucket task.proposalId
+    taskId <- transferPublish bucket task.proposalId task.inversionId
     send $ TaskSetStatus task $ PublishTransferring taskId
 
     log Debug " - publish transferring"
@@ -73,6 +77,8 @@ publishTask task = do
 
 data PublishError
   = TransferFailed (Id Task)
+  | MissingProposalDatasets (Id Proposal)
+  | MixedProposalBuckets (Id Proposal)
   deriving (Show, Eq, Exception)
 
 
@@ -85,3 +91,17 @@ isTransferComplete it = do
     _ -> do
       log Debug $ dump "Transfer" $ taskPercentComplete task
       pure False
+
+
+proposalBucket
+  :: (Datasets :> es, Error PublishError :> es)
+  => Id Proposal
+  -> Eff es Bucket
+proposalBucket pid = do
+  datasets <- Datasets.find (Datasets.ByProposal pid)
+  case datasets of
+    [] -> throwError (MissingProposalDatasets pid)
+    (d : rest) ->
+      if all ((== d.bucket) . (.bucket)) rest
+        then pure d.bucket
+        else throwError (MixedProposalBuckets pid)
