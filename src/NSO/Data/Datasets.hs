@@ -4,7 +4,6 @@ module NSO.Data.Datasets
   ( Datasets (..)
   , Filter (..)
   , find
-  , proposalBucket
   , module NSO.Types.Dataset
   , runDataDatasets
   )
@@ -144,15 +143,3 @@ runDataDatasets = interpret $ \_ -> \case
 
 find :: (Datasets :> es) => Filter -> Eff es [Dataset]
 find = send . Find
-
-
--- | Return the shared bucket for all datasets under a proposal.
-proposalBucket :: (Datasets :> es) => Id Proposal -> Eff es (Maybe Bucket)
-proposalBucket pid = do
-  ds <- find (ByProposal pid)
-  case ds of
-    [] -> pure Nothing
-    (d : rest) ->
-      pure $ do
-        guard (all ((== d.bucket) . (.bucket)) rest)
-        pure d.bucket

@@ -4,18 +4,18 @@ module NSO.Data.Programs
   ( InstrumentProgram (..)
   , ProgramFamily (..)
   , ProgramStatus (..)
-  , programStatus
-  , programInversions
+  , groupByProgram
   , instrumentProgram
-  , toProposal
-  , toProposals
+  , loadAllPrograms
   , loadAllProposals
   , loadProgram
-  , programFamilies
-  , loadAllPrograms
   , loadProposalPrograms
+  , programFamilies
+  , programInversions
+  , programStatus
   , proposalFromDataset
-  , groupByProgram
+  , toProposal
+  , toProposals
   ) where
 
 import Data.Either (lefts, rights)

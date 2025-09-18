@@ -1,9 +1,10 @@
 # Repository Guidelines
 
-IMPORTANT: Test that your changes compile every time!
+IMPORTANT: Test and format your changes after every set of changes
 
 ```
 cabal test
+fourmolu --mode inplace <myfiles>
 ```
 
 ## Project Structure & Module Organization
@@ -19,12 +20,11 @@ cabal test
 - `sqlx migrate run` applies pending migrations against the configured database. Don't run this
 
 ## Coding Style & Naming Conventions
-- Format Haskell with Fourmolu (`fourmolu --mode inplace src/**/*.hs`) to satisfy `fourmolu.yaml`.
-- Prefer explicit export lists and grouped imports with leading commas to match formatter expectations.
 - Use two-space indentation
+- Format Haskell with Fourmolu
 
 ## Testing Guidelines
-- Tests use Skeletest; add suites in `test/Test/...` and re-export them from `test/Spec.hs`.
+- Tests use Skeletest; add suites in `test/Test/...`
 - Mirror module names in test files (`Test/App/UploadSpec.hs`)
 - Do not test live databases
 - Avoid using fixtures
