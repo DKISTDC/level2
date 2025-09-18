@@ -122,6 +122,21 @@ data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id 
   deriving (Generic, ViewId)
 
 
+data Generated = Generated
+  { genFits :: UTCTime
+  , genAsdf :: UTCTime
+  , genTransfer :: UTCTime
+  }
+
+
+generated :: Inversion -> Maybe Generated
+generated inv = do
+  genFits <- inv.generate.fits
+  genAsdf <- inv.generate.asdf
+  genTransfer <- inv.generate.transfer
+  pure Generated{genFits, genAsdf, genTransfer}
+
+
 instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Reload
@@ -414,21 +429,21 @@ viewGenerate' inv status =
   col ~ gap 10 $ viewGen
  where
   viewGen =
-    case (inv.invError, inv.generate.fits, inv.generate.asdf) of
-      (Just e, _, _) -> viewGenError e
-      (_, Just f, Just a) -> viewGenComplete f a
-      (_, _, _) -> viewGenerateStep status
+    case generated inv of
+      Just gen -> viewGenComplete gen
+      Nothing -> maybe (viewGenerateStep status) viewGenError inv.invError
 
   viewGenError e = do
-    row ~ overflow Hidden $ View.systemError $ cs e
-    row ~ gap 10 $ do
-      button RegenError ~ Style.btn Primary $ "Retry"
-      button RegenFits ~ Style.btnOutline Secondary $ "Start Over"
-      when ("GlobusError" `T.isPrefixOf` e) $ do
-        route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
+    col ~ gap 15 $ do
+      row ~ overflow Hidden $ View.systemError $ cs e
+      row ~ gap 10 $ do
+        button RegenError ~ Style.btn Primary $ "Retry"
+        button RegenFits ~ Style.btnOutline Secondary $ "Start Over"
+        when ("GlobusError" `T.isPrefixOf` e) $ do
+          route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
-  viewGenComplete :: UTCTime -> UTCTime -> View GenerateStep ()
-  viewGenComplete _fits _asdf = do
+  viewGenComplete :: Generated -> View GenerateStep ()
+  viewGenComplete _generated = do
     row ~ gap 10 $ do
       viewGeneratedFiles inv
       button RegenFits ~ Style.btnOutline Secondary $ "Regen FITS"
@@ -584,16 +599,24 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
 viewPublish :: Inversion -> Maybe PublishStatus -> View PublishStep ()
 viewPublish inv mstatus
   | isPublished inv = viewPublished inv.proposalId inv.inversionId
-  | isGenerated inv = viewCheckStatus
+  | Just _ <- generated inv = viewPublishStatus
   | otherwise = none
  where
   viewNeedsPublish =
     button StartSoftPublish ~ Style.btn Primary . grow $ "Soft Publish"
 
-  viewCheckStatus = do
+  viewPublishStatus = do
     case mstatus of
       Just _ -> viewPublishWait
-      Nothing -> viewNeedsPublish
+      Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
+
+  viewPublishError e = do
+    col ~ gap 15 $ do
+      row ~ overflow Hidden $ View.systemError $ cs e
+      row ~ gap 10 $ do
+        button StartSoftPublish ~ Style.btn Primary . grow $ "Retry Publish"
+        when ("GlobusError" `T.isPrefixOf` e) $ do
+          route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
 
 viewPublishWait :: View PublishStep ()
