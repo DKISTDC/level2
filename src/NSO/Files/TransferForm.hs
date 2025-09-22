@@ -13,7 +13,6 @@ data User
 
 -- Transfer Forms -----------------------------------------------------------------------
 
--- this is a globus thing!
 data TransferForm = TransferForm
   { label :: Text
   , path :: Path User Dir ()
@@ -42,12 +41,15 @@ transferFormFolder tform df =
         Nothing -> Path fp
 
 
-directory :: TransferForm -> Path User Dir ()
-directory tform = tform.path
-
+-- directory :: TransferForm -> Path User Dir ()
+-- directory tform = tform.path
 
 remote :: TransferForm -> Remote User
-remote tform = Remote $ Tagged tform.endpoint_id
+remote tform =
+  Remote
+    { collection = Tagged tform.endpoint_id
+    , directory = tform.path
+    }
 
 
 dataset :: TransferForm -> DownloadFolder -> Dataset -> Path User File Dataset

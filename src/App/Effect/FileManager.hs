@@ -3,7 +3,9 @@ module App.Effect.FileManager where
 import App.Types (AppDomain)
 import Data.Tagged
 import Effectful.Globus hiding (Id)
+import Effectful.Globus qualified as Globus
 import NSO.Files.DKIST as DKIST
+import NSO.Files.RemoteFolder
 import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
 import NSO.Types.Common
@@ -49,24 +51,26 @@ fileManagerSelectUrl lmt lbl domain submitUrl cancelUrl =
     URI "https://" (Just $ URIAuth "" (cs domain.unTagged) "") u.uriPath u.uriQuery ""
 
 
-openDir :: Id Collection -> Path s Dir a -> URI
+openDir :: Globus.Id Collection -> Path s Dir a -> URI
 openDir origin dir =
   [uri|https://app.globus.org/file-manager|]
     { uriQuery =
         queryString
-          [ ("origin_id", Just $ cs origin.fromId)
+          [ ("origin_id", Just $ cs origin.unTagged)
           , ("origin_path", Just $ "/" <> cs dir.filePath)
           ]
     }
 
 
+openRemoteDir :: Remote sys -> Path sys Dir a -> URI
+openRemoteDir r p = openDir r.collection $ remotePath r p
+
+
 -- Specific File Locations ------------------------------------------
 
-openPublish :: Path DKIST Dir Inversion -> URI
-openPublish = openDir (Id DKIST.endpoint.unTagged)
+openPublish :: Remote Publish -> Path Publish Dir Inversion -> URI
+openPublish = openRemoteDir
 
 
--- DEBUG ONLY: hard coded aasgard
--- TODO: switch to scratch
-openInversion :: Path Scratch Dir Inversion -> URI
-openInversion = openDir (Id "20fa4840-366a-494c-b009-063280ecf70d")
+openInversion :: Remote Scratch -> Path Scratch Dir Inversion -> URI
+openInversion = openRemoteDir

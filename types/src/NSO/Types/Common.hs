@@ -128,7 +128,7 @@ instance FromParam (Path s x a) where
 
 -- combine a directory with... something
 (</>) :: Path s Dir a -> Path s x b -> Path s y c
-Path dir </> Path x = Path $ (FP.</>) dir x
+Path dir </> Path x = Path $ FP.normalise $ (FP.</>) dir x
 infixr 5 </>
 
 

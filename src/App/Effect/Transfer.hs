@@ -13,7 +13,7 @@ import Effectful.Reader.Dynamic
 import NSO.Files.DKIST as DKIST
 import NSO.Files.Image qualified as Image
 import NSO.Files.Inversion (InversionFiles (..))
-import NSO.Files.RemoteFolder
+import NSO.Files.RemoteFolder (Remote (..), remotePath)
 import NSO.Files.Scratch (Mounted, Scratch)
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..), User)
@@ -39,14 +39,20 @@ data Transfer :: Effect where
   -- generate: DKIST to Scratch
   TransferFiles :: Text -> Remote src -> Remote dest -> [FileTransfer src dest f a] -> Transfer m (Id Task)
   TransferStatus :: Id Task -> Transfer m Task
+  RemoteLevel1 :: Transfer m (Remote Level1)
+  RemotePublish :: Transfer m (Remote Publish)
+  RemoteScratch :: Transfer m (Remote Scratch)
 type instance DispatchOf Transfer = 'Dynamic
 
 
 runTransfer
   :: (Globus :> es, Log :> es, Auth :> es)
-  => Eff (Transfer : es) a
+  => Remote Level1
+  -> Remote Publish
+  -> Remote Scratch
+  -> Eff (Transfer : es) a
   -> Eff es a
-runTransfer = interpret $ \_ -> \case
+runTransfer level1 publish scratch = interpret $ \_ -> \case
   TransferStatus taskId -> do
     Auth.waitForAdmin $ do
       acc <- ask @(Token Access)
@@ -54,8 +60,17 @@ runTransfer = interpret $ \_ -> \case
   TransferFiles lbl source dest files ->
     Auth.waitForAdmin $ do
       transferFiles lbl source dest files
+  RemoteLevel1 -> pure level1
+  RemotePublish -> pure publish
+  RemoteScratch -> pure scratch
  where
-  transferFiles :: (Log :> es, Globus :> es, Reader (Token Access) :> es) => Text -> Remote src -> Remote dest -> [FileTransfer src dest f a] -> Eff es (Id Task)
+  transferFiles
+    :: (Log :> es, Globus :> es, Reader (Token Access) :> es)
+    => Text
+    -> Remote src
+    -> Remote dest
+    -> [FileTransfer src dest f a]
+    -> Eff es (Id Task)
   transferFiles lbl source dest files = do
     acc <- ask @(Token Access)
     log Debug "TRANSFER"
@@ -69,13 +84,12 @@ runTransfer = interpret $ \_ -> \case
     res <- send $ Globus.Transfer acc req
     pure $ Id res.task_id.unTagged
    where
-    transferItem :: FileTransfer src dest f a -> TransferItem
-    transferItem file =
+    transferItem FileTransfer{sourcePath, destPath, recursive} =
       TransferItem
         { data_type = DataType
-        , source_path = file.sourcePath.filePath
-        , destination_path = file.destPath.filePath
-        , recursive = file.recursive
+        , source_path = (remotePath source sourcePath).filePath
+        , destination_path = (remotePath dest destPath).filePath
+        , recursive
         }
 
     transferRequest :: Globus.Id Submission -> TransferRequest
@@ -109,15 +123,23 @@ scratchDownloadDatasets :: (Transfer :> es, Scratch :> es) => [Dataset] -> Eff e
 scratchDownloadDatasets ds = do
   scratch <- Scratch.remote
   let lbl = "Sync Datasets: " <> T.intercalate "," (fmap (\d -> d.datasetId.fromId) ds)
-  downloadL1To lbl Image.dataset scratch.remote ds
+  downloadL1To lbl Image.dataset scratch ds
 
 
-downloadL1To :: forall dest es. (Transfer :> es) => Text -> (Dataset -> Path dest File Dataset) -> Remote dest -> [Dataset] -> Eff es (Id Task)
+downloadL1To
+  :: forall dest root es
+   . (Transfer :> es)
+  => Text
+  -> (Dataset -> Path dest File Dataset)
+  -> Remote dest
+  -> [Dataset]
+  -> Eff es (Id Task)
 downloadL1To lbl toDestPath dest ds = do
   let xfers = fmap datasetTransfer ds
-  send $ TransferFiles lbl DKIST.remote dest xfers
+  source <- send RemoteLevel1
+  send $ TransferFiles lbl source dest xfers
  where
-  datasetTransfer :: Dataset -> FileTransfer DKIST dest File Dataset
+  datasetTransfer :: Dataset -> FileTransfer Level1 dest File Dataset
   datasetTransfer d =
     FileTransfer
       { sourcePath = DKIST.dataset d
@@ -129,7 +151,7 @@ downloadL1To lbl toDestPath dest ds = do
 -- Upload ---------------------------------------------------------------------------------
 
 uploadInversionResults
-  :: (Transfer :> es, Scratch :> es)
+  :: (Transfer :> es, Scratch :> es, Log :> es)
   => TransferForm
   -> InversionFiles Maybe Filename
   -> App.Id Proposal
@@ -137,17 +159,17 @@ uploadInversionResults
   -> Eff es (Id Task)
 uploadInversionResults tform upfiles propId invId = do
   scratch <- Scratch.remote
-  let source = TransferForm.remote tform
-  send $ TransferFiles tform.label source scratch.remote (fileTransfers scratch)
+  let source :: Remote User = TransferForm.remote tform
+  send $ TransferFiles tform.label source scratch (fileTransfers scratch)
  where
-  fileTransfers :: RemoteFolder Scratch () -> [FileTransfer User Scratch File Inversion]
-  fileTransfers scratch = catMaybes [fmap fileTransfer upfiles.quantities, fmap fileTransfer upfiles.profileFit, fmap fileTransfer upfiles.profileOrig]
+  fileTransfers :: Remote Scratch -> [FileTransfer User Scratch File Inversion]
+  fileTransfers scratch = catMaybes [fmap (fileTransfer scratch) upfiles.quantities, fmap (fileTransfer scratch) upfiles.profileFit, fmap (fileTransfer scratch) upfiles.profileOrig]
    where
-    fileTransfer :: Path Scratch Filename a -> FileTransfer User Scratch File Inversion
-    fileTransfer p@(Path a) =
+    fileTransfer :: Remote Scratch -> Path Scratch Filename a -> FileTransfer User Scratch File Inversion
+    fileTransfer _folder p@(Path a) =
       FileTransfer
-        { sourcePath = TransferForm.directory tform </> Path a
-        , destPath = scratch.directory </> Image.blancaFile (Image.blancaInput propId invId) p
+        { sourcePath = Path a
+        , destPath = Image.blancaFile (Image.blancaInput propId invId) p
         , recursive = False
         }
 
@@ -159,25 +181,23 @@ uploadInversionResults tform upfiles propId invId = do
 
 -- /level2/generated/pid_1_118/inv.SD9T3L/
 -- /level2/generated/pid_1_118/inv.SD9T3L/
-transferSoftPublish
-  :: (Transfer :> es, Scratch :> es)
-  => App.Id Proposal
-  -> App.Id Inversion
-  -> Eff es (App.Id Task)
-transferSoftPublish propId invId = do
-  scratch <- Scratch.remote
-  source <- Scratch.mountedPath (Image.outputL2Dir propId invId)
-  let lbl = "Inversion " <> invId.fromId
-  send $ TransferFiles lbl scratch.remote DKIST.remote [fileTransfer source]
- where
-  fileTransfer :: Path Scratch (Mounted Dir) Inversion -> FileTransfer Scratch DKIST Dir Inversion
-  fileTransfer src =
-    FileTransfer
-      { sourcePath = Path src.filePath
-      , destPath = DKIST.softPublishDir propId invId
-      , recursive = True
-      }
-
+-- transferSoftPublish
+--   :: (Transfer :> es, Scratch :> es)
+--   => App.Id Proposal
+--   -> App.Id Inversion
+--   -> Eff es (App.Id Task)
+-- transferSoftPublish propId invId = do
+--   scratch <- Scratch.remote
+--   let source = Image.outputL2Dir propId invId
+--   let destPath = Path (cs propId.fromId) </> Path (cs invId.fromId)
+--   let lbl = "Inversion " <> invId.fromId
+--   let tfer =
+--         FileTransfer
+--           { sourcePath = source
+--           , destPath
+--           , recursive = True
+--           }
+--   send $ TransferFiles lbl scratch DKIST.softPublishFolder [tfer]
 
 -- transfer inversion files proper place on DKIST Data Globus
 --   needs to match dataset .bucket: (data | public)
@@ -191,15 +211,9 @@ transferPublish
   -> Eff es (App.Id Task)
 transferPublish bucket propId invId = do
   scratch <- Scratch.remote
+  dest <- send RemotePublish
   let lbl = "Publish " <> invId.fromId
-  source <- Scratch.mountedPath (Image.outputL2Dir propId invId)
-  let dest = DKIST.publishDir bucket propId invId
-  send $ TransferFiles lbl scratch.remote DKIST.remote [fileTransfer source dest]
- where
-  fileTransfer :: Path Scratch (Mounted Dir) Inversion -> Path DKIST Dir Inversion -> FileTransfer Scratch DKIST Dir Inversion
-  fileTransfer src destPath =
-    FileTransfer
-      { sourcePath = Path src.filePath
-      , destPath = destPath
-      , recursive = True
-      }
+  let sourcePath = Image.outputL2Dir propId invId
+  let destPath = DKIST.publishDir bucket propId invId
+  let transferItem = FileTransfer{sourcePath, destPath, recursive = True}
+  send $ TransferFiles lbl scratch dest [transferItem]

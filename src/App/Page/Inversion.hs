@@ -5,7 +5,7 @@ module App.Page.Inversion where
 import App.Colors
 import App.Effect.Auth
 import App.Effect.FileManager qualified as FileManager
-import App.Effect.Transfer (Transfer)
+import App.Effect.Transfer (Transfer (..))
 import App.Error (expectFound)
 import App.Page.Inversions.CommitForm as CommitForm
 import App.Route as Route
@@ -31,8 +31,10 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Spectra qualified as Spectra
+import NSO.Files (Publish)
 import NSO.Files.DKIST qualified as DKIST
 import NSO.Files.Image qualified as Files
+import NSO.Files.RemoteFolder (Remote)
 import NSO.Files.Scratch (Scratch (..))
 import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
@@ -45,15 +47,17 @@ import Web.Hyperbole.Data.URI as URI (pathUri)
 
 
 page
-  :: (Hyperbole :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es)
+  :: (Hyperbole :> es, Transfer :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es)
   => Id Proposal
   -> Id Inversion
   -> Page es (InversionStatus : MoreInversions : InversionViews)
 page propId invId = do
   inv <- loadInversion invId
-  ds <- Datasets.find (Datasets.ByProgram inv.programId)
+  ds <- loadDatasets inv.programId
   gen <- send $ TaskLookupStatus $ GenTask propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
+  scratch <- send RemoteScratch
+  publish <- send RemotePublish
   appLayout Inversions $ do
     col ~ Style.page $ do
       col ~ gap 5 $ do
@@ -71,14 +75,19 @@ page propId invId = do
           appRoute (Route.Proposal inv.proposalId PropRoot) ~ Style.link $ do
             text inv.proposalId.fromId
 
-      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion inv ds gen pub
+      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion publish scratch inv ds gen pub
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
-loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
+loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es (Inversion)
 loadInversion invId = do
   (inv :| _) <- send (Inversions.ById invId) >>= expectFound
   pure inv
+
+
+loadDatasets :: (Hyperbole :> es, Datasets :> es) => Id InstrumentProgram -> Eff es (NonEmpty Dataset)
+loadDatasets progId = do
+  Datasets.find (Datasets.ByProgram progId) >>= expectFound
 
 
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())
@@ -137,7 +146,7 @@ generated inv = do
   pure Generated{genFits, genAsdf, genTransfer}
 
 
-instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
+instance (Inversions :> es, Transfer :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Reload
     | SetDataset (Id Dataset) Bool
@@ -163,15 +172,17 @@ instance (Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Tim
    where
     refresh = do
       InversionStatus propId progId invId <- viewId
-      ds <- Datasets.find (Datasets.ByProgram progId)
+      ds <- loadDatasets progId
       inv <- loadInversion invId
+      publish <- send RemotePublish
+      scratch <- send RemoteScratch
       gen <- send $ TaskLookupStatus $ GenTask propId invId
       pub <- send $ TaskLookupStatus $ PublishTask propId invId
-      pure $ viewInversion inv ds gen pub
+      pure $ viewInversion publish scratch inv ds gen pub
 
 
-viewInversion :: Inversion -> [Dataset] -> Maybe GenStatus -> Maybe PublishStatus -> View InversionStatus ()
-viewInversion inv ds gen pub = do
+viewInversion :: Remote Publish -> Remote Scratch -> Inversion -> NonEmpty Dataset -> Maybe GenStatus -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion publish scratch inv ds gen pub = do
   col ~ gap 30 $ do
     if inv.deleted
       then restoreButton
@@ -186,11 +197,11 @@ viewInversion inv ds gen pub = do
 
         stepGenerate (generateStep inv) $ do
           hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
-            viewGenerate inv gen
+            viewGenerate scratch inv gen
 
         stepPublish (publishStep inv) $ do
           hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
-            viewPublish inv pub
+            viewPublish publish (head ds).bucket inv pub
 
         hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
  where
@@ -326,7 +337,7 @@ metadataStep inv
   | otherwise = StepActive
 
 
-viewDatasets :: Inversion -> [Dataset] -> View InversionStatus ()
+viewDatasets :: Inversion -> NonEmpty Dataset -> View InversionStatus ()
 viewDatasets inv ds = do
   col ~ gap 5 $ do
     el ~ bold $ "Datasets Used"
@@ -338,7 +349,7 @@ viewDatasets inv ds = do
         el ~ fontSize 12 $ maybe none spectralLineTag $ Spectra.identifyLine d
 
 
-viewMetadata :: Inversion -> [Dataset] -> View InversionStatus ()
+viewMetadata :: Inversion -> NonEmpty Dataset -> View InversionStatus ()
 viewMetadata inv ds = do
   col ~ gap 15 $ do
     viewDatasets inv ds
@@ -363,7 +374,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Tasks GenTask :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
+instance (Transfer :> es, Tasks GenTask :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = ReloadGen
     | RegenError
@@ -401,9 +412,10 @@ instance (Tasks GenTask :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Da
     loadGenerate = do
       GenerateStep propId _ invId <- viewId
       inv <- loadInversion invId
+      scratch <- send RemoteScratch
       status <- send $ TaskLookupStatus $ GenTask propId invId
       pure $ do
-        viewGenerate inv status
+        viewGenerate scratch inv status
 
     refreshInversion = do
       GenerateStep propId progId invId <- viewId
@@ -417,15 +429,15 @@ generateStep inv
   | otherwise = StepNext
 
 
-viewGenerate :: Inversion -> Maybe GenStatus -> View GenerateStep ()
-viewGenerate inv status
+viewGenerate :: Remote Scratch -> Inversion -> Maybe GenStatus -> View GenerateStep ()
+viewGenerate scratch inv status
   | inv.deleted = none
-  | isInverted inv = viewGenerate' inv status
+  | isInverted inv = viewGenerate' scratch inv status
   | otherwise = none
 
 
-viewGenerate' :: Inversion -> Maybe GenStatus -> View GenerateStep ()
-viewGenerate' inv status =
+viewGenerate' :: Remote Scratch -> Inversion -> Maybe GenStatus -> View GenerateStep ()
+viewGenerate' scratch inv status =
   col ~ gap 10 $ viewGen
  where
   viewGen =
@@ -445,7 +457,7 @@ viewGenerate' inv status =
   viewGenComplete :: Generated -> View GenerateStep ()
   viewGenComplete _generated = do
     row ~ gap 10 $ do
-      viewGeneratedFiles inv
+      viewGeneratedFiles scratch inv
       button RegenFits ~ Style.btnOutline Secondary $ "Regen FITS"
       button RegenAsdf ~ Style.btnOutline Secondary $ "Regen ASDF"
 
@@ -537,9 +549,9 @@ instance (Tasks GenTask :> es, Inversions :> es, Datasets :> es, Log :> es, Tran
         Transfer.checkTransfer GenTransfer taskId
 
 
-viewGeneratedFiles :: Inversion -> View c ()
-viewGeneratedFiles inv =
-  link (FileManager.openInversion $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
+viewGeneratedFiles :: Remote Scratch -> Inversion -> View c ()
+viewGeneratedFiles scratch inv =
+  link (FileManager.openInversion scratch $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
 
 
 -- ----------------------------------------------------------------
@@ -562,7 +574,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
 
 
   data Action PublishStep
-    = StartSoftPublish
+    = StartPublish
     | CheckPublish
     | PublishTransfer (Id Task) TransferAction
     deriving (Generic, ViewAction)
@@ -571,9 +583,9 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
   update action = do
     PublishStep propId _ invId <- viewId
     case action of
-      StartSoftPublish -> do
+      StartPublish -> do
         Inversions.clearError invId
-        Publish.startSoftPublish propId invId
+        Publish.startPublish propId invId
         pure viewPublishWait
       CheckPublish -> do
         status <- send $ TaskGetStatus $ PublishTask propId invId
@@ -584,7 +596,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
       PublishTransfer taskId TaskFailed -> do
         pure $ do
           Transfer.viewTransferFailed taskId
-          button StartSoftPublish ~ Style.btn Primary . grow $ "Restart Transfer"
+          button StartPublish ~ Style.btn Primary . grow $ "Restart Publish"
       PublishTransfer _ TaskSucceeded -> do
         refreshInversion
       PublishTransfer taskId CheckTransfer -> do
@@ -597,14 +609,14 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
 
 
 -- what if it is actively being published?
-viewPublish :: Inversion -> Maybe PublishStatus -> View PublishStep ()
-viewPublish inv mstatus
-  | isPublished inv = viewPublished inv.proposalId inv.inversionId
+viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe PublishStatus -> View PublishStep ()
+viewPublish pub bucket inv mstatus
+  | isPublished inv = viewPublished pub bucket inv.proposalId inv.inversionId
   | Just _ <- generated inv = viewPublishStatus
   | otherwise = none
  where
   viewNeedsPublish =
-    button StartSoftPublish ~ Style.btn Primary . grow $ "Soft Publish"
+    button StartPublish ~ Style.btn Primary . grow $ "Publish Inversion "
 
   viewPublishStatus = do
     case mstatus of
@@ -615,7 +627,7 @@ viewPublish inv mstatus
     col ~ gap 15 $ do
       row ~ overflow Hidden $ View.systemError $ cs e
       row ~ gap 10 $ do
-        button StartSoftPublish ~ Style.btn Primary . grow $ "Retry Publish"
+        button StartPublish ~ Style.btn Primary . grow $ "Retry Publish"
         when ("GlobusError" `T.isPrefixOf` e) $ do
           route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
@@ -631,7 +643,7 @@ viewPublishTransfer taskId = do
   Transfer.viewLoadTransfer (PublishTransfer taskId)
 
 
-viewPublished :: Id Proposal -> Id Inversion -> View PublishStep ()
-viewPublished propId invId = do
-  link (FileManager.openPublish $ DKIST.softPublishDir propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
+viewPublished :: Remote Publish -> Bucket -> Id Proposal -> Id Inversion -> View PublishStep ()
+viewPublished remote bucket propId invId = do
+  link (FileManager.openPublish remote $ DKIST.publishDir bucket propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
     "View Published Files"

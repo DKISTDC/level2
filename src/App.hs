@@ -47,11 +47,11 @@ import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
 import NSO.Files.Scratch (Scratch, runScratch)
+import NSO.Files.Scratch qualified as Scratch
 import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Types (status200)
-import Network.Wai (ResponseReceived)
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
@@ -162,7 +162,7 @@ main = do
       . runGlobus' config.globus config.manager
       . runFetchHttp config.manager
       . runAuth config.app.domain Login admin
-      . runTransfer
+      . runTransfer config.level1 config.publish config.scratch.remote
       . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
@@ -260,7 +260,7 @@ webServer config admin fits pubs sync rows =
       . runTasks fits
       . runTasks pubs
       . runMetadataSync sync
-      . runTransfer
+      . runTransfer config.level1 config.publish config.scratch.remote
       . runDebugIO
 
 

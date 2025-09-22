@@ -32,13 +32,18 @@ fileProfileOrig = Path "per_ori.fits"
 data Input
 
 
-input :: Path Scratch Dir Input
-input = Scratch.baseDir </> "input"
-
-
 dataset :: Dataset -> Path Scratch f Dataset
 dataset d =
-  input </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+  "input" </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+
+
+blancaInput :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
+blancaInput ip ii =
+  "input" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
+
+
+blancaFile :: Path Scratch Dir Inversion -> Path s Filename a -> Path Scratch File Inversion
+blancaFile folder (Path filename) = folder </> Path filename
 
 
 isAsdf :: Path Scratch Filename Dataset -> Bool
@@ -46,24 +51,11 @@ isAsdf p = do
   takeExtension p.filePath == ".asdf"
 
 
-blancaInput :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
-blancaInput ip ii =
-  input </> Path (cs ip.fromId) </> Path (cs ii.fromId)
-
-
-blancaFile :: Path Scratch Dir Inversion -> Path s Filename a -> Path Scratch File Inversion
-blancaFile folder (Path filename) = folder </> Path filename
-
-
 -- GENRATED OUTPUTS -------------------------------------------------------------------------------------------
-
-generated :: Path Scratch Dir Generate
-generated = Scratch.baseDir </> "generated"
-
 
 outputL2Dir :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
 outputL2Dir ip ii =
-  generated </> Path (cs ip.fromId) </> Path (cs ii.fromId)
+  "generated" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
 data L2Asdf

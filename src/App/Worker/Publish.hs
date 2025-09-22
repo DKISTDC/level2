@@ -40,8 +40,8 @@ data PublishStatus
   deriving (Eq, Ord)
 
 
-startSoftPublish :: (Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
-startSoftPublish propId invId = do
+startPublish :: (Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
+startPublish propId invId = do
   send $ TaskAdd $ PublishTask propId invId
 
 

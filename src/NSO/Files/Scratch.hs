@@ -16,9 +16,8 @@ import System.FilePath (takeDirectory)
 
 
 data Config = Config
-  { collection :: Globus.Id Collection
-  , globus :: Path Scratch Dir ()
-  , mount :: Path Scratch Dir ()
+  { mount :: Path Scratch Dir ()
+  , remote :: Remote Scratch
   }
 
 
@@ -34,7 +33,7 @@ data Scratch :: Effect where
   DirExists :: Path Scratch File a -> Scratch es Bool
   CreateDirectoryLink :: Path Scratch Dir a -> Path Scratch Dir b -> Scratch es ()
   RemoveDir :: Path Scratch Dir a -> Scratch es ()
-  Globus :: Scratch es (RemoteFolder Scratch ())
+  Globus :: Scratch es (Remote Scratch)
   MountedPath :: Path Scratch x a -> Scratch es (Path Scratch (Mounted x) a)
 type instance DispatchOf Scratch = 'Dynamic
 
@@ -46,39 +45,38 @@ runScratch
   -> Eff es a
 runScratch cfg = interpret $ \_ -> \case
   ListDirectory dir -> do
-    fs <- FS.listDirectory $ mounted dir
+    fs <- FS.listDirectory $ absolutePath dir
     pure $ fmap Path fs
   ReadFile f ->
-    FS.readFile $ mounted f
+    FS.readFile $ absolutePath f
   WriteFile f cnt -> do
-    FS.createDirectoryIfMissing True $ takeDirectory (mounted f)
-    FS.writeFile (mounted f) cnt
+    FS.createDirectoryIfMissing True $ takeDirectory (absolutePath f)
+    FS.writeFile (absolutePath f) cnt
   CopyFile src dest -> do
-    FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
-    FS.copyFile (mounted src) (mounted dest)
+    FS.createDirectoryIfMissing True $ takeDirectory (absolutePath dest)
+    FS.copyFile (absolutePath src) (absolutePath dest)
   CreateDirectoryLink src dest -> do
-    FS.createDirectoryIfMissing True $ takeDirectory (mounted dest)
-    exists <- FS.doesDirectoryExist (mounted dest)
+    FS.createDirectoryIfMissing True $ takeDirectory (absolutePath dest)
+    exists <- FS.doesDirectoryExist (absolutePath dest)
     when exists $ do
-      FS.removeDirectoryLink (mounted dest)
-    FS.createDirectoryLink (mounted src) (mounted dest)
+      FS.removeDirectoryLink (absolutePath dest)
+    FS.createDirectoryLink (absolutePath src) (absolutePath dest)
   PathExists src -> do
-    FS.doesPathExist (mounted src)
+    FS.doesPathExist (absolutePath src)
   DirExists src -> do
-    FS.doesDirectoryExist (mounted src)
+    FS.doesDirectoryExist (absolutePath src)
   RemoveDir dir -> do
-    exists <- FS.doesDirectoryExist (mounted dir)
+    exists <- FS.doesDirectoryExist (absolutePath dir)
     when exists $ do
-      FS.removeDirectoryRecursive (mounted dir)
-  Globus -> do
-    pure $ RemoteFolder (Remote $ Tagged cfg.collection.unTagged) cfg.globus
-  MountedPath p -> pure $ mounted' p
+      FS.removeDirectoryRecursive (absolutePath dir)
+  Globus -> pure cfg.remote
+  MountedPath p -> pure $ mounted p
  where
-  mounted :: Path Scratch x a -> FilePath
-  mounted p = (mounted' p).filePath
+  mounted :: Path Scratch x a -> Path Scratch (Mounted x) a
+  mounted p = cfg.mount </> p
 
-  mounted' :: Path Scratch x a -> Path Scratch (Mounted x) a
-  mounted' p = cfg.mount </> p
+  absolutePath :: Path Scratch x a -> FilePath
+  absolutePath p = (mounted p).filePath
 
 
 readFile :: (Scratch :> es) => Path Scratch File a -> Eff es ByteString
@@ -105,15 +103,11 @@ symLink :: (Scratch :> es) => Path Scratch Dir a -> Path Scratch Dir a -> Eff es
 symLink s d = send $ CreateDirectoryLink s d
 
 
-baseDir :: Path Scratch Dir ()
-baseDir = Path "level2"
-
-
 mountedPath :: (Scratch :> es) => Path Scratch x a -> Eff es (Path Scratch (Mounted x) a)
 mountedPath = send . MountedPath
 
 
 -- Remote Folder ----------------------------------------
 
-remote :: (Scratch :> es) => Eff es (RemoteFolder Scratch ())
+remote :: (Scratch :> es) => Eff es (Remote Scratch)
 remote = send Globus

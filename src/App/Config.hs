@@ -18,7 +18,6 @@ module App.Config
 import App.Types
 import App.Worker.CPU
 import Data.Tagged
-import Data.Text
 import Effectful
 import Effectful.Concurrent
 import Effectful.Environment
@@ -28,11 +27,13 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
+import NSO.Files.DKIST (Level1, Publish)
+import NSO.Files.RemoteFolder
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
-import Network.Globus (Id' (..), Token, Token' (..), UserEmail (..))
+import Network.Globus (Token, Token' (..), UserEmail (..))
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
 import Text.Read (readMaybe)
@@ -49,6 +50,8 @@ data Config = Config
   , db :: Rel8.Connection
   , cpuWorkers :: CPUWorkers
   , manager :: Http.Manager
+  , level1 :: Remote Level1
+  , publish :: Remote Publish
   }
 
 
@@ -76,10 +79,11 @@ initConfig = do
   auth <- initAuth globus
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   cpus <- initCPUWorkers
+  (level1, publish) <- initRemotes
 
   log Debug $ dump " (config) metadata datasets" services.metadata.datasets
   log Debug $ dump " (config) metadata inversions" services.metadata.inversions
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, cpuWorkers = cpus, manager}
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
@@ -121,12 +125,18 @@ parseService u =
     Just s -> pure s
 
 
-initScratch :: (Environment :> es) => Eff es Scratch.Config
+initScratch :: (Environment :> es, Fail :> es) => Eff es Scratch.Config
 initScratch = do
-  collection <- Tagged @'Collection @Text . cs <$> getEnv "GLOBUS_LEVEL2_ENDPOINT"
-  mount <- Path . cs <$> getEnv "SCRATCH_DIR"
-  globus <- Path . cs <$> getEnv "SCRATCH_GLOBUS_DIR"
-  pure $ Scratch.Config{collection, mount, globus}
+  mountPath <- Path . cs <$> getEnv "SCRATCH_DIR"
+  remote <- parseGlobusRemoteURI =<< getEnv "GLOBUS_SCRATCH"
+  pure $ Scratch.Config{mount = mountPath, remote}
+
+
+initRemotes :: (Environment :> es, Fail :> es) => Eff es (Remote Level1, Remote Publish)
+initRemotes = do
+  level1 <- parseGlobusRemoteURI =<< getEnv "GLOBUS_LEVEL1"
+  publish <- parseGlobusRemoteURI =<< getEnv "GLOBUS_PUBLISH"
+  pure (level1, publish)
 
 
 initGlobus :: (Environment :> es, Log :> es) => Eff es GlobusConfig
