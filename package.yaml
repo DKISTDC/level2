@@ -51,6 +51,8 @@ dependencies:
   - text
   - tagged
   - filepath
+  - unix
+  - directory
   - string-interpolate
   - string-conversions
   - rel8 >= 1.6

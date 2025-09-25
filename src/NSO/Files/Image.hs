@@ -2,12 +2,11 @@ module NSO.Files.Image where
 
 import Data.Text qualified as T
 import NSO.Files.Scratch (Scratch)
-import NSO.Files.Scratch qualified as Scratch
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (..))
 import NSO.Types.InstrumentProgram (Proposal)
-import NSO.Types.Inversion (Generate, InvProfileFit, InvProfileOrig, InvQuantities, Inversion)
+import NSO.Types.Inversion (InvProfileFit, InvProfileOrig, InvQuantities, Inversion)
 import System.FilePath (takeExtension)
 
 

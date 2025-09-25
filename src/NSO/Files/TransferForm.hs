@@ -41,14 +41,12 @@ transferFormFolder tform df =
         Nothing -> Path fp
 
 
--- directory :: TransferForm -> Path User Dir ()
--- directory tform = tform.path
-
 remote :: TransferForm -> Remote User
 remote tform =
   Remote
     { collection = Tagged tform.endpoint_id
-    , directory = tform.path
+    , -- an absolute path to the containing folder
+      directory = tform.path
     }
 
 

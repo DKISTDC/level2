@@ -1,11 +1,17 @@
 
-- [ ] error in publish step displays in 
 - [ ] mag Inclination, Azimuth - negative values +360 degrees
-- [ ] Send Han my notebook, and verify QQ
+- [x] Send Han my notebook, and verify QQ
 - [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
 
+## Mon, Sep 19
+- [ ] More globus testing stuff. Use a remote folder
+
+## Fri, Sep 19
+- [ ] better way to test globus paths. Relative paths not working
+
 ## Thu, Sep 18
-- [ ] publish button does real transfer
+- [x] publish button does real transfer
+- [x] error in publish step displays in generate
 
 ## Wed, Sep 17
 - [x] Messed around with codex

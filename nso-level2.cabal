@@ -111,6 +111,7 @@ library
       NSO.Image.Types.Quantity
       NSO.InterserviceBus
       NSO.Metadata
+      System.FileCopy
   other-modules:
       Paths_nso_level2
   autogen-modules:
@@ -141,6 +142,7 @@ library
     , containers
     , data-default
     , data-diverse >=4.7
+    , directory
     , effectful >=2.3 && <3
     , exceptions
     , filepath
@@ -165,6 +167,7 @@ library
     , telescope >=0.4
     , text
     , time
+    , unix
     , unordered-containers
     , uuid
     , wai
@@ -205,6 +208,7 @@ executable level2
     , containers
     , data-default
     , data-diverse >=4.7
+    , directory
     , effectful >=2.3 && <3
     , exceptions
     , filepath
@@ -230,6 +234,7 @@ executable level2
     , telescope >=0.4
     , text
     , time
+    , unix
     , unordered-containers
     , uuid
     , wai
@@ -281,6 +286,7 @@ test-suite spec
     , containers
     , data-default
     , data-diverse >=4.7
+    , directory
     , effectful >=2.3 && <3
     , exceptions
     , filepath
@@ -307,6 +313,7 @@ test-suite spec
     , telescope >=0.4
     , text
     , time
+    , unix
     , unordered-containers
     , uuid
     , wai

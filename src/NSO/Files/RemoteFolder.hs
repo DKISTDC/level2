@@ -16,7 +16,7 @@ data Remote sys = Remote
   { collection :: Globus.Id Collection
   , directory :: Path sys Dir ()
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 remotePath :: Remote sys -> Path sys f a -> Path sys f a
@@ -37,6 +37,6 @@ parseGlobusRemoteURI uriStr = do
 
   let path = URI.uriPath uri
   when (null path) (fail err)
-  pure Remote{collection, directory = Path $ cs path}
+  pure Remote{collection, directory = Path $ dropWhile (== '/') path}
  where
   err = "Invalid remote folder URI: " <> uriStr

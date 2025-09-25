@@ -2,6 +2,7 @@ module App.Effect.Transfer where
 
 import App.Effect.Auth (Auth)
 import App.Effect.Auth qualified as Auth
+import Data.List as L (stripPrefix)
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
@@ -14,7 +15,7 @@ import NSO.Files.DKIST as DKIST
 import NSO.Files.Image qualified as Image
 import NSO.Files.Inversion (InversionFiles (..))
 import NSO.Files.RemoteFolder (Remote (..), remotePath)
-import NSO.Files.Scratch (Mounted, Scratch)
+import NSO.Files.Scratch (Scratch)
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..), User)
 import NSO.Files.TransferForm qualified as TransferForm
@@ -23,6 +24,7 @@ import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
+import System.FileCopy (copyRecursive)
 
 
 data FileTransfer sys dest f a = FileTransfer
@@ -46,7 +48,7 @@ type instance DispatchOf Transfer = 'Dynamic
 
 
 runTransfer
-  :: (Globus :> es, Log :> es, Auth :> es)
+  :: (Globus :> es, Log :> es, Auth :> es, Scratch :> es, IOE :> es)
   => Remote Level1
   -> Remote Publish
   -> Remote Scratch
@@ -54,9 +56,12 @@ runTransfer
   -> Eff es a
 runTransfer level1 publish scratch = interpret $ \_ -> \case
   TransferStatus taskId -> do
-    Auth.waitForAdmin $ do
-      acc <- ask @(Token Access)
-      send $ StatusTask acc (Tagged taskId.fromId)
+    if taskId == Id fakeLocalTask.task_id.unTagged
+      then pure fakeLocalTask
+      else do
+        Auth.waitForAdmin $ do
+          acc <- ask @(Token Access)
+          send $ StatusTask acc (Tagged taskId.fromId)
   TransferFiles lbl source dest files ->
     Auth.waitForAdmin $ do
       transferFiles lbl source dest files
@@ -65,26 +70,62 @@ runTransfer level1 publish scratch = interpret $ \_ -> \case
   RemoteScratch -> pure scratch
  where
   transferFiles
-    :: (Log :> es, Globus :> es, Reader (Token Access) :> es)
+    :: (Log :> es, Globus :> es, Reader (Token Access) :> es, Scratch :> es, IOE :> es)
     => Text
     -> Remote src
     -> Remote dest
     -> [FileTransfer src dest f a]
     -> Eff es (Id Task)
   transferFiles lbl source dest files = do
-    acc <- ask @(Token Access)
-    log Debug "TRANSFER"
-    log Debug $ dump " source: " source
-    log Debug $ dump " dest: " dest
-    log Debug $ dump " files: " files
-    sub <- send $ Globus.GetSubmissionId acc
     let items = fmap transferItem files
-    let req = transferRequest sub
-    log Debug $ dump " items: " $ fmap (\t -> (t.source_path, t.destination_path)) items
-    res <- send $ Globus.Transfer acc req
-    pure $ Id res.task_id.unTagged
+    if isLocalScratch
+      then transferLocalScratch items
+      else transferRemote items
    where
+    isLocalScratch =
+      source.collection == scratch.collection && dest.collection == scratch.collection
+
+    -- https://localhost/proposal/pid_2_114/program/id.156511.623969/upload/inv.3RH5LC?profileOrig=Uploaded
+    transferLocalScratch :: (Log :> es, Scratch :> es, IOE :> es) => [TransferItem] -> Eff es (Id Task)
+    transferLocalScratch tfers = do
+      log Debug "TRANSFER LOCAL SCRATCH"
+      log Debug $ dump " source: " source
+      log Debug $ dump " dest: " dest
+      forM_ tfers $ \t -> do
+        log Debug $ "  xfer1: " <> t.source_path <> " " <> t.destination_path
+        src <- localSource source t.source_path
+        dst <- localSource dest t.destination_path
+
+        log Debug $ "  xfer2: " <> src <> " " <> dst
+        copyRecursive src dst
+      pure $ Id fakeLocalTask.task_id.unTagged
+
+    localSource :: (Scratch :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
+    localSource remote src
+      -- if the remote IS scratch, get its mounted path
+      | remote.directory.filePath == scratch.directory.filePath = do
+          let cleanPath = maybe (Path src) (Path . dropWhile (== '/')) $ stripPrefix scratch.directory.filePath src
+          mnt <- Scratch.mountedPath cleanPath
+          log Debug $ " local scratch " <> src <> " " <> cleanPath.filePath <> " " <> mnt.filePath
+          pure mnt.filePath
+      -- if the remote isn't, assume the remote directory is absolute
+      | otherwise = pure (remote.directory </> Path src).filePath
+
+    transferRemote :: (Reader (Token Access) :> es, Log :> es, Globus :> es) => [TransferItem] -> Eff es (Id Task)
+    transferRemote items = do
+      acc <- ask @(Token Access)
+      log Debug "TRANSFER REMOTE"
+      log Debug $ dump " source: " source
+      log Debug $ dump " dest: " dest
+      log Debug $ dump " files: " files
+      sub <- send $ Globus.GetSubmissionId acc
+      let req = transferRequest sub
+      log Debug $ dump " items: " $ fmap (\t -> (t.source_path, t.destination_path)) items
+      res <- send $ Globus.Transfer acc req
+      pure $ Id res.task_id.unTagged
+
     transferItem FileTransfer{sourcePath, destPath, recursive} =
+      -- this must be the relative globus path
       TransferItem
         { data_type = DataType
         , source_path = (remotePath source sourcePath).filePath
@@ -105,6 +146,24 @@ runTransfer level1 publish scratch = interpret $ \_ -> \case
             , sync_level = SyncTimestamp
             , store_base_path_info = True
             }
+
+  fakeLocalTask :: Task
+  fakeLocalTask =
+    Task
+      { status = Succeeded
+      , task_id = Tagged "local"
+      , label = "local"
+      , files = 1
+      , directories = 1
+      , files_skipped = 0
+      , files_transferred = 1
+      , bytes_transferred = 1
+      , bytes_checksummed = 1
+      , effective_bytes_per_second = 1
+      , nice_status = Nothing
+      , source_endpoint_id = Tagged "source"
+      , destination_endpoint_id = Tagged "dest"
+      }
 
 
 transferStatus :: (Transfer :> es) => Id Task -> Eff es Task
@@ -127,7 +186,7 @@ scratchDownloadDatasets ds = do
 
 
 downloadL1To
-  :: forall dest root es
+  :: forall dest es
    . (Transfer :> es)
   => Text
   -> (Dataset -> Path dest File Dataset)
