@@ -241,30 +241,7 @@ uploadInversionResults tform upfiles propId invId = do
         }
 
 
--- sourceBlanca :: Path User Dir a -> Path User Dir User
--- sourceBlanca (Path a) = Path a
-
 -- Publish -------------------------------------------------------------------------------
-
--- /level2/generated/pid_1_118/inv.SD9T3L/
--- /level2/generated/pid_1_118/inv.SD9T3L/
--- transferSoftPublish
---   :: (Transfer :> es, Scratch :> es)
---   => App.Id Proposal
---   -> App.Id Inversion
---   -> Eff es (App.Id Task)
--- transferSoftPublish propId invId = do
---   scratch <- Scratch.remote
---   let source = Image.outputL2Dir propId invId
---   let destPath = Path (cs propId.fromId) </> Path (cs invId.fromId)
---   let lbl = "Inversion " <> invId.fromId
---   let tfer =
---         FileTransfer
---           { sourcePath = source
---           , destPath
---           , recursive = True
---           }
---   send $ TransferFiles lbl scratch DKIST.softPublishFolder [tfer]
 
 -- transfer inversion files proper place on DKIST Data Globus
 --   needs to match dataset .bucket: (data | public)

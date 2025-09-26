@@ -20,6 +20,7 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate as Gen (GenStatus (..), GenTask (..))
 import App.Worker.Publish as Publish
+import Data.Maybe (isJust)
 import Data.Text qualified as T
 import Effectful
 import Effectful.Debug (Debug, delay)
@@ -200,7 +201,7 @@ viewInversion publish scratch inv ds gen pub = do
             viewGenerate scratch inv gen
 
         stepPublish (publishStep inv) $ do
-          hyper (PublishStep inv.proposalId inv.programId inv.inversionId) $
+          hyper (PublishStep (head ds).bucket inv.proposalId inv.programId inv.inversionId) $
             viewPublish publish (head ds).bucket inv pub
 
         hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
@@ -565,7 +566,7 @@ publishStep inv
   | otherwise = StepNext
 
 
-data PublishStep = PublishStep (Id Proposal) (Id InstrumentProgram) (Id Inversion)
+data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Generic, ViewId)
 
 
@@ -581,7 +582,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
 
 
   update action = do
-    PublishStep propId _ invId <- viewId
+    PublishStep bucket propId _ invId <- viewId
     case action of
       StartPublish -> do
         Inversions.clearError invId
@@ -589,14 +590,9 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
         pure viewPublishWait
       CheckPublish -> do
         inv <- loadInversion invId
-        case inv.invError of
-          Just e -> pure $ viewPublishError e
-          Nothing -> do
-            status <- send $ TaskGetStatus $ PublishTask propId invId
-            pure $ do
-              case status of
-                PublishWaiting -> viewPublishWait
-                PublishTransferring taskId -> viewPublishTransfer taskId
+        mstatus <- send $ TaskLookupStatus $ PublishTask propId invId
+        pub <- send RemotePublish
+        pure $ viewPublish pub bucket inv mstatus
       PublishTransfer taskId TaskFailed -> do
         pure $ do
           Transfer.viewTransferFailed taskId
@@ -607,7 +603,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
         Transfer.checkTransfer (PublishTransfer taskId) taskId
    where
     refreshInversion = do
-      PublishStep propId progId invId <- viewId
+      PublishStep _ propId progId invId <- viewId
       pure $ target (InversionStatus propId progId invId) $ do
         el @ onLoad Reload 0 $ none
 

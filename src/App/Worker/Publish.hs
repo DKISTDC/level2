@@ -36,6 +36,7 @@ instance WorkerTask PublishTask where
 
 data PublishStatus
   = PublishWaiting
+  | PublishStarted
   | PublishTransferring (Id Task)
   deriving (Eq, Ord)
 
@@ -74,6 +75,7 @@ publishTask task = do
   workWithError = do
     logContext ("Publish " <> cs task.inversionId.fromId) $ do
       logStatus "starting"
+      send $ TaskSetStatus task PublishStarted
 
       bucket <- proposalBucket task.proposalId
       taskId <- transferPublish bucket task.proposalId task.inversionId
