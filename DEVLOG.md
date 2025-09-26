@@ -2,6 +2,8 @@
 - [ ] mag Inclination, Azimuth - negative values +360 degrees
 - [x] Send Han my notebook, and verify QQ
 - [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
+- [ ] Stuart: nice to see units on dataset page
+- [ ] publish isn't really updating if it errors or completes before getting to the transfer status screen. Try using the dev publish, or throwing an error immediately
 
 ## Mon, Sep 19
 - [ ] More globus testing stuff. Use a remote folder

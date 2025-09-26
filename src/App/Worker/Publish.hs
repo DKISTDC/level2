@@ -72,17 +72,20 @@ publishTask task = do
  where
   workWithError :: Eff (Error PublishError : es) ()
   workWithError = do
-    log Debug "Publish Task"
+    logContext ("Publish " <> cs task.inversionId.fromId) $ do
+      logStatus "starting"
 
-    bucket <- proposalBucket task.proposalId
-    taskId <- transferPublish bucket task.proposalId task.inversionId
-    send $ TaskSetStatus task $ PublishTransferring taskId
+      bucket <- proposalBucket task.proposalId
+      taskId <- transferPublish bucket task.proposalId task.inversionId
+      send $ TaskSetStatus task $ PublishTransferring taskId
 
-    log Debug " - publish transferring"
+      logStatus "transferring"
 
-    untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
+      untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
 
-    Inversions.setPublished task.inversionId
+      logStatus "transferred!"
+
+      Inversions.setPublished task.inversionId
 
   failed :: (Show e) => e -> Eff es ()
   failed err = do
@@ -103,10 +106,11 @@ isTransferComplete :: (Log :> es, Transfer :> es, Error PublishError :> es) => I
 isTransferComplete it = do
   task <- Transfer.transferStatus it
   case task.status of
-    Globus.Succeeded -> pure True
+    Globus.Succeeded -> do
+      pure True
     Globus.Failed -> throwError $ TransferFailed it
     _ -> do
-      log Debug $ dump "Transfer" $ taskPercentComplete task
+      logStatus $ dump "Transfer" $ taskPercentComplete task
       pure False
 
 

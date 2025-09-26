@@ -2,11 +2,13 @@ module App.Effect.Transfer where
 
 import App.Effect.Auth (Auth)
 import App.Effect.Auth qualified as Auth
-import Data.List as L (stripPrefix)
+import Data.Either (lefts)
+import Data.List as L (isPrefixOf, stripPrefix)
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Exception
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import Effectful.Log
@@ -91,15 +93,18 @@ runTransfer level1 publish scratch = interpret $ \_ -> \case
       log Debug "TRANSFER LOCAL SCRATCH"
       log Debug $ dump " source: " source
       log Debug $ dump " dest: " dest
-      forM_ tfers $ \t -> do
-        log Debug $ "  xfer1: " <> t.source_path <> " " <> t.destination_path
+      res <- forM tfers $ \t -> do
+        -- log Debug $ "  xfer1: " <> t.source_path <> " " <> t.destination_path
         src <- localSource source t.source_path
         dst <- localSource dest t.destination_path
-
-        log Debug $ "  xfer2: " <> src <> " " <> dst
+        log Debug $ "  xfer: " <> src <> " " <> dst
         copyRecursive src dst
+      case lefts res of
+        [] -> pure ()
+        (l : _) -> throwIO $ LocalCopyFailed l
       pure $ Id fakeLocalTask.task_id.unTagged
 
+    -- for this to work, the remote must be set to the exact same thing as scratch
     localSource :: (Scratch :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
     localSource remote src
       -- if the remote IS scratch, get its mounted path
@@ -109,7 +114,10 @@ runTransfer level1 publish scratch = interpret $ \_ -> \case
           log Debug $ " local scratch " <> src <> " " <> cleanPath.filePath <> " " <> mnt.filePath
           pure mnt.filePath
       -- if the remote isn't, assume the remote directory is absolute
-      | otherwise = pure (remote.directory </> Path src).filePath
+      | "/" `isPrefixOf` remote.directory.filePath =
+          pure (remote.directory </> Path src).filePath
+      | otherwise = do
+          throwIO $ LocalCopyNoAbsolutePath remote.collection remote.directory.filePath
 
     transferRemote :: (Reader (Token Access) :> es, Log :> es, Globus :> es) => [TransferItem] -> Eff es (Id Task)
     transferRemote items = do
@@ -276,3 +284,9 @@ transferPublish bucket propId invId = do
   let destPath = DKIST.publishDir bucket propId invId
   let transferItem = FileTransfer{sourcePath, destPath, recursive = True}
   send $ TransferFiles lbl scratch dest [transferItem]
+
+
+data TransferException
+  = LocalCopyFailed String
+  | LocalCopyNoAbsolutePath (Globus.Id Collection) String
+  deriving (Show, Eq, Exception)

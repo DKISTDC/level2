@@ -57,7 +57,7 @@ openDir origin dir =
     { uriQuery =
         queryString
           [ ("origin_id", Just $ cs origin.unTagged)
-          , ("origin_path", Just $ "/" <> cs dir.filePath)
+          , ("origin_path", Just $ cs dir.filePath)
           ]
     }
 

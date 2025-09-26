@@ -7,17 +7,17 @@ import System.FilePath
 
 copyRecursive :: (MonadIO m) => FilePath -> FilePath -> m (Either String ())
 copyRecursive src dest = liftIO $ do
-  putStrLn $ "COPY RECURSE \n  " <> src <> " => \n  " <> dest
+  -- putStrLn $ "COPY RECURSE \n  " <> src <> " => \n  " <> dest
   createDirectoryIfMissing True $ takeDirectory dest
   isFile <- doesFileExist src
   isDir <- doesDirectoryExist src
   case (isFile, isDir) of
     (True, _) -> do
-      putStrLn "  -single file"
+      -- putStrLn "  -single file"
       copyFile src dest
       pure $ Right ()
     (_, True) -> do
-      putStrLn "  -dir"
+      -- putStrLn "  -dir"
       createDirectoryIfMissing True dest
       files <- listDirectory src
       forM_ files $ \file -> do
