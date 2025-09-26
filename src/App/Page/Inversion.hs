@@ -79,7 +79,7 @@ page propId invId = do
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
-loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es (Inversion)
+loadInversion :: (Hyperbole :> es, Inversions :> es) => Id Inversion -> Eff es Inversion
 loadInversion invId = do
   (inv :| _) <- send (Inversions.ById invId) >>= expectFound
   pure inv
@@ -447,7 +447,7 @@ viewGenerate' scratch inv status =
 
   viewGenError e = do
     col ~ gap 15 $ do
-      row ~ overflow Hidden $ View.systemError $ cs e
+      row $ View.systemError $ cs e
       row ~ gap 10 $ do
         button RegenError ~ Style.btn Primary $ "Retry"
         button RegenFits ~ Style.btnOutline Secondary $ "Start Over"
@@ -550,7 +550,7 @@ instance (Tasks GenTask :> es, Inversions :> es, Datasets :> es, Log :> es, Tran
 
 
 viewGeneratedFiles :: Remote Scratch -> Inversion -> View c ()
-viewGeneratedFiles scratch inv =
+viewGeneratedFiles scratch inv = do
   link (FileManager.openInversion scratch $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
 
 
@@ -588,11 +588,15 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
         Publish.startPublish propId invId
         pure viewPublishWait
       CheckPublish -> do
-        status <- send $ TaskGetStatus $ PublishTask propId invId
-        pure $ do
-          case status of
-            PublishWaiting -> viewPublishWait
-            PublishTransferring taskId -> viewPublishTransfer taskId
+        inv <- loadInversion invId
+        case inv.invError of
+          Just e -> pure $ viewPublishError e
+          Nothing -> do
+            status <- send $ TaskGetStatus $ PublishTask propId invId
+            pure $ do
+              case status of
+                PublishWaiting -> viewPublishWait
+                PublishTransferring taskId -> viewPublishTransfer taskId
       PublishTransfer taskId TaskFailed -> do
         pure $ do
           Transfer.viewTransferFailed taskId
@@ -618,18 +622,20 @@ viewPublish pub bucket inv mstatus
   viewNeedsPublish =
     button StartPublish ~ Style.btn Primary . grow $ "Publish Inversion "
 
-  viewPublishStatus = do
+  viewPublishStatus =
     case mstatus of
       Just _ -> viewPublishWait
       Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
 
-  viewPublishError e = do
-    col ~ gap 15 $ do
-      row ~ overflow Hidden $ View.systemError $ cs e
-      row ~ gap 10 $ do
-        button StartPublish ~ Style.btn Primary . grow $ "Retry Publish"
-        when ("GlobusError" `T.isPrefixOf` e) $ do
-          route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
+
+viewPublishError :: Text -> View PublishStep ()
+viewPublishError e = do
+  col ~ gap 15 $ do
+    row $ View.systemError $ cs e
+    row ~ gap 10 $ do
+      button StartPublish ~ Style.btn Primary . grow $ "Retry Publish"
+      when ("GlobusError" `T.isPrefixOf` e) $ do
+        route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
 
 viewPublishWait :: View PublishStep ()
