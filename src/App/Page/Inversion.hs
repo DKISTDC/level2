@@ -20,7 +20,6 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate as Gen (GenStatus (..), GenTask (..))
 import App.Worker.Publish as Publish
-import Data.Maybe (isJust)
 import Data.Text qualified as T
 import Effectful
 import Effectful.Debug (Debug, delay)

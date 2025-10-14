@@ -12,7 +12,6 @@ import App.View.Common as View
 import App.View.DataRow (dataRows)
 import App.View.Icons (skeleton, xCircle)
 import App.View.Layout
-import App.View.Loading (loadingCard)
 import App.View.ProposalDetails (viewProgramRow)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
@@ -53,7 +52,7 @@ viewProposals fs props = do
 
     col ~ grow . minWidth 0 $ do
       forM_ sorted $ \prop ->
-        hyper (ProposalCard prop.proposalId) $ viewProposalLoad fs prop
+        hyper (ProposalCard prop.proposalId) viewProposalEmpty
  where
   aside = width 315 . flexCol
   big = media (MinWidth 1000)
@@ -175,15 +174,17 @@ data ProposalCard = ProposalCard (Id Proposal)
 
 
 instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView ProposalCard es where
-  data Action ProposalCard = ProposalDetails Filters
+  -- you could just re-read the filters from the query, they are global to the page
+  data Action ProposalCard = ProposalDetails
     deriving (Generic, ViewAction)
 
 
   type Require ProposalCard = '[ProgramRow]
 
 
-  update (ProposalDetails filts) = do
+  update ProposalDetails = do
     ProposalCard propId <- viewId
+    filts <- query
     now <- currentTime
     ds <- Datasets.find (Datasets.ByProposal propId)
     invs <- send $ Inversions.ByProposal propId
@@ -193,10 +194,8 @@ instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView 
     pure $ viewProposalDetails filts now prop progs
 
 
-viewProposalLoad :: Filters -> Proposal -> View ProposalCard ()
-viewProposalLoad filts prop = do
-  -- proposalCard prop $ el $ loadingCard
-  proposalCard prop $ el @ onLoad (ProposalDetails filts) 150 $ loadingCard
+viewProposalEmpty :: View ProposalCard ()
+viewProposalEmpty = none
 
 
 viewProposalDetails :: Filters -> UTCTime -> Proposal -> [ProgramFamily] -> View ProposalCard ()
