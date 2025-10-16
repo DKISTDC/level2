@@ -16,7 +16,6 @@ import App.View.ProposalDetails (viewProgramRow)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import Effectful
-import Effectful.Debug
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
 import Effectful.Time
@@ -28,35 +27,65 @@ import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Web.Atomic.CSS
 import Web.Hyperbole as H hiding (content)
-import Web.Hyperbole.HyperView.Handled
 
 
 page
-  :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es, Debug :> es)
-  => Page es '[ProposalFilters, ProposalCard, ProgramRow]
+  :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
+  => Page es '[ProposalList, ProposalFilters, ProposalCard, ProgramRow]
 page = do
   fs <- query
-  props <- Programs.loadAllProposals
 
   appLayout Proposals $ do
     script "/proposals.js"
-    viewProposals fs props
+    el ~ pad 15 . gap 20 . Style.big flexRow . Style.small flexCol . grow $ do
+      hyper ProposalFilters ~ Style.small flexRow . Style.big aside . gap 10 $ do
+        viewFilters fs
 
-
-viewProposals :: (HyperViewHandled ProposalFilters any, HyperViewHandled ProposalCard any) => Filters -> [Proposal] -> View any ()
-viewProposals fs props = do
-  let sorted = sortOn (\p -> Down p.proposalId) props
-  el ~ pad 15 . gap 20 . big flexRow . small flexCol . grow $ do
-    el ~ small flexRow . big aside . gap 10 $ do
-      hyper ProposalFilters $ viewFilters fs
-
-    col ~ grow . minWidth 0 $ do
-      forM_ sorted $ \prop ->
-        hyper (ProposalCard prop.proposalId) viewProposalEmpty
+      col ~ grow . minWidth 0 $ do
+        hyper ProposalList viewProposalListLoad
  where
-  aside = width 315 . flexCol
-  big = media (MinWidth 1000)
-  small = media (MaxWidth 1000)
+  aside = width 210 . flexCol . noShrink . noGrow
+  noShrink = utility "no-shrink" ["flex-shrink" :. "0"]
+  noGrow = utility "no-shrink" ["flex-shrink" :. "0"]
+
+
+-----------------------------------------------------
+-- All Proposals
+-----------------------------------------------------
+
+data ProposalList = ProposalList
+  deriving (Generic, ViewId)
+
+
+instance (Datasets :> es, Log :> es) => HyperView ProposalList es where
+  data Action ProposalList
+    = LoadPropsFromFilters
+    deriving (Generic, ViewAction)
+
+
+  type Require ProposalList = '[ProposalCard]
+
+
+  update LoadPropsFromFilters = do
+    fs :: Filters <- query
+    props <- filter (isProposalShown fs.searchTerm) <$> Programs.loadAllProposals
+    pure $ viewProposalList props
+   where
+    cleanPropId = T.replace " " "_"
+
+    isProposalShown term p =
+      cleanPropId term `T.isInfixOf` p.proposalId.fromId
+
+
+viewProposalListLoad :: View ProposalList ()
+viewProposalListLoad = el @ onLoad LoadPropsFromFilters 50 $ none
+
+
+viewProposalList :: [Proposal] -> View ProposalList ()
+viewProposalList props = do
+  let sorted = sortOn (\p -> Down p.proposalId) props
+  forM_ sorted $ \prop ->
+    hyper (ProposalCard prop.proposalId) viewProposalLoad
 
 
 -----------------------------------------------------
@@ -97,12 +126,15 @@ data ProposalFilters = ProposalFilters
   deriving (Generic, ViewId)
 
 
-instance (Log :> es) => HyperView ProposalFilters es where
+instance (Log :> es, Datasets :> es) => HyperView ProposalFilters es where
   data Action ProposalFilters
     = FilterInstrument Instrument Bool
     | FilterStatus InversionFilter
     | FilterProposal Text
     deriving (Generic, ViewAction)
+
+
+  type Require ProposalFilters = '[ProposalList]
 
 
   update = \case
@@ -113,8 +145,10 @@ instance (Log :> es) => HyperView ProposalFilters es where
       fs <- query
       filterProposals $ setStatus status fs
     FilterProposal term -> do
-      fs <- query
-      filterProposals $ fs{searchTerm = term}
+      fs <- setTerm term <$> query
+      setQuery fs
+      trigger ProposalList LoadPropsFromFilters
+      pure $ viewFilters fs
    where
     setInstrumentFilter instr b fs =
       case instr of
@@ -125,14 +159,12 @@ instance (Log :> es) => HyperView ProposalFilters es where
     setStatus status Filters{visp, vbi, cryo, searchTerm} =
       Filters{..}
 
+    setTerm searchTerm Filters{visp, vbi, cryo, status} =
+      Filters{..}
+
     filterProposals fs = do
       setQuery fs
       pushEvent "proposal-filters" fs
-      -- we don't need to reload all the proposals...
-      -- props <- Programs.loadAllProposals
-
-      -- we DO need to re-render the filters though!
-      -- but we could make the filters their own hyperview
       pure $ viewFilters fs
 
 
@@ -146,7 +178,7 @@ viewFilters fs = do
 
   col ~ gap 10 $ do
     el ~ bold $ "Instrument"
-    row ~ gap 5 $ do
+    el ~ gap 5 . Style.big flexCol . Style.small flexRow $ do
       View.toggleBtn (FilterInstrument VISP) fs.visp.value "VISP"
       View.toggleBtn (FilterInstrument VBI) fs.vbi "VBI"
       View.toggleBtn (FilterInstrument CRYO_NIRSP) fs.cryo "Cryo-NIRSP"
@@ -194,28 +226,24 @@ instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView 
     pure $ viewProposalDetails filts now prop progs
 
 
-viewProposalEmpty :: View ProposalCard ()
-viewProposalEmpty = none
+viewProposalLoad :: View ProposalCard ()
+viewProposalLoad =
+  el @ onLoad ProposalDetails 100 $ none
 
 
 viewProposalDetails :: Filters -> UTCTime -> Proposal -> [ProgramFamily] -> View ProposalCard ()
 viewProposalDetails fs now prop progs = do
-  if isProposalShown fs.searchTerm prop
-    then viewProp
-    else none
+  let shownProgs = filter applyFilters progs
+  proposalCard prop $ do
+    tableInstrumentPrograms now $ fmap (\prog -> prog.program.programId) shownProgs
+
+    -- how many total programs?
+    let ignored = length progs - length shownProgs
+    when (ignored > 0) $ do
+      appRoute (Route.Proposal prop.proposalId PropRoot) ~ fontSize 14 . color Black . gap 5 $ do
+        text $ cs (show ignored)
+        text " Hidden Instrument Programs"
  where
-  viewProp = do
-    let shownProgs = filter applyFilters progs
-    proposalCard prop $ do
-      tableInstrumentPrograms now $ fmap (\prog -> prog.program.programId) shownProgs
-
-      -- how many total programs?
-      let ignored = length progs - length shownProgs
-      when (ignored > 0) $ do
-        appRoute (Route.Proposal prop.proposalId PropRoot) ~ fontSize 14 . color Black . gap 5 $ do
-          text $ cs (show ignored)
-          text " Hidden Instrument Programs"
-
   applyFilters :: ProgramFamily -> Bool
   applyFilters ip = checkInstrument ip && checkInvertible fs.status ip.status
 
@@ -233,11 +261,6 @@ viewProposalDetails fs now prop progs = do
   checkInvertible Active (StatusInversion inv) = not $ isPublished inv
   checkInvertible Complete (StatusInversion inv) = isPublished inv
   checkInvertible _ _ = False
-
-  cleanPropId = T.replace " " "_"
-
-  isProposalShown term p =
-    cleanPropId term `T.isInfixOf` p.proposalId.fromId
 
 
 tableInstrumentPrograms :: UTCTime -> [Id InstrumentProgram] -> View ProposalCard ()

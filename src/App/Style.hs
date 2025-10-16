@@ -103,3 +103,11 @@ noClick = utility "no-click" ["pointer-events" :. "none"]
 
 noWrap :: (Styleable h) => CSS h -> CSS h
 noWrap = utility "nowrap" ["text-wrap" :. "nowrap"]
+
+
+big :: (Styleable h) => (CSS h -> CSS h) -> CSS h -> CSS h
+big = media (MinWidth 1000)
+
+
+small :: (Styleable h) => (CSS h -> CSS h) -> CSS h -> CSS h
+small = media (MaxWidth 1000)
