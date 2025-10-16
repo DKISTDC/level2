@@ -5,7 +5,7 @@ import App.Effect.Auth
 import App.Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
-import App.View.DatasetsTable (radiusBoundingBox)
+import App.View.Datasets (radiusBoundingBox)
 import App.View.Layout
 import Data.Aeson (encode)
 import Data.Ord (Down (..))

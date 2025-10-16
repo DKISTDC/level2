@@ -15,6 +15,7 @@ import App.Style qualified as Style
 import App.View.Common (showTimestamp)
 import App.View.Common as View (hr)
 import App.View.DataRow (dataCell, tagCell)
+import App.View.Datasets (boxPlot)
 import App.View.Icons as Icons
 import App.View.Inversion (inversionStepTag)
 import Data.Grouped
@@ -27,6 +28,7 @@ import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
+import Numeric (showFFloat)
 import Web.Atomic.CSS
 import Web.Hyperbole
 
@@ -118,6 +120,7 @@ viewCriteria ip gd = do
  where
   vispCriteria :: Group (Id InstrumentProgram) Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
+    let fried :: Maybe Distribution = (sample ds).friedParameter
     col ~ gap 10 $ do
       el ~ bold $ "VISP Criteria"
       row ~ gap 10 . flexWrap Wrap $ do
@@ -128,6 +131,22 @@ viewCriteria ip gd = do
         criteria "Health" $ qualifyHealth ds
         criteria "GOS Status" $ qualifyGOS ds
         criteria "AO Lock" $ qualifyAO ds
+      el ~ friedColor (fmap (.med) fried) . bold $ "R0 Fried Parameter"
+      -- el $ do
+      --   text $ textFriedParameter (sample ds)
+      --   text $ cs $ show (sample ds).friedParameter
+      maybe none friedHistogram fried
+
+  friedHistogram = boxPlot (\f -> showFFloat (Just 1) (f * 100) "") 0.20
+
+  friedColor :: (Styleable h) => Maybe Float -> CSS h -> CSS h
+  friedColor = maybe id friedColor'
+
+  friedColor' :: (Styleable h) => Float -> CSS h -> CSS h
+  friedColor' r0
+    | r0 >= 0.07 = color Success
+    | r0 >= 0.05 = color (dark Warning)
+    | otherwise = color Danger
 
   vbiCriteria = do
     el ~ bold $ "VBI Criteria"

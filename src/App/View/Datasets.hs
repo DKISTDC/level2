@@ -1,8 +1,10 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module App.View.DatasetsTable where
+module App.View.Datasets where
 
 -- import App.Colors
+
+import App.Colors
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
@@ -14,6 +16,8 @@ import NSO.Prelude
 import NSO.Types.Common
 import Numeric (showFFloat)
 import Web.Atomic.CSS
+import Web.Atomic.Types.ClassName (className)
+import Web.Atomic.Types.Style as Atomic (ToStyle (style))
 import Web.Hyperbole
 
 
@@ -68,6 +72,8 @@ datasetsTableUnsorted sortBy ds = do
     tcol (hd "GOS Open") $ \d -> cell $ text . cs . show $ fromMaybe 0 d.gosStatus.open
     tcol (hd "AOLocked") $ \d -> cell $ text . cs . show $ d.aoLocked
  where
+  -- tcol (hd "R0 Fried") $ \d -> cell $ text $ textFriedParameter d
+
   -- tcol (hd "On Disk") $ \d -> cell . cs . show $ isOnDisk d.boundingBox
 
   -- tcol cell (hd "End Time") $ \d -> cell . cs . show $ d.endTime
@@ -97,5 +103,43 @@ radiusBoundingBox (Just b) = row ~ gap 5 $ do
     code (cs $ showFFloat (Just 0) (boxRadius c) "") ~ Style.code
   space
 
+
 -- rowHeight :: PxRem
 -- rowHeight = 30
+
+textFriedParameter :: Dataset -> Text
+textFriedParameter d =
+  cs $ maybe "" ((\f -> showFFloat (Just 1) f "") . (* 100) . (.med)) d.friedParameter
+
+
+-- the span is: 0 ... min .... max
+boxPlot :: (Float -> String) -> Float -> Distribution -> View c ()
+boxPlot val mx d =
+  el ~ height 40 $ do
+    row ~ bg (light Light) . height 24 . width 1000 . gap 0 $ do
+      area 0 d.min
+      area d.min d.p25 ~ bg Gray
+      area d.p25 d.med ~ bg (light Primary)
+      area d.med d.p75 ~ bg (light Primary)
+      area d.p75 d.max ~ bg Gray
+ where
+  -- area d.max mx
+
+  -- el ~ off 0 $ text $ cs $ val d.min
+  -- el ~ off (d.p25 / d.max) $ text $ cs $ val d.p25
+  -- el ~ off (d.med / d.max) $ text $ cs $ val d.med
+  -- el ~ off (d.p75 / d.max) $ text $ cs $ val d.p75
+  -- el ~ off (d.max) $ text $ cs $ val d.max
+
+  area p n = do
+    let w = (n - p) / mx
+    el ~ flexWidth w . border (R 1) . pad (R 1) . position Relative $ do
+      el ~ textAlign AlignRight . position Absolute . top 20 . right (-13) $ text $ cs $ val n
+
+  flexWidth w =
+    utility
+      ("fw-" <> className (cs (showFFloat (Just 3) w "")))
+      [ "flex-basis" :. Atomic.style (Pct w)
+      , "flex-shrink" :. "0"
+      , "flex-grow" :. "0"
+      ]

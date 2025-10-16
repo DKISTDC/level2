@@ -49,7 +49,7 @@ library
       App.Version
       App.View.Common
       App.View.DataRow
-      App.View.DatasetsTable
+      App.View.Datasets
       App.View.Error
       App.View.Icons
       App.View.Inversion

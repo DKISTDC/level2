@@ -13,7 +13,7 @@ import App.Style qualified as Style
 import App.Types (App)
 import App.View.Common as View
 import App.View.DataRow (dataRows)
-import App.View.DatasetsTable as DatasetsTable
+import App.View.Datasets as DatasetsTable
 import App.View.Icons qualified as Icons
 import App.View.Inversion (rowInversion)
 import App.View.Layout

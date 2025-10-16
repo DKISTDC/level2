@@ -7,7 +7,7 @@ import App.Effect.Auth
 import App.Error (expectFound)
 import App.Route as Route
 import App.Style qualified as Style
-import App.View.DatasetsTable as DatasetsTable
+import App.View.Datasets as DatasetsTable
 import App.View.Icons (skeleton)
 import App.View.Layout
 import App.View.ProposalDetails
