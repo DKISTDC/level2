@@ -35,6 +35,7 @@ library
       App.Page.Dashboard
       App.Page.Dataset
       App.Page.Datasets
+      App.Page.Datasets.Download
       App.Page.Inversion
       App.Page.Inversions
       App.Page.Inversions.CommitForm

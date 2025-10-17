@@ -5,13 +5,20 @@
 - [ ] Stuart: nice to see units on dataset page
 - [ ] publish isn't really updating if it errors or completes before getting to the transfer status screen. Try using the dev publish, or throwing an error immediately
 
-## Thu, Oct 16
+## Fri, Oct 16
+> *working from the van
+- [ ] Han: generate iron plot (needs example)
 
+IRON PLOT
+* button to generate
+* display the image if it already exists
+* track the task if it is generating (in-memory)
+
+## Thu, Oct 16
 > *working from the van, actually slept
 
 - [x] finished view proposals, removed most of the JS, better filtering
-- [ ] Han: show R0 in table and histogram
-- [ ] Han: generate iron plot (needs example)
+- [x] Han: show R0 in table and histogram
 
 ## Tue, Oct 14
 

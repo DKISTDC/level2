@@ -8,6 +8,7 @@ import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
 import App.Page.Dataset qualified as Dataset
 import App.Page.Datasets qualified as Datasets
+import App.Page.Datasets.Download qualified as Downloads
 import App.Page.Inversion qualified as Inversion
 import App.Page.InversionUpload qualified as InversionUpload
 import App.Page.Inversions qualified as Inversions
@@ -207,7 +208,7 @@ webServer config admin fits pubs sync rows =
   router (Proposal propId (Program progId r)) =
     case r of
       Prog -> runPage $ Program.page propId progId
-      SubmitDownload -> Program.submitDownload propId progId
+      SubmitDownload -> Downloads.submitDatasetDownload propId progId
       InvUpload invId -> runPage $ InversionUpload.page propId progId invId
       SubmitUpload invId -> InversionUpload.submitUpload propId progId invId
   router (Datasets DatasetRoot) = runPage Datasets.page
