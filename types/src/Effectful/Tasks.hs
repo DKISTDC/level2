@@ -19,6 +19,7 @@ class WorkerTask t where
 data TaskChan t = TaskChan
   { wait :: TVar [t]
   , work :: TVar [(t, Status t)]
+  , saved :: TVar [(t, Status t)]
   , queue :: TQueue t
   }
 
@@ -27,8 +28,9 @@ taskChanNew :: STM (TaskChan t)
 taskChanNew = do
   wait <- newTVar mempty
   work <- newTVar mempty
+  saved <- newTVar mempty
   queue <- newTQueue
-  pure $ TaskChan{wait, work, queue}
+  pure $ TaskChan{wait, work, queue, saved}
 
 
 -- Idempotent. A task that exactly matches an existing one will not be added twice
@@ -57,6 +59,11 @@ taskDone chan t = do
 taskSetStatus :: (Eq t, WorkerTask t) => TaskChan t -> t -> Status t -> STM ()
 taskSetStatus chan t s = do
   modifyTVar chan.work $ insert t s
+
+
+taskSave :: (Eq t, WorkerTask t) => TaskChan t -> t -> Status t -> STM ()
+taskSave chan t s = do
+  modifyTVar chan.saved $ insert t s
 
 
 taskModStatus :: (Eq t, WorkerTask t) => TaskChan t -> t -> (Status t -> Status t) -> STM ()
@@ -103,6 +110,7 @@ data Tasks t :: Effect where
   TaskDone :: t -> Tasks t m ()
   TasksWaiting :: Tasks t m [t]
   TasksWorking :: Tasks t m [(t, Status t)]
+  TaskSave :: t -> Status t -> Tasks t m ()
 type instance DispatchOf (Tasks t) = 'Dynamic
 
 
@@ -133,6 +141,10 @@ runTasks chan = interpret $ \_ -> \case
     atomically $ taskAdd chan t
   TasksAdd ts -> do
     atomically $ mapM_ (taskAdd chan) ts
+  TaskSave t s -> do
+    atomically $ do
+      taskSetStatus chan t s
+      taskSave chan t s
 
 
 startWorker :: forall t es. (Concurrent :> es, WorkerTask t, Tasks t :> es) => (t -> Eff es ()) -> Eff es ()
@@ -140,7 +152,6 @@ startWorker work = do
   forever $ do
     task <- send TaskNext
     work task
-    -- manually call task done?
     send $ TaskDone task
 
 
