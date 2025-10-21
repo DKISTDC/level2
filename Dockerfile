@@ -40,14 +40,16 @@ RUN cabal install
 
 ### runtime image ####################################
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 RUN mkdir -p /opt/app
 WORKDIR /opt/app
 
 # these will all be cached even if a previous stage has changes
 RUN apt-get update -y
-RUN apt-get install -y libpq-dev ca-certificates openssl pkg-config cargo
-RUN apt-get install -y cargo
+RUN apt-get install -y curl build-essentia libssl-dev libpq-dev ca-certificates openssl pkg-config
+RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN cargo --version
 RUN cargo install sqlx-cli
 
 COPY image/entrypoint.sh ./entrypoint.sh
