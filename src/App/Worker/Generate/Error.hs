@@ -52,6 +52,7 @@ data FetchError
   | L1AsdfParse AsdfError
   | MissingL1Asdf FilePath
   | FetchParse FilePath ParseError
+  | ParseError FilePath ParseError
   deriving (Show, Exception, Eq)
 
 
@@ -63,7 +64,6 @@ data GenerateError
   | ProfileError ProfileError
   | QuantityError QuantityError
   | PrimaryError PrimaryError
-  | ParseError FilePath ParseError
   | AsdfError AsdfError
   | BlancaError BlancaError
   | MismatchedFrames FrameSizes

@@ -119,7 +119,7 @@ main = do
     runLogger "Generate" $
       startWorker Gen.generateTask
 
-  startPublish = do
+  startPublishWorker = do
     runLogger "Publish" $
       startWorker Publish.publishTask
 
@@ -142,7 +142,7 @@ main = do
       , startGen
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
-      , startPublish
+      , startPublishWorker
       , startLogUpdater
       ]
 

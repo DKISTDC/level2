@@ -66,7 +66,7 @@ generateAsdf files inv (Canonical dcanon) slice = do
     -- profileOrig :: Arms [ProfileImage Original] <- Blanca.decodeProfileArms arms origHDUs
 
     log Debug "Got Blanca"
-    l1fits <- canonicalL1Frames (Files.dataset dcanon)
+    l1fits <- canonicalL1Frames dcanon.primaryProposalId dcanon.datasetId
     log Debug "Got Gfits"
     l1asdf <- readLevel1Asdf (Files.dataset dcanon)
     log Debug "Got L1Asdf"
@@ -86,12 +86,12 @@ generateAsdf files inv (Canonical dcanon) slice = do
 
 requireMetas
   :: forall es
-   . (Error GenerateError :> es, Scratch :> es, Error ProfileError :> es, Error QuantityError :> es)
+   . (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Error ProfileError :> es, Error QuantityError :> es)
   => Id Proposal
   -> Id Inversion
   -> SliceXY
   -> Arms ArmWavMeta
-  -> [L1Fits]
+  -> NonEmpty L1Fits
   -> Eff es (Frames L2FitsMeta)
 requireMetas propId invId slice arms l1fits = do
   metas <- loadMetas
@@ -102,11 +102,11 @@ requireMetas propId invId slice arms l1fits = do
   loadMetas :: Eff es [L2FitsMeta]
   loadMetas = do
     paths <- l2FramePaths propId invId
-    zipWithM (loadL2FitsMeta propId invId slice arms) paths l1fits
+    zipWithM (loadL2FitsMeta propId invId slice arms) paths (NE.toList l1fits)
 
 
 loadL2FitsMeta
-  :: (Error GenerateError :> es, Scratch :> es, Error ProfileError :> es, Error QuantityError :> es)
+  :: (Error FetchError :> es, Scratch :> es, Error ProfileError :> es, Error QuantityError :> es)
   => Id Proposal
   -> Id Inversion
   -> SliceXY
@@ -119,7 +119,7 @@ loadL2FitsMeta propId invId slice arms path l1 = do
   runErrorNoCallStackWith (throwError . ParseError path.filePath) $ Meta.frameMetaFromL2Fits path slice arms l1 fits
 
 
-readLevel2Fits :: forall es. (Scratch :> es, Error GenerateError :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2FrameFits -> Eff es Fits
+readLevel2Fits :: forall es. (Scratch :> es, Error FetchError :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2FrameFits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   readFits $ filePath dir path

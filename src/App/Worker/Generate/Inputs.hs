@@ -47,7 +47,7 @@ inversionFiles propId invId = do
   pure fs
 
 
-sliceMeta :: (Error GenerateError :> es, Scratch :> es, Log :> es) => InversionFiles Identity File -> Eff es SliceXY
+sliceMeta :: (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => InversionFiles Identity File -> Eff es SliceXY
 sliceMeta u = do
   f <- readFits u.profileFit
   slice :: SliceXY <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
@@ -91,17 +91,17 @@ loadFrameInputs files (Canonical dc) _ = do
   profileOrig <- Blanca.decodeProfileArms arms origHDUs
   log Debug $ dump "Profile Orig" (length profileOrig.arms)
 
-  l1 <- canonicalL1Frames (Files.dataset dc)
+  l1 <- canonicalL1Frames dc.primaryProposalId dc.datasetId
   log Debug $ dump "Frames" (length quantities, armFramesLength profileFit, armFramesLength profileOrig, length l1)
 
   collateFrames quantities arms profileFit profileOrig l1
 
 
-collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> [L1Fits] -> Eff es (Frames L2FrameInputs)
+collateFrames :: (Error GenerateError :> es) => [Quantities (QuantityImage [SlitX, Depth])] -> Arms ArmWavMeta -> Arms (Frames (ProfileImage Fit)) -> Arms (Frames (ProfileImage Original)) -> NonEmpty L1Fits -> Eff es (Frames L2FrameInputs)
 collateFrames qs metas pfs pos l1s = do
   unless allFramesEqual $ throwError $ MismatchedFrames frameSizes
   let pframes :: Frames (Arms ArmProfileImages) = Blanca.collateFramesArms metas pfs pos
-  frames $ L.zipWith3 L2FrameInputs qs (NE.toList pframes.frames) l1s
+  frames $ L.zipWith3 L2FrameInputs qs (NE.toList pframes.frames) (NE.toList l1s)
  where
   frames [] = throwError $ NoFrames frameSizes
   frames (f : fs) = pure $ Frames $ f :| fs

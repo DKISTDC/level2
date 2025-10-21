@@ -14,7 +14,6 @@ import App.Route as Route
 import App.Style (noWrap)
 import App.Style qualified as Style
 import App.View.Common (showTimestamp)
-import App.View.Common as View (hr)
 import App.View.DataRow (dataCell, tagCell)
 import App.View.Datasets (boxPlot)
 import App.View.Icons as Icons

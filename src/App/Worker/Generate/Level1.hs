@@ -1,11 +1,16 @@
 module App.Worker.Generate.Level1 where
 
+import App.Effect.Transfer as Transfer
 import App.Worker.Generate.Decode
 import App.Worker.Generate.Error (FetchError (..), GenerateError (..))
+import Control.Monad.Loops (untilM_)
 import Data.List qualified as L
 import Effectful
+import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Globus (Task, TaskStatus (..))
+import Effectful.Globus qualified as Globus
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
 import NSO.Files
@@ -17,6 +22,7 @@ import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.InstrumentProgram
 import System.FilePath (takeExtensions)
 import Telescope.Asdf qualified as Asdf
 import Telescope.Asdf.Error (AsdfError)
@@ -52,10 +58,8 @@ datasetVISPArmId d = do
   frameArmId f
  where
   sampleIntensityFrame d' = do
-    fs <- allL1IntensityFrames (Files.dataset d')
-    case fs of
-      [] -> throwError (MissingFrames d'.datasetId)
-      (f : _) -> pure f
+    fs <- allL1IntensityFrames d'.primaryProposalId d'.datasetId
+    pure $ head fs
 
   frameArmId f = do
     let path = Files.dataset d
@@ -67,17 +71,21 @@ datasetVISPArmId d = do
 
 
 -- | read all downloaded files in the L1 scratch directory
-canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Fits]
-canonicalL1Frames fdir = do
+canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es) => Id Proposal -> Id Dataset -> Eff es (NonEmpty L1Fits)
+canonicalL1Frames propId dsetId = do
+  let fdir = Files.dataset' propId dsetId
   -- VSPARMID, see datasetVISPArmId and requireCanonicalDataset
-  fs <- allL1IntensityFrames fdir
+  fs <- allL1IntensityFrames propId dsetId
   mapM (readLevel1File fdir) fs
 
 
-allL1IntensityFrames :: (Scratch :> es) => Path Scratch Dir Dataset -> Eff es [L1Frame]
-allL1IntensityFrames dir = do
-  fs <- send $ Scratch.ListDirectory dir
-  pure $ L.sort $ mapMaybe runParseFileName $ filter isL1IntensityFile fs
+allL1IntensityFrames :: (Scratch :> es, Error FetchError :> es) => Id Proposal -> Id Dataset -> Eff es (NonEmpty L1Frame)
+allL1IntensityFrames propId dsetId = do
+  fnames <- send $ Scratch.ListDirectory (Files.dataset' propId dsetId)
+  let fs = L.sort $ mapMaybe runParseFileName $ filter isL1IntensityFile fnames
+  case fs of
+    [] -> throwError (MissingFrames dsetId)
+    (f : fs') -> pure $ f :| fs'
  where
   isL1IntensityFile :: Path Scratch Filename Dataset -> Bool
   isL1IntensityFile (Path f) =
@@ -85,7 +93,7 @@ allL1IntensityFrames dir = do
     isFits (Path f) && "_I_" `L.isInfixOf` f
 
 
-readLevel1File :: forall es. (Scratch :> es, Log :> es, Error GenerateError :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
+readLevel1File :: forall es. (Scratch :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
 readLevel1File dir frame = do
   let path = filePath dir frame.file
   fits <- readFits path
@@ -110,3 +118,23 @@ readLevel1Asdf dir = do
 isFits :: Path s Filename a -> Bool
 isFits (Path f) =
   takeExtensions f == ".fits"
+
+
+waitForTransfer
+  :: forall err es
+   . (Concurrent :> es, Transfer :> es, Error err :> es, Show err)
+  => (Task -> err)
+  -> Id Globus.Task
+  -> Eff es ()
+waitForTransfer toError taskId = do
+  untilM_ delay2s taskComplete
+ where
+  taskComplete :: Eff es Bool
+  taskComplete = do
+    tsk <- Transfer.transferStatus taskId
+    case tsk.status of
+      Failed -> throwError @err $ toError tsk
+      Succeeded -> pure True
+      _ -> pure False
+
+  delay2s = threadDelay $ 2 * 1000 * 1000

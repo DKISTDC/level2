@@ -2,12 +2,15 @@ module App.Effect.Transfer where
 
 import App.Effect.Auth (Auth)
 import App.Effect.Auth qualified as Auth
+import Control.Monad.Loops (untilM_)
 import Data.Either (lefts)
 import Data.List as L (isPrefixOf, stripPrefix)
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
+import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Exception
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
@@ -267,3 +270,27 @@ data TransferException
   = LocalCopyFailed String
   | LocalCopyNoAbsolutePath (Globus.Id Collection) String
   deriving (Show, Eq, Exception)
+
+
+-- helpers ------------------------------------------------------
+
+waitForTransfer
+  :: forall err es
+   . (Concurrent :> es, Transfer :> es, Error err :> es, Show err)
+  => (Task -> err)
+  -> Id Globus.Task
+  -> Eff es ()
+waitForTransfer toError taskId = do
+  untilM_ delay taskComplete
+ where
+  taskComplete :: Eff es Bool
+  taskComplete = do
+    tsk <- transferStatus taskId
+    case tsk.status of
+      Failed -> throwError @err $ toError tsk
+      Succeeded -> pure True
+      _ -> pure False
+
+
+delay :: (Concurrent :> es) => Eff es ()
+delay = threadDelay $ 2 * 1000 * 1000

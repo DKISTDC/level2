@@ -32,3 +32,8 @@ midPoint :: SpectralLine -> Wavelength Nm
 midPoint NaID = Wavelength 589.899
 midPoint FeI630 = Wavelength 630.150
 midPoint CaII854 = Wavelength 854.209
+
+
+isLine :: SpectralLine -> Dataset -> Bool
+isLine l d =
+  identifyLine d == Just l

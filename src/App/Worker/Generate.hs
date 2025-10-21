@@ -5,14 +5,13 @@ import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
 import App.Worker.Generate.Asdf qualified as Asdf
-import App.Worker.Generate.Error (GenerateError (..), generateFailed, onCaughtError, onCaughtGlobus, runGenerateError)
+import App.Worker.Generate.Error (FetchError (..), GenerateError (..), generateFailed, onCaughtError, onCaughtGlobus, runGenerateError)
 import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
 import App.Worker.Generate.Inputs (DownloadComplete (..))
 import App.Worker.Generate.Inputs qualified as Inputs
-import App.Worker.Generate.Level1 (Canonical (..))
+import App.Worker.Generate.Level1 (Canonical (..), waitForTransfer)
 import App.Worker.Generate.Level1 qualified as Level1
-import Control.Monad.Loops (untilM_)
 import Data.Either (isRight)
 import Data.List.NonEmpty qualified as NE
 import Data.Time.Clock (diffUTCTime)
@@ -22,7 +21,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Exception (catch)
 import Effectful.GenRandom
-import Effectful.Globus (GlobusError (..), Task, TaskStatus (..))
+import Effectful.Globus (GlobusError (..), Task)
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
@@ -38,7 +37,6 @@ import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
-import Network.Globus qualified as Globus
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
@@ -140,6 +138,7 @@ workFrame
      , Error QuantityError :> es
      , Error ProfileError :> es
      , Error PrimaryError :> es
+     , Error FetchError :> es
      )
   => GenTask
   -> SliceXY
@@ -186,21 +185,7 @@ downloadL1Frames task inv (Canonical ds) = do
   transfer = do
     downloadTaskId <- Transfer.scratchDownloadDatasets [ds]
     log Debug $ dump "Download" downloadTaskId
-
     send $ TaskSetStatus task $ GenTransferring downloadTaskId
-
     log Debug " - waiting..."
-    untilM_ delay (taskComplete downloadTaskId)
-
+    waitForTransfer (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
     pure DownloadComplete
-   where
-    taskComplete downloadTaskId = do
-      tsk <- Transfer.transferStatus downloadTaskId
-      case tsk.status of
-        Failed -> throwError $ L1TransferFailed downloadTaskId
-        Succeeded -> pure True
-        _ -> pure False
-
-
-delay :: (Concurrent :> es) => Eff es ()
-delay = threadDelay $ 2 * 1000 * 1000

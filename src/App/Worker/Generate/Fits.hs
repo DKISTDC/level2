@@ -3,7 +3,7 @@
 module App.Worker.Generate.Fits where
 
 import App.Worker.Generate.Decode
-import App.Worker.Generate.Error (GenerateError (..))
+import App.Worker.Generate.Error (FetchError (..), GenerateError (..))
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
@@ -36,6 +36,7 @@ genFrame
      , Log :> es
      , Scratch :> es
      , Error GenerateError :> es
+     , Error FetchError :> es
      , Error QuantityError :> es
      , Error ProfileError :> es
      , Error PrimaryError :> es

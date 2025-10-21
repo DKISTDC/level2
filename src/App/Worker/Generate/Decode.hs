@@ -1,6 +1,6 @@
 module App.Worker.Generate.Decode where
 
-import App.Worker.Generate.Error (GenerateError (..))
+import App.Worker.Generate.Error (FetchError (..))
 import Data.ByteString qualified as BS
 import Effectful
 import Effectful.Error.Static
@@ -13,7 +13,7 @@ import Telescope.Fits (Fits (..))
 import Telescope.Fits.Encoding qualified as Fits
 
 
-readFits :: (Scratch :> es, Error GenerateError :> es) => Path Scratch File a -> Eff es Fits
+readFits :: (Scratch :> es, Error FetchError :> es) => Path Scratch File a -> Eff es Fits
 readFits path = do
   inp <- Scratch.readFile path
   runErrorNoCallStackWith (throwError . ParseError path.filePath) $ fitsDecode inp

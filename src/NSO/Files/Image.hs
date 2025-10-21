@@ -32,8 +32,12 @@ data Input
 
 
 dataset :: Dataset -> Path Scratch f Dataset
-dataset d =
-  "input" </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
+dataset d = dataset' d.primaryProposalId d.datasetId
+
+
+dataset' :: Id Proposal -> Id Dataset -> Path Scratch f Dataset
+dataset' propId dsetId =
+  "input" </> Path (cs propId.fromId) </> Path (cs dsetId.fromId)
 
 
 blancaInput :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
