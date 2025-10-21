@@ -21,7 +21,8 @@ import App.View.ProposalDetails
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate
-import Data.Grouped (Group (..))
+import Data.Grouped (Group (..), sample)
+import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
@@ -36,9 +37,11 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
+import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
+import NSO.Types.Wavelength
 import Network.Globus (Task)
 import Web.Atomic.CSS
 import Web.Hyperbole
@@ -48,7 +51,7 @@ page
   :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es '[ProgramInversions, ProgramDatasets, DownloadTransfer]
+  -> Page es '[ProgramInversions, ProgramDatasets, DownloadTransfer, ProgramDetails]
 page propId progId = do
   ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
   progs <- Programs.loadProgram progId >>= expectFound
@@ -64,8 +67,7 @@ page propId progId = do
 
       col ~ Style.card $ do
         el ~ Style.cardHeader Secondary $ text "Program"
-        viewProgramDetails' (viewProgramStats now) prog prog.datasets
-
+        hyper (ProgramDetails propId progId) $ viewProgramDetails prog now
         hyper (ProgramDatasets propId progId) $ viewDatasets (NE.toList prog.datasets.items) ByLatest download
 
       col ~ gap 10 $ do
@@ -86,6 +88,31 @@ page propId progId = do
       text "Proposal - "
       appRoute (Route.Proposal d.primaryProposalId Route.PropRoot) ~ Style.link $ do
         text d.primaryProposalId.fromId
+
+
+data ProgramDetails = ProgramDetails (Id Proposal) (Id InstrumentProgram)
+  deriving (Generic, ViewId)
+
+
+instance HyperView ProgramDetails es where
+  data Action ProgramDetails = GenIronImage
+    deriving (Generic, ViewAction)
+
+
+  update _ = pure none
+
+
+viewProgramDetails :: ProgramFamily -> UTCTime -> View ProgramDetails ()
+viewProgramDetails prog now = do
+  let ds = prog.datasets
+  viewProgramRowLink now prog
+
+  View.hr ~ color Gray
+
+  col ~ pad 15 . gap 10 $ do
+    viewCriteria prog ds
+    viewFriedHistogram (sample ds).friedParameter
+    viewIronPlot GenIronImage ds.items
 
 
 ----------------------------------------------------

@@ -1,11 +1,12 @@
 module App.View.ProposalDetails
   ( viewExperimentDescription
   , viewProgramRow
+  , viewProgramRowLink
   , viewCriteria
-  , viewProgramDetails
-  , viewProgramDetails'
   , viewProgramStats
   , spectralLineTag
+  , viewFriedHistogram
+  , viewIronPlot
   ) where
 
 import App.Colors
@@ -25,6 +26,7 @@ import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
+import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
@@ -43,6 +45,14 @@ viewExperimentDescription t = do
 viewDataRow :: View c () -> View c ()
 viewDataRow =
   row ~ gap 10 . textAlign AlignCenter . grow
+
+
+viewProgramRowLink :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramRowLink now prog = do
+  let p = prog.program :: InstrumentProgram
+  row ~ textAlign AlignCenter . pad 10 $ do
+    appRoute (Proposal p.proposalId $ Program p.programId Prog) ~ grow $ do
+      viewProgramRow now prog
 
 
 viewProgramRow :: forall c. UTCTime -> ProgramFamily -> View c ()
@@ -120,33 +130,15 @@ viewCriteria ip gd = do
  where
   vispCriteria :: Group (Id InstrumentProgram) Dataset -> [SpectralLine] -> View c ()
   vispCriteria ds sls = do
-    let fried :: Maybe Distribution = (sample ds).friedParameter
-    col ~ gap 10 $ do
-      el ~ bold $ "VISP Criteria"
-      row ~ gap 10 . flexWrap Wrap $ do
-        criteria "Stokes IQUV" $ qualifyStokes ds
-        criteria "On Disk" $ qualifyOnDisk ds
-        criteria "Spectra: FeI 630" $ qualifyLine FeI630 sls
-        criteria "Spectra: CaII 854" $ qualifyLine CaII854 sls
-        criteria "Health" $ qualifyHealth ds
-        criteria "GOS Status" $ qualifyGOS ds
-        criteria "AO Lock" $ qualifyAO ds
-      el ~ friedColor (fmap (.med) fried) . bold $ "R0 Fried Parameter"
-      -- el $ do
-      --   text $ textFriedParameter (sample ds)
-      --   text $ cs $ show (sample ds).friedParameter
-      maybe none friedHistogram fried
-
-  friedHistogram = boxPlot (\f -> showFFloat (Just 1) (f * 100) "") 0.20
-
-  friedColor :: (Styleable h) => Maybe Float -> CSS h -> CSS h
-  friedColor = maybe id friedColor'
-
-  friedColor' :: (Styleable h) => Float -> CSS h -> CSS h
-  friedColor' r0
-    | r0 >= 0.07 = color Success
-    | r0 >= 0.05 = color (dark Warning)
-    | otherwise = color Danger
+    el ~ bold $ "VISP Criteria"
+    row ~ gap 10 . flexWrap Wrap $ do
+      criteria "Stokes IQUV" $ qualifyStokes ds
+      criteria "On Disk" $ qualifyOnDisk ds
+      criteria "Spectra: FeI 630" $ qualifyLine FeI630 sls
+      criteria "Spectra: CaII 854" $ qualifyLine CaII854 sls
+      criteria "Health" $ qualifyHealth ds
+      criteria "GOS Status" $ qualifyGOS ds
+      criteria "AO Lock" $ qualifyAO ds
 
   vbiCriteria = do
     el ~ bold $ "VBI Criteria"
@@ -155,9 +147,6 @@ viewCriteria ip gd = do
   cryoCriteria = do
     el ~ bold $ "CRYO NIRSP Criteria"
     criteria "Not Supported" False
-
-  -- criteriaRowHeight :: Length
-  -- criteriaRowHeight = 32
 
   criteria :: Text -> Bool -> View c ()
   criteria msg b =
@@ -172,20 +161,38 @@ viewCriteria ip gd = do
           else Icons.xMark
 
 
-viewProgramDetails :: ProgramFamily -> UTCTime -> Group (Id InstrumentProgram) Dataset -> View c ()
-viewProgramDetails prog now ds = do
-  viewProgramDetails' (viewProgramRow now) prog ds
+viewFriedHistogram :: Maybe Distribution -> View c ()
+viewFriedHistogram Nothing = none
+viewFriedHistogram (Just fried) = do
+  el ~ friedColor fried.med . bold $ "R0 Fried Parameter"
+  boxPlot (\f -> showFFloat (Just 1) (f * 100) "") 0.20 fried
+ where
+  friedColor :: (Styleable h) => Float -> CSS h -> CSS h
+  friedColor r0
+    | r0 >= 0.07 = color Success
+    | r0 >= 0.05 = color (dark Warning)
+    | otherwise = color Danger
 
 
-viewProgramDetails' :: (ProgramFamily -> View c ()) -> ProgramFamily -> Group (Id InstrumentProgram) Dataset -> View c ()
-viewProgramDetails' progRow prog gd = do
-  let p = prog.program :: InstrumentProgram
+-- CASE: currently generating (Tasks) - show in-progress step
+-- CASE: not generated - show button
+-- CASE: generated - show images
+viewIronPlot :: (ViewAction (Action id)) => Action id -> NonEmpty Dataset -> View id ()
+viewIronPlot generate ds =
+  viewPlot $ L.find (Spectra.isLine FeI630) ds
+ where
+  viewPlot Nothing = none
+  viewPlot (Just d) = do
+    el ~ bold $ "FeI 630nm Plot"
 
-  row ~ textAlign AlignCenter . pad 10 $ do
-    appRoute (Proposal p.proposalId $ Program p.programId Prog) ~ grow $ do
-      progRow prog
-
-  View.hr ~ color Gray
-
-  col ~ pad 15 $ do
-    viewCriteria prog gd
+    row $ do
+      -- button to generate images
+      button generate ~ Style.btnOutline Secondary $ "Generate Iron Wavelength Plot"
+    -- what sort of aspect ratio or size will this have?
+    col ~ bg (light Light) . width 400 . height 300 $ do
+      space
+      row $ do
+        space
+        el "hello"
+        space
+      space

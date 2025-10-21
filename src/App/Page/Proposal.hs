@@ -7,6 +7,7 @@ import App.Effect.Auth
 import App.Error (expectFound)
 import App.Route as Route
 import App.Style qualified as Style
+import App.View.Common as View
 import App.View.Datasets as DatasetsTable
 import App.View.Icons (skeleton)
 import App.View.Layout
@@ -105,6 +106,7 @@ data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
 instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
     = ProgramDetails SortField
+    | GenIronImage
     deriving (Generic, ViewAction)
 
 
@@ -114,6 +116,7 @@ instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSumm
       now <- currentTime
       progs <- Programs.loadProgram progId
       pure $ mapM_ (viewProgramSummary srt now) progs
+    GenIronImage -> pure none
 
 
 viewProgramSummaryLoad :: View ProgramSummary ()
@@ -123,12 +126,17 @@ viewProgramSummaryLoad = do
 
 
 viewProgramSummary :: SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
-viewProgramSummary srt now pf = do
-  let ds = pf.datasets.items
+viewProgramSummary srt now prog = do
+  let ds = prog.datasets
   programCard $ do
-    viewProgramDetails pf now pf.datasets
+    viewProgramRowLink now prog
+    View.hr ~ color Gray
+    col ~ pad 15 . gap 10 $ do
+      viewCriteria prog ds
+      viewFriedHistogram (sample ds).friedParameter
+      viewIronPlot GenIronImage ds.items
     col ~ pad (TRBL 0 15 15 15) $ do
-      DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds)
+      DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds.items)
 
 
 programCard :: View ProgramSummary () -> View ProgramSummary ()
