@@ -1,5 +1,6 @@
 module NSO.Files.Inversion where
 
+import Data.Bifunctor (first)
 import Data.List qualified as L
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch (Scratch)
@@ -20,6 +21,7 @@ data InversionFiles f t = InversionFiles
 instance Show (InversionFiles Maybe Filename) where
   show (InversionFiles q pf po) = "UploadFiles " <> show q <> " " <> show pf <> " " <> show po
 instance FromForm (InversionFiles Maybe Filename) where
+  fromForm :: FUE.Form -> Either String (InversionFiles Maybe Filename)
   fromForm f = do
     fs <- files f
     let quantities = findFile Files.fileQuantities fs
@@ -31,12 +33,12 @@ instance FromForm (InversionFiles Maybe Filename) where
         Left "Must provide at least one file"
       _ -> pure inv
    where
-    files :: FUE.Form -> Either Text [Path s Filename ()]
+    files :: FUE.Form -> Either String [Path s Filename ()]
     files frm = do
-      f0 <- FUE.parseMaybe "file[0]" frm
-      f1 <- FUE.parseMaybe "file[1]" frm
-      f2 <- FUE.parseMaybe "file[2]" frm
-      f3 <- FUE.parseMaybe "file[3]" frm
+      f0 <- first cs $ FUE.parseMaybe "file[0]" frm
+      f1 <- first cs $ FUE.parseMaybe "file[1]" frm
+      f2 <- first cs $ FUE.parseMaybe "file[2]" frm
+      f3 <- first cs $ FUE.parseMaybe "file[3]" frm
       pure $ catMaybes [f0, f1, f2, f3]
 
     findFile :: Path s Filename a -> [Path s Filename ()] -> Maybe (Path s Filename a)

@@ -2,6 +2,7 @@ module NSO.Files.TransferForm where
 
 import NSO.Files.RemoteFolder
 import NSO.Prelude
+import Data.Bifunctor (first)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import Web.FormUrlEncoded qualified as FUE
@@ -29,7 +30,8 @@ data DownloadFolder = DownloadFolder
   deriving (Generic)
 instance FromForm DownloadFolder where
   fromForm f = do
-    DownloadFolder <$> FUE.parseMaybe "folder[0]" f
+    mp <- first cs $ FUE.parseMaybe "folder[0]" f
+    pure $ DownloadFolder mp
 
 
 transferFormFolder :: TransferForm -> DownloadFolder -> Path User Dir a

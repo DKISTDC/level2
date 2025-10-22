@@ -104,7 +104,7 @@ data Instrument
   = VBI
   | VISP
   | CRYO_NIRSP
-  deriving (Show, Read, Ord, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show, Read, Ord, Eq, Generic, ToParam, FromParam)
   deriving (DBType) via ReadShow Instrument
 
 

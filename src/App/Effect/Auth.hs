@@ -19,6 +19,7 @@ import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
 import Network.Globus (UserEmail (..), UserInfo (..), UserInfoResponse (..), UserProfile (..))
+import Network.HTTP.Client (HttpException (..))
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI
 
@@ -45,9 +46,13 @@ data GlobusAuth = GlobusAuth
   { token :: Maybe (Token Access)
   , currentUrl :: Maybe CurrentUrl
   }
-  deriving (Generic, FromParam, ToParam, ToJSON, FromJSON)
+  deriving (Generic, ToEncoded, FromEncoded, ToParam, FromParam)
 instance Session GlobusAuth where
   cookiePath = Just []
+
+
+instance ToParam (Tagged a Text)
+instance FromParam (Tagged a Text)
 
 
 instance Default GlobusAuth where
@@ -55,7 +60,7 @@ instance Default GlobusAuth where
 
 
 runAuth
-  :: (Globus :> es, Route r, Concurrent :> es, Log :> es)
+  :: (Globus :> es, Route r, Concurrent :> es, Log :> es, IOE :> es)
   => AppDomain
   -> r
   -> AdminState
@@ -219,9 +224,16 @@ authUrl red = do
   convertUrl (Tagged u) = u
 
 
-accessTokens :: (Globus :> es) => Uri Redirect -> Token Exchange -> Eff es (NonEmpty TokenItem)
+accessTokens :: (Globus :> es, IOE :> es) => Uri Redirect -> Token Exchange -> Eff es (NonEmpty TokenItem)
 accessTokens red tok = do
-  send $ GetAccessTokens tok red
+  etoks <- try $ send (GetAccessTokens tok red)
+  case etoks of
+    Left ex@(HttpExceptionRequest _ cnt) -> do
+      liftIO $ putStrLn $ "HttpExceptionRequest Content: " <> show cnt
+      throwIO ex
+    Left ex@(InvalidUrlException _ _) ->
+      throwIO ex
+    Right toks -> pure toks
 
 
 data UserLoginInfo = UserLoginInfo

@@ -181,7 +181,7 @@ viewIronPlot generate ds =
   viewPlot $ L.find (Spectra.isLine FeI630) ds
  where
   viewPlot Nothing = none
-  viewPlot (Just d) = do
+  viewPlot (Just _) = do
     el ~ bold $ "FeI 630nm Plot"
 
     row $ do

@@ -22,7 +22,6 @@ import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate
 import Data.Grouped (Group (..), sample)
-import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as T
 import Effectful
@@ -37,11 +36,9 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
-import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
-import NSO.Types.Wavelength
 import Network.Globus (Task)
 import Web.Atomic.CSS
 import Web.Hyperbole
@@ -112,8 +109,9 @@ viewProgramDetails prog now = do
   col ~ pad 15 . gap 10 $ do
     viewCriteria prog ds
     viewFriedHistogram (sample ds).friedParameter
-    viewIronPlot GenIronImage ds.items
 
+
+-- viewIronPlot GenIronImage ds.items
 
 ----------------------------------------------------
 -- ProgramInversions

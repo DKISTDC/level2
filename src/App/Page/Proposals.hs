@@ -185,7 +185,7 @@ viewFilters fs = do
 
   col ~ gap 10 $ do
     el ~ bold $ "Status"
-    dropdown FilterStatus (== fs.status) ~ pad 5 $ do
+    dropdown FilterStatus fs.status ~ pad 5 $ do
       option Any "Any"
       option Qualified "Qualified"
       option Active "Active"

@@ -134,7 +134,7 @@ viewProgramSummary srt now prog = do
     col ~ pad 15 . gap 10 $ do
       viewCriteria prog ds
       viewFriedHistogram (sample ds).friedParameter
-      viewIronPlot GenIronImage ds.items
+    -- viewIronPlot GenIronImage ds.items
     col ~ pad (TRBL 0 15 15 15) $ do
       DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds.items)
 

@@ -11,11 +11,12 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 import Rel8
 import Text.Read (readEither)
+import Web.Hyperbole (FromParam, ToParam)
 
 
 newtype Bucket = Bucket {bucketName :: Text}
   deriving stock (Show, Eq, Ord, Generic)
-  deriving newtype (ToJSON, FromJSON, DBType)
+  deriving newtype (DBType, ToParam, FromParam)
 
 
 type Dataset = Dataset' Identity
