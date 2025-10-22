@@ -116,7 +116,7 @@ textFriedParameter d =
 boxPlot :: (Float -> String) -> Float -> Distribution -> View c ()
 boxPlot val mx d =
   el ~ height 40 $ do
-    row ~ bg (light Light) . height 24 . width 1000 . gap 0 $ do
+    row ~ bg (light Light) . height 24 . gap 0 $ do
       area 0 d.min
       area d.min d.p25 ~ bg Gray
       area d.p25 d.med ~ bg (light Primary)

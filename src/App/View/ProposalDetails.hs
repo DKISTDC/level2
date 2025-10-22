@@ -164,7 +164,7 @@ viewFriedHistogram :: Maybe Distribution -> View c ()
 viewFriedHistogram Nothing = none
 viewFriedHistogram (Just fried) = do
   el ~ friedColor fried.med . bold $ "R0 Fried Parameter"
-  boxPlot (\f -> showFFloat (Just 1) (f * 100) "") 0.20 fried
+  boxPlot (\f -> showFFloat (Just 1) (f * 100) "") 0.15 fried
  where
   friedColor :: (Styleable h) => Float -> CSS h -> CSS h
   friedColor r0
