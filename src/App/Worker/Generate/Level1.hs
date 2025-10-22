@@ -120,21 +120,3 @@ isFits (Path f) =
   takeExtensions f == ".fits"
 
 
-waitForTransfer
-  :: forall err es
-   . (Concurrent :> es, Transfer :> es, Error err :> es, Show err)
-  => (Task -> err)
-  -> Id Globus.Task
-  -> Eff es ()
-waitForTransfer toError taskId = do
-  untilM_ delay2s taskComplete
- where
-  taskComplete :: Eff es Bool
-  taskComplete = do
-    tsk <- Transfer.transferStatus taskId
-    case tsk.status of
-      Failed -> throwError @err $ toError tsk
-      Succeeded -> pure True
-      _ -> pure False
-
-  delay2s = threadDelay $ 2 * 1000 * 1000

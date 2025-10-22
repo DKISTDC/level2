@@ -5,6 +5,14 @@
 - [ ] Stuart: nice to see units on dataset page
 - [ ] publish isn't really updating if it errors or completes before getting to the transfer status screen. Try using the dev publish, or throwing an error immediately
 
+## Wed, Oct 22
+- [x] small fixes of histogram
+- [x] deploy changes for Han, update to hyperbole 0.5
+- [x] bug: publish wasn't showing transfer progress
+
+## Tue, Oct 22
+- [x] attempted iron plot, realized it is tons of work! We don't have the ability to read BinTableHDUs via haskell. Could do with a python sub-process. Told Han it's not worth it
+
 ## Fri, Oct 16
 > *working from the van
 - [ ] Han: generate iron plot (needs example)

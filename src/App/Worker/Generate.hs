@@ -10,7 +10,7 @@ import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
 import App.Worker.Generate.Inputs (DownloadComplete (..))
 import App.Worker.Generate.Inputs qualified as Inputs
-import App.Worker.Generate.Level1 (Canonical (..), waitForTransfer)
+import App.Worker.Generate.Level1 (Canonical (..))
 import App.Worker.Generate.Level1 qualified as Level1
 import Data.Either (isRight)
 import Data.List.NonEmpty qualified as NE
@@ -187,5 +187,5 @@ downloadL1Frames task inv (Canonical ds) = do
     log Debug $ dump "Download" downloadTaskId
     send $ TaskSetStatus task $ GenTransferring downloadTaskId
     log Debug " - waiting..."
-    waitForTransfer (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
+    Transfer.waitForTransfer (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
     pure DownloadComplete

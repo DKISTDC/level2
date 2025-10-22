@@ -9,6 +9,7 @@ import Data.Tagged
 import Data.Text qualified as T
 import Effectful
 import Effectful.Concurrent
+import Effectful.Debug as Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Exception
@@ -53,7 +54,7 @@ type instance DispatchOf Transfer = 'Dynamic
 
 
 runTransfer
-  :: (Globus :> es, Log :> es, Auth :> es, Scratch :> es, IOE :> es)
+  :: (Globus :> es, Log :> es, Auth :> es, Scratch :> es, IOE :> es, Debug :> es)
   => Remote Level1
   -> Remote Publish
   -> Remote Scratch
@@ -62,7 +63,9 @@ runTransfer
 runTransfer level1 publish scratch = interpret $ \_ -> \case
   TransferStatus taskId -> do
     if taskId == Id fakeLocalTask.task_id.unTagged
-      then pure fakeLocalTask
+      then do
+        Debug.delay 1000
+        pure fakeLocalTask
       else do
         Auth.waitForAdmin $ do
           acc <- ask @(Token Access)
@@ -107,7 +110,9 @@ runTransfer level1 publish scratch = interpret $ \_ -> \case
         (l : _) -> throwIO $ LocalCopyFailed l
       pure $ Id fakeLocalTask.task_id.unTagged
 
-    -- for this to work, the remote must be set to the exact same thing as scratch
+    -- WARNING: for this to work, the remote must be set to the exact same thing as scratch
+    --   GLOBUS_PUBLISH=globus://03232d38-5e57-11ef-b967-17fffa478f3e/Data/level2
+    --   GLOBUS_SCRATCH=globus://03232d38-5e57-11ef-b967-17fffa478f3e/Data/level2
     localSource :: (Scratch :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
     localSource remote src
       -- if the remote IS scratch, get its mounted path
@@ -281,7 +286,7 @@ waitForTransfer
   -> Id Globus.Task
   -> Eff es ()
 waitForTransfer toError taskId = do
-  untilM_ delay taskComplete
+  untilM_ delay2s taskComplete
  where
   taskComplete :: Eff es Bool
   taskComplete = do
@@ -291,6 +296,4 @@ waitForTransfer toError taskId = do
       Succeeded -> pure True
       _ -> pure False
 
-
-delay :: (Concurrent :> es) => Eff es ()
-delay = threadDelay $ 2 * 1000 * 1000
+  delay2s = threadDelay $ 2 * 1000 * 1000

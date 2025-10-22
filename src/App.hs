@@ -156,6 +156,7 @@ main = do
 
   runWorkers config admin fits pubs sync metas props =
     runFileSystem
+      . runDebugIO
       . runReader config.scratch
       . runReader config.cpuWorkers
       . runRel8 config.db
@@ -245,7 +246,7 @@ webServer config admin fits pubs sync rows =
       . runAuth config.app.domain Login admin
       . runReader config.app
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Scratch :> es, Globus :> es, Reader (TMVar LogState) :> es) => Eff (Debug : Transfer : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Scratch :> es, Globus :> es, Reader (TMVar LogState) :> es) => Eff (Transfer : Debug : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runLogger "App"
@@ -261,8 +262,8 @@ webServer config admin fits pubs sync rows =
       . runTasks fits
       . runTasks pubs
       . runMetadataSync sync
-      . runTransfer config.level1 config.publish config.scratch.remote
       . runDebugIO
+      . runTransfer config.level1 config.publish config.scratch.remote
 
 
 runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
