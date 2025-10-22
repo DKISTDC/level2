@@ -586,7 +586,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
       StartPublish -> do
         Inversions.clearError invId
         Publish.startPublish propId invId
-        pure viewPublishWait
+        pure $ viewPublishStatus PublishWaiting
       CheckPublish -> do
         inv <- loadInversion invId
         mstatus <- send $ TaskLookupStatus $ PublishTask propId invId
@@ -611,16 +611,19 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
 viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe PublishStatus -> View PublishStep ()
 viewPublish pub bucket inv mstatus
   | isPublished inv = viewPublished pub bucket inv.proposalId inv.inversionId
-  | Just _ <- generated inv = viewPublishStatus
+  | Just _ <- generated inv = viewPublishStep inv mstatus
   | otherwise = none
+
+
+viewPublishStep :: Inversion -> Maybe PublishStatus -> View PublishStep ()
+viewPublishStep inv mstatus =
+  -- has the transfer started?
+  case mstatus of
+    Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
+    Just ps -> viewPublishStatus ps
  where
   viewNeedsPublish =
     button StartPublish ~ Style.btn Primary . grow $ "Publish Inversion "
-
-  viewPublishStatus =
-    case mstatus of
-      Just _ -> viewPublishWait
-      Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
 
 
 viewPublishError :: Text -> View PublishStep ()
@@ -633,15 +636,15 @@ viewPublishError e = do
         route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
 
-viewPublishWait :: View PublishStep ()
-viewPublishWait = do
-  el @ onLoad CheckPublish 1000 $ "Publishing..."
-
-
-viewPublishTransfer :: Id Task -> View PublishStep ()
-viewPublishTransfer taskId = do
-  el "Publishing..."
-  Transfer.viewLoadTransfer (PublishTransfer taskId)
+viewPublishStatus :: PublishStatus -> View PublishStep ()
+viewPublishStatus = \case
+  PublishWaiting ->
+    el @ onLoad CheckPublish 1000 $ "Waiting to start..."
+  PublishStarted ->
+    el @ onLoad CheckPublish 1000 $ "Starting Transfer"
+  PublishTransferring taskId -> do
+    el "Publishing..."
+    Transfer.viewLoadTransfer (PublishTransfer taskId)
 
 
 viewPublished :: Remote Publish -> Bucket -> Id Proposal -> Id Inversion -> View PublishStep ()
