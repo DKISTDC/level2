@@ -4,6 +4,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-560.16,-347.5),(-677.17,-467.21)",
+        "browseMovieUrl": "https://vimeo.com/1013203195",
         "createDate": "2022-12-08T19:07:55.038280",
         "datasetId": "BLKGA",
         "endTime": "2022-06-02T17:47:30.855505",
@@ -19,7 +20,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:22:50.175505",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:45:56.760476",
+        "updateDate": "2025-07-08T04:18:31.436962",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -54,6 +55,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
+        "browseMovieUrl": "https://vimeo.com/1013201987",
         "createDate": "2022-12-08T19:08:04.089380",
         "datasetId": "BJLKB",
         "endTime": "2022-06-02T17:47:58.285504",
@@ -69,7 +71,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:21:55.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:45:57.607486",
+        "updateDate": "2025-07-08T04:09:35.378698",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -104,6 +106,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
+        "browseMovieUrl": "https://vimeo.com/1013203417",
         "createDate": "2022-12-08T19:12:55.517795",
         "datasetId": "BKJYA",
         "endTime": "2022-06-02T17:48:25.693503",
@@ -119,7 +122,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:22:22.753503",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:45:57.324781",
+        "updateDate": "2025-07-08T04:21:35.127967",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -154,6 +157,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-460.16,-347.52),(-577.17,-467.2)",
+        "browseMovieUrl": "https://vimeo.com/1013203472",
         "createDate": "2022-12-08T19:27:50.932745",
         "datasetId": "BMLYA",
         "endTime": "2022-06-02T18:16:45.285485",
@@ -169,7 +173,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:50:42.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:45:57.220911",
+        "updateDate": "2025-07-08T04:29:35.039429",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -204,6 +208,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203272",
         "createDate": "2022-12-08T19:32:48.315446",
         "datasetId": "BONJA",
         "endTime": "2022-06-02T18:16:17.855505",
@@ -219,7 +224,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:51:37.175505",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:00.875271",
+        "updateDate": "2025-07-08T04:19:34.907268",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -254,6 +259,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203736",
         "createDate": "2022-12-08T19:34:42.164502",
         "datasetId": "BNMNA",
         "endTime": "2022-06-02T18:17:12.693521",
@@ -269,7 +275,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:51:09.753502",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:00.904978",
+        "updateDate": "2025-07-08T04:27:31.284965",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -304,6 +310,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
+        "browseMovieUrl": "https://vimeo.com/1013203237",
         "createDate": "2022-12-08T19:40:04.745388",
         "datasetId": "AXGJB",
         "endTime": "2022-06-02T19:15:51.855016",
@@ -319,7 +326,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:51:11.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:01.327142",
+        "updateDate": "2025-07-08T04:35:35.557156",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -354,6 +361,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203521",
         "createDate": "2022-12-08T19:40:04.748360",
         "datasetId": "BPOWA",
         "endTime": "2022-06-02T18:46:34.285522",
@@ -369,7 +377,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:20:31.345503",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:03.067445",
+        "updateDate": "2025-07-08T04:32:34.913598",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -404,6 +412,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203250",
         "createDate": "2022-12-08T19:40:53.051889",
         "datasetId": "BRQOA",
         "endTime": "2022-06-02T18:46:06.855016",
@@ -419,7 +428,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:21:26.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:04.560669",
+        "updateDate": "2025-07-08T04:26:35.661519",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -454,6 +463,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-451.17,-347.53),(-568.17,-467.18)",
+        "browseMovieUrl": "https://vimeo.com/1013203558",
         "createDate": "2022-12-08T19:44:56.372900",
         "datasetId": "AWEMA",
         "endTime": "2022-06-02T19:16:46.693367",
@@ -469,7 +479,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:50:43.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:04.473455",
+        "updateDate": "2025-07-08T04:39:34.762574",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -504,6 +514,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-551.18,-347.54),(-668.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203218",
         "createDate": "2022-12-08T19:45:54.120125",
         "datasetId": "BQPWA",
         "endTime": "2022-06-02T18:47:01.693367",
@@ -519,7 +530,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:20:58.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:04.934002",
+        "updateDate": "2025-07-08T04:31:34.885900",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -554,6 +565,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013204109",
         "createDate": "2022-12-08T19:46:03.212404",
         "datasetId": "AZZMA",
         "endTime": "2022-06-02T19:45:44.693367",
@@ -569,7 +581,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:19:41.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:07.310326",
+        "updateDate": "2025-07-08T04:37:34.321643",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -604,6 +616,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
+        "browseMovieUrl": "https://vimeo.com/1013203343",
         "createDate": "2022-12-08T19:48:45.745088",
         "datasetId": "AVDXA",
         "endTime": "2022-06-02T19:16:19.285503",
@@ -619,7 +632,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:50:16.345503",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:08.228744",
+        "updateDate": "2025-07-08T04:33:31.753205",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -654,6 +667,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203497",
         "createDate": "2022-12-08T19:48:46.378926",
         "datasetId": "BDYVA",
         "endTime": "2022-06-02T19:44:49.855016",
@@ -669,7 +683,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:20:09.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:08.158260",
+        "updateDate": "2025-07-08T04:42:35.024867",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -704,6 +718,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203316",
         "createDate": "2022-12-08T19:50:55.141641",
         "datasetId": "AJGKB",
         "endTime": "2022-06-02T20:14:32.855016",
@@ -719,7 +734,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:49:52.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:08.324775",
+        "updateDate": "2025-07-08T04:40:31.348913",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -754,6 +769,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013204018",
         "createDate": "2022-12-08T19:52:51.959185",
         "datasetId": "AMKYA",
         "endTime": "2022-06-02T20:43:29.854999",
@@ -769,7 +785,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T20:18:49.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:12.081195",
+        "updateDate": "2025-07-08T04:46:34.021804",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -804,6 +820,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203446",
         "createDate": "2022-12-08T19:52:52.272131",
         "datasetId": "BEYYB",
         "endTime": "2022-06-02T20:15:00.285485",
@@ -819,7 +836,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:48:57.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:11.910676",
+        "updateDate": "2025-07-08T04:43:31.582339",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -854,6 +871,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203945",
         "createDate": "2022-12-08T19:55:34.387795",
         "datasetId": "AKGYA",
         "endTime": "2022-06-02T20:43:57.285504",
@@ -869,7 +887,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T20:17:54.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:11.854943",
+        "updateDate": "2025-07-08T04:48:32.356475",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -904,6 +922,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203370",
         "createDate": "2022-12-08T19:56:53.200885",
         "datasetId": "ALJGA",
         "endTime": "2022-06-02T20:44:24.693367",
@@ -919,7 +938,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T20:18:21.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:11.721277",
+        "updateDate": "2025-07-08T04:52:31.358911",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -954,6 +973,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203785",
         "createDate": "2022-12-08T19:56:53.232141",
         "datasetId": "AYJPB",
         "endTime": "2022-06-02T19:45:17.285504",
@@ -969,7 +989,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:19:14.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:15.522364",
+        "updateDate": "2025-07-08T04:41:34.602441",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1004,6 +1024,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203799",
         "createDate": "2022-12-08T19:56:53.358120",
         "datasetId": "ARPOA",
         "endTime": "2022-06-02T23:49:55.433349",
@@ -1019,7 +1040,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T23:25:14.753349",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:15.587055",
+        "updateDate": "2025-07-08T04:54:36.289709",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1054,6 +1075,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203865",
         "createDate": "2022-12-08T19:59:06.513003",
         "datasetId": "BVWXA",
         "endTime": "2022-06-02T23:50:22.854999",
@@ -1069,7 +1091,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T23:25:42.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:15.603619",
+        "updateDate": "2025-07-08T04:56:34.724097",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -1104,6 +1126,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203296",
         "createDate": "2022-12-08T19:59:06.570311",
         "datasetId": "APNWA",
         "endTime": "2022-06-02T22:13:01.855016",
@@ -1119,7 +1142,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T21:48:21.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:16.316811",
+        "updateDate": "2025-07-08T04:50:34.730001",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -1154,6 +1177,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203993",
         "createDate": "2022-12-08T20:00:45.304119",
         "datasetId": "ANLNA",
         "endTime": "2022-06-02T22:13:29.285504",
@@ -1169,7 +1193,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T21:47:26.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:19.081211",
+        "updateDate": "2025-07-08T04:51:36.446157",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1204,6 +1228,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-443.18,-347.54),(-560.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203600",
         "createDate": "2022-12-08T20:01:40.801583",
         "datasetId": "AGYWA",
         "endTime": "2022-06-02T20:15:27.693367",
@@ -1219,7 +1244,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:49:24.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:19.125005",
+        "updateDate": "2025-07-08T04:41:35.821149",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1254,6 +1279,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203809",
         "createDate": "2022-12-08T20:02:46.555643",
         "datasetId": "BYEPB",
         "endTime": "2022-06-03T20:57:38.855016",
@@ -1269,7 +1295,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:32:58.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:19.412564",
+        "updateDate": "2025-07-08T05:06:35.769571",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -1304,6 +1330,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1013203398",
         "createDate": "2022-12-08T20:02:57.209116",
         "datasetId": "AOMJA",
         "endTime": "2022-06-02T22:13:56.693367",
@@ -1319,7 +1346,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T21:47:53.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:20.466490",
+        "updateDate": "2025-07-08T05:00:31.319805",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1354,6 +1381,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
+        "browseMovieUrl": "https://vimeo.com/1013203845",
         "createDate": "2022-12-08T20:04:00.890398",
         "datasetId": "AERYB",
         "endTime": "2022-06-03T20:28:01.854999",
@@ -1369,7 +1397,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:03:21.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:22.884965",
+        "updateDate": "2025-07-08T05:10:34.870677",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -1404,6 +1432,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1013203915",
         "createDate": "2022-12-08T20:04:01.005655",
         "datasetId": "AQOWA",
         "endTime": "2022-06-02T23:50:50.285485",
@@ -1419,7 +1448,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T23:24:47.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:22.847946",
+        "updateDate": "2025-07-08T04:57:36.379132",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1454,6 +1483,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1013204192",
         "createDate": "2022-12-08T20:05:48.014253",
         "datasetId": "BWZMA",
         "endTime": "2022-06-03T20:58:06.285504",
@@ -1469,7 +1499,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:32:03.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:23.047163",
+        "updateDate": "2025-07-08T05:02:35.989521",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1504,6 +1534,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
+        "browseMovieUrl": "https://vimeo.com/1013203544",
         "createDate": "2022-12-08T20:06:47.979242",
         "datasetId": "ADQVB",
         "endTime": "2022-06-03T20:28:56.693349",
@@ -1519,7 +1550,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:02:53.753349",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:24.795846",
+        "updateDate": "2025-07-08T05:05:34.237526",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1554,6 +1585,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-328.16,-318.53),(-445.18,-438.19)",
+        "browseMovieUrl": "https://vimeo.com/1013204131",
         "createDate": "2022-12-08T20:08:00.095695",
         "datasetId": "BGWWB",
         "endTime": "2022-06-03T19:59:56.285485",
@@ -1569,7 +1601,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:33:53.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:26.410370",
+        "updateDate": "2025-07-08T05:15:34.332094",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1604,6 +1636,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203719",
         "createDate": "2022-12-08T20:08:06.184058",
         "datasetId": "BXZJB",
         "endTime": "2022-06-03T20:58:33.693367",
@@ -1619,7 +1652,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:32:30.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:26.726491",
+        "updateDate": "2025-07-08T05:11:34.274644",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1654,6 +1687,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-231.15,-318.52),(-348.19,-438.2)",
+        "browseMovieUrl": "https://vimeo.com/1013203827",
         "createDate": "2022-12-08T20:09:06.925838",
         "datasetId": "BZGMA",
         "endTime": "2022-06-03T20:28:29.285504",
@@ -1669,7 +1703,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:02:26.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:26.978876",
+        "updateDate": "2025-07-08T05:08:31.756102",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1704,6 +1738,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-331.16,-376.52),(-448.17,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1013204214",
         "createDate": "2022-12-08T20:09:07.044885",
         "datasetId": "BMQYB",
         "endTime": "2022-06-03T19:31:42.693367",
@@ -1719,7 +1754,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:05:39.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:28.930424",
+        "updateDate": "2025-07-08T05:15:34.956969",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1754,6 +1789,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-331.16,-376.53),(-448.17,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203613",
         "createDate": "2022-12-08T20:09:27.648182",
         "datasetId": "BNVNB",
         "endTime": "2022-06-03T19:30:47.855016",
@@ -1769,7 +1805,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:06:07.174998",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:29.939637",
+        "updateDate": "2025-07-08T05:19:34.022005",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -1804,6 +1840,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203893",
         "createDate": "2022-12-08T20:10:34.201481",
         "datasetId": "BJEKA",
         "endTime": "2022-06-03T20:00:23.693349",
@@ -1819,7 +1856,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:34:20.753349",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:31.106667",
+        "updateDate": "2025-07-08T05:15:35.420623",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -1854,6 +1891,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203669",
         "createDate": "2022-12-08T20:10:34.644024",
         "datasetId": "BKMYB",
         "endTime": "2022-06-03T19:59:28.854999",
@@ -1869,7 +1907,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:34:48.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:31.267145",
+        "updateDate": "2025-07-08T05:12:34.538591",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -1904,6 +1942,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-331.16,-376.52),(-448.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1013203968",
         "createDate": "2022-12-08T20:13:52.948655",
         "datasetId": "BLOGA",
         "endTime": "2022-06-03T19:31:15.285522",
@@ -1919,7 +1958,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:05:12.345503",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:33.490455",
+        "updateDate": "2025-07-08T05:16:31.224939",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -1954,6 +1993,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-253.15,-376.51),(-370.18,-496.2)",
+        "browseMovieUrl": "https://vimeo.com/1013204144",
         "createDate": "2022-12-08T20:14:51.431127",
         "datasetId": "BQGWB",
         "endTime": "2022-06-03T19:02:01.854999",
@@ -1969,7 +2009,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:37:21.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:33.661912",
+        "updateDate": "2025-07-08T05:24:35.442238",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -2004,6 +2044,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
+        "browseMovieUrl": "https://vimeo.com/1013204240",
         "createDate": "2022-12-08T20:14:53.907311",
         "datasetId": "BOXJA",
         "endTime": "2022-06-03T19:02:29.285504",
@@ -2019,7 +2060,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:36:26.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:34.582264",
+        "updateDate": "2025-07-08T05:24:32.629274",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -2054,6 +2095,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
+        "browseMovieUrl": "https://vimeo.com/1013203581",
         "createDate": "2022-12-08T20:14:54.159698",
         "datasetId": "BPDWB",
         "endTime": "2022-06-03T19:02:56.693349",
@@ -2069,7 +2111,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:36:53.753349",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:34.951938",
+        "updateDate": "2025-07-08T05:29:32.119148",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -2104,6 +2146,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1013204079",
         "createDate": "2022-12-08T20:16:35.605281",
         "datasetId": "AVVXA",
         "endTime": "2022-06-03T18:34:11.693367",
@@ -2119,7 +2162,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:08:08.753348",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:37.767950",
+        "updateDate": "2025-07-08T05:25:32.082456",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -2154,6 +2197,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-251.14,-318.5),(-368.2,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1013204263",
         "createDate": "2022-12-08T20:16:40.603318",
         "datasetId": "BRKOA",
         "endTime": "2022-06-03T18:33:44.285485",
@@ -2169,7 +2213,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:07:41.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:37.394986",
+        "updateDate": "2025-07-08T05:27:35.404425",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -2204,6 +2248,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1013203695",
         "createDate": "2022-12-08T20:17:35.001872",
         "datasetId": "AWXMB",
         "endTime": "2022-06-03T18:33:16.854981",
@@ -2219,7 +2264,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:08:36.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:37.901950",
+        "updateDate": "2025-07-08T05:25:33.894083",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -2254,6 +2299,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-348.14,-318.5),(-465.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1013204047",
         "createDate": "2022-12-08T20:21:49.767936",
         "datasetId": "AYGPA",
         "endTime": "2022-06-03T18:05:27.693349",
@@ -2269,7 +2315,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:39:24.753349",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:38.705117",
+        "updateDate": "2025-07-08T05:38:35.651626",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -2304,6 +2350,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-348.15,-318.5),(-465.18,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1013203761",
         "createDate": "2022-12-08T20:21:53.241406",
         "datasetId": "AZKMB",
         "endTime": "2022-06-03T18:04:32.854981",
@@ -2319,7 +2366,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:39:52.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:41.082622",
+        "updateDate": "2025-07-08T05:33:33.590558",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -2354,6 +2401,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-348.15,-318.5),(-465.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1013203641",
         "createDate": "2022-12-08T20:24:04.210475",
         "datasetId": "AXDJA",
         "endTime": "2022-06-03T18:05:00.285504",
@@ -2369,7 +2417,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:38:57.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:42.228788",
+        "updateDate": "2025-07-08T05:35:37.807002",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -2404,6 +2452,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-351.14,-376.46),(-468.2,-496.25)",
+        "browseMovieUrl": "https://vimeo.com/1013204167",
         "createDate": "2022-12-08T20:26:47.791839",
         "datasetId": "BDOVA",
         "endTime": "2022-06-03T17:35:58.285485",
@@ -2419,7 +2468,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:09:55.345504",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:41.919184",
+        "updateDate": "2025-07-08T05:37:34.229455",
         "wavelengthMax": 393,
         "wavelengthMin": 393,
         "health": {
@@ -2454,6 +2503,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-351.13,-376.46),(-468.2,-496.25)",
+        "browseMovieUrl": "https://vimeo.com/1013204287",
         "createDate": "2022-12-08T20:44:55.698408",
         "datasetId": "BEQYB",
         "endTime": "2022-06-03T17:36:25.693349",
@@ -2469,7 +2519,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:10:22.753349",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:42.526089",
+        "updateDate": "2025-07-08T05:48:36.153731",
         "wavelengthMax": 430,
         "wavelengthMin": 430,
         "health": {
@@ -2504,6 +2554,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(-351.14,-376.46),(-468.19,-496.25)",
+        "browseMovieUrl": "https://vimeo.com/1013204317",
         "createDate": "2022-12-08T20:53:53.466481",
         "datasetId": "AGXWB",
         "endTime": "2022-06-03T17:35:30.854981",
@@ -2519,7 +2570,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:10:50.174999",
         "stokesParameters": "I",
-        "updateDate": "2025-05-06T16:46:45.219710",
+        "updateDate": "2025-07-08T05:38:35.124816",
         "wavelengthMax": 486,
         "wavelengthMin": 486,
         "health": {
@@ -2554,6 +2605,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(6.39,-374.42),(-124.96,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013206828",
         "createDate": "2023-04-21T08:48:47.844921",
         "datasetId": "BDWQK",
         "endTime": "2022-06-02T18:17:30.675500",
@@ -2569,7 +2621,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:50:42.635000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:48:53.723238",
+        "updateDate": "2025-06-28T14:27:05.670574",
         "wavelengthMax": 634.3897538640359,
         "wavelengthMin": 630.239209907831,
         "health": {
@@ -2604,6 +2656,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(37.74,-374.42),(-93.61,-407.49)",
+        "browseMovieUrl": "https://vimeo.com/1013206849",
         "createDate": "2023-04-21T08:55:44.824162",
         "datasetId": "AYDEW",
         "endTime": "2022-06-02T17:48:47.688000",
@@ -2619,7 +2672,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:21:59.647500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:00.722137",
+        "updateDate": "2025-06-28T14:27:09.803457",
         "wavelengthMax": 634.3897538455635,
         "wavelengthMin": 630.2392098893586,
         "health": {
@@ -2654,6 +2707,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(4.04,-402.06),(-127.31,-436.49)",
+        "browseMovieUrl": "https://vimeo.com/1013206869",
         "createDate": "2023-04-21T09:16:47.602610",
         "datasetId": "BLGOX",
         "endTime": "2022-06-03T19:32:00.693000",
@@ -2669,7 +2723,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:05:12.652500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:13.991623",
+        "updateDate": "2025-06-28T14:27:19.710208",
         "wavelengthMax": 634.3897538878036,
         "wavelengthMin": 630.2392099315987,
         "health": {
@@ -2704,6 +2758,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(15.39,-374.42),(-115.96,-407.49)",
+        "browseMovieUrl": "https://vimeo.com/1013206884",
         "createDate": "2023-04-21T09:22:46.141586",
         "datasetId": "AKNGW",
         "endTime": "2022-06-02T19:17:04.695000",
@@ -2719,7 +2774,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:50:16.654500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:19.143480",
+        "updateDate": "2025-06-28T14:27:34.777087",
         "wavelengthMax": 634.3897538657204,
         "wavelengthMin": 630.2392099095155,
         "health": {
@@ -2754,6 +2809,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(115.38,-402.06),(-15.96,-436.5)",
+        "browseMovieUrl": "https://vimeo.com/1013206902",
         "createDate": "2023-04-21T09:28:46.072027",
         "datasetId": "AWOWP",
         "endTime": "2022-06-03T17:36:43.695500",
@@ -2769,7 +2825,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:09:55.655000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:22.112601",
+        "updateDate": "2025-06-28T14:27:39.107946",
         "wavelengthMax": 634.3897538840633,
         "wavelengthMin": 630.2392099278584,
         "health": {
@@ -2804,6 +2860,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(7.04,-346.79),(-124.31,-378.49)",
+        "browseMovieUrl": "https://vimeo.com/1013206945",
         "createDate": "2023-04-21T09:33:45.024094",
         "datasetId": "BJNKP",
         "endTime": "2022-06-03T20:00:41.687500",
@@ -2819,7 +2876,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:33:53.647000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:26.282239",
+        "updateDate": "2025-06-28T14:27:33.790642",
         "wavelengthMax": 634.3897538884205,
         "wavelengthMin": 630.2392099322155,
         "health": {
@@ -2854,6 +2911,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(104.04,-346.79),(-27.31,-378.49)",
+        "browseMovieUrl": "https://vimeo.com/1013206920",
         "createDate": "2023-04-21T09:38:45.048058",
         "datasetId": "AEJQN",
         "endTime": "2022-06-03T20:29:14.692000",
@@ -2869,7 +2927,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:02:26.651500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:38.755419",
+        "updateDate": "2025-06-28T14:27:44.646795",
         "wavelengthMax": 634.3897539062962,
         "wavelengthMin": 630.2392099500912,
         "health": {
@@ -2904,6 +2962,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(46.73,-374.42),(-84.61,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013207034",
         "createDate": "2023-04-21T09:43:45.553483",
         "datasetId": "AGNWO",
         "endTime": "2022-06-02T18:47:19.673000",
@@ -2919,7 +2978,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:20:31.632500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:45.382024",
+        "updateDate": "2025-06-28T14:28:01.211355",
         "wavelengthMax": 634.3897538472796,
         "wavelengthMin": 630.2392098910747,
         "health": {
@@ -2956,6 +3015,7 @@
           "Fe I (630.25 nm)"
         ],
         "boundingBox": "(54.74,-374.42),(-76.61,-407.49)",
+        "browseMovieUrl": "https://vimeo.com/1013207008",
         "createDate": "2023-04-21T09:50:46.634150",
         "datasetId": "AMDKO",
         "endTime": "2022-06-02T19:46:02.684000",
@@ -2971,7 +3031,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:19:14.643500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:47.092552",
+        "updateDate": "2025-06-28T14:27:57.854116",
         "wavelengthMax": 634.3897538487722,
         "wavelengthMin": 630.2392098925673,
         "health": {
@@ -3006,6 +3066,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(82.04,-402.06),(-49.31,-436.49)",
+        "browseMovieUrl": "https://vimeo.com/1013206981",
         "createDate": "2023-04-21T09:57:46.094758",
         "datasetId": "BNKVM",
         "endTime": "2022-06-03T19:03:14.692000",
@@ -3021,7 +3082,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:36:26.652000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:49:50.943297",
+        "updateDate": "2025-06-28T14:28:06.867444",
         "wavelengthMax": 634.3897539021737,
         "wavelengthMin": 630.2392099459687,
         "health": {
@@ -3056,6 +3117,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(102.04,-402.06),(-29.31,-436.49)",
+        "browseMovieUrl": "https://vimeo.com/1013207058",
         "createDate": "2023-04-21T10:00:44.965456",
         "datasetId": "BZWKJ",
         "endTime": "2022-06-03T20:58:51.695000",
@@ -3071,7 +3133,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:32:03.655000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:02.621387",
+        "updateDate": "2025-06-28T14:28:10.291600",
         "wavelengthMax": 634.3897539058624,
         "wavelengthMin": 630.2392099496575,
         "health": {
@@ -3108,6 +3170,7 @@
           "Fe I (630.25 nm)"
         ],
         "boundingBox": "(23.39,-374.42),(-107.96,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013207082",
         "createDate": "2023-04-21T10:06:45.490391",
         "datasetId": "AODMM",
         "endTime": "2022-06-02T20:15:45.683000",
@@ -3123,7 +3186,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:48:57.643000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:10.875279",
+        "updateDate": "2025-06-28T14:28:24.202393",
         "wavelengthMax": 634.3897538672,
         "wavelengthMin": 630.2392099109951,
         "health": {
@@ -3160,6 +3223,7 @@
           "Fe I (630.25 nm)"
         ],
         "boundingBox": "(118.38,-346.79),(-12.96,-378.49)",
+        "browseMovieUrl": "https://vimeo.com/1013207097",
         "createDate": "2023-04-21T10:11:44.759365",
         "datasetId": "BRWJV",
         "endTime": "2022-06-03T18:05:45.695000",
@@ -3175,7 +3239,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:38:57.654500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:11.764975",
+        "updateDate": "2025-06-28T14:28:27.028145",
         "wavelengthMax": 634.3897538847037,
         "wavelengthMin": 630.2392099284988,
         "health": {
@@ -3210,6 +3274,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(62.74,-374.42),(-68.61,-407.49)",
+        "browseMovieUrl": "https://vimeo.com/1013207115",
         "createDate": "2023-04-21T10:16:46.026301",
         "datasetId": "AQNGZ",
         "endTime": "2022-06-02T20:44:42.686000",
@@ -3225,7 +3290,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T20:17:54.645000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:17.614566",
+        "updateDate": "2025-06-28T14:28:31.612808",
         "wavelengthMax": 634.3897538502523,
         "wavelengthMin": 630.2392098940473,
         "health": {
@@ -3260,6 +3325,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(45.39,-374.42),(-85.95,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013207131",
         "createDate": "2023-04-21T10:21:46.968169",
         "datasetId": "BVJVO",
         "endTime": "2022-06-02T22:14:14.681000",
@@ -3275,7 +3341,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T21:47:26.641000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:28.621564",
+        "updateDate": "2025-06-28T14:28:37.534962",
         "wavelengthMax": 634.3897538688675,
         "wavelengthMin": 630.2392099126625,
         "health": {
@@ -3310,6 +3376,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(84.04,-346.79),(-47.31,-378.49)",
+        "browseMovieUrl": "https://vimeo.com/1013207142",
         "createDate": "2023-04-21T10:26:46.093447",
         "datasetId": "BPJDD",
         "endTime": "2022-06-03T18:34:29.692000",
@@ -3325,7 +3392,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:07:41.651500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:35.521779",
+        "updateDate": "2025-06-28T14:28:50.114515",
         "wavelengthMax": 634.3897539026002,
         "wavelengthMin": 630.2392099463952,
         "health": {
@@ -3360,6 +3427,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(91.74,-374.42),(-39.61,-407.49)",
+        "browseMovieUrl": "https://vimeo.com/1013207159",
         "createDate": "2023-04-21T10:31:45.079315",
         "datasetId": "BXRDY",
         "endTime": "2022-06-02T23:51:00.682500",
@@ -3375,7 +3443,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T23:24:12.642000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:50:34.752817",
+        "updateDate": "2025-06-28T14:28:51.808727",
         "wavelengthMax": 634.3897538555977,
         "wavelengthMin": 630.2392098993928,
         "health": {
@@ -3410,6 +3478,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(116.98,-327.84),(-96.51,-378.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208043",
         "createDate": "2023-04-22T05:18:49.558875",
         "datasetId": "BQKZZ",
         "endTime": "2022-06-03T18:34:29.692000",
@@ -3425,7 +3494,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:07:41.651500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:52:07.054575",
+        "updateDate": "2025-06-28T14:30:21.254682",
         "wavelengthMax": 856.7855075574271,
         "wavelengthMin": 854.2489858580914,
         "health": {
@@ -3460,6 +3529,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(160.48,-353.6),(-53.01,-407.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208062",
         "createDate": "2023-04-22T05:23:46.310302",
         "datasetId": "BWKXP",
         "endTime": "2022-06-02T22:14:14.681000",
@@ -3475,7 +3545,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T21:47:26.641000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:52:12.075368",
+        "updateDate": "2025-06-28T14:30:30.749889",
         "wavelengthMax": 856.7855075366739,
         "wavelengthMin": 854.2489858373382,
         "health": {
@@ -3510,6 +3580,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(136.98,-327.84),(-76.51,-378.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208088",
         "createDate": "2023-04-22T06:07:44.765552",
         "datasetId": "BGNXO",
         "endTime": "2022-06-03T20:29:14.692000",
@@ -3525,7 +3596,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:02:26.651500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:52:29.758547",
+        "updateDate": "2025-06-28T14:30:44.996275",
         "wavelengthMax": 856.7855075597009,
         "wavelengthMin": 854.2489858603652,
         "health": {
@@ -3560,6 +3631,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(16.98,-379.37),(-196.51,-436.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208119",
         "createDate": "2023-04-22T06:33:49.172665",
         "datasetId": "AXVLY",
         "endTime": "2022-06-03T17:36:43.695500",
@@ -3575,7 +3647,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:09:55.655000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:52:35.047104",
+        "updateDate": "2025-06-28T14:30:56.176646",
         "wavelengthMax": 856.7855075460228,
         "wavelengthMin": 854.2489858466871,
         "health": {
@@ -3610,6 +3682,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(75.49,-353.6),(-138.01,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013208106",
         "createDate": "2023-04-22T06:38:44.985256",
         "datasetId": "BYDGW",
         "endTime": "2022-06-02T23:51:00.682500",
@@ -3625,7 +3698,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T23:24:12.642000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:52:50.122803",
+        "updateDate": "2025-06-28T14:31:10.923279",
         "wavelengthMax": 856.78550752851,
         "wavelengthMin": 854.2489858291743,
         "health": {
@@ -3660,6 +3733,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(38.49,-353.61),(-175.01,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013208144",
         "createDate": "2023-04-22T08:29:47.173395",
         "datasetId": "ANKLM",
         "endTime": "2022-06-02T19:46:02.684000",
@@ -3675,7 +3749,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:19:14.643500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:52:57.390849",
+        "updateDate": "2025-06-28T14:31:10.906126",
         "wavelengthMax": 856.7855075243108,
         "wavelengthMin": 854.2489858249751,
         "health": {
@@ -3710,6 +3784,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(138.48,-353.61),(-75.01,-407.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208158",
         "createDate": "2023-04-22T08:50:45.143450",
         "datasetId": "APJND",
         "endTime": "2022-06-02T20:15:45.683000",
@@ -3725,7 +3800,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T19:48:57.643000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:00.714361",
+        "updateDate": "2025-06-28T14:31:23.871629",
         "wavelengthMax": 856.785507535648,
         "wavelengthMin": 854.2489858363123,
         "health": {
@@ -3760,6 +3835,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(134.99,-379.37),(-78.51,-436.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208176",
         "createDate": "2023-04-22T08:55:44.284574",
         "datasetId": "ADWOK",
         "endTime": "2022-06-03T20:58:51.695000",
@@ -3775,7 +3851,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T20:32:03.655000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:19.756959",
+        "updateDate": "2025-06-28T14:31:36.129623",
         "wavelengthMax": 856.7855075594341,
         "wavelengthMin": 854.2489858600984,
         "health": {
@@ -3810,6 +3886,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(30.48,-353.61),(-183.01,-407.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208199",
         "createDate": "2023-04-22T09:00:46.895795",
         "datasetId": "AJNEP",
         "endTime": "2022-06-02T18:47:19.673000",
@@ -3825,7 +3902,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:20:31.632500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:21.049469",
+        "updateDate": "2025-06-28T14:31:36.321386",
         "wavelengthMax": 856.7855075233925,
         "wavelengthMin": 854.2489858240568,
         "health": {
@@ -3860,6 +3937,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(46.49,-353.61),(-167.01,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013208214",
         "createDate": "2023-04-22T09:05:46.642884",
         "datasetId": "ARVKV",
         "endTime": "2022-06-02T20:44:42.686000",
@@ -3875,7 +3953,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T20:17:54.645000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:25.519655",
+        "updateDate": "2025-06-28T14:31:49.910909",
         "wavelengthMax": 856.7855075252214,
         "wavelengthMin": 854.2489858258857,
         "health": {
@@ -3910,6 +3988,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(114.98,-379.37),(-98.51,-436.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208240",
         "createDate": "2023-04-22T09:12:44.669520",
         "datasetId": "BODXM",
         "endTime": "2022-06-03T19:03:14.692000",
@@ -3925,7 +4004,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T18:36:26.652000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:38.037052",
+        "updateDate": "2025-06-28T14:31:55.953420",
         "wavelengthMax": 856.7855075571647,
         "wavelengthMin": 854.248985857829,
         "health": {
@@ -3960,6 +4039,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(39.98,-327.84),(-173.51,-378.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208258",
         "createDate": "2023-04-22T09:20:47.527844",
         "datasetId": "BKNMW",
         "endTime": "2022-06-03T20:00:41.687500",
@@ -3975,7 +4055,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:33:53.647000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:44.600776",
+        "updateDate": "2025-06-28T14:32:04.414290",
         "wavelengthMax": 856.7855075487034,
         "wavelengthMin": 854.2489858493677,
         "health": {
@@ -4010,6 +4090,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(121.48,-353.61),(-92.01,-407.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208280",
         "createDate": "2023-04-22T09:25:46.715887",
         "datasetId": "BEJRN",
         "endTime": "2022-06-02T18:17:30.675500",
@@ -4025,7 +4106,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:50:42.635000",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:46.606814",
+        "updateDate": "2025-06-28T14:32:00.698411",
         "wavelengthMax": 856.7855075337014,
         "wavelengthMin": 854.2489858343657,
         "health": {
@@ -4060,6 +4141,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(21.49,-353.6),(-192.01,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013208299",
         "createDate": "2023-04-22T09:43:45.765881",
         "datasetId": "AZWGJ",
         "endTime": "2022-06-02T17:48:47.688000",
@@ -4075,7 +4157,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T17:21:59.647500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:53:48.926404",
+        "updateDate": "2025-06-28T14:32:14.580462",
         "wavelengthMax": 856.7855075223367,
         "wavelengthMin": 854.248985823001,
         "health": {
@@ -4110,6 +4192,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(36.98,-379.37),(-176.51,-436.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208310",
         "createDate": "2023-04-22T09:49:47.136976",
         "datasetId": "BMDQO",
         "endTime": "2022-06-03T19:32:00.693000",
@@ -4125,7 +4208,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T19:05:12.652500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:54:05.603293",
+        "updateDate": "2025-06-28T14:32:22.497451",
         "wavelengthMax": 856.785507548324,
         "wavelengthMin": 854.2489858489882,
         "health": {
@@ -4160,6 +4243,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(19.98,-327.84),(-193.51,-378.51)",
+        "browseMovieUrl": "https://vimeo.com/1013208323",
         "createDate": "2023-04-22T10:06:44.553166",
         "datasetId": "AVORO",
         "endTime": "2022-06-03T18:05:45.695000",
@@ -4175,7 +4259,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-03T17:38:57.654500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:54:08.495167",
+        "updateDate": "2025-06-28T14:32:28.098991",
         "wavelengthMax": 856.7855075464167,
         "wavelengthMin": 854.248985847081,
         "health": {
@@ -4210,6 +4294,7 @@
       {
         "spectralLines": null,
         "boundingBox": "(130.49,-353.61),(-83.01,-407.5)",
+        "browseMovieUrl": "https://vimeo.com/1013208333",
         "createDate": "2023-04-22T10:15:46.164778",
         "datasetId": "ALGJX",
         "endTime": "2022-06-02T19:17:04.695000",
@@ -4225,7 +4310,7 @@
         "primaryProposalId": "pid_1_118",
         "startTime": "2022-06-02T18:50:16.654500",
         "stokesParameters": "IQUV",
-        "updateDate": "2025-05-06T16:54:10.250439",
+        "updateDate": "2025-06-28T14:32:32.174208",
         "wavelengthMax": 856.7855075347377,
         "wavelengthMin": 854.248985835402,
         "health": {
@@ -4255,6 +4340,2675 @@
           "min": 0.02678887691508559,
           "p25": 0.0555254251361532,
           "p75": 0.11982257102456
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
+        "browseMovieUrl": "https://vimeo.com/1099543402",
+        "createDate": "2025-07-08T04:09:20.213026",
+        "datasetId": "TIVBCV",
+        "endTime": "2022-06-02T17:48:16.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.60330",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:22:13.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:20:51.832083",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": 1,
+          "good": 179,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 175,
+        "lightLevel": {
+          "max": 404.2557044549076,
+          "med": 393.2022300408754,
+          "min": 383.2878011762474,
+          "p25": 388.30387971921834,
+          "p75": 399.1507907762888
+        },
+        "friedParameter": {
+          "max": 0.1441648302636708,
+          "med": 0.09675980252309578,
+          "min": 0.02072476310985741,
+          "p25": 0.0805723128399486,
+          "p75": 0.1071387205466266
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-560.16,-347.5),(-677.17,-467.21)",
+        "browseMovieUrl": "https://vimeo.com/1099544378",
+        "createDate": "2025-07-08T04:18:19.539215",
+        "datasetId": "NLQWBO",
+        "endTime": "2022-06-02T17:47:49.135505",
+        "bucket": "public",
+        "exposureTime": 5.009,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.60330",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:23:08.455505",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:20:53.955865",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 169,
+        "lightLevel": {
+          "max": 403.7311878029009,
+          "med": 392.6704955071489,
+          "min": 383.8089719045894,
+          "p25": 388.5371242303513,
+          "p75": 398.77070937031095
+        },
+        "friedParameter": {
+          "max": 0.1367648948782148,
+          "med": 0.09707874362413765,
+          "min": 0.02529688520650183,
+          "p25": 0.06427073905384272,
+          "p75": 0.1104270426338875
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
+        "browseMovieUrl": "https://vimeo.com/1099544507",
+        "createDate": "2025-07-08T04:19:20.016922",
+        "datasetId": "UKGIYO",
+        "endTime": "2022-06-02T18:16:36.135505",
+        "bucket": "public",
+        "exposureTime": 5.009,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.95052",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:51:55.455505",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:20:55.691420",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 437.9884444904365,
+          "med": 428.5729635570273,
+          "min": 424.6065607699074,
+          "p25": 427.56791880098655,
+          "p75": 429.69453786585257
+        },
+        "friedParameter": {
+          "max": 0.1469869718635097,
+          "med": 0.08861707367993624,
+          "min": 0.03350785035602855,
+          "p25": 0.06948721619973483,
+          "p75": 0.10820903480058433
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-560.17,-347.5),(-677.17,-467.21)",
+        "browseMovieUrl": "https://vimeo.com/1099544699",
+        "createDate": "2025-07-08T04:21:20.454860",
+        "datasetId": "EXTRQL",
+        "endTime": "2022-06-02T17:48:43.973503",
+        "bucket": "public",
+        "exposureTime": 1.005,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.60330",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13964206",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:22:41.033503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:20:57.042258",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 176,
+        "lightLevel": {
+          "max": 405.3253824528725,
+          "med": 392.9311843534951,
+          "min": 383.4314689294769,
+          "p25": 388.74551577240817,
+          "p75": 398.8997516427795
+        },
+        "friedParameter": {
+          "max": 0.1435255645789108,
+          "med": 0.10357193912935456,
+          "min": 0.02108503478965431,
+          "p25": 0.0814219384468246,
+          "p75": 0.115093003722207
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099545327",
+        "createDate": "2025-07-08T04:26:20.418118",
+        "datasetId": "CSHYML",
+        "endTime": "2022-06-02T18:46:25.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.131014",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:21:44.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:20:56.997062",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 166,
+        "lightLevel": {
+          "max": 418.2855418154223,
+          "med": 412.0697642331108,
+          "min": 407.7559372898018,
+          "p25": 410.0861144167917,
+          "p75": 415.26709611769377
+        },
+        "friedParameter": {
+          "max": 0.1408764648398992,
+          "med": 0.07021309849926342,
+          "min": 0.02278854104140082,
+          "p25": 0.05611256656980846,
+          "p75": 0.09280239920459708
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-460.16,-347.52),(-577.17,-467.19)",
+        "browseMovieUrl": "https://vimeo.com/1099545444",
+        "createDate": "2025-07-08T04:27:19.274587",
+        "datasetId": "IGDWSO",
+        "endTime": "2022-06-02T18:17:30.973503",
+        "bucket": "public",
+        "exposureTime": 1.005,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.95052",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:51:28.033503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:20:59.079942",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 437.9724909884272,
+          "med": 428.75338472948044,
+          "min": 424.1605698418447,
+          "p25": 427.28333419568474,
+          "p75": 429.7588347907073
+        },
+        "friedParameter": {
+          "max": 0.1454327826910545,
+          "med": 0.09325998914346992,
+          "min": 0.03201891391096582,
+          "p25": 0.08147251326917435,
+          "p75": 0.11155197429000985
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-460.16,-347.52),(-577.17,-467.2)",
+        "browseMovieUrl": "https://vimeo.com/1099545669",
+        "createDate": "2025-07-08T04:29:20.231710",
+        "datasetId": "AFNTGG",
+        "endTime": "2022-06-02T18:17:03.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.95052",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13974640",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T17:51:00.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:01.027876",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 178,
+        "lightLevel": {
+          "max": 437.9575033200531,
+          "med": 428.93805729463105,
+          "min": 425.8308411376141,
+          "p25": 427.20339852710373,
+          "p75": 431.5081104154809
+        },
+        "friedParameter": {
+          "max": 0.1419901010236211,
+          "med": 0.09618428125305237,
+          "min": 0.03434796681746045,
+          "p25": 0.07181388694347587,
+          "p75": 0.1099982464362787
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-551.18,-347.54),(-668.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099545930",
+        "createDate": "2025-07-08T04:31:19.840311",
+        "datasetId": "KJWLTD",
+        "endTime": "2022-06-02T18:47:19.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.131014",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:21:17.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:01.947885",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 418.469050206102,
+          "med": 412.20653317466065,
+          "min": 408.3990790086407,
+          "p25": 410.08795553715873,
+          "p75": 415.30268967420363
+        },
+        "friedParameter": {
+          "max": 0.1653167415492549,
+          "med": 0.07318805065810342,
+          "min": 0.03330153745200153,
+          "p25": 0.056314696973377446,
+          "p75": 0.09638499915824811
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-551.18,-347.54),(-668.15,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099546052",
+        "createDate": "2025-07-08T04:32:20.257543",
+        "datasetId": "OQFGKH",
+        "endTime": "2022-06-02T18:46:52.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.131014",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13985392",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:20:49.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:01.889605",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 174,
+        "lightLevel": {
+          "max": 418.3307290319242,
+          "med": 412.1923302461151,
+          "min": 408.5287939152481,
+          "p25": 409.9353020817165,
+          "p75": 414.8901321122437
+        },
+        "friedParameter": {
+          "max": 0.1503817261225386,
+          "med": 0.06234020959750044,
+          "min": 0.03230820916699023,
+          "p25": 0.04808404210152625,
+          "p75": 0.08992003167082951
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
+        "browseMovieUrl": "https://vimeo.com/1099546171",
+        "createDate": "2025-07-08T04:33:19.372046",
+        "datasetId": "HEYLOY",
+        "endTime": "2022-06-02T19:16:37.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.166907",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:50:34.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:04.996363",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 461.9755092185371,
+          "med": 457.0790086407617,
+          "min": 446.5764474569256,
+          "p25": 454.0959797174936,
+          "p75": 459.158258739932
+        },
+        "friedParameter": {
+          "max": 0.1707826290566837,
+          "med": 0.08131447791643039,
+          "min": 0.02965029971938064,
+          "p25": 0.05482598073821216,
+          "p75": 0.12453320896210834
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-451.17,-347.54),(-568.16,-467.18)",
+        "browseMovieUrl": "https://vimeo.com/1099546433",
+        "createDate": "2025-07-08T04:35:20.180375",
+        "datasetId": "JAMCIO",
+        "endTime": "2022-06-02T19:16:10.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.166907",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:51:29.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:06.185122",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 461.8598161466687,
+          "med": 456.6688397923458,
+          "min": 448.3463893344372,
+          "p25": 454.41919766820166,
+          "p75": 458.9619616771011
+        },
+        "friedParameter": {
+          "max": 0.1701137279545036,
+          "med": 0.08607443166470999,
+          "min": 0.0282088337165453,
+          "p25": 0.05724483963784363,
+          "p75": 0.11733814549431132
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099546674",
+        "createDate": "2025-07-08T04:37:19.495380",
+        "datasetId": "RVXZLI",
+        "endTime": "2022-06-02T19:46:02.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.201850",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:20:00.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:07.760031",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 442.8611614149463,
+          "med": 436.4500957210121,
+          "min": 432.1143995446784,
+          "p25": 434.13235801383206,
+          "p75": 438.6823743985099
+        },
+        "friedParameter": {
+          "max": 0.1750574656090514,
+          "med": 0.07556053938346297,
+          "min": 0.02571011444085498,
+          "p25": 0.05628737748140936,
+          "p75": 0.10153704289927082
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-451.17,-347.53),(-568.17,-467.18)",
+        "browseMovieUrl": "https://vimeo.com/1099546932",
+        "createDate": "2025-07-08T04:39:20.079609",
+        "datasetId": "XUIQZY",
+        "endTime": "2022-06-02T19:17:04.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.166907",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.13996081",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T18:51:02.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:07.127339",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 462.4948000206965,
+          "med": 456.9012348872907,
+          "min": 447.8718028319622,
+          "p25": 454.1513728635243,
+          "p75": 459.4391869750435
+        },
+        "friedParameter": {
+          "max": 0.1620326484025915,
+          "med": 0.07913904986913603,
+          "min": 0.02662144052344476,
+          "p25": 0.055965613861330754,
+          "p75": 0.11584222684741252
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099547068",
+        "createDate": "2025-07-08T04:40:19.436241",
+        "datasetId": "ZYNGAU",
+        "endTime": "2022-06-02T20:14:51.134999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.237683",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:50:10.454999",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:10.574656",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 159,
+        "lightLevel": {
+          "max": 505.30066746003,
+          "med": 490.8999499836153,
+          "min": 477.2936996602335,
+          "p25": 484.83103947844984,
+          "p75": 498.13637225987827
+        },
+        "friedParameter": {
+          "max": 0.1674218879106322,
+          "med": 0.06243940533429662,
+          "min": 0.02329212606200434,
+          "p25": 0.047547996637312455,
+          "p75": 0.07451279832516544
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099547207",
+        "createDate": "2025-07-08T04:41:19.421135",
+        "datasetId": "LHZZPP",
+        "endTime": "2022-06-02T19:45:35.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.201850",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:19:32.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:11.117378",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 442.9658681292148,
+          "med": 435.70512754178094,
+          "min": 431.9705593211569,
+          "p25": 433.97908366533864,
+          "p75": 438.426911402011
+        },
+        "friedParameter": {
+          "max": 0.1698766916289207,
+          "med": 0.08165396964422328,
+          "min": 0.02395328850557657,
+          "p25": 0.06031578666967206,
+          "p75": 0.10404502810109376
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-443.18,-347.54),(-560.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099547215",
+        "createDate": "2025-07-08T04:41:19.951694",
+        "datasetId": "WMPWVA",
+        "endTime": "2022-06-02T20:15:45.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.237683",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:49:43.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:12.273318",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 167,
+        "lightLevel": {
+          "max": 506.1720908573498,
+          "med": 490.5445059588486,
+          "min": 476.4407133371277,
+          "p25": 484.9868965695659,
+          "p75": 498.3617564374537
+        },
+        "friedParameter": {
+          "max": 0.1167662943085816,
+          "med": 0.05171704823364567,
+          "min": 0.0246852422762717,
+          "p25": 0.04053115970136122,
+          "p75": 0.07430182070091426
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-543.18,-347.55),(-660.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099547336",
+        "createDate": "2025-07-08T04:42:20.473755",
+        "datasetId": "SREJNK",
+        "endTime": "2022-06-02T19:45:08.134999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.201850",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14006572",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:20:27.454999",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:12.461434",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 443.0823028233387,
+          "med": 436.4208792535485,
+          "min": 431.5885376243942,
+          "p25": 433.8369293389213,
+          "p75": 438.5238698884117
+        },
+        "friedParameter": {
+          "max": 0.1693293603318073,
+          "med": 0.07366679822284695,
+          "min": 0.02714978208474162,
+          "p25": 0.05285491805122212,
+          "p75": 0.1003859376041471
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-443.17,-347.54),(-560.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099547456",
+        "createDate": "2025-07-08T04:43:19.627078",
+        "datasetId": "FCLYWI",
+        "endTime": "2022-06-02T20:15:18.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.237683",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14017294",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T19:49:15.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:16.817470",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 160,
+        "lightLevel": {
+          "max": 505.810317172867,
+          "med": 490.4668080923061,
+          "min": 475.182835756541,
+          "p25": 484.8490540004484,
+          "p75": 497.5989160242148
+        },
+        "friedParameter": {
+          "max": 0.1672257834892729,
+          "med": 0.059238806359133915,
+          "min": 0.02556597299546601,
+          "p25": 0.04813296200281281,
+          "p75": 0.08035460999348658
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099547815",
+        "createDate": "2025-07-08T04:46:19.289983",
+        "datasetId": "GWXYRP",
+        "endTime": "2022-06-02T20:43:48.134999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.272616",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:19:07.454999",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:17.655398",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 508.6420034149118,
+          "med": 484.8823752608613,
+          "min": 473.0600541556717,
+          "p25": 476.6442627757368,
+          "p75": 496.12604991290254
+        },
+        "friedParameter": {
+          "max": 0.1411493204404301,
+          "med": 0.04519478477205489,
+          "min": 0.02313460572659945,
+          "p25": 0.03635496643562658,
+          "p75": 0.05736472100119003
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099548119",
+        "createDate": "2025-07-08T04:48:20.412979",
+        "datasetId": "VDYKHK",
+        "endTime": "2022-06-02T20:44:15.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.272616",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:18:12.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:21.843359",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 143,
+        "lightLevel": {
+          "max": 509.7882927165796,
+          "med": 484.0777323606009,
+          "min": 472.8010210241286,
+          "p25": 476.3562115175661,
+          "p75": 496.08128093685866
+        },
+        "friedParameter": {
+          "max": 0.1053225005486862,
+          "med": 0.04570395679612214,
+          "min": 0.02478332728152473,
+          "p25": 0.0358608904046156,
+          "p75": 0.05949374515348189
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099548366",
+        "createDate": "2025-07-08T04:50:20.162997",
+        "datasetId": "DBTXEL",
+        "endTime": "2022-06-02T22:13:20.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.381483",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:48:39.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:23.728028",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 728.2106724616684,
+          "med": 720.383867128887,
+          "min": 714.7328090236457,
+          "p25": 717.4927907417948,
+          "p75": 723.7017126299995
+        },
+        "friedParameter": {
+          "max": 0.2913185476676817,
+          "med": 0.04381414384701582,
+          "min": 0.02203810409675627,
+          "p25": 0.03748138679892836,
+          "p75": 0.05147916115687059
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099548496",
+        "createDate": "2025-07-08T04:51:21.237990",
+        "datasetId": "BPILXN",
+        "endTime": "2022-06-02T22:13:47.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.381483",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:47:44.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:25.516730",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 162,
+        "lightLevel": {
+          "max": 729.066314827271,
+          "med": 720.1394853486487,
+          "min": 714.3027198565047,
+          "p25": 717.7381081733671,
+          "p75": 723.7332143288319
+        },
+        "friedParameter": {
+          "max": 0.1976505983575055,
+          "med": 0.044007513491378936,
+          "min": 0.02358634850727706,
+          "p25": 0.03616029662270448,
+          "p75": 0.05507114204857765
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-535.18,-347.55),(-652.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099548604",
+        "createDate": "2025-07-08T04:52:19.063108",
+        "datasetId": "QZMNJQ",
+        "endTime": "2022-06-02T20:44:42.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.272616",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14027740",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T20:18:40.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:27.982121",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 156,
+        "lightLevel": {
+          "max": 510.6709784239665,
+          "med": 484.9511822838516,
+          "min": 473.0762491160897,
+          "p25": 475.9390576223245,
+          "p75": 497.20432124316585
+        },
+        "friedParameter": {
+          "max": 0.1048409924089191,
+          "med": 0.04333447668369951,
+          "min": 0.02137697850572445,
+          "p25": 0.037076409509798985,
+          "p75": 0.055888322174141
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099548903",
+        "createDate": "2025-07-08T04:54:20.991961",
+        "datasetId": "YTLDFH",
+        "endTime": "2022-06-02T23:50:13.713349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.498811",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:25:33.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:28.464312",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 138,
+        "lightLevel": {
+          "max": 691.3422672944586,
+          "med": 685.9181455994205,
+          "min": 671.9363584622549,
+          "p25": 679.9292095686518,
+          "p75": 688.8470705920905
+        },
+        "friedParameter": {
+          "max": 0.163706967237101,
+          "med": 0.06674056719162627,
+          "min": 0.007343576598599931,
+          "p25": 0.045146000475037286,
+          "p75": 0.0941697138122106
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099549207",
+        "createDate": "2025-07-08T04:56:19.970355",
+        "datasetId": "TIHXCV",
+        "endTime": "2022-06-02T23:50:41.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.498811",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:26:00.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:28.823729",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 136,
+        "lightLevel": {
+          "max": 691.2849381694003,
+          "med": 685.8620410134355,
+          "min": 670.5184974388162,
+          "p25": 679.6913557889654,
+          "p75": 688.6170987047481
+        },
+        "friedParameter": {
+          "max": 0.1450921480586461,
+          "med": 0.07285006060360327,
+          "min": 0.02163525220292706,
+          "p25": 0.048934693891695843,
+          "p75": 0.08942298418302991
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-506.18,-347.55),(-623.15,-467.16)",
+        "browseMovieUrl": "https://vimeo.com/1099549336",
+        "createDate": "2025-07-08T04:57:21.397043",
+        "datasetId": "MNKXDS",
+        "endTime": "2022-06-02T23:51:08.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.498811",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14095130",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T23:25:05.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:30.917375",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 150,
+        "lightLevel": {
+          "max": 691.0472913540642,
+          "med": 686.1592849381693,
+          "min": 670.2083613597558,
+          "p25": 679.5929701108985,
+          "p75": 688.4579862368706
+        },
+        "friedParameter": {
+          "max": 0.1387913701153954,
+          "med": 0.05671859160434239,
+          "min": 0.007710346098765993,
+          "p25": 0.039779563607535394,
+          "p75": 0.08079120807108656
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-421.17,-347.54),(-538.16,-467.17)",
+        "browseMovieUrl": "https://vimeo.com/1099549761",
+        "createDate": "2025-07-08T05:00:19.192248",
+        "datasetId": "POGOUM",
+        "endTime": "2022-06-02T22:14:14.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85407.381483",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R001.82591.14060191",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-02T21:48:12.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:33.428339",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 154,
+        "lightLevel": {
+          "max": 729.0103482175195,
+          "med": 720.5211965988858,
+          "min": 714.4086166157879,
+          "p25": 717.6888894637899,
+          "p75": 723.8279522602231
+        },
+        "friedParameter": {
+          "max": 0.09557675314440628,
+          "med": 0.04670897237119466,
+          "min": 0.0264191346905437,
+          "p25": 0.03786084326516373,
+          "p75": 0.05650882098811381
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1099550129",
+        "createDate": "2025-07-08T05:02:21.008903",
+        "datasetId": "EXCLQL",
+        "endTime": "2022-06-03T20:58:24.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.306143",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:21.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:34.018194",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 158,
+        "lightLevel": {
+          "max": 648.5973336092858,
+          "med": 593.8989927734948,
+          "min": 560.3636191166072,
+          "p25": 573.3832462358359,
+          "p75": 619.6979096600611
+        },
+        "friedParameter": {
+          "max": 0.1208285811090531,
+          "med": 0.06082503500923307,
+          "min": 0.02671808689864855,
+          "p25": 0.04582482005923685,
+          "p75": 0.08116520479998938
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
+        "browseMovieUrl": "https://vimeo.com/1099550562",
+        "createDate": "2025-07-08T05:05:19.634673",
+        "datasetId": "UKRSYO",
+        "endTime": "2022-06-03T20:29:14.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.270410",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:03:12.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:34.449254",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 175,
+        "lightLevel": {
+          "max": 573.0268191304048,
+          "med": 543.162113450958,
+          "min": 515.310015349856,
+          "p25": 529.7049895655473,
+          "p75": 558.3933486831893
+        },
+        "friedParameter": {
+          "max": 0.163622825369821,
+          "med": 0.07324268830618338,
+          "min": 0.02779084648746501,
+          "p25": 0.05674648626205607,
+          "p75": 0.114233653351876
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1099550709",
+        "createDate": "2025-07-08T05:06:21.157887",
+        "datasetId": "AFBCGG",
+        "endTime": "2022-06-03T20:57:57.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.306143",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:33:16.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:36.085071",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 149,
+        "lightLevel": {
+          "max": 647.1616564046843,
+          "med": 594.014280540177,
+          "min": 560.4771563098257,
+          "p25": 574.116995222573,
+          "p75": 621.2449854262604
+        },
+        "friedParameter": {
+          "max": 0.1680219434659841,
+          "med": 0.06165334393290282,
+          "min": 0.02789559683173313,
+          "p25": 0.045813357281690475,
+          "p75": 0.08377128292988884
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-231.15,-318.52),(-348.19,-438.2)",
+        "browseMovieUrl": "https://vimeo.com/1099550997",
+        "createDate": "2025-07-08T05:08:19.797637",
+        "datasetId": "IGEVSO",
+        "endTime": "2022-06-03T20:28:47.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.270410",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:02:44.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:39.375676",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 178,
+        "lightLevel": {
+          "max": 571.8900156947966,
+          "med": 542.2815318811334,
+          "min": 515.8005208602818,
+          "p25": 528.723163622566,
+          "p75": 556.0008925337611
+        },
+        "friedParameter": {
+          "max": 0.1612160396930327,
+          "med": 0.0754587711771012,
+          "min": 0.03308656898030034,
+          "p25": 0.058829749279598956,
+          "p75": 0.09400611879885015
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-231.15,-318.52),(-348.18,-438.2)",
+        "browseMovieUrl": "https://vimeo.com/1099551309",
+        "createDate": "2025-07-08T05:10:20.240779",
+        "datasetId": "OQWRKH",
+        "endTime": "2022-06-03T20:28:20.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.270410",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14541114",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:03:39.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:39.009860",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 163,
+        "lightLevel": {
+          "max": 571.5054414377123,
+          "med": 542.2705196529897,
+          "min": 515.8759076249116,
+          "p25": 531.0672806609061,
+          "p75": 556.6532053603767
+        },
+        "friedParameter": {
+          "max": 0.1590668225856403,
+          "med": 0.07867870034709858,
+          "min": 0.02955125578574539,
+          "p25": 0.058623972488271545,
+          "p75": 0.10434710342416935
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-233.15,-376.52),(-350.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1099551477",
+        "createDate": "2025-07-08T05:11:19.709383",
+        "datasetId": "NLJVBO",
+        "endTime": "2022-06-03T20:58:51.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.306143",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14551803",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T20:32:49.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:40.357853",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 140,
+        "lightLevel": {
+          "max": 649.9698176989014,
+          "med": 595.3504941273866,
+          "min": 560.3994584432832,
+          "p25": 575.8893732429589,
+          "p75": 621.8817974853832
+        },
+        "friedParameter": {
+          "max": 0.135749294453973,
+          "med": 0.057691740817344093,
+          "min": 0.02418352404476682,
+          "p25": 0.044032254331032056,
+          "p75": 0.07756587266122553
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
+        "browseMovieUrl": "https://vimeo.com/1099551695",
+        "createDate": "2025-07-08T05:12:20.163733",
+        "datasetId": "HEFPOY",
+        "endTime": "2022-06-03T19:59:47.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.235977",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:35:06.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:41.065873",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 494.3968713889033,
+          "med": 482.6214104620479,
+          "min": 462.637864127904,
+          "p25": 477.59686793949743,
+          "p75": 488.01846294475774
+        },
+        "friedParameter": {
+          "max": 0.167772739381975,
+          "med": 0.07670159825687177,
+          "min": 0.02433108946127955,
+          "p25": 0.05115449898757747,
+          "p75": 0.11953876660206023
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-328.16,-318.53),(-445.18,-438.19)",
+        "browseMovieUrl": "https://vimeo.com/1099552139",
+        "createDate": "2025-07-08T05:15:19.681576",
+        "datasetId": "KJVPTD",
+        "endTime": "2022-06-03T20:00:14.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.235977",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:34:11.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:45.527533",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 496.4771390627964,
+          "med": 481.5177903106189,
+          "min": 461.083199668857,
+          "p25": 475.20118228385155,
+          "p75": 487.3874545109605
+        },
+        "friedParameter": {
+          "max": 0.1784330955143384,
+          "med": 0.07266104146044691,
+          "min": 0.02591172915294242,
+          "p25": 0.05179457069640666,
+          "p75": 0.12138486125197578
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-331.16,-376.52),(-448.17,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1099552152",
+        "createDate": "2025-07-08T05:15:19.823645",
+        "datasetId": "JADMIO",
+        "endTime": "2022-06-03T19:32:00.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.201374",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:05:58.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:45.771319",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 443.6509891171246,
+          "med": 431.9229833911109,
+          "min": 423.57441230748,
+          "p25": 429.09533295389866,
+          "p75": 437.1706377951397
+        },
+        "friedParameter": {
+          "max": 0.193066605302677,
+          "med": 0.1248669828872402,
+          "min": 0.03325554980018355,
+          "p25": 0.09503865080928,
+          "p75": 0.14754447856368832
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-328.16,-318.53),(-445.17,-438.19)",
+        "browseMovieUrl": "https://vimeo.com/1099552156",
+        "createDate": "2025-07-08T05:15:21.040496",
+        "datasetId": "CSOFML",
+        "endTime": "2022-06-03T20:00:41.973367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.235977",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14530815",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:34:39.033348",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:46.637028",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 498.1494800020697,
+          "med": 481.0367275486798,
+          "min": 463.2771252651731,
+          "p25": 476.8962677428813,
+          "p75": 486.45310101585
+        },
+        "friedParameter": {
+          "max": 0.1792984400455294,
+          "med": 0.08564263020874432,
+          "min": 0.02515454288605219,
+          "p25": 0.05731676728936058,
+          "p75": 0.11541180208995988
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-331.16,-376.52),(-448.18,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1099552256",
+        "createDate": "2025-07-08T05:16:19.613560",
+        "datasetId": "XUSJZY",
+        "endTime": "2022-06-03T19:31:33.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.201374",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:05:30.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:51.709784",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 442.9669891861127,
+          "med": 434.8959314258119,
+          "min": 424.0012245390731,
+          "p25": 428.80231886307587,
+          "p75": 437.9361471861472
+        },
+        "friedParameter": {
+          "max": 0.1738914523467885,
+          "med": 0.1119356339403447,
+          "min": 0.02867439588018864,
+          "p25": 0.07200427004340244,
+          "p75": 0.14907735145784135
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-331.16,-376.53),(-448.17,-496.19)",
+        "browseMovieUrl": "https://vimeo.com/1099552739",
+        "createDate": "2025-07-08T05:19:19.425080",
+        "datasetId": "LHAAPP",
+        "endTime": "2022-06-03T19:31:06.135016",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.201374",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14520462",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T19:06:25.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:51.893326",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 169,
+        "lightLevel": {
+          "max": 444.2822993739329,
+          "med": 433.8223555992481,
+          "min": 425.0529311326124,
+          "p25": 430.50750245770166,
+          "p75": 436.72785912626557
+        },
+        "friedParameter": {
+          "max": 0.1739221648235942,
+          "med": 0.1128237762494099,
+          "min": 0.02977782313652283,
+          "p25": 0.0862523013070132,
+          "p75": 0.1410308894469454
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
+        "browseMovieUrl": "https://vimeo.com/1099553374",
+        "createDate": "2025-07-08T05:24:20.189214",
+        "datasetId": "RVZALI",
+        "endTime": "2022-06-03T19:02:47.565485",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.166661",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:36:44.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:54.575889",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 442.1453234680326,
+          "med": 425.6134337110432,
+          "min": 415.8545730497922,
+          "p25": 421.8272408202687,
+          "p75": 432.40328297200807
+        },
+        "friedParameter": {
+          "max": 0.1678630723700257,
+          "med": 0.12310236139572706,
+          "min": 0.03578340307273438,
+          "p25": 0.08388985734356391,
+          "p75": 0.15257495333045798
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-253.15,-376.51),(-370.18,-496.2)",
+        "browseMovieUrl": "https://vimeo.com/1099553395",
+        "createDate": "2025-07-08T05:24:20.191267",
+        "datasetId": "FCPFWI",
+        "endTime": "2022-06-03T19:02:20.134998",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.166661",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:37:39.454998",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:57.164845",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 437.5503182076887,
+          "med": 424.7158034528553,
+          "min": 415.0721270761111,
+          "p25": 422.2102326624239,
+          "p75": 431.3010813887307
+        },
+        "friedParameter": {
+          "max": 0.1699813989223233,
+          "med": 0.12320720531745115,
+          "min": 0.03742900149844752,
+          "p25": 0.08521480071916676,
+          "p75": 0.14482572936393823
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1099553500",
+        "createDate": "2025-07-08T05:25:19.411633",
+        "datasetId": "VDFTHK",
+        "endTime": "2022-06-03T18:33:35.134999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.131979",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:08:54.454999",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:21:57.455677",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 170,
+        "lightLevel": {
+          "max": 445.3505976095618,
+          "med": 436.2979251823874,
+          "min": 419.1980648833239,
+          "p25": 431.382918542281,
+          "p75": 440.1978492954588
+        },
+        "friedParameter": {
+          "max": 0.1831883708166528,
+          "med": 0.1343768506247759,
+          "min": 0.02896789596643993,
+          "p25": 0.10790052069490873,
+          "p75": 0.1528995827758003
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-251.14,-318.5),(-368.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1099553495",
+        "createDate": "2025-07-08T05:25:20.300438",
+        "datasetId": "ZYBRAU",
+        "endTime": "2022-06-03T18:34:29.973330",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.131979",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:08:27.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:00.593799",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 448.6608026767389,
+          "med": 436.99460167986064,
+          "min": 417.3851261620186,
+          "p25": 430.051745399355,
+          "p75": 438.8098040737483
+        },
+        "friedParameter": {
+          "max": 0.1860149445645692,
+          "med": 0.14588241538408564,
+          "min": 0.02870207618442895,
+          "p25": 0.12180683577645635,
+          "p75": 0.15733912200825312
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-251.14,-318.5),(-368.2,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1099553768",
+        "createDate": "2025-07-08T05:27:20.342772",
+        "datasetId": "WMYHVA",
+        "endTime": "2022-06-03T18:34:02.565522",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.131979",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14499687",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:07:59.625503",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:02.855094",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 446.4438867905004,
+          "med": 436.1906917783412,
+          "min": 417.100774391611,
+          "p25": 428.7268027457271,
+          "p75": 440.1000586398993
+        },
+        "friedParameter": {
+          "max": 0.180654350697414,
+          "med": 0.1471437435803748,
+          "min": 0.05245469536350716,
+          "p25": 0.11777400043764445,
+          "p75": 0.1613546253668274
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-253.15,-376.51),(-370.19,-496.2)",
+        "browseMovieUrl": "https://vimeo.com/1099554059",
+        "createDate": "2025-07-08T05:29:20.309792",
+        "datasetId": "SRQINK",
+        "endTime": "2022-06-03T19:03:14.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.166661",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14510082",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T18:37:12.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:15.950901",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 180,
+        "lightLevel": {
+          "max": 442.7565409358238,
+          "med": 426.0555009399631,
+          "min": 415.5373484417309,
+          "p25": 421.40761628809435,
+          "p75": 431.10686259291833
+        },
+        "friedParameter": {
+          "max": 0.1715517779569592,
+          "med": 0.11117922818340109,
+          "min": 0.03207022471713531,
+          "p25": 0.07942051597985325,
+          "p75": 0.14426894952673486
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-348.15,-318.5),(-465.18,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1099554648",
+        "createDate": "2025-07-08T05:33:19.014663",
+        "datasetId": "BPSPXN",
+        "endTime": "2022-06-03T18:04:51.134999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.97316",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:40:10.454999",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:06.304812",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 171,
+        "lightLevel": {
+          "max": 424.9921870957727,
+          "med": 402.1645194115314,
+          "min": 390.0205757058347,
+          "p25": 397.1258946896397,
+          "p75": 408.9307876718235
+        },
+        "friedParameter": {
+          "max": 0.1799077736904278,
+          "med": 0.1502379501010658,
+          "min": 0.05745587159960976,
+          "p25": 0.1370808025596857,
+          "p75": 0.15695736227564394
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-348.15,-318.5),(-465.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1099554921",
+        "createDate": "2025-07-08T05:35:20.443853",
+        "datasetId": "QZDBJQ",
+        "endTime": "2022-06-03T18:05:18.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.97316",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:39:15.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:18.350315",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 426.8806678049706,
+          "med": 401.4190855625119,
+          "min": 388.8970007416223,
+          "p25": 397.39770355806206,
+          "p75": 409.6190260602611
+        },
+        "friedParameter": {
+          "max": 0.1806732770722464,
+          "med": 0.1469531217060813,
+          "min": 0.06317867570811998,
+          "p25": 0.13200388231719665,
+          "p75": 0.1586019645022784
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-351.14,-376.46),(-468.2,-496.25)",
+        "browseMovieUrl": "https://vimeo.com/1099555171",
+        "createDate": "2025-07-08T05:37:21.036135",
+        "datasetId": "PORKUM",
+        "endTime": "2022-06-03T17:36:16.565504",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.62284",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:10:13.625504",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:08.622415",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": 1,
+          "good": 179,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 361.536658560563,
+          "med": 351.08789086079923,
+          "min": 338.4100481192115,
+          "p25": 345.4326029216468,
+          "p75": 356.62490729721804
+        },
+        "friedParameter": {
+          "max": 0.1765739050150458,
+          "med": 0.1224882342195106,
+          "min": 0.0559364649656055,
+          "p25": 0.09080053748578804,
+          "p75": 0.14428383397747652
+        }
+      },
+      {
+        "spectralLines": [
+          "H beta (486.13 nm)"
+        ],
+        "boundingBox": "(-351.14,-376.46),(-468.19,-496.25)",
+        "browseMovieUrl": "https://vimeo.com/1099555285",
+        "createDate": "2025-07-08T05:38:19.845879",
+        "datasetId": "MNTZDS",
+        "endTime": "2022-06-03T17:35:49.134999",
+        "bucket": "public",
+        "exposureTime": 3.997000000000001,
+        "frameCount": 171,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.62284",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:11:08.454999",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:19.633208",
+        "wavelengthMax": 486,
+        "wavelengthMin": 486,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 171,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 171,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 171,
+        "lightLevel": {
+          "max": 362.4045635639261,
+          "med": 351.5227919490868,
+          "min": 339.7687863265552,
+          "p25": 345.68406029561413,
+          "p75": 356.6725910211965
+        },
+        "friedParameter": {
+          "max": 0.1799994212375385,
+          "med": 0.1307153877654189,
+          "min": 0.04957931424708374,
+          "p25": 0.09932075444777827,
+          "p75": 0.1474500568125168
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-348.14,-318.5),(-465.19,-438.21)",
+        "browseMovieUrl": "https://vimeo.com/1099555291",
+        "createDate": "2025-07-08T05:38:20.669496",
+        "datasetId": "GWZFRP",
+        "endTime": "2022-06-03T18:05:45.973367",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.97316",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14489337",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:39:43.033348",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:21.991108",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 179,
+        "lightLevel": {
+          "max": 427.6638726479364,
+          "med": 402.54761904761904,
+          "min": 389.7350856315,
+          "p25": 396.85256377089047,
+          "p75": 411.77313257791343
+        },
+        "friedParameter": {
+          "max": 0.1781776830299381,
+          "med": 0.1536564386617174,
+          "min": 0.07288800893823408,
+          "p25": 0.1446257354599072,
+          "p75": 0.16250236120181571
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-351.13,-376.46),(-468.2,-496.25)",
+        "browseMovieUrl": "https://vimeo.com/1099556642",
+        "createDate": "2025-07-08T05:48:20.140844",
+        "datasetId": "DBCZEL",
+        "endTime": "2022-06-03T17:36:43.973349",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 180,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.85535.62284",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_1_118_opAvoqBr_R002.82591.14478825",
+        "primaryExperimentId": "eid_1_118",
+        "primaryProposalId": "pid_1_118",
+        "startTime": "2022-06-03T17:10:41.033349",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:22:13.272714",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 180,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 180,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 178,
+        "lightLevel": {
+          "max": 363.3153446818786,
+          "med": 352.32925441092766,
+          "min": 338.788154740346,
+          "p25": 346.12339387040583,
+          "p75": 357.15874165674967
+        },
+        "friedParameter": {
+          "max": 0.1665612141041844,
+          "med": 0.1261468304229441,
+          "min": 0.0721708743582172,
+          "p25": 0.09523492882128416,
+          "p75": 0.1438102549094737
         }
       }
     ]

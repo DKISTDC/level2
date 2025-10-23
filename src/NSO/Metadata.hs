@@ -210,8 +210,8 @@ data DatasetInventory = DatasetInventory
   -- , averageDatasetTemporalSampling :: Double
   { boundingBox :: BoundingBox
   , -- , browseMovieObjectKey :: Text
-    -- , browseMovieUrl :: Text
-    bucket :: Text
+    browseMovieUrl :: Text
+  , bucket :: Text
   , -- calibrationDocumentationUrl :: Text
     -- , contributingExperimentIds :: [Text]
     -- contributingProposalIds :: [Text]
@@ -325,7 +325,8 @@ datasetInventories :: (IOE :> es, Request r, FromJSON (Data r), Semigroup (Data 
 datasetInventories r = do
   ds1118 <- mockJsonFile r "./deps/dataset_inventories_pid_1_118.json"
   ds2114 <- mockJsonFile r "./deps/dataset_inventories_pid_2_114.json"
-  pure $ ds1118 <> ds2114
+  ds354 <- mockJsonFile r "./deps/dataset_inventories_pid_3_54.json"
+  pure $ ds1118 <> ds2114 <> ds354
 
 
 data ParsedResult a = ParsedResult Value (A.Result a)

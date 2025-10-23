@@ -137,6 +137,7 @@ runDataDatasets = interpret $ \_ -> \case
             , lightLevel = "light_level"
             , embargo = "embargo"
             , spectralLines = "spectral_lines"
+            , browseMovieUrl = "browse_movie_url"
             }
       }
 

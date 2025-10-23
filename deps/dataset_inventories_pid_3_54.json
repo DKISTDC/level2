@@ -1,0 +1,1446 @@
+{
+  "data": {
+    "datasetInventories": [
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-448.35,346.49),(-501.23,268.64)",
+        "browseMovieUrl": "https://vimeo.com/1071969319",
+        "createDate": "2025-04-02T22:24:25.724505",
+        "datasetId": "RVMDLI",
+        "endTime": "2025-03-27T22:12:41.217146",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 444,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.1073625",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14023005",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T22:03:42.200193",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:52:46.460870",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.5737470153199,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 444,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 444,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 400,
+        "lightLevel": {
+          "max": 474.7493144305893,
+          "med": 470.1088287542471,
+          "min": 469.09413428536936,
+          "p25": 469.7570410996706,
+          "p75": 470.58372570324764
+        },
+        "friedParameter": {
+          "max": 0.10650976094076336,
+          "med": 0.039637862033137274,
+          "min": 0.016524293523653016,
+          "p25": 0.030377422426913967,
+          "p75": 0.06555449738168637
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-450.5,337.33),(-497.2,272.81)",
+        "browseMovieUrl": "https://vimeo.com/1071970318",
+        "createDate": "2025-04-02T22:29:21.728515",
+        "datasetId": "JAYUIO",
+        "endTime": "2025-03-27T22:12:41.265146",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 444,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.1073625",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14023005",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T22:03:42.248192",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:52:46.645857",
+        "wavelengthMax": 589.9380234970257,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 444,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 444,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 400,
+        "lightLevel": {
+          "max": 474.7493144305893,
+          "med": 470.1088287542471,
+          "min": 469.09413428536936,
+          "p25": 469.7570410996706,
+          "p75": 470.58372570324764
+        },
+        "friedParameter": {
+          "max": 0.10650976094076336,
+          "med": 0.039637862033137274,
+          "min": 0.016524293523653016,
+          "p25": 0.030377422426913967,
+          "p75": 0.06555449738168637
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-451.63,330.47),(-493.72,275.49)",
+        "browseMovieUrl": "https://vimeo.com/1071974707",
+        "createDate": "2025-04-02T22:50:21.390581",
+        "datasetId": "LHDDPP",
+        "endTime": "2025-03-27T22:12:41.249146",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 444,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.1073625",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14023005",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T22:03:42.232193",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:52:52.424535",
+        "wavelengthMax": 630.6274168904545,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 444,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 444,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 400,
+        "lightLevel": {
+          "max": 474.7493144305893,
+          "med": 470.1088287542471,
+          "min": 469.09413428536936,
+          "p25": 469.7570410996706,
+          "p75": 470.58372570324764
+        },
+        "friedParameter": {
+          "max": 0.10650976094076336,
+          "med": 0.039637862033137274,
+          "min": 0.016524293523653016,
+          "p25": 0.030377422426913967,
+          "p75": 0.06555449738168637
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-399.69,367.23),(-491.94,281.18)",
+        "browseMovieUrl": "https://vimeo.com/1072005543",
+        "createDate": "2025-04-03T01:35:37.208527",
+        "datasetId": "UKQOYO",
+        "endTime": "2025-03-27T21:18:49.919284",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.834990",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13996524",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T20:50:14.865388",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:04.916938",
+        "wavelengthMax": 589.9380234970257,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 477.1260240423587,
+          "med": 464.83353167416914,
+          "min": 457.90439971714875,
+          "p25": 463.23602559459135,
+          "p75": 467.2941998240803
+        },
+        "friedParameter": {
+          "max": 0.10670388785210909,
+          "med": 0.05091255131718101,
+          "min": 0.016097235553739674,
+          "p25": 0.039847010695662495,
+          "p75": 0.0633101914502347
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-397.91,376.22),(-495.97,277.01)",
+        "browseMovieUrl": "https://vimeo.com/1072007775",
+        "createDate": "2025-04-03T01:49:35.858642",
+        "datasetId": "KJZITD",
+        "endTime": "2025-03-27T21:18:49.871284",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.834990",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13996524",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T20:50:14.817388",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:10.963545",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.5737470153199,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 477.1260240423587,
+          "med": 464.83353167416914,
+          "min": 457.90439971714875,
+          "p25": 463.23602559459135,
+          "p75": 467.2941998240803
+        },
+        "friedParameter": {
+          "max": 0.10670388785210909,
+          "med": 0.05091255131718101,
+          "min": 0.016097235553739674,
+          "p25": 0.039847010695662495,
+          "p75": 0.0633101914502347
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-422.87,367.23),(-515.13,281.16)",
+        "browseMovieUrl": "https://vimeo.com/1072007973",
+        "createDate": "2025-04-03T01:50:35.562984",
+        "datasetId": "NLVZBO",
+        "endTime": "2025-03-27T19:56:36.886130",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.562695",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13966797",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T19:28:01.832235",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:11.900559",
+        "wavelengthMax": 589.9380234970257,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 490.881133474759,
+          "med": 484.8951898035563,
+          "min": 479.3003570135044,
+          "p25": 484.5108397578517,
+          "p75": 485.16012141908556
+        },
+        "friedParameter": {
+          "max": 0.08279845528059356,
+          "med": 0.046608514166199634,
+          "min": 0.01970353185935809,
+          "p25": 0.038748155673284254,
+          "p75": 0.0541494208027059
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-470.82,368.82),(-558.16,292.44)",
+        "browseMovieUrl": "https://vimeo.com/1072008919",
+        "createDate": "2025-04-03T01:56:36.255557",
+        "datasetId": "TIZTCV",
+        "endTime": "2025-03-27T19:18:07.679473",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.437664",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13952802",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T18:49:32.626078",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:14.997309",
+        "wavelengthMax": 630.6274168904545,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 467.0777496076301,
+          "med": 465.36815508528656,
+          "min": 462.1796278091099,
+          "p25": 463.71304392818337,
+          "p75": 465.98147669064
+        },
+        "friedParameter": {
+          "max": 0.09054928382367636,
+          "med": 0.050064810510216225,
+          "min": 0.021788033936948902,
+          "p25": 0.040083785853411665,
+          "p75": 0.05926810284005559
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-467.61,384.82),(-565.67,285.59)",
+        "browseMovieUrl": "https://vimeo.com/1072010534",
+        "createDate": "2025-04-03T02:05:35.666103",
+        "datasetId": "EXPJQL",
+        "endTime": "2025-03-27T19:18:07.647473",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.437664",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13952802",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T18:49:32.594078",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:25.959082",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.5737470153199,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 467.0777496076301,
+          "med": 465.36815508528656,
+          "min": 462.1796278091099,
+          "p25": 463.71304392818337,
+          "p75": 465.98147669064
+        },
+        "friedParameter": {
+          "max": 0.09054928382367636,
+          "med": 0.050064810510216225,
+          "min": 0.021788033936948902,
+          "p25": 0.040083785853411665,
+          "p75": 0.05926810284005559
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-469.38,375.83),(-561.65,289.75)",
+        "browseMovieUrl": "https://vimeo.com/1072012678",
+        "createDate": "2025-04-03T02:17:35.151124",
+        "datasetId": "YTQUFH",
+        "endTime": "2025-03-27T19:18:07.695473",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.437664",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13952802",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T18:49:32.642078",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:28.837336",
+        "wavelengthMax": 589.9380234970257,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 467.0777496076301,
+          "med": 465.36815508528656,
+          "min": 462.1796278091099,
+          "p25": 463.71304392818337,
+          "p75": 465.98147669064
+        },
+        "friedParameter": {
+          "max": 0.09054928382367636,
+          "med": 0.050064810510216225,
+          "min": 0.021788033936948902,
+          "p25": 0.040083785853411665,
+          "p75": 0.05926810284005559
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-421.09,376.22),(-519.15,277)",
+        "browseMovieUrl": "https://vimeo.com/1072012841",
+        "createDate": "2025-04-03T02:18:35.797745",
+        "datasetId": "IGFZSO",
+        "endTime": "2025-03-27T19:56:36.838131",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.562695",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13966797",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T19:28:01.784235",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:31.558793",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.5737470153199,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 490.881133474759,
+          "med": 484.8951898035563,
+          "min": 479.3003570135044,
+          "p25": 484.5108397578517,
+          "p75": 485.16012141908556
+        },
+        "friedParameter": {
+          "max": 0.08279845528059356,
+          "med": 0.046608514166199634,
+          "min": 0.01970353185935809,
+          "p25": 0.038748155673284254,
+          "p75": 0.0541494208027059
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-401.12,360.22),(-488.46,283.86)",
+        "browseMovieUrl": "https://vimeo.com/1072014735",
+        "createDate": "2025-04-03T02:29:34.118374",
+        "datasetId": "OQXQKH",
+        "endTime": "2025-03-27T21:18:49.903284",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.834990",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13996524",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T20:50:14.849388",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:34.252803",
+        "wavelengthMax": 630.6274168904545,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 477.1260240423587,
+          "med": 464.83353167416914,
+          "min": 457.90439971714875,
+          "p25": 463.23602559459135,
+          "p75": 467.2941998240803
+        },
+        "friedParameter": {
+          "max": 0.10670388785210909,
+          "med": 0.05091255131718101,
+          "min": 0.016097235553739674,
+          "p25": 0.039847010695662495,
+          "p75": 0.0633101914502347
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-388.61,360.04),(-480.87,273.99)",
+        "browseMovieUrl": "https://vimeo.com/1072017322",
+        "createDate": "2025-04-03T02:45:36.671026",
+        "datasetId": "SRWHNK",
+        "endTime": "2025-03-27T22:47:20.384056",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.1122691",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14028372",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T22:18:45.330160",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:45.007534",
+        "wavelengthMax": 589.9380234970257,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 562.3418533657577,
+          "med": 538.4836239457753,
+          "min": 499.10267156482297,
+          "p25": 521.3178282540832,
+          "p75": 550.0716441592936
+        },
+        "friedParameter": {
+          "max": 0.08692416710611582,
+          "med": 0.04267220345832312,
+          "min": 0.012716417539043097,
+          "p25": 0.030937349095413312,
+          "p75": 0.05224086551891015
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-471.38,353.33),(-569.44,254.13)",
+        "browseMovieUrl": "https://vimeo.com/1072021243",
+        "createDate": "2025-04-03T03:11:33.361344",
+        "datasetId": "XUOVZY",
+        "endTime": "2025-03-27T21:56:02.145032",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.955835",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14009952",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T21:27:27.091137",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:48.334579",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.5737470153199,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 443.3691726600093,
+          "med": 431.7690622790224,
+          "min": 420.77999689553474,
+          "p25": 426.0468429313051,
+          "p75": 435.24649454131526
+        },
+        "friedParameter": {
+          "max": 0.11696483039771835,
+          "med": 0.06093016318669001,
+          "min": 0.014118130575122864,
+          "p25": 0.03821182770810296,
+          "p75": 0.07846183859442334
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-474.6,337.34),(-561.93,260.97)",
+        "browseMovieUrl": "https://vimeo.com/1072021261",
+        "createDate": "2025-04-03T03:11:37.042783",
+        "datasetId": "HEBIOY",
+        "endTime": "2025-03-27T21:56:02.177033",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.955835",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14009952",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T21:27:27.123137",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:51.343957",
+        "wavelengthMax": 630.6274168904545,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 443.3691726600093,
+          "med": 431.7690622790224,
+          "min": 420.77999689553474,
+          "p25": 426.0468429313051,
+          "p75": 435.24649454131526
+        },
+        "friedParameter": {
+          "max": 0.11696483039771835,
+          "med": 0.06093016318669001,
+          "min": 0.014118130575122864,
+          "p25": 0.03821182770810296,
+          "p75": 0.07846183859442334
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-424.31,360.22),(-511.65,283.85)",
+        "browseMovieUrl": "https://vimeo.com/1072022029",
+        "createDate": "2025-04-03T03:16:35.235875",
+        "datasetId": "AFTPGG",
+        "endTime": "2025-03-27T19:56:36.870131",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.562695",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.13966797",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T19:28:01.816235",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:53:54.691042",
+        "wavelengthMax": 630.6274168904545,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 490.881133474759,
+          "med": 484.8951898035563,
+          "min": 479.3003570135044,
+          "p25": 484.5108397578517,
+          "p75": 485.16012141908556
+        },
+        "friedParameter": {
+          "max": 0.08279845528059356,
+          "med": 0.046608514166199634,
+          "min": 0.01970353185935809,
+          "p25": 0.038748155673284254,
+          "p75": 0.0541494208027059
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-390.05,353.03),(-477.39,276.67)",
+        "browseMovieUrl": "https://vimeo.com/1072025059",
+        "createDate": "2025-04-03T03:35:35.773379",
+        "datasetId": "FCIBWI",
+        "endTime": "2025-03-27T22:47:20.368056",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.1122691",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14028372",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T22:18:45.314160",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:54:05.899184",
+        "wavelengthMax": 630.6274168904545,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 562.3418533657577,
+          "med": 538.4836239457753,
+          "min": 499.10267156482297,
+          "p25": 521.3178282540832,
+          "p75": 550.0716441592936
+        },
+        "friedParameter": {
+          "max": 0.08692416710611582,
+          "med": 0.04267220345832312,
+          "min": 0.012716417539043097,
+          "p25": 0.030937349095413312,
+          "p75": 0.05224086551891015
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-386.84,369.02),(-484.89,269.82)",
+        "browseMovieUrl": "https://vimeo.com/1072181749",
+        "createDate": "2025-04-03T03:35:36.458054",
+        "datasetId": "WMSZVA",
+        "endTime": "2025-03-27T22:47:20.336056",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.1122691",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14028372",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T22:18:45.282160",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:54:08.268895",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.5737470153199,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 562.3418533657577,
+          "med": 538.4836239457753,
+          "min": 499.10267156482297,
+          "p25": 521.3178282540832,
+          "p75": 550.0716441592936
+        },
+        "friedParameter": {
+          "max": 0.08692416710611582,
+          "med": 0.04267220345832312,
+          "min": 0.012716417539043097,
+          "p25": 0.030937349095413312,
+          "p75": 0.05224086551891015
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-473.16,344.34),(-565.42,258.29)",
+        "browseMovieUrl": "https://vimeo.com/1072036126",
+        "createDate": "2025-04-03T04:44:34.077617",
+        "datasetId": "CSGBML",
+        "endTime": "2025-03-27T21:56:02.192533",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.1189737.955835",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R001.1185321.14009952",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-03-27T21:27:27.139137",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:54:12.178776",
+        "wavelengthMax": 589.9380234970257,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 443.3691726600093,
+          "med": 431.7690622790224,
+          "min": 420.77999689553474,
+          "p25": 426.0468429313051,
+          "p75": 435.24649454131526
+        },
+        "friedParameter": {
+          "max": 0.11696483039771835,
+          "med": 0.06093016318669001,
+          "min": 0.014118130575122864,
+          "p25": 0.03821182770810296,
+          "p75": 0.07846183859442334
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-234.03,91.96),(-283.66,16.45)",
+        "browseMovieUrl": "https://vimeo.com/1114171150",
+        "createDate": "2025-08-29T08:14:05.101824",
+        "datasetId": "ILFBSO",
+        "endTime": "2025-08-25T17:53:33.714045",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.235712",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23314362",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T17:24:58.660150",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T08:14:38.776272",
+        "wavelengthMax": 630.6244487176041,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 426.7948983287629,
+          "med": 398.6039909625567,
+          "min": 341.41063451820423,
+          "p25": 387.50309584174124,
+          "p75": 416.853348510719
+        },
+        "friedParameter": {
+          "max": 0.1643626222047032,
+          "med": 0.1051179932986923,
+          "min": 0.0502786785596504,
+          "p25": 0.0912257092098177,
+          "p75": 0.1194455684418274
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-273,91.88),(-347.67,31.78)",
+        "browseMovieUrl": "https://vimeo.com/1114172386",
+        "createDate": "2025-08-29T08:20:09.373407",
+        "datasetId": "OIXDKH",
+        "endTime": "2025-08-25T18:30:05.713366",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.354341",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23327550",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T18:01:30.659470",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T08:20:36.322729",
+        "wavelengthMax": 589.9405273747814,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 446.7385177903106,
+          "med": 421.45125127196843,
+          "min": 395.5646159948949,
+          "p25": 414.23771580345283,
+          "p75": 427.2967868784602
+        },
+        "friedParameter": {
+          "max": 0.1192769277619489,
+          "med": 0.0664393989582872,
+          "min": 0.0294985600784809,
+          "p25": 0.0546944604082188,
+          "p75": 0.0811078044381734
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-215.66,90.78),(-292.38,17.4)",
+        "browseMovieUrl": "https://vimeo.com/1114173638",
+        "createDate": "2025-08-29T08:25:54.349841",
+        "datasetId": "UCQVYO",
+        "endTime": "2025-08-25T17:53:33.682045",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.235712",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23314362",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T17:24:58.628149",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T08:26:22.688967",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.57374701532,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 426.7948983287629,
+          "med": 398.6039909625567,
+          "min": 341.41063451820423,
+          "p25": 387.50309584174124,
+          "p75": 416.853348510719
+        },
+        "friedParameter": {
+          "max": 0.1643626222047032,
+          "med": 0.1051179932986923,
+          "min": 0.0502786785596504,
+          "p25": 0.0912257092098177,
+          "p75": 0.1194455684418274
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-272.7,84.09),(-347.96,35.11)",
+        "browseMovieUrl": "https://vimeo.com/1114179822",
+        "createDate": "2025-08-29T08:56:00.780854",
+        "datasetId": "KSZQTD",
+        "endTime": "2025-08-25T18:30:05.697365",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.354341",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23327550",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T18:01:30.643470",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T08:56:27.558681",
+        "wavelengthMax": 630.6244487176041,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 446.7385177903106,
+          "med": 421.45125127196843,
+          "min": 395.5646159948949,
+          "p25": 414.23771580345283,
+          "p75": 427.2967868784602
+        },
+        "friedParameter": {
+          "max": 0.1192769277619489,
+          "med": 0.0664393989582872,
+          "min": 0.0294985600784809,
+          "p25": 0.0546944604082188,
+          "p75": 0.0811078044381734
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-226.22,91.67),(-286.99,16.63)",
+        "browseMovieUrl": "https://vimeo.com/1114180147",
+        "createDate": "2025-08-29T08:57:33.729071",
+        "datasetId": "AVTRGG",
+        "endTime": "2025-08-25T17:53:33.730045",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.235712",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23314362",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T17:24:58.676149",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T08:58:01.921667",
+        "wavelengthMax": 589.9405273747814,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 426.7948983287629,
+          "med": 398.6039909625567,
+          "min": 341.41063451820423,
+          "p25": 387.50309584174124,
+          "p75": 416.853348510719
+        },
+        "friedParameter": {
+          "max": 0.1643626222047032,
+          "med": 0.1051179932986923,
+          "min": 0.0502786785596504,
+          "p25": 0.0912257092098177,
+          "p75": 0.1194455684418274
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-313.4,97.86),(-386.24,21.82)",
+        "browseMovieUrl": "https://vimeo.com/1114181863",
+        "createDate": "2025-08-29T09:05:34.151612",
+        "datasetId": "JRYLIO",
+        "endTime": "2025-08-25T19:05:56.693466",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.470756",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23340600",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T18:37:21.640070",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T09:06:01.997014",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.57374701532,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 439.7970887014712,
+          "med": 430.4798985874683,
+          "min": 381.0601058967593,
+          "p25": 406.627740121764,
+          "p75": 434.40759904106517
+        },
+        "friedParameter": {
+          "max": 0.0952249344504659,
+          "med": 0.0468481467707735,
+          "min": 0.0180509336583172,
+          "p25": 0.0373224204074296,
+          "p75": 0.0583522352209182
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II (854.21 nm)"
+        ],
+        "boundingBox": "(-273.93,102.42),(-346.79,26.38)",
+        "browseMovieUrl": "https://vimeo.com/1114182668",
+        "createDate": "2025-08-29T09:09:35.699001",
+        "datasetId": "CBGSML",
+        "endTime": "2025-08-25T18:30:05.665366",
+        "bucket": "data",
+        "exposureTime": 128.0216338028169,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.354341",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23327550",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T18:01:30.611470",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T09:09:59.696654",
+        "wavelengthMax": 854.7195766245643,
+        "wavelengthMin": 853.57374701532,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 446.7385177903106,
+          "med": 421.45125127196843,
+          "min": 395.5646159948949,
+          "p25": 414.23771580345283,
+          "p75": 427.2967868784602
+        },
+        "friedParameter": {
+          "max": 0.1192769277619489,
+          "med": 0.0664393989582872,
+          "min": 0.0294985600784809,
+          "p25": 0.0546944604082188,
+          "p75": 0.0811078044381734
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-312.47,87.32),(-387.12,27.22)",
+        "browseMovieUrl": "https://vimeo.com/1114185923",
+        "createDate": "2025-08-29T09:24:34.772813",
+        "datasetId": "HJBQOY",
+        "endTime": "2025-08-25T19:05:56.741466",
+        "bucket": "data",
+        "exposureTime": 223.96394366197183,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.470756",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23340600",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T18:37:21.688070",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T09:25:03.233613",
+        "wavelengthMax": 589.9405273747814,
+        "wavelengthMin": 589.1835216666277,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 439.7970887014712,
+          "med": 430.4798985874683,
+          "min": 381.0601058967593,
+          "p25": 406.627740121764,
+          "p75": 434.40759904106517
+        },
+        "friedParameter": {
+          "max": 0.0952249344504659,
+          "med": 0.0468481467707735,
+          "min": 0.0180509336583172,
+          "p25": 0.0373224204074296,
+          "p75": 0.0583522352209182
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-312.17,79.52),(-387.4,30.55)",
+        "browseMovieUrl": "https://vimeo.com/1114196043",
+        "createDate": "2025-08-29T10:12:34.893914",
+        "datasetId": "XFOFZY",
+        "endTime": "2025-08-25T19:05:56.725466",
+        "bucket": "data",
+        "exposureTime": 192.03245070422534,
+        "frameCount": 1404,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.3119757.470756",
+        "isEmbargoed": false,
+        "embargoEndDate": "2025-10-01T21:57:24.340000",
+        "observingProgramExecutionId": "eid_3_54_opolDyXQ_R002.2038105.23340600",
+        "primaryExperimentId": "eid_3_54",
+        "primaryProposalId": "pid_3_54",
+        "startTime": "2025-08-25T18:37:21.672070",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-08-29T10:13:02.177888",
+        "wavelengthMax": 630.6244487176041,
+        "wavelengthMin": 629.7062939158873,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1404,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1404,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1404,
+        "lightLevel": {
+          "max": 439.7970887014712,
+          "med": 430.4798985874683,
+          "min": 381.0601058967593,
+          "p25": 406.627740121764,
+          "p75": 434.40759904106517
+        },
+        "friedParameter": {
+          "max": 0.0952249344504659,
+          "med": 0.0468481467707735,
+          "min": 0.0180509336583172,
+          "p25": 0.0373224204074296,
+          "p75": 0.0583522352209182
+        }
+      }
+    ]
+  }
+}

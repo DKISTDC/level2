@@ -12,6 +12,7 @@ import NSO.Types.Wavelength
 import Rel8
 import Text.Read (readEither)
 import Web.Hyperbole (FromParam, ToParam)
+import Web.Hyperbole.Data.URI (URI, parseURIReference, uriToText)
 
 
 newtype Bucket = Bucket {bucketName :: Text}
@@ -48,12 +49,25 @@ data Dataset' f = Dataset'
   , embargo :: Column f (Maybe UTCTime)
   , spectralLines :: Column f [Text]
   , bucket :: Column f Bucket
+  , browseMovieUrl :: Column f MovieUrl
   }
   deriving (Generic, Rel8able)
 
 
 deriving stock instance (f ~ Result) => Show (Dataset' f)
 deriving stock instance (f ~ Result) => Eq (Dataset' f)
+
+
+newtype MovieUrl = MovieUrl {uri :: URI}
+  deriving (Generic, Show, Eq)
+
+
+instance DBType MovieUrl where
+  typeInformation = parseTypeInformation (fmap MovieUrl . decodeURI) (uriToText . (.uri)) (typeInformation @Text)
+
+
+decodeURI :: Text -> Either String URI
+decodeURI t = maybe (Left $ "Invalid URI: " <> cs t) pure $ parseURIReference (cs t)
 
 
 data ObserveFrames

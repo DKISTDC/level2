@@ -219,11 +219,13 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
     ins <- parseInstrument d.instrumentName
     exd <- parseExperiment $ Id d.primaryExperimentId
     emb <- parseEmbargo
-    pure
-      $ Dataset'
+    movie <- decodeURI d.browseMovieUrl
+    pure $
+      Dataset'
         { datasetId = Id d.datasetId
         , scanDate = scanDate
         , bucket = Bucket d.bucket
+        , browseMovieUrl = MovieUrl movie
         , observingProgramId = Id d.observingProgramExecutionId
         , instrumentProgramId = Id d.instrumentProgramExecutionId
         , boundingBox = boundingBoxNaN d.boundingBox

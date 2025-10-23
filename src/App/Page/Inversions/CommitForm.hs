@@ -32,7 +32,7 @@ instance Show (CommitForm Validated) where
 commitForm :: (ViewAction (Action id)) => (GitCommit -> Action id) -> Maybe GitCommit -> Validated GitCommit -> View id ()
 commitForm saveCommit gc vf = do
   col ~ gap 5 $ do
-    link [uri|https://github.com/DKISTDC/ViSP-Inversion|] @ att "target" "_blank" ~ Style.link . bold $ text "ViSP-Inversion Git Commit"
+    link [uri|https://github.com/DKISTDC/ViSP-Inversion|] @ Style.blank ~ Style.link . bold $ text "ViSP-Inversion Git Commit"
     inputLoader $ do
       search (saveCommit . GitCommit) 250 ~ valStyle vf . Style.input @ inputValue gc . placeholder "6ed37aa902969d8e3420159b2f9cfb032d00cf82"
     invalidMessage vf

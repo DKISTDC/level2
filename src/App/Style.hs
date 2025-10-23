@@ -2,11 +2,16 @@ module App.Style where
 
 import App.Colors
 import NSO.Prelude
+import Web.Atomic.Attributes
 import Web.Atomic.CSS
 
 
 link :: (Styleable h) => CSS h -> CSS h
 link = color Primary . hover (color (light Primary) . underline)
+
+
+blank :: (Attributable h) => Attributes h -> Attributes h
+blank = att "target" "_blank"
 
 
 page :: (Styleable h) => CSS h -> CSS h

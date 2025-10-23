@@ -1,16 +1,11 @@
 module App.Worker.Generate.Level1 where
 
-import App.Effect.Transfer as Transfer
 import App.Worker.Generate.Decode
 import App.Worker.Generate.Error (FetchError (..), GenerateError (..))
-import Control.Monad.Loops (untilM_)
 import Data.List qualified as L
 import Effectful
-import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Globus (Task, TaskStatus (..))
-import Effectful.Globus qualified as Globus
 import Effectful.Log
 import NSO.Data.Datasets as Datasets
 import NSO.Files
@@ -118,5 +113,3 @@ readLevel1Asdf dir = do
 isFits :: Path s Filename a -> Bool
 isFits (Path f) =
   takeExtensions f == ".fits"
-
-

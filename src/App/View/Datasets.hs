@@ -9,6 +9,7 @@ import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
 import App.View.DataRow qualified as View
+import App.View.Icons qualified as Icons
 import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify (boxRadius)
@@ -56,6 +57,7 @@ datasetsTableUnsorted sortBy ds = do
   -- is there a way to do alternating rows here?
   table ds ~ View.table $ do
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text . cs $ d.datasetId.fromId
+    tcol (hd "") $ \d -> cell $ el ~ width 16 $ link d.browseMovieUrl.uri @ Style.blank ~ Style.link $ Icons.videoCamera
     tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d

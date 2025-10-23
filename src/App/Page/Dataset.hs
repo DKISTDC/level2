@@ -9,11 +9,13 @@ import App.View.Datasets (radiusBoundingBox)
 import App.View.Layout
 import Data.Aeson (encode)
 import Data.Ord (Down (..))
+import Data.Text qualified as T
 import NSO.Data.Datasets as Datasets
 import NSO.Prelude
 import NSO.Types.Common
 import Web.Atomic.CSS
 import Web.Hyperbole
+import Web.Hyperbole.Data.URI (uriToText)
 
 
 page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Page es '[]
@@ -61,6 +63,11 @@ viewDataset d =
       dataField "Light Level" $ json d.lightLevel
       -- dataField "Polarimetric Accuracy" $ json d.polarimetricAccuracy
       dataField "friedParameter" $ json d.friedParameter
+      tag "iframe" @ src embedMovieUrl . att "frameborder" "0" . att "allow" "autoplay; fullscreen" . att "allowfullscreen" "" . att "width" "800" . att "height" "600" $ none
+ where
+  -- https://vimeo.com/1114181863
+  -- https://player.vimeo.com/video/**yourvideonumberhere**
+  embedMovieUrl = T.replace "vimeo.com" "player.vimeo.com/video" $ uriToText d.browseMovieUrl.uri
 
 
 dataField :: Text -> View c () -> View c ()
