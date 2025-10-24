@@ -95,5 +95,3 @@ syncProposalTask task = do
     send $ TaskSetStatus task $ Exec scan.errors scan.datasets
 
     Sync.execSync scan.datasets
-    logStatus "done"
-    pure ()

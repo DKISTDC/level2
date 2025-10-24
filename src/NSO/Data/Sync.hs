@@ -189,11 +189,10 @@ execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
 execSync sds = do
   -- replace all the datasets!
   let new = fmap (.dataset) $ filter (\s -> s.sync == New) sds
-  logStatus $ " new " <> show (length new)
+  let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
+  logStatus $ " new: " <> show (length new) <> ", update: " <> show (length ups)
   send $ Datasets.Create new
 
-  let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
-  logStatus $ " update " <> show (length ups)
   mapM_ (send . Datasets.Save) ups
 
 
