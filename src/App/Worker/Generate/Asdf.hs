@@ -4,7 +4,7 @@ module App.Worker.Generate.Asdf where
 
 import App.Worker.Generate.Decode
 import App.Worker.Generate.Error
-import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames, isFits, readLevel1Asdf)
+import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames, readLevel1Asdf)
 import Control.Monad (zipWithM)
 import Data.List.NonEmpty qualified as NE
 import Effectful
@@ -128,4 +128,4 @@ readLevel2Fits pid iid path = do
 l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2FrameFits]
 l2FramePaths pid iid = do
   let dir = Files.outputL2Dir pid iid
-  fmap (fmap (\p -> Path p.filePath)) $ filter isFits <$> Scratch.listDirectory dir
+  fmap (fmap (\p -> Path p.filePath)) $ filter Files.isFits <$> Scratch.listDirectory dir

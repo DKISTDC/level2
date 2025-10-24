@@ -17,6 +17,7 @@ import NSO.Data.Datasets (Datasets)
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files.Scratch as Scratch
+import NSO.InterserviceBus as InterserviceBus
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Bucket)
@@ -57,6 +58,7 @@ publishTask
      , Tasks PublishTask :> es
      , Transfer :> es
      , Error GlobusError :> es
+     , InterserviceBus :> es
      , IOE :> es
      )
   => PublishTask
@@ -82,10 +84,10 @@ publishTask task = do
       send $ TaskSetStatus task $ PublishTransferring taskId
 
       logStatus "transferring"
-
       untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
+      logStatus "sending frame messages"
 
-      logStatus "transferred!"
+      send $ InterserviceBus.CatalogFrames task.proposalId task.inversionId bucket
 
       Inversions.setPublished task.inversionId
 

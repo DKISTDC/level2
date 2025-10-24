@@ -114,7 +114,7 @@ instrumentFromName t = readMaybe . cs $ t
 
 
 newtype Path system pathType a = Path {filePath :: FilePath}
-  deriving newtype (Show, Read, Eq, Ord, IsString, DBType, FromHttpApiData)
+  deriving newtype (Show, Read, Eq, Ord, IsString, DBType, FromHttpApiData, ToJSON, FromJSON)
   deriving (Generic)
 
 

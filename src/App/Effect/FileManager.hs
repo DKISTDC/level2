@@ -68,7 +68,7 @@ openRemoteDir r p = openDir r.collection $ remotePath r p
 
 -- Specific File Locations ------------------------------------------
 
-openPublish :: Remote Publish -> Path Publish Dir Inversion -> URI
+openPublish :: Remote Publish -> Path Publish Dir (Bucketed Inversion) -> URI
 openPublish = openRemoteDir
 
 

@@ -18,7 +18,6 @@ import NSO.Image.L1Input
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
-import System.FilePath (takeExtensions)
 import Telescope.Asdf qualified as Asdf
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)
@@ -85,7 +84,7 @@ allL1IntensityFrames propId dsetId = do
   isL1IntensityFile :: Path Scratch Filename Dataset -> Bool
   isL1IntensityFile (Path f) =
     -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
-    isFits (Path f) && "_I_" `L.isInfixOf` f
+    Files.isFits (Path f) && "_I_" `L.isInfixOf` f
 
 
 readLevel1File :: forall es. (Scratch :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
@@ -108,8 +107,3 @@ readLevel1Asdf dir = do
         Left e -> throwError $ L1AsdfParse e
         Right a -> pure a
     _ -> throwError $ MissingL1Asdf dir.filePath
-
-
-isFits :: Path s Filename a -> Bool
-isFits (Path f) =
-  takeExtensions f == ".fits"

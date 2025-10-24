@@ -17,7 +17,7 @@ import Web.Hyperbole.Data.URI (URI, parseURIReference, uriToText)
 
 newtype Bucket = Bucket {bucketName :: Text}
   deriving stock (Show, Eq, Ord, Generic)
-  deriving newtype (DBType, ToParam, FromParam)
+  deriving newtype (DBType, ToParam, FromParam, ToJSON, FromJSON)
 
 
 type Dataset = Dataset' Identity

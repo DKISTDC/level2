@@ -1,5 +1,6 @@
 module NSO.Files.DKIST where
 
+import NSO.Files.Image as Image
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
@@ -47,9 +48,13 @@ data Publish
 -- softPublishFolder :: Remote Publish SoftPublish
 -- softPublishFolder = RemoteFolder{remote, directory = baseDir}
 
-publishDir :: Bucket -> Id Proposal -> Id Inversion -> Path Publish Dir Inversion
+data Bucketed a
+
+
+publishDir :: Bucket -> Id Proposal -> Id Inversion -> Path Publish Dir (Bucketed Inversion)
 publishDir bucket propId invId =
-  bucketRoot bucket </> Path (cs propId.fromId) </> Path (cs invId.fromId)
+  let Path bucketDir = Image.inversionDir propId invId
+   in bucketRoot bucket </> Path bucketDir
 
 
 bucketRoot :: Bucket -> Path Publish Dir ()

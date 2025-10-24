@@ -49,6 +49,7 @@ import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
 import NSO.Files.Scratch (Scratch, runScratch)
 import NSO.Files.Scratch qualified as Scratch
+import NSO.InterserviceBus
 import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.HTTP.Client qualified as Http
@@ -81,10 +82,11 @@ main = do
       props <- atomically taskChanNew
       sync <- initMetadataSync
       admin <- initAdmin config.auth.admins config.auth.adminToken
+      bus <- initBusConnection config.bus
 
       concurrently_
         (startWebServer config admin fits pubs sync)
-        (runWorkers config admin fits pubs sync metas props startWorkers)
+        (runWorkers config admin fits pubs sync metas props bus startWorkers)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
@@ -154,13 +156,14 @@ main = do
       . runFailIO
       . runEnvironment
 
-  runWorkers config admin fits pubs sync metas props =
+  runWorkers config admin fits pubs sync metas props bus =
     runFileSystem
       . runDebugIO
       . runReader config.scratch
       . runReader config.cpuWorkers
       . runRel8 config.db
       . runScratch config.scratch
+      . runInterserviceBus bus
       . runGlobus' config.globus config.manager
       . runFetchHttp config.manager
       . runAuth config.app.domain Login admin

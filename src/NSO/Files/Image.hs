@@ -7,7 +7,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (..))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (InvProfileFit, InvProfileOrig, InvQuantities, Inversion)
-import System.FilePath (takeExtension)
+import System.FilePath (takeExtension, takeExtensions)
 
 
 -- the file paths here are independent of where they might be mounted
@@ -61,6 +61,10 @@ outputL2Dir ip ii =
   "generated" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
+inversionDir :: Id Proposal -> Id Inversion -> Path sys Dir Inversion
+inversionDir propId invId = Path (cs propId.fromId) </> Path (cs invId.fromId)
+
+
 data L2Asdf
 
 
@@ -76,3 +80,8 @@ filenameL2Asdf _ ii =
   toUnderscore :: Char -> Char
   toUnderscore '.' = '_'
   toUnderscore c = c
+
+
+isFits :: Path s Filename a -> Bool
+isFits (Path f) =
+  takeExtensions f == ".fits"

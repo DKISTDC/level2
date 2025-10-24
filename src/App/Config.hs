@@ -30,6 +30,7 @@ import Effectful.Rel8 as Rel8
 import NSO.Files.DKIST (Level1, Publish)
 import NSO.Files.RemoteFolder
 import NSO.Files.Scratch qualified as Scratch
+import NSO.InterserviceBus (InterserviceBusConfig (..), parseConnectionOpts)
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
@@ -52,6 +53,7 @@ data Config = Config
   , manager :: Http.Manager
   , level1 :: Remote Level1
   , publish :: Remote Publish
+  , bus :: InterserviceBusConfig
   }
 
 
@@ -80,10 +82,15 @@ initConfig = do
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   cpus <- initCPUWorkers
   (level1, publish) <- initRemotes
+  bus <- initBus
 
   log Debug $ dump " (config) metadata datasets" services.metadata.datasets
   log Debug $ dump " (config) metadata inversions" services.metadata.inversions
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
+  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, bus}
+
+
+initBus :: (Environment :> es) => Eff es InterserviceBusConfig
+initBus = parseConnectionOpts =<< getEnv "INTERSERVICE_BUS"
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo

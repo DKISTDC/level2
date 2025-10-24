@@ -266,9 +266,12 @@ transferPublish bucket propId invId = do
   dest <- send RemotePublish
   let lbl = "Publish " <> invId.fromId
   let sourcePath = Image.outputL2Dir propId invId
-  let destPath = DKIST.publishDir bucket propId invId
+  let destPath = bucketedInversionPath $ DKIST.publishDir bucket propId invId
   let transferItem = FileTransfer{sourcePath, destPath, recursive = True}
   send $ TransferFiles lbl scratch dest [transferItem]
+ where
+  bucketedInversionPath :: Path Publish Dir (Bucketed Inversion) -> Path Publish Dir Inversion
+  bucketedInversionPath (Path f) = Path f
 
 
 data TransferException
