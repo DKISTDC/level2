@@ -25,10 +25,11 @@ import Telescope.Fits as Fits
 
 
 newtype Canonical a = Canonical {value :: a}
+newtype Downloaded a = Downloaded {value :: a}
 
 
-canonicalDataset :: (Datasets :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => SliceXY -> [Id Dataset] -> Eff es (Canonical Dataset)
-canonicalDataset slice ids = do
+canonicalDataset :: (Datasets :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => SliceXY -> Downloaded [Id Dataset] -> Eff es (Canonical Dataset)
+canonicalDataset slice (Downloaded ids) = do
   dss :: [Dataset] <- Datasets.find $ Datasets.ByIds ids
   when (null dss) $ do
     throwError $ NoDatasets ids

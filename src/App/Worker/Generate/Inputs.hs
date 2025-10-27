@@ -2,7 +2,7 @@ module App.Worker.Generate.Inputs where
 
 import App.Worker.Generate.Decode
 import App.Worker.Generate.Error (FetchError (..), FrameSizes (..), GenerateError (..))
-import App.Worker.Generate.Level1 (Canonical (..), canonicalL1Frames)
+import App.Worker.Generate.Level1 (Canonical (..), Downloaded (..), canonicalL1Frames)
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Effectful
@@ -60,9 +60,6 @@ sliceMeta u = do
     pure $ SliceXY{pixelsPerBin, fiducialArmId}
 
 
-data DownloadComplete = DownloadComplete
-
-
 loadFrameInputs
   :: forall es
    . ( Log :> es
@@ -74,7 +71,7 @@ loadFrameInputs
      )
   => InversionFiles Identity File
   -> Canonical Dataset
-  -> DownloadComplete
+  -> Downloaded [Id Dataset]
   -> Eff es (Frames L2FrameInputs)
 loadFrameInputs files (Canonical dc) _ = do
   quantities <- decodeQuantitiesFrames =<< readFile files.quantities

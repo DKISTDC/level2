@@ -8,9 +8,8 @@ import App.Worker.Generate.Asdf qualified as Asdf
 import App.Worker.Generate.Error (FetchError (..), GenerateError (..), generateFailed, onCaughtError, onCaughtGlobus, runGenerateError)
 import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
-import App.Worker.Generate.Inputs (DownloadComplete (..))
 import App.Worker.Generate.Inputs qualified as Inputs
-import App.Worker.Generate.Level1 (Canonical (..))
+import App.Worker.Generate.Level1 (Canonical (..), Downloaded (..))
 import App.Worker.Generate.Level1 qualified as Level1
 import Data.Either (isRight)
 import Data.List.NonEmpty qualified as NE
@@ -104,11 +103,14 @@ generateTask task = do
       slice <- Inputs.sliceMeta files
 
       inv <- Inputs.loadInversion task.inversionId
-      dcanon <- Level1.canonicalDataset slice inv.datasets
+      log Debug $ dump "Got Inversion" inv.inversionId
 
-      down <- downloadL1Frames task inv dcanon
+      down <- downloadL1Frames task inv
       send $ TaskSetStatus task GenTransferComplete
       Inversions.setGenTransferred inv.inversionId
+
+      dcanon <- Level1.canonicalDataset slice down
+      log Debug $ dump "Canonical Dataset" dcanon.value
 
       frames <- Inputs.loadFrameInputs files dcanon down
       log Info $ dump "Fits Frames" (length frames)
@@ -172,20 +174,24 @@ workFrame t slice frameInputs = do
 
 
 downloadL1Frames
-  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch :> es, Transfer :> es, Tasks GenTask :> es)
+  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch :> es, Transfer :> es, Datasets :> es, Tasks GenTask :> es)
   => GenTask
   -> Inversion
-  -> Canonical Dataset
-  -> Eff es DownloadComplete
-downloadL1Frames task inv (Canonical ds) = do
+  -> Eff es (Downloaded [Id Dataset])
+downloadL1Frames task inv = do
+  ds <- datasets
   case inv.generate.transfer of
-    Just _ -> pure DownloadComplete
-    Nothing -> transfer
+    Just _ -> pure $ Downloaded $ datasetIds ds
+    Nothing -> transfer ds
  where
-  transfer = do
-    downloadTaskId <- Transfer.scratchDownloadDatasets [ds]
+  datasets = Datasets.find $ Datasets.ByIds inv.datasets
+
+  datasetIds = fmap (.datasetId)
+
+  transfer ds = do
+    downloadTaskId <- Transfer.scratchDownloadDatasets ds
     log Debug $ dump "Download" downloadTaskId
     send $ TaskSetStatus task $ GenTransferring downloadTaskId
     log Debug " - waiting..."
     Transfer.waitForTransfer (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
-    pure DownloadComplete
+    pure $ Downloaded $ datasetIds ds
