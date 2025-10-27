@@ -29,7 +29,8 @@ services:
     build:
       context: "${FRAME_CATALOGER_LOCAL:-../frame-cataloger}"
 
-    command: ["python", "dev/minimal.py"]
+    # handles messages, saves a nearly-empty frame to metadata-store-api
+    command: ["python", "dev/save.py"]
 
     environment:
       LOGURU_LEVEL: "INFO"

@@ -110,7 +110,6 @@ generateTask task = do
       Inversions.setGenTransferred inv.inversionId
 
       dcanon <- Level1.canonicalDataset slice down
-      log Debug $ dump "Canonical Dataset" dcanon.value
 
       frames <- Inputs.loadFrameInputs files dcanon down
       log Info $ dump "Fits Frames" (length frames)

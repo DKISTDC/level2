@@ -4,10 +4,14 @@
 - [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
 - [ ] Stuart: nice to see units on dataset page
 
-## Fri, Oct 22
-- [ ] Actually work on message frame cataloger 
+## Mon, Oct 27
+- [ ] BUG - Gen Worker - can't canonical before downloading
+- [ ] Test frame-cataloger: docker nonsense
 
-## Thu, Oct 22
+## Fri, Oct 24
+- [x] L2 is dumping catalog.frame.m messages into rabbitmq
+
+## Thu, Oct 23
 *Han has identified a new dataset to use, somehow he's only JUST starting on it now that we are meeting today. He likes the fried parameter, has a workflow for *
 - [x] Added browseMovieUrl link on datasets table, and embedded into the dataset details
 
@@ -17,7 +21,7 @@
 - [x] BUG: publish wasn't showing transfer progress
 - [x] BUG: publish isn't really updating if it errors or completes before getting to the transfer status screen. Try using the dev publish, or throwing an error immediately
 
-## Tue, Oct 22
+## Tue, Oct 21
 - [x] attempted iron plot, realized it is tons of work! We don't have the ability to read BinTableHDUs via haskell. Could do with a python sub-process. Told Han it's not worth it
 
 ## Fri, Oct 16
