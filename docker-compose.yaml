@@ -37,7 +37,8 @@ services:
       GQL_AUTH_TOKEN: "dev"
       MESH_CONFIG: '{
           "interservice-bus": { "mesh_address": "interservice-bus","mesh_port": 5672},
-          "system-monitoring-log-apm": {"mesh_address": "elastic-apm","mesh_port": 8200}
+          "system-monitoring-log-apm": {"mesh_address": "elastic-apm","mesh_port": 8200},
+          "internal-api-gateway": {"mesh_address": "metadata-store-api","mesh_port": 8080}
         }'
 
 

@@ -9,7 +9,7 @@ import App.Worker.Generate.Error (FetchError (..), GenerateError (..), generateF
 import App.Worker.Generate.Fits (Skipped)
 import App.Worker.Generate.Fits qualified as Fits
 import App.Worker.Generate.Inputs qualified as Inputs
-import App.Worker.Generate.Level1 (Canonical (..), Downloaded (..))
+import App.Worker.Generate.Level1 (Downloaded (..))
 import App.Worker.Generate.Level1 qualified as Level1
 import Data.Either (isRight)
 import Data.List.NonEmpty qualified as NE

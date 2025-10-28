@@ -4,8 +4,11 @@
 - [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
 - [ ] Stuart: nice to see units on dataset page
 
+## Tue, Oct 27
+- [x] publish catalog.frame.m messages!
+
 ## Mon, Oct 27
-- [ ] BUG - Gen Worker - can't canonical before downloading
+- [x] BUG - Gen Worker - can't canonical before downloading
 - [ ] Test frame-cataloger: docker nonsense
 
 ## Fri, Oct 24

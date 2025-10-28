@@ -30,7 +30,7 @@ import Effectful.Rel8 as Rel8
 import NSO.Files.DKIST (Level1, Publish)
 import NSO.Files.RemoteFolder
 import NSO.Files.Scratch qualified as Scratch
-import NSO.InterserviceBus (InterserviceBusConfig (..), parseConnectionOpts)
+import NSO.InterserviceBus as ISB (InterserviceBusConfig (..), initBusConfig)
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
@@ -90,7 +90,10 @@ initConfig = do
 
 
 initBus :: (Environment :> es) => Eff es InterserviceBusConfig
-initBus = parseConnectionOpts =<< getEnv "INTERSERVICE_BUS"
+initBus = do
+  isb <- getEnv "ISB_CONNECTION_URL"
+  exc <- getEnv "ISB_EXCHANGE"
+  ISB.initBusConfig isb exc
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo

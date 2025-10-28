@@ -48,6 +48,12 @@ setPublished iid = do
     InversionRow{published = lit (Just now), ..}
 
 
+resetPublished :: (Inversions :> es) => Id Inversion -> Eff es ()
+resetPublished iid = do
+  send $ Update iid $ \InversionRow{..} ->
+    InversionRow{published = lit Nothing, ..}
+
+
 setError :: (Inversions :> es) => Id Inversion -> Text -> Eff es ()
 setError iid err = do
   send $ Update iid $ \InversionRow{..} -> InversionRow{invError = lit (Just err), ..}

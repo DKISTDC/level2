@@ -584,9 +584,10 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
     PublishStep bucket propId _ invId <- viewId
     case action of
       StartPublish -> do
+        Inversions.resetPublished invId
         Inversions.clearError invId
         Publish.startPublish propId invId
-        pure $ viewPublishStatus PublishWaiting
+        refreshInversion
       CheckPublish -> do
         inv <- loadInversion invId
         mstatus <- send $ TaskLookupStatus $ PublishTask propId invId
@@ -649,5 +650,7 @@ viewPublishStatus = \case
 
 viewPublished :: Remote Publish -> Bucket -> Id Proposal -> Id Inversion -> View PublishStep ()
 viewPublished remote bucket propId invId = do
-  link (FileManager.openPublish remote $ DKIST.publishDir bucket propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
-    "View Published Files"
+  row ~ gap 10 $ do
+    link (FileManager.openPublish remote $ DKIST.publishDir bucket propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
+      "View Published Files"
+    button StartPublish ~ Style.btnOutline Secondary $ "Republish"

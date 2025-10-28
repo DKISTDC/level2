@@ -1,13 +1,10 @@
 module NSO.InterserviceBus where
 
-import Control.Monad.Catch (MonadThrow)
 import Data.Aeson (FromJSON, ToJSON)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
-import Effectful.Reader.Dynamic
-import NSO.Files.DKIST (Bucketed, Publish)
-import NSO.Files.DKIST qualified as DKIST
+import NSO.Files.DKIST (Publish)
 import NSO.Files.Image (isFits)
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch
@@ -17,10 +14,9 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
-import Network.AMQP.Worker (Bind, Connection, Key, Route, key, word)
+import Network.AMQP.Worker (Key, Queue, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
-import Network.AMQP.Worker.Connection (ConnectionOpts)
-import Network.AMQP.Worker.Key (Bind, Key, key, word)
+import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, ExchangeName)
 
 
 data InterserviceBus :: Effect where
@@ -31,10 +27,10 @@ type instance DispatchOf InterserviceBus = 'Dynamic
 
 runInterserviceBus
   :: (IOE :> es, Scratch :> es, Log :> es)
-  => Connection
+  => BusConnection
   -> Eff (InterserviceBus : es) a
   -> Eff es a
-runInterserviceBus conn = interpret $ \_ -> \case
+runInterserviceBus bus = interpret $ \_ -> \case
   CatalogFrames propId invId bucket -> do
     msgs <- catalogFrameMessages propId invId bucket
     mapM_ publishFrameMessage msgs
@@ -42,7 +38,7 @@ runInterserviceBus conn = interpret $ \_ -> \case
   publishFrameMessage :: (IOE :> es, Log :> es) => CatalogFrameMessage -> Eff es ()
   publishFrameMessage msg = do
     log Debug $ dump (show frameMessagesKey) msg
-    liftIO $ Worker.publish conn frameMessagesKey msg
+    liftIO $ Worker.publish bus.connection frameMessagesKey msg
 
 
 catalogFrameMessages :: (Scratch :> es) => Id Proposal -> Id Inversion -> Bucket -> Eff es [CatalogFrameMessage]
@@ -67,15 +63,36 @@ catalogFrameMessages propId invId bucket = do
       }
 
 
-newtype InterserviceBusConfig = InterserviceBusConfig ConnectionOpts
+data InterserviceBusConfig = InterserviceBusConfig
+  { options :: ConnectionOpts
+  , exchangeName :: ExchangeName
+  }
+  deriving (Show)
 
 
-initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es Connection
-initBusConnection (InterserviceBusConfig opts) = Worker.connect opts
+data BusConnection = BusConnection
+  { connection :: Connection
+  , catalogFrame :: Queue CatalogFrameMessage
+  }
 
 
-parseConnectionOpts :: (MonadThrow m) => String -> m InterserviceBusConfig
-parseConnectionOpts = fmap InterserviceBusConfig <$> Worker.parseURI
+initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
+initBusConnection cfg = do
+  cnn <- setExchange cfg.exchangeName <$> Worker.connect cfg.options
+  cfq <- Worker.queueNamed cnn "catalog.frame.q" frameMessagesKey
+  pure $
+    BusConnection
+      { connection = cnn
+      , catalogFrame = cfq
+      }
+ where
+  setExchange exg cnn = cnn{exchange = exg}
+
+
+initBusConfig :: String -> String -> Eff es InterserviceBusConfig
+initBusConfig uri exc = do
+  options <- Worker.parseURI uri
+  pure $ InterserviceBusConfig{options, exchangeName = cs exc}
 
 
 data Conversation
@@ -90,7 +107,6 @@ data CatalogFrameMessage = CatalogFrameMessage
   deriving (Generic, Show, Eq, FromJSON, ToJSON)
 
 
--- Keys, we don't need to create or know the queues
 frameMessagesKey :: Key Route CatalogFrameMessage
 frameMessagesKey = key "catalog" & word "frame" & word "m"
 
