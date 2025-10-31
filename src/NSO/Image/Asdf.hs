@@ -14,7 +14,9 @@ import GHC.Generics (Rep, from)
 import NSO.Data.Spectra (midPoint)
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Files
-import NSO.Files.Image (L2Fits)
+import NSO.Files.Image (L2Asdf, L2Fits)
+import NSO.Files.Image qualified as Files
+import NSO.Files.Scratch as Scratch (ScratchError (..), pathExists)
 import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.HeaderTable
 import NSO.Image.Asdf.NDCollection
@@ -439,3 +441,13 @@ instance (KnownText fit) => ToAsdf (ProfileTreeMeta fit) where
       , ("headers", toNode m.headers)
       , ("inventory", toNode (Ref @InversionInventory))
       ]
+
+
+generatedL2FrameAsdf :: (Scratch :> es, Error ScratchError :> es) => Id Proposal -> Id Inversion -> Eff es (Path Scratch Filename L2Asdf)
+generatedL2FrameAsdf propId invId = do
+  let fname = Files.filenameL2Asdf propId invId
+  let fpath = filePath (Files.outputL2Dir propId invId) fname
+  exists <- Scratch.pathExists fpath
+  unless exists $ do
+    throwError $ ScratchPathMissing fpath.filePath "Generated L2 Asdf"
+  pure fname

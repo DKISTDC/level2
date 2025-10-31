@@ -9,6 +9,7 @@ import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Exception (catch)
+import Effectful.GenRandom
 import Effectful.Globus (GlobusError, Task)
 import Effectful.Log
 import Effectful.Tasks
@@ -17,7 +18,6 @@ import NSO.Data.Datasets (Datasets)
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files.Scratch as Scratch
-import NSO.Image.Fits.Frame (L2FrameError)
 import NSO.InterserviceBus as InterserviceBus
 import NSO.Prelude
 import NSO.Types.Common
@@ -60,6 +60,7 @@ publishTask
      , Transfer :> es
      , Error GlobusError :> es
      , InterserviceBus :> es
+     , GenRandom :> es
      , IOE :> es
      )
   => PublishTask
@@ -88,9 +89,14 @@ publishTask task = do
       untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
       logStatus "sending frame messages"
 
-      runErrorNoCallStackWith (throwError . L2FrameError) $ InterserviceBus.catalogFrames bucket task.proposalId task.inversionId
+      conversationId <- randomId "l2pub"
+      runScratchError $ do
+        InterserviceBus.catalogFitsFrames conversationId bucket task.proposalId task.inversionId
+        InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
 
       Inversions.setPublished task.inversionId
+
+  runScratchError = runErrorNoCallStackWith (throwError . ScratchError)
 
   failed :: (Show e) => e -> Eff es ()
   failed err = do
@@ -104,7 +110,7 @@ data PublishError
   | MixedProposalBuckets (Id Proposal)
   | GlobusError GlobusError
   | PublishIOError IOError
-  | L2FrameError L2FrameError
+  | ScratchError ScratchError
   deriving (Show, Exception)
 
 

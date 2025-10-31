@@ -3,6 +3,8 @@ module NSO.Image.Headers.Types where
 -- import Control.Exception (Exception)
 -- import Data.Massiv.Array (Ix3, Ix4, Sz (..))
 
+import Data.Aeson (ToJSON (..))
+import Data.Aeson qualified as A
 import Data.Text (pack)
 import Data.Text qualified as T
 import GHC.TypeLits
@@ -181,6 +183,10 @@ instance (KnownValue c) => KeyType (Constant c) where
   typeComment = ""
 instance (KnownValue c) => FromKeyword (Constant c) where
   parseKeywordValue _ = pure Constant
+instance (KnownText c) => ToJSON (Constant c) where
+  toJSON _ = A.String (knownText @c)
+instance (KnownText c) => Show (Constant c) where
+  show _ = "Constant \"" <> cs (knownText @c) <> "\""
 
 
 newtype Url = Url Text
