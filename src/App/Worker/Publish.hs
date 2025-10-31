@@ -17,6 +17,7 @@ import NSO.Data.Datasets (Datasets)
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files.Scratch as Scratch
+import NSO.Image.Fits.Frame (L2FrameError)
 import NSO.InterserviceBus as InterserviceBus
 import NSO.Prelude
 import NSO.Types.Common
@@ -87,7 +88,7 @@ publishTask task = do
       untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
       logStatus "sending frame messages"
 
-      send $ InterserviceBus.CatalogFrames task.proposalId task.inversionId bucket
+      runErrorNoCallStackWith (throwError . L2FrameError) $ InterserviceBus.catalogFrames bucket task.proposalId task.inversionId
 
       Inversions.setPublished task.inversionId
 
@@ -103,6 +104,7 @@ data PublishError
   | MixedProposalBuckets (Id Proposal)
   | GlobusError GlobusError
   | PublishIOError IOError
+  | L2FrameError L2FrameError
   deriving (Show, Exception)
 
 

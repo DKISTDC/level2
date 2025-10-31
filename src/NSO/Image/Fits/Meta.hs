@@ -5,6 +5,7 @@ import Data.List.Ext
 import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
+import NSO.Files.Image (L2Fits)
 import NSO.Files.Scratch (Scratch)
 import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
@@ -32,7 +33,7 @@ allows us to generate the ASDF by reading the FITS
 instead of keeping all the fits data in memory
 -}
 data L2FitsMeta = L2FitsMeta
-  { path :: Path Scratch Filename L2FrameFits
+  { path :: Path Scratch Filename L2Fits
   , primary :: PrimaryHeader
   , quantities :: FrameQuantitiesMeta
   , profiles :: Arms ArmFrameProfileMeta
@@ -89,7 +90,7 @@ instance FromHeader (Shape Quantity) where
 
 frameMetaFromL2Fits
   :: (Error ParseError :> es, Error ProfileError :> es, Error QuantityError :> es)
-  => Path Scratch Filename L2FrameFits
+  => Path Scratch Filename L2Fits
   -> SliceXY
   -> Arms ArmWavMeta
   -> L1Fits
@@ -211,7 +212,7 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
 --   fit854 <- parseProfile @Fit854 wpf.wav854
 --   pure $ Profiles{orig630, orig854, fit630, fit854}
 
-frameMeta :: L2FrameFits -> Path Scratch Filename L2FrameFits -> L2FitsMeta
+frameMeta :: L2FrameFits -> Path Scratch Filename L2Fits -> L2FitsMeta
 frameMeta frame path =
   L2FitsMeta
     { primary = frame.primary

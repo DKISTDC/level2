@@ -8,15 +8,15 @@ import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
+import NSO.Files.Image (L2Fits)
 import NSO.Files.Image qualified as Files
-import NSO.Files.Scratch (Scratch (..))
+import NSO.Files.Scratch as Scratch (Scratch (..), listDirectory)
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
-import NSO.Image.Headers
 import NSO.Image.Headers.Types (SliceXY)
 import NSO.Image.L1Input (L1Fits (..))
 import NSO.Image.Primary
-import NSO.Image.Types.Frame (Arms (..), Depth, SlitX)
+import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
@@ -49,13 +49,9 @@ instance Show L2FrameInputs where
      in [i| L2FrameInputs { quantities = , profiles = #{ps}, l1Frame = #{length ks}} |]
 
 
-outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path Scratch File L2FrameFits
+outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path Scratch File L2Fits
 outputL2Fits ip ii dt =
-  filePath (Files.outputL2Dir ip ii) $ filenameL2Fits ii dt
-
-
-filenameL2Fits :: Id Inversion -> LocalTime -> Path Scratch Filename L2FrameFits
-filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
+  filePath (Files.outputL2Dir ip ii) $ Files.filenameL2Fits ii dt
 
 
 deleteL2FramesFits :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es ()
@@ -129,3 +125,18 @@ instance HDUOrder Density where
   hduIndex = 11
 instance HDUOrder (Arms a) where
   hduIndex = 12
+
+
+generatedL2FrameFits :: (Scratch :> es, Error L2FrameError :> es) => Id Proposal -> Id Inversion -> Eff es (Frames (Path Scratch File L2Fits))
+generatedL2FrameFits propId invId = do
+  let dir = Files.outputL2Dir propId invId
+  files <- filter Files.isFits <$> Scratch.listDirectory dir
+  case files of
+    [] -> throwError $ MissingGeneratedFrames dir
+    (f : fs) -> do
+      pure $ Frames $ fmap (filePath dir) (f :| fs)
+
+
+data L2FrameError
+  = MissingGeneratedFrames (Path Scratch Dir Inversion)
+  deriving (Show)

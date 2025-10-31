@@ -3,12 +3,15 @@ module NSO.InterserviceBus where
 import Data.Aeson (FromJSON, ToJSON)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
+import Effectful.GenRandom (GenRandom)
 import Effectful.Log
 import NSO.Files.DKIST (Publish)
-import NSO.Files.Image (isFits)
+import NSO.Files.Image (L2Fits, isFits)
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch
-import NSO.Image.Fits.Frame (L2FrameFits)
+import NSO.Image.Fits.Frame as Frames (L2FrameError, generatedL2FrameFits)
+import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -20,48 +23,47 @@ import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, Exchange
 
 
 data InterserviceBus :: Effect where
-  -- send a message FOR EACH frame?
-  CatalogFrames :: Id Proposal -> Id Inversion -> Bucket -> InterserviceBus m ()
+  CatalogFrame :: Bucket -> Path Scratch File L2Fits -> InterserviceBus m ()
+
+
+-- CatalogAsdf :: Id Proposal -> Id Inversion -> Bucket -> InterserviceBus m ()
 type instance DispatchOf InterserviceBus = 'Dynamic
 
 
 runInterserviceBus
-  :: (IOE :> es, Scratch :> es, Log :> es)
+  :: (IOE :> es, Log :> es, GenRandom :> es)
   => BusConnection
   -> Eff (InterserviceBus : es) a
   -> Eff es a
 runInterserviceBus bus = interpret $ \_ -> \case
-  CatalogFrames propId invId bucket -> do
-    msgs <- catalogFrameMessages propId invId bucket
-    mapM_ publishFrameMessage msgs
- where
-  publishFrameMessage :: (IOE :> es, Log :> es) => CatalogFrameMessage -> Eff es ()
-  publishFrameMessage msg = do
+  CatalogFrame bucket file -> do
+    conv <- randomId "l2conv"
+    let obj = frameObjectName file
+    let msg = catalogFrameMessage bucket obj conv
     log Debug $ dump (show frameMessagesKey) msg
     liftIO $ Worker.publish bus.connection frameMessagesKey msg
-
-
-catalogFrameMessages :: (Scratch :> es) => Id Proposal -> Id Inversion -> Bucket -> Eff es [CatalogFrameMessage]
-catalogFrameMessages propId invId bucket = do
-  let dir = Files.outputL2Dir propId invId
-  fits <- fmap frameObjectName . filter isFits <$> Scratch.listDirectory dir -- Path Scratch Filename a
-  pure $ fmap catalogFrameMessage fits
  where
-  frameObjectName :: Path Scratch Filename Inversion -> Path Publish File L2FrameFits
-  frameObjectName (Path filename) =
-    let fpath :: Path Publish Filename L2FrameFits = Path filename
-        dir :: Path Publish Dir Inversion = Files.inversionDir propId invId
-     in filePath dir fpath
+  frameObjectName :: Path Scratch File L2Fits -> Path Publish File L2Fits
+  frameObjectName (Path file) = Path file
 
-  catalogFrameMessage :: Path Publish File L2FrameFits -> CatalogFrameMessage
-  catalogFrameMessage objectName =
+  catalogFrameMessage bucket objectName conversationId =
     CatalogFrameMessage
       { bucket
       , objectName
       , incrementDatasetCatalogReceiptCount = False
-      , conversationId = Id invId.fromId
+      , conversationId
       }
 
+
+catalogFrames :: (Error L2FrameError :> es, Scratch :> es, InterserviceBus :> es) => Bucket -> Id Proposal -> Id Inversion -> Eff es ()
+catalogFrames bucket propId invId = do
+  Frames fs <- Frames.generatedL2FrameFits propId invId
+  mapM_ (send . CatalogFrame bucket) fs
+
+
+--   let dir = Files.outputL2Dir propId invId
+--   fits <- fmap frameObjectName . filter isFits <$> Scratch.listDirectory dir -- Path Scratch Filename a
+--   pure $ fmap catalogFrameMessage fits
 
 data InterserviceBusConfig = InterserviceBusConfig
   { options :: ConnectionOpts
@@ -100,7 +102,7 @@ data Conversation
 
 data CatalogFrameMessage = CatalogFrameMessage
   { bucket :: Bucket
-  , objectName :: Path Publish File L2FrameFits
+  , objectName :: Path Publish File L2Fits
   , incrementDatasetCatalogReceiptCount :: Bool
   , conversationId :: Id Conversation
   }

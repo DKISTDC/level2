@@ -2,6 +2,7 @@ module NSO.Files.Image where
 
 import Data.Text qualified as T
 import NSO.Files.Scratch (Scratch)
+import NSO.Image.Headers (fitsFrameFilename)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (..))
@@ -80,6 +81,13 @@ filenameL2Asdf _ ii =
   toUnderscore :: Char -> Char
   toUnderscore '.' = '_'
   toUnderscore c = c
+
+
+data L2Fits
+
+
+filenameL2Fits :: Id Inversion -> LocalTime -> Path Scratch Filename L2Fits
+filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
 
 
 isFits :: Path s Filename a -> Bool

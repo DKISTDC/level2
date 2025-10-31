@@ -15,6 +15,7 @@ import NSO.Data.Datasets
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files as Files
+import NSO.Files.Image (L2Fits)
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch
 import NSO.Image.Asdf as Asdf
@@ -111,7 +112,7 @@ loadL2FitsMeta
   -> Id Inversion
   -> SliceXY
   -> Arms ArmWavMeta
-  -> Path Scratch Filename L2FrameFits
+  -> Path Scratch Filename L2Fits
   -> L1Fits
   -> Eff es L2FitsMeta
 loadL2FitsMeta propId invId slice arms path l1 = do
@@ -119,13 +120,13 @@ loadL2FitsMeta propId invId slice arms path l1 = do
   runErrorNoCallStackWith (throwError . ParseError path.filePath) $ Meta.frameMetaFromL2Fits path slice arms l1 fits
 
 
-readLevel2Fits :: forall es. (Scratch :> es, Error FetchError :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2FrameFits -> Eff es Fits
+readLevel2Fits :: forall es. (Scratch :> es, Error FetchError :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2Fits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   readFits $ filePath dir path
 
 
-l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2FrameFits]
+l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2Fits]
 l2FramePaths pid iid = do
   let dir = Files.outputL2Dir pid iid
   fmap (fmap (\p -> Path p.filePath)) $ filter Files.isFits <$> Scratch.listDirectory dir

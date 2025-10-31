@@ -163,7 +163,6 @@ main = do
       . runReader config.cpuWorkers
       . runRel8 config.db
       . runScratch config.scratch
-      . runInterserviceBus bus
       . runGlobus' config.globus config.manager
       . runFetchHttp config.manager
       . runAuth config.app.domain Login admin
@@ -171,6 +170,7 @@ main = do
       . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
+      . runInterserviceBus bus
       . runTime
       . runDataInversions
       . runDataDatasets

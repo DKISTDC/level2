@@ -11,6 +11,7 @@ import Effectful.Log
 import Effectful.Time
 import NSO.Data.Inversions as Inversions
 import NSO.Files as Files
+import NSO.Files.Image as Files
 import NSO.Files.Scratch as Scratch
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError)
@@ -61,7 +62,7 @@ genFrame propId invId slice frameInputs = do
       Scratch.writeFile path $ Fits.encodeL2 fits
       logStatus "WROTE"
 
-      pure $ Fits.frameMeta frame (filenameL2Fits invId dateBeg)
+      pure $ Fits.frameMeta frame (Files.filenameL2Fits invId dateBeg)
  where
   guardAlreadyExists path = do
     alreadyExists <- Scratch.pathExists path
