@@ -10,7 +10,7 @@ import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Files.Image (L2Fits)
 import NSO.Files.Image qualified as Files
-import NSO.Files.Scratch as Scratch (Scratch (..), listDirectory)
+import NSO.Files.Scratch as Scratch (Scratch (..), ScratchError (..), listDirectory)
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers.Types (SliceXY)
@@ -127,16 +127,14 @@ instance HDUOrder (Arms a) where
   hduIndex = 12
 
 
-generatedL2FrameFits :: (Scratch :> es, Error L2FrameError :> es) => Id Proposal -> Id Inversion -> Eff es (Frames (Path Scratch File L2Fits))
+generatedL2FrameFits :: (Scratch :> es, Error ScratchError :> es) => Id Proposal -> Id Inversion -> Eff es (Frames (Path Scratch Filename L2Fits))
 generatedL2FrameFits propId invId = do
   let dir = Files.outputL2Dir propId invId
   files <- filter Files.isFits <$> Scratch.listDirectory dir
   case files of
-    [] -> throwError $ MissingGeneratedFrames dir
+    [] -> throwError $ ScratchPathMissing dir.filePath "0 Fits Frames"
     (f : fs) -> do
-      pure $ Frames $ fmap (filePath dir) (f :| fs)
-
-
-data L2FrameError
-  = MissingGeneratedFrames (Path Scratch Dir Inversion)
-  deriving (Show)
+      pure $ Frames $ fmap l2FitsFilename (f :| fs)
+ where
+  l2FitsFilename :: Path Scratch Filename Inversion -> Path Scratch Filename L2Fits
+  l2FitsFilename (Path f) = Path f

@@ -1,6 +1,6 @@
 module NSO.Files.DKIST where
 
-import NSO.Files.Image as Image
+import NSO.Files.Image qualified as Image
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
@@ -53,8 +53,12 @@ data Bucketed a
 
 publishDir :: Bucket -> Id Proposal -> Id Inversion -> Path Publish Dir (Bucketed Inversion)
 publishDir bucket propId invId =
-  let Path bucketDir = Image.inversionDir propId invId
+  let Path bucketDir = inversionDir propId invId
    in bucketRoot bucket </> Path bucketDir
+
+
+inversionDir :: Id Proposal -> Id Inversion -> Path Publish Dir Inversion
+inversionDir = Image.inversionDir
 
 
 bucketRoot :: Bucket -> Path Publish Dir ()

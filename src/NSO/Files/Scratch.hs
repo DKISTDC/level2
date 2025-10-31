@@ -120,5 +120,6 @@ remote :: (Scratch :> es) => Eff es (Remote Scratch)
 remote = send Globus
 
 
-data ScratchException = ScratchNoExist FilePath String
+data ScratchError
+  = ScratchPathMissing FilePath String
   deriving (Show, Eq, Exception)

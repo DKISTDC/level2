@@ -6,27 +6,29 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom (GenRandom)
 import Effectful.Log
-import NSO.Files.DKIST (Publish)
-import NSO.Files.Image (L2Fits, isFits)
+import NSO.Files.DKIST as DKIST (Publish, inversionDir)
+import NSO.Files.Image (L2Asdf, L2Fits)
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch
-import NSO.Image.Fits.Frame as Frames (L2FrameError, generatedL2FrameFits)
+import NSO.Image.Asdf as Asdf (generatedL2FrameAsdf)
+import NSO.Image.Fits.Frame as Frames (generatedL2FrameFits)
+import NSO.Image.Headers.Types (Constant (..))
 import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
-import Network.AMQP.Worker (Key, Queue, Route, key, word)
+import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, ExchangeName)
 
 
 data InterserviceBus :: Effect where
-  CatalogFrame :: Bucket -> Path Scratch File L2Fits -> InterserviceBus m ()
+  CatalogFits :: Id Conversation -> Bucket -> Path Publish File L2Fits -> InterserviceBus m ()
+  CatalogAsdf :: Id Conversation -> Bucket -> Id Inversion -> Path Publish File L2Asdf -> InterserviceBus m ()
 
 
--- CatalogAsdf :: Id Proposal -> Id Inversion -> Bucket -> InterserviceBus m ()
 type instance DispatchOf InterserviceBus = 'Dynamic
 
 
@@ -36,15 +38,18 @@ runInterserviceBus
   -> Eff (InterserviceBus : es) a
   -> Eff es a
 runInterserviceBus bus = interpret $ \_ -> \case
-  CatalogFrame bucket file -> do
-    conv <- randomId "l2conv"
-    let obj = frameObjectName file
-    let msg = catalogFrameMessage bucket obj conv
-    log Debug $ dump (show frameMessagesKey) msg
-    liftIO $ Worker.publish bus.connection frameMessagesKey msg
+  CatalogFits convId bucket file -> do
+    let msg = catalogFrameMessage bucket file convId
+    log Debug $ dump (show bus.catalogFrame) msg
+    publishMessage bus.catalogFrame msg
+  CatalogAsdf convId bucket invId file -> do
+    let msg = catalogAsdfMessage bucket file invId convId
+    log Debug $ dump (show bus.catalogObject) msg
+    publishMessage bus.catalogObject msg
  where
-  frameObjectName :: Path Scratch File L2Fits -> Path Publish File L2Fits
-  frameObjectName (Path file) = Path file
+  publishMessage :: (IOE :> es, ToJSON msg) => Key Route msg -> msg -> Eff es ()
+  publishMessage k msg =
+    liftIO $ Worker.publish bus.connection k msg
 
   catalogFrameMessage bucket objectName conversationId =
     CatalogFrameMessage
@@ -54,16 +59,17 @@ runInterserviceBus bus = interpret $ \_ -> \case
       , conversationId
       }
 
+  catalogAsdfMessage bucket objectName invId conversationId =
+    CatalogObjectMessage
+      { bucket
+      , objectName = objectName
+      , objectType = Constant
+      , groupId = invId.fromId
+      , groupName = Constant
+      , incrementDatasetCatalogReceiptCount = False
+      , conversationId
+      }
 
-catalogFrames :: (Error L2FrameError :> es, Scratch :> es, InterserviceBus :> es) => Bucket -> Id Proposal -> Id Inversion -> Eff es ()
-catalogFrames bucket propId invId = do
-  Frames fs <- Frames.generatedL2FrameFits propId invId
-  mapM_ (send . CatalogFrame bucket) fs
-
-
---   let dir = Files.outputL2Dir propId invId
---   fits <- fmap frameObjectName . filter isFits <$> Scratch.listDirectory dir -- Path Scratch Filename a
---   pure $ fmap catalogFrameMessage fits
 
 data InterserviceBusConfig = InterserviceBusConfig
   { options :: ConnectionOpts
@@ -74,18 +80,24 @@ data InterserviceBusConfig = InterserviceBusConfig
 
 data BusConnection = BusConnection
   { connection :: Connection
-  , catalogFrame :: Queue CatalogFrameMessage
+  , catalogFrame :: Key Route CatalogFrameMessage
+  , catalogObject :: Key Route CatalogObjectMessage
   }
 
 
 initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
 initBusConnection cfg = do
   cnn <- setExchange cfg.exchangeName <$> Worker.connect cfg.options
-  cfq <- Worker.queueNamed cnn "catalog.frame.q" frameMessagesKey
+  let frameMessagesKey = key "catalog" & word "frame" & word "m"
+  _ <- Worker.queueNamed cnn "catalog.frame.q" frameMessagesKey
+
+  let catalogObjectKey = key "catalog" & word "object" & word "m"
+  _ <- Worker.queueNamed cnn "catalog.object.q" catalogObjectKey
   pure $
     BusConnection
       { connection = cnn
-      , catalogFrame = cfq
+      , catalogFrame = frameMessagesKey
+      , catalogObject = catalogObjectKey
       }
  where
   setExchange exg cnn = cnn{exchange = exg}
@@ -100,6 +112,16 @@ initBusConfig uri exc = do
 data Conversation
 
 
+-- Catalog Frames -------------------------------------------------------
+
+catalogFitsFrames :: (Error ScratchError :> es, Scratch :> es, InterserviceBus :> es) => Id Conversation -> Bucket -> Id Proposal -> Id Inversion -> Eff es ()
+catalogFitsFrames convId bucket propId invId = do
+  Frames fnames <- Frames.generatedL2FrameFits propId invId
+  let dir = DKIST.inversionDir propId invId
+  let fpaths = fmap (filePath dir . publishFileName) fnames
+  mapM_ (send . CatalogFits convId bucket) fpaths
+
+
 data CatalogFrameMessage = CatalogFrameMessage
   { bucket :: Bucket
   , objectName :: Path Publish File L2Fits
@@ -109,14 +131,29 @@ data CatalogFrameMessage = CatalogFrameMessage
   deriving (Generic, Show, Eq, FromJSON, ToJSON)
 
 
-frameMessagesKey :: Key Route CatalogFrameMessage
-frameMessagesKey = key "catalog" & word "frame" & word "m"
+-- Catalog Frames -------------------------------------------------------
 
--- I need to name this the same thing as frame cataloger
--- q <- Worker.queue conn "catalog.frame.q" frameMessages
+catalogAsdf :: (Error ScratchError :> es, Scratch :> es, InterserviceBus :> es) => Id Conversation -> Bucket -> Id Proposal -> Id Inversion -> Eff es ()
+catalogAsdf convId bucket propId invId = do
+  sname :: Path Scratch Filename L2Asdf <- Asdf.generatedL2FrameAsdf propId invId
+  let pth :: Path Publish File L2Asdf = filePath (DKIST.inversionDir propId invId) (publishFileName sname)
+  send $ CatalogAsdf convId bucket invId pth
 
---   CreateInversion :: Inversion -> MetadataInversions m [InversionInventory]
--- type instance DispatchOf InterserviceBus = 'Dynamic
+
+publishFileName :: Path Scratch Filename a -> Path Publish Filename a
+publishFileName (Path f) = Path f
+
+
+data CatalogObjectMessage = CatalogObjectMessage
+  { bucket :: Bucket
+  , objectName :: Path Publish File L2Asdf
+  , objectType :: Constant "ASDF"
+  , groupId :: Text -- <inversionId>
+  , groupName :: Constant "DATASET"
+  , incrementDatasetCatalogReceiptCount :: Bool
+  , conversationId :: Id Conversation
+  }
+  deriving (Generic, Show, ToJSON)
 
 -- https://nso.atlassian.net/wiki/spaces/DPD/pages/3670465/06+-+Interservice+Bus
 -- catalog.frame.m
