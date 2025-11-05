@@ -4,7 +4,7 @@ packages:
   ./types/
   -- ../globus.hs/
   -- ../telescope.hs/
-  -- ../hyperbole/
+  ../hyperbole/
   -- ../atomic-css/
   -- ../globus.hs
   -- ../amqp-worker/

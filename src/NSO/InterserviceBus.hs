@@ -8,7 +8,6 @@ import Effectful.GenRandom (GenRandom)
 import Effectful.Log
 import NSO.Files.DKIST as DKIST (Publish, inversionDir)
 import NSO.Files.Image (L2Asdf, L2Fits)
-import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch
 import NSO.Image.Asdf as Asdf (generatedL2FrameAsdf)
 import NSO.Image.Fits.Frame as Frames (generatedL2FrameFits)

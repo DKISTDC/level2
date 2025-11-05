@@ -70,7 +70,7 @@ library
     , http-api-data
     , http-client
     , http-types
-    , hyperbole ==0.5.0
+    , hyperbole ==0.6.0
     , lens
     , modern-uri
     , network-uri

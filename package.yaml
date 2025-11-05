@@ -59,7 +59,7 @@ dependencies:
   - random
   - network-uri
   - lens
-  - hyperbole == 0.5.0
+  - hyperbole == 0.6.0
   - amqp-worker >= 2.0.1
   - hasql
   - exceptions
