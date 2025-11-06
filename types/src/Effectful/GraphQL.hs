@@ -24,7 +24,7 @@ import GHC.Generics
 import NSO.Prelude
 import Network.HTTP.Client hiding (Proxy, Request, RequestBody, Response)
 import Network.HTTP.Client qualified as Http
-import Network.HTTP.Types (Header, methodPost)
+import Network.HTTP.Types (methodPost)
 import Network.URI (URI (..), URIAuth (..), parseURI)
 
 

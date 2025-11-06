@@ -28,7 +28,6 @@ identifyLine :: Dataset -> Maybe SpectralLine
 identifyLine d = lineForWaves d.wavelengthMin d.wavelengthMax
 
 
--- make wave min and wave max. If they are too narrow, then make the Wave Min and Wave Max red
 midPoint :: SpectralLine -> Wavelength Nm
 -- range: all 3 lines: 1nm below and above, minimum
 midPoint NaID = Wavelength 589.3 -- 589.6, 589.3

@@ -20,7 +20,7 @@
 
 ## Nov 6
 - [ ] Han: warnings for narrow spectral ranges. Highlight wav min / max in red?
-- [ ] Han: report bad data to L1, ILFBSO - the continuum is all messed up. 
+- [x] Han: report bad data to L1, ILFBSO - the continuum is all messed up. 
 - [ ] Han: fix Globus error: invalid token. He was downloading?
 - [ ] Republish: save Inversion to metadata key error, need update?
 

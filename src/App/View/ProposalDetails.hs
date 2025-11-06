@@ -7,19 +7,21 @@ module App.View.ProposalDetails
   , spectralLineTag
   , viewFriedHistogram
   , viewIronPlot
+  , viewWavelengthRanges
   ) where
 
 import App.Colors
 import App.Route as Route
 import App.Style (noWrap)
 import App.Style qualified as Style
-import App.View.Common (showTimestamp)
+import App.View.Common (showDate)
 import App.View.DataRow (dataCell, tagCell)
 import App.View.Datasets (boxPlot)
 import App.View.Icons as Icons
 import App.View.Inversion (inversionStepTag)
 import Data.Grouped
 import Data.List qualified as L
+import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import Effectful.Time
 import NSO.Data.Datasets
@@ -69,17 +71,17 @@ viewProgramStats now prog = viewDataRow $ do
   -- not worth showing Stokes in the row. They seem to be present for all VISP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
-  code (cs $ showTimestamp ip.startTime) ~ cell . noWrap . color Secondary
+  code (cs $ showDate ip.startTime) ~ cell . noWrap . color Secondary
 
   row ~ dataCell . gap 5 . fontSize 14 $ do
     maybe none embargoTag ip.embargo
-    if ip.onDisk then diskTag else none
+    -- if ip.onDisk then diskTag else none
     mapM_ spectralLineTag $ L.sort ip.spectralLines
     mapM_ midTag $ sortOn id ip.otherWavelengths
 
   space
 
-  code ip.programId.fromId ~ cellData . color Secondary . minWidth 0
+  code ip.programId.fromId ~ color (light Secondary) . minWidth 0 . fontSize 12 . pad 2
  where
   cellData :: (Styleable h) => CSS h -> CSS h
   cellData = fontSize 14 . pad 2
@@ -87,7 +89,7 @@ viewProgramStats now prog = viewDataRow $ do
   cell :: (Styleable h) => CSS h -> CSS h
   cell = dataCell . cellData
 
-  diskTag = el ~ dataTag . noWrap . Style.tagOutline (light Primary) $ "On Disk"
+  -- diskTag = el ~ dataTag . noWrap . Style.tagOutline (light Primary) $ "On Disk"
 
   embargoTag utc =
     if utc > now
@@ -99,7 +101,11 @@ viewProgramStats now prog = viewDataRow $ do
 
 
 spectralLineTag :: SpectralLine -> View c ()
-spectralLineTag s = tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs $ show s
+spectralLineTag s = spectralLineTag' s ""
+
+
+spectralLineTag' :: SpectralLine -> Text -> View c ()
+spectralLineTag' s suffix = tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs (show s) <> suffix
 
 
 dataTag :: (Styleable h) => CSS h -> CSS h
@@ -195,3 +201,28 @@ viewIronPlot generate ds =
         el "hello"
         space
       space
+
+
+viewWavelengthRanges :: NonEmpty Dataset -> View c ()
+viewWavelengthRanges ds = do
+  col ~ gap 4 $ do
+    el ~ bold $ "Spectral Lines"
+    row ~ gap 5 $ do
+      forM_ (sortOn fst $ mapMaybe datasetWithLine $ NE.toList ds) $ \(l, d) -> do
+        row $ do
+          let clr = lineColor d l
+          spectralLineTag' l ~ fontSize 14 . color clr . borderColor clr $ lineWarning d l
+ where
+  datasetWithLine d = do
+    l <- Spectra.identifyLine d
+    pure (l, d)
+
+  lineColor d l =
+    if isLineBroadEnough d.wavelengthMin d.wavelengthMax l
+      then Success
+      else Danger
+
+  lineWarning d l =
+    if isLineBroadEnough d.wavelengthMin d.wavelengthMax l
+      then ""
+      else " - narrow"

@@ -99,7 +99,7 @@ instance HyperView ProgramDetails es where
   update _ = pure none
 
 
-viewProgramDetails :: ProgramFamily -> UTCTime -> View ProgramDetails ()
+viewProgramDetails :: ProgramFamily -> UTCTime -> View c ()
 viewProgramDetails prog now = do
   let ds = prog.datasets
   viewProgramRowLink now prog
@@ -108,6 +108,7 @@ viewProgramDetails prog now = do
 
   col ~ pad 15 . gap 10 $ do
     viewCriteria prog ds
+    viewWavelengthRanges prog.datasets.items
     viewFriedHistogram (sample ds).friedParameter
 
 

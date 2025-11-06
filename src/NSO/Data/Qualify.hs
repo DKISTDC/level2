@@ -148,3 +148,13 @@ dayOfYear time =
   let day = utctDay time
       (_, doy) = toOrdinalDate day
    in doy
+
+
+isLineBroadEnough :: Wavelength Nm -> Wavelength Nm -> SpectralLine -> Bool
+isLineBroadEnough mn mx ln
+  | ln == FeI630 = isWithin 0.5
+  | otherwise = isWithin 1.0
+ where
+  isWithin :: Wavelength Nm -> Bool
+  isWithin n =
+    all ((< n) . abs) [midPoint ln - mn, midPoint ln - mx]

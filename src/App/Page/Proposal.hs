@@ -5,9 +5,9 @@ module App.Page.Proposal where
 import App.Colors
 import App.Effect.Auth
 import App.Error (expectFound)
+import App.Page.Program (viewProgramDetails)
 import App.Route as Route
 import App.Style qualified as Style
-import App.View.Common as View
 import App.View.Datasets as DatasetsTable
 import App.View.Icons (skeleton)
 import App.View.Layout
@@ -129,12 +129,7 @@ viewProgramSummary :: SortField -> UTCTime -> ProgramFamily -> View ProgramSumma
 viewProgramSummary srt now prog = do
   let ds = prog.datasets
   programCard $ do
-    viewProgramRowLink now prog
-    View.hr ~ color Gray
-    col ~ pad 15 . gap 10 $ do
-      viewCriteria prog ds
-      viewFriedHistogram (sample ds).friedParameter
-    -- viewIronPlot GenIronImage ds.items
+    viewProgramDetails prog now
     col ~ pad (TRBL 0 15 15 15) $ do
       DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds.items)
 
