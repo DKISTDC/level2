@@ -10,7 +10,6 @@ import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Error.Static
-import NSO.Data.Spectra (midPoint)
 import NSO.Image.Fits.Quantity (addDummyAxis, dataCommon)
 import NSO.Image.Headers
 import NSO.Image.Headers.DataCommon
@@ -105,7 +104,7 @@ data ProfileHeader fit = ProfileHeader
 instance (KnownText fit) => ToHeader (ProfileHeader fit) where
   toHeader h = writeHeader $ do
     let typ = ProfType (knownText @fit)
-        ion = ProfIon h.meta.line
+        ion = ProfIon h.meta.line.ion
 
     sectionHeader "Spectral Profile" "Headers describing the spectral profile"
     addKeywords $ hduInfo typ ion
@@ -236,9 +235,8 @@ wcsStokes = do
 
 wcsWavelength :: (Monad m) => ArmWavMeta -> m (ProfileAxis alt n)
 wcsWavelength wp = do
-  let Wavelength w = midPoint wp.line
   let crpix = Key $ realToFrac wp.pixel
-      crval = Key (realToFrac w)
+      crval = Key (realToFrac wp.line.wavelength)
       cdelt = Key $ realToFrac wp.delta.value
       cunit = Key "nm"
       ctype = Key "AWAV"

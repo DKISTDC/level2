@@ -12,7 +12,7 @@ import App.View.DataRow qualified as View
 import App.View.Icons qualified as Icons
 import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Qualify (boxRadius, isLineWavBroadEnough)
+import NSO.Data.Qualify (boxRadius)
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
@@ -86,16 +86,16 @@ datasetsTableUnsorted sortBy ds = do
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
-  wavColor d w =
-    case Spectra.identifyLine d of
-      Nothing -> id
-      Just l ->
-        if isLineWavBroadEnough w l
-          then id
-          else color Danger
-
+  -- wavColor d w =
+  --   case Spectra.identifyLine d of
+  --     Nothing -> id
+  --     Just l ->
+  --       if isLineWavBroadEnough w l
+  --         then id
+  --         else color Danger
+  --
   wavelength d w =
-    el ~ wavColor d w $ text . cs $ showFFloat (Just 1) w ""
+    el $ text . cs $ showFFloat (Just 1) w ""
 
   embargo :: Dataset -> Text
   embargo d =

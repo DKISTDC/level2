@@ -15,7 +15,7 @@ import App.View.Icons qualified as Icons
 import App.View.Inversion (Step (..), stepGenerate, stepMetadata, stepPublish, stepUpload, viewInversionContainer)
 import App.View.Layout
 import App.View.Loading (inputLoader)
-import App.View.ProposalDetails (spectralLineTag)
+import App.View.ProposalDetails (ionTag)
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate as Gen (GenStatus (..), GenTask (..))
@@ -40,6 +40,7 @@ import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Wavelength (SpectralLine (..))
 import Numeric (showFFloat)
 import Web.Atomic.CSS
 import Web.Hyperbole
@@ -346,7 +347,7 @@ viewDatasets inv ds = do
         View.checkBtn (SetDataset d.datasetId) (d.datasetId `elem` inv.datasets)
         appRoute (Route.Datasets $ Dataset d.datasetId) ~ Style.link $ text d.datasetId.fromId
         -- maybe none (\l -> text $ "(" <> cs (show l) <> ")") $ Spectra.identifyLine d
-        el ~ fontSize 12 $ maybe none spectralLineTag $ Spectra.identifyLine d
+        el ~ fontSize 12 $ maybe none ionTag $ listToMaybe $ fmap (.ion) d.spectralLines
 
 
 viewMetadata :: Inversion -> NonEmpty Dataset -> View InversionStatus ()

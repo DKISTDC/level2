@@ -12,7 +12,6 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Fetch (FetchResponse (..))
 import Effectful.GraphQL
-import NSO.Data.Spectra (identifyLines, midPoint)
 import NSO.Files.DKIST as DKIST (Publish, inversionDir)
 import NSO.Prelude
 import NSO.Types.Common
@@ -97,7 +96,7 @@ runMetadataInversions
   -> Eff es a
 runMetadataInversions s = interpret $ \_ -> \case
   CreateInversion bucket inv ds -> do
-    let r = inversionInventory bucket inv (identifyLines ds)
+    let r = inversionInventory bucket inv (concatMap (.spectralLines) ds)
     send $ Mutation s r
 
 
@@ -119,7 +118,7 @@ instance Request InversionInventory where
      in RequestBody [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]
 
 
-inversionInventory :: Bucket -> Inversion -> [FocusLine] -> InversionInventory
+inversionInventory :: Bucket -> Inversion -> [SpectralLine] -> InversionInventory
 inversionInventory bucket inv slines =
   let asdfObjectKey = DKIST.inversionDir inv.proposalId inv.inversionId
    in InversionInventory
@@ -131,12 +130,6 @@ inversionInventory bucket inv slines =
         , asdfObjectKey
         , spectralLines = fmap spectralLineName slines -- inv.wavelengths, from the inversion process.. Always the same?
         }
-
-
--- BUG: This should be created from the datasets spectral lines, not the focus point of the dataset
-spectralLineName :: FocusLine -> Text
-spectralLineName s =
-  ionName s <> " (" <> cs (showFFloat (Just 2) (midPoint s).value " nm)")
 
 
 data DatasetInventories = DatasetInventories

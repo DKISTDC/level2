@@ -11,7 +11,6 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics (Rep, from)
-import NSO.Data.Spectra (midPoint)
 import NSO.Data.Spectra qualified as Spectra
 import NSO.Files
 import NSO.Files.Image (L2Asdf, L2Fits)
@@ -32,10 +31,10 @@ import NSO.Image.Types.Frame (Arm (..), Arms (..), Frames (..), armsFrames)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId))
+import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId, spectralLines))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
-import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName)
+import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName, spectralLineName)
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Class (GToObject (..))
 import Telescope.Asdf.Core (Unit (..))
@@ -88,15 +87,15 @@ asdfDocument inversionId dscanon dsets bin now l1asdf metas =
 
   inversionInventory :: Frames PrimaryHeader -> InversionInventory
   inversionInventory headers =
-    let specs = Spectra.identifyLines dsets
+    let slines :: [SpectralLine] = concatMap (.spectralLines) dsets
      in InversionInventory
           { frameCount = length headers
           , inversionId
           , proposalId = dscanon.primaryProposalId
           , canonicalDataset = dscanon.datasetId
-          , spectralLines = specs
+          , spectralLines = fmap spectralLineName slines
           , datasetIds = fmap (.datasetId) dsets
-          , wavelengths = fmap Spectra.midPoint specs
+          , wavelengths = fmap (.wavelength) slines
           , created = now
           }
 
@@ -140,7 +139,7 @@ data InversionInventory = InversionInventory
   , proposalId :: Id Proposal
   , canonicalDataset :: Id Dataset
   , datasetIds :: [Id Dataset]
-  , spectralLines :: [SpectralLine]
+  , spectralLines :: [Text]
   , wavelengths :: [Wavelength Nm]
   , frameCount :: Int
   }
@@ -435,8 +434,8 @@ data ProfileTreeMeta fit = ProfileTreeMeta
 instance (KnownText fit) => ToAsdf (ProfileTreeMeta fit) where
   toValue m =
     Object
-      [ ("ion", toNode $ ionName m.spectralLine)
-      , ("wavelength", toNode $ midPoint m.spectralLine)
+      [ ("ion", toNode $ ionName m.spectralLine.ion)
+      , ("wavelength", toNode $ m.spectralLine.wavelength)
       , ("profile", toNode m.profile)
       , ("headers", toNode m.headers)
       , ("inventory", toNode (Ref @InversionInventory))

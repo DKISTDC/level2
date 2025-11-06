@@ -156,8 +156,8 @@ frameMetaFromL2Fits path slice arms l1 fits = runParser $ do
   findProfile line typ hs = do
     mh <- flip filterM hs $ \h -> do
       typ' <- parseProfileType h
-      ProfIon line' <- parseKeyword (keyword @ProfIon) h
-      pure $ typ' == typ && line' == line
+      ProfIon ion <- parseKeyword (keyword @ProfIon) h
+      pure $ typ' == typ && ion == line.ion
     case mh of
       (h : _) -> pure h
       _ -> throwError $ MissingProfileType line (show typ)

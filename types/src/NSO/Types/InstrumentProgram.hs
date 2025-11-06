@@ -16,7 +16,6 @@ data InstrumentProgram = InstrumentProgram
   , stokesParameters :: StokesParameters
   , onDisk :: Bool
   , spectralLines :: [SpectralLine]
-  , otherWavelengths :: [Wavelength Nm]
   , embargo :: Maybe UTCTime
   , qualified :: Bool
   }

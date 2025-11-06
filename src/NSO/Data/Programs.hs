@@ -145,7 +145,6 @@ programStatus _ (i : is) = do
 instrumentProgram :: Group (Id InstrumentProgram) Dataset -> InstrumentProgram
 instrumentProgram gd =
   let d = sample gd
-      ls = NE.toList $ fmap identifyLine gd.items
    in InstrumentProgram
         { programId = d.instrumentProgramId
         , proposalId = d.primaryProposalId
@@ -155,17 +154,16 @@ instrumentProgram gd =
         , startTime = d.startTime
         , instrument = d.instrument
         , onDisk = qualifyOnDisk gd
-        , spectralLines = L.nub $ rights ls
-        , otherWavelengths = L.nub $ lefts ls
+        , spectralLines = L.nub $ concatMap (.spectralLines) gd.items
         , embargo = d.embargo
         , qualified = isQualified gd
         }
- where
-  midWave :: Dataset -> Wavelength Nm
-  midWave d =
-    let Wavelength mn = d.wavelengthMin
-        Wavelength mx = d.wavelengthMax
-     in Wavelength $ fromIntegral $ round @Double @Int $ (mn + mx) / 2.0
 
-  identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
-  identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d
+-- midWave :: Dataset -> Wavelength Nm
+-- midWave d =
+--   let Wavelength mn = d.wavelengthMin
+--       Wavelength mx = d.wavelengthMax
+--    in Wavelength $ fromIntegral $ round @Double @Int $ (mn + mx) / 2.0
+
+-- identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
+-- identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d

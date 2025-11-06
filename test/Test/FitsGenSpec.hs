@@ -9,7 +9,7 @@ import Data.Time.Clock (getCurrentTime)
 import Effectful
 import Effectful.Error.Static
 import Effectful.GenRandom
-import NSO.Image.Blanca
+import NSO.Image.Blanca as Blanca
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
 import NSO.Image.Headers.DataCommon
@@ -146,7 +146,7 @@ specHeader = describe "Header Keywords" $ do
   genProfile = do
     DataCommonFix common <- getFixture
     L1HeaderFix l1 <- getFixture
-    let wp = ArmWavMeta{pixel = 0, delta = WavOffset 1, length = 10, line = FeI630}
+    let wp = ArmWavMeta{pixel = 0, delta = WavOffset 1, length = 10, line = Blanca.ironLine}
     wcs <- runGen $ Profile.wcsHeader wp slice l1
     pure $ ProfileHeader @Original wp common wcs
 
@@ -248,21 +248,21 @@ specWavProfile = do
         avgDelta simpleOffsets `shouldBe` WavOffset 1000
 
       it "meta offset in nm" $ do
-        (armWavMeta (ArmWavBreak FeI630 5) simpleOffsets).delta `shouldBe` WavOffset 0.1
+        (armWavMeta (ArmWavBreak Blanca.ironLine 5) simpleOffsets).delta `shouldBe` WavOffset 0.1
 
       it "real world offset" $ do
-        roundDigits 5 (armWavMeta (ArmWavBreak FeI630 5) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
+        roundDigits 5 (armWavMeta (ArmWavBreak Blanca.ironLine 5) wav630).delta.value `shouldBe` roundDigits 5 (0.00128 * 10)
 
     describe "pixel" $ do
       it "should be exactly center in simple" $ do
         pixel0 (WavOffset 1000) simpleOffsets `shouldBe` 3.5
 
       it "< positive index in wav630" $ do
-        let m = armWavMeta (ArmWavBreak FeI630 5) wav630
+        let m = armWavMeta (ArmWavBreak Blanca.ironLine 5) wav630
         m.pixel `shouldSatisfy` P.lt 4
 
       it "> last negative index in wav630" $ do
-        let m = armWavMeta (ArmWavBreak FeI630 5) wav630
+        let m = armWavMeta (ArmWavBreak Blanca.ironLine 5) wav630
         m.pixel `shouldSatisfy` P.gt 3
 
 
@@ -271,7 +271,16 @@ simple = DataCube $ M.delay @Ix1 @P $ M.fromLists' Seq $ fmap (.value) simpleNum
 
 
 simpleNums :: [Wavelength Nm]
-simpleNums = offsetsToWavelengths FeI630 simpleOffsets
+simpleNums = offsetsToWavelengths 630.29 simpleOffsets
+ where
+  offsetsToWavelengths :: Wavelength Nm -> [WavOffset MA] -> [Wavelength Nm]
+  offsetsToWavelengths (Wavelength mid) =
+    fmap (offsetToWavelength $ realToFrac mid)
+
+  offsetToWavelength :: Wavelength Nm -> WavOffset MA -> Wavelength Nm
+  offsetToWavelength (Wavelength mid) offset =
+    let WavOffset offNm = toNanometers offset
+     in Wavelength $ mid + realToFrac offNm / 10000
 
 
 simpleOffsets :: [WavOffset MA]

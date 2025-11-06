@@ -35,8 +35,7 @@ import NSO.Types.Wavelength
 -- midPoint FeI630 = Wavelength 630.3 -- midpoint between lines
 -- -- range: 1nm below and above
 -- midPoint CaII854 = Wavelength 854.209 -- actually the line, not just the midpoint
---
---
--- isLine :: SpectralLine -> Dataset -> Bool
--- isLine l d =
---   identifyLine d == Just l
+
+isLineIon :: Ion -> Dataset -> Bool
+isLineIon ion d =
+  any (\sl -> sl.ion == ion) d.spectralLines

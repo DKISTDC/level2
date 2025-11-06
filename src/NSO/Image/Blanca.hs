@@ -10,12 +10,11 @@ import Data.Massiv.Array qualified as M
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log
-import NSO.Data.Spectra (midPoint)
 import NSO.Image.Types.Profile
 import Effectful.State.Static.Local
 import NSO.Prelude
 import NSO.Image.Types.Frame
-import NSO.Types.Wavelength (MA, Nm, SpectralLine (..), Wavelength (..))
+import NSO.Types.Wavelength (MA, Nm, SpectralLine (..), Wavelength (..), Ion(..))
 import Telescope.Data.Array (ArrayError)
 import Telescope.Data.DataCube as DC
 import Telescope.Fits as Fits
@@ -155,10 +154,20 @@ wavBreaks lids = do
 
   blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
-    LineId 23 -> pure FeI630
-    LineId 9 -> pure NaID
-    LineId 4 -> pure CaII854
+    LineId 23 -> pure ironLine
+    LineId 9 -> pure sodiumLine
+    LineId 4 -> pure calciumLine
     n -> Left n
+
+
+sodiumLine :: SpectralLine
+sodiumLine = SpectralLine FeI Nothing 589.29
+
+ironLine :: SpectralLine
+ironLine = SpectralLine NaI Nothing 630.3
+
+calciumLine :: SpectralLine
+calciumLine = SpectralLine CaII Nothing 854.209
 
 
 splitWavs :: Error BlancaError :> es => Arms ArmWavBreak -> [WavOffset MA] -> Eff es (Arms (NonEmpty (WavOffset MA)))
@@ -175,17 +184,6 @@ splitWavs breaks wavs = do
         put rest
         pure $ w :| ws
 
-
-offsetsToWavelengths :: SpectralLine -> [WavOffset MA] -> [Wavelength Nm]
-offsetsToWavelengths line offs =
-  let Wavelength mid = midPoint line
-   in fmap (offsetToWavelength $ realToFrac mid) offs
-
-
-offsetToWavelength :: Wavelength Nm -> WavOffset MA -> Wavelength Nm
-offsetToWavelength (Wavelength mid) offset =
-  let WavOffset offNm = toNanometers offset
-   in Wavelength $ mid + realToFrac offNm / 10000
 
 
 toNanometers :: WavOffset MA -> WavOffset Nm

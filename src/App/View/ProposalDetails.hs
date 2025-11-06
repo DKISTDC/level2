@@ -4,9 +4,8 @@ module App.View.ProposalDetails
   , viewProgramRowLink
   , viewCriteria
   , viewProgramStats
-  , spectralLineTag
+  , ionTag
   , viewFriedHistogram
-  , viewIronPlot
   , viewWavelengthRanges
   ) where
 
@@ -22,6 +21,7 @@ import App.View.Inversion (inversionStepTag)
 import Data.Grouped
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
+import Data.Text qualified as T
 import Data.Text qualified as Text
 import Effectful.Time
 import NSO.Data.Datasets
@@ -76,8 +76,8 @@ viewProgramStats now prog = viewDataRow $ do
   row ~ dataCell . gap 5 . fontSize 14 $ do
     maybe none embargoTag ip.embargo
     -- if ip.onDisk then diskTag else none
-    mapM_ spectralLineTag $ L.sort ip.spectralLines
-    mapM_ midTag $ sortOn id ip.otherWavelengths
+    mapM_ ionTag $ L.sort $ L.nub $ fmap (.ion) ip.spectralLines
+    mapM_ wavTag $ fmap (.wavelength) $ ip.spectralLines
 
   space
 
@@ -89,6 +89,11 @@ viewProgramStats now prog = viewDataRow $ do
   cell :: (Styleable h) => CSS h -> CSS h
   cell = dataCell . cellData
 
+  unknownIon s =
+    case s.ion of
+      Ion _ -> True
+      _ -> False
+
   -- diskTag = el ~ dataTag . noWrap . Style.tagOutline (light Primary) $ "On Disk"
 
   embargoTag utc =
@@ -96,16 +101,19 @@ viewProgramStats now prog = viewDataRow $ do
       then el ~ dataTag . Style.tagOutline (dark Warning) $ "Embargoed"
       else none
 
-  midTag mid =
-    code (cs (show (round mid :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
+
+ionTag :: Ion -> View c ()
+ionTag i = ionTag' i ""
 
 
-spectralLineTag :: SpectralLine -> View c ()
-spectralLineTag s = spectralLineTag' s ""
+ionTag' :: Ion -> Text -> View c ()
+ionTag' i suffix =
+  tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs (show i) <> suffix
 
 
-spectralLineTag' :: SpectralLine -> Text -> View c ()
-spectralLineTag' s suffix = tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs (show s) <> suffix
+wavTag :: Wavelength Nm -> View c ()
+wavTag w =
+  code (cs (show (round w :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
 
 
 dataTag :: (Styleable h) => CSS h -> CSS h
@@ -139,8 +147,8 @@ viewCriteria ip gd = do
     row ~ gap 10 . flexWrap Wrap $ do
       criteria "Stokes IQUV" $ qualifyStokes ds
       criteria "On Disk" $ qualifyOnDisk ds
-      criteria "Spectra: FeI 630" $ qualifyLine FeI630 sls
-      criteria "Spectra: CaII 854" $ qualifyLine CaII854 sls
+      criteria "Spectra: FeI 630" $ qualifyLine FeI sls
+      criteria "Spectra: CaII 854" $ qualifyLine CaII sls
       criteria "Health" $ qualifyHealth ds
       criteria "GOS Status" $ qualifyGOS ds
       criteria "AO Lock" $ qualifyAO ds
@@ -179,50 +187,21 @@ viewFriedHistogram (Just fried) = do
     | otherwise = color Danger
 
 
--- CASE: currently generating (Tasks) - show in-progress step
--- CASE: not generated - show button
--- CASE: generated - show images
-viewIronPlot :: (ViewAction (Action id)) => Action id -> NonEmpty Dataset -> View id ()
-viewIronPlot generate ds =
-  viewPlot $ L.find (Spectra.isLine FeI630) ds
- where
-  viewPlot Nothing = none
-  viewPlot (Just _) = do
-    el ~ bold $ "FeI 630nm Plot"
-
-    row $ do
-      -- button to generate images
-      button generate ~ Style.btnOutline Secondary $ "Generate Iron Wavelength Plot"
-    -- what sort of aspect ratio or size will this have?
-    col ~ bg (light Light) . width 400 . height 300 $ do
-      space
-      row $ do
-        space
-        el "hello"
-        space
-      space
-
-
 viewWavelengthRanges :: NonEmpty Dataset -> View c ()
 viewWavelengthRanges ds = do
   col ~ gap 4 $ do
     el ~ bold $ "Spectral Lines"
-    row ~ gap 5 $ do
-      forM_ (sortOn fst $ mapMaybe datasetWithLine $ NE.toList ds) $ \(l, d) -> do
-        row $ do
-          let clr = lineColor d l
-          spectralLineTag' l ~ fontSize 14 . color clr . borderColor clr $ lineWarning d l
- where
-  datasetWithLine d = do
-    l <- Spectra.identifyLine d
-    pure (l, d)
 
-  lineColor d l =
-    if isLineBroadEnough d.wavelengthMin d.wavelengthMax l
-      then Success
-      else Danger
-
-  lineWarning d l =
-    if isLineBroadEnough d.wavelengthMin d.wavelengthMax l
-      then ""
-      else " - narrow"
+--    row ~ gap 5 $ do
+--      forM_ (sortOn fst $ mapMaybe datasetWithLine $ NE.toList ds) $ \(l, d) -> do
+--        row $ do
+--          let clr = lineColor d l
+--          ionTag l ~ fontSize 14 . color clr . borderColor clr
+-- where
+--  datasetWithLine d = do
+--    case d.spectralLines of
+--      (s : _) -> Just (s, d)
+--      [] -> Nothing
+--
+--  lineColor d l = Success
+--  lineWarning d l = ""

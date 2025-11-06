@@ -46,10 +46,10 @@ qualify g = do
 qualifyVISP :: Group (Id InstrumentProgram) Dataset -> Either String ()
 qualifyVISP g = do
   -- let ds = NE.toList ip.datasets
-  let sls = identifyLines (NE.toList g.items)
+  let sls = concatMap (.spectralLines) $ NE.toList g.items
   check "On Disk" $ qualifyOnDisk g
-  check "FeI 630" $ qualifyLine FeI630 sls
-  check "CaII 854" $ qualifyLine CaII854 sls
+  check "FeI 630" $ qualifyLine FeI sls
+  check "CaII 854" $ qualifyLine CaII sls
   check "Stokes" $ qualifyStokes g
   check "Health" $ qualifyHealth g
   check "GOS" $ qualifyGOS g
@@ -77,8 +77,8 @@ qualifyOnDisk g = all (\d -> bbOnDisk d.startTime d.boundingBox) g.items
   bbOnDisk t (Just bb) = isOnDisk (dayOfYear t) bb
 
 
-qualifyLine :: FocusLine -> [FocusLine] -> Bool
-qualifyLine sl sls = sl `elem` sls
+qualifyLine :: Ion -> [SpectralLine] -> Bool
+qualifyLine is sls = is `elem` fmap (.ion) sls
 
 
 -- Frazer: metric have to meet. Have to meet in each of the wavelength channels. As opposed to the set combined.
@@ -148,12 +148,3 @@ dayOfYear time =
   let day = utctDay time
       (_, doy) = toOrdinalDate day
    in doy
-
-
-isLineWavBroadEnough :: Wavelength Nm -> FocusLine -> Bool
-isLineWavBroadEnough w ln
-  | ln == FeI630 = atLeast 0.5
-  | otherwise = atLeast 1.0
- where
-  atLeast :: Wavelength Nm -> Bool
-  atLeast n = abs (midPoint ln - w) >= n

@@ -3,12 +3,11 @@
 module NSO.Types.Wavelength where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Char (isNumber)
 import Data.Scientific (fromFloatDigits)
 import Data.Text qualified as T
 import GHC.Real (Real)
 import NSO.Prelude
-import Rel8 (DBType)
+import Rel8 (DBType, parseTypeInformation, typeInformation)
 import Telescope.Asdf
 import Text.Read (readMaybe)
 
@@ -43,7 +42,11 @@ data SpectralLine = SpectralLine
   , designation :: Maybe Designation
   , wavelength :: Wavelength Nm
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
+
+
+instance DBType SpectralLine where
+  typeInformation = parseTypeInformation parseSpectralLine spectralLineName (typeInformation @Text)
 
 
 data Designation
@@ -51,11 +54,16 @@ data Designation
   | D2
   | B1
   | Designation Text
-  deriving (Show, Read, Eq)
+  deriving (Show, Read, Eq, Ord)
+
+
+designationName :: Designation -> Text
+designationName (Designation t) = t
+designationName d = cs (show d)
 
 
 instance ToAsdf SpectralLine where
-  toValue = String . renderSpectralLine
+  toValue = String . spectralLineName
 
 
 ionName :: Ion -> Text
@@ -82,8 +90,8 @@ data Ion
   deriving (Eq, Ord, Show)
 
 
-renderSpectralLine :: SpectralLine -> Text
-renderSpectralLine _ = "Mg I b1 (517.28 nm)"
+spectralLineName :: SpectralLine -> Text
+spectralLineName _ = "Mg I b1 (517.28 nm)"
 
 
 parseSpectralLine :: Text -> Either String SpectralLine

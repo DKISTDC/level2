@@ -1,7 +1,6 @@
 module Test.QualifySpec where
 
 import NSO.Data.Qualify
-import NSO.Data.Spectra (lineForWaves)
 import NSO.Prelude
 import NSO.Types.Dataset
 import NSO.Types.Wavelength
@@ -21,24 +20,24 @@ spec = do
     it "should have a minimum on Aphelion" $ do
       round (solarRadiusDay dayOfAphelion) `shouldBe` (944 :: Int)
 
-  describe "Spectra - identify lines" $ do
-    it "should identify normal case 630.2" $ do
-      -- Dataset: ADGGO
-      lineForWaves 629.4 631.0 `shouldBe` Just FeI630
-
-    it "should catch slightly above 630.2" $ do
-      -- Dataset: BVJVO
-      lineForWaves 630.239 634.38 `shouldBe` Just FeI630
-
-    it "should catch slightly above 854.2 nm" $ do
-      -- Dataset: BWKXP
-      lineForWaves 854.201 856.8 `shouldBe` Just CaII854
-
-    it "should not identify random wavelength" $ do
-      lineForWaves 433.0 434.0 `shouldBe` Nothing
-
-    it "should not identify if too far" $ do
-      lineForWaves 628.0 629.0 `shouldBe` Nothing
+  -- describe "Spectra - identify lines" $ do
+  --   it "should identify normal case 630.2" $ do
+  --     -- Dataset: ADGGO
+  --     lineForWaves 629.4 631.0 `shouldBe` Just FeI630
+  --
+  --   it "should catch slightly above 630.2" $ do
+  --     -- Dataset: BVJVO
+  --     lineForWaves 630.239 634.38 `shouldBe` Just FeI630
+  --
+  --   it "should catch slightly above 854.2 nm" $ do
+  --     -- Dataset: BWKXP
+  --     lineForWaves 854.201 856.8 `shouldBe` Just CaII854
+  --
+  --   it "should not identify random wavelength" $ do
+  --     lineForWaves 433.0 434.0 `shouldBe` Nothing
+  --
+  --   it "should not identify if too far" $ do
+  --     lineForWaves 628.0 629.0 `shouldBe` Nothing
 
   describe "Qualify" $ do
     describe "bounding box near edge" $ do

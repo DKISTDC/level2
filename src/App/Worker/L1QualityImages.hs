@@ -61,7 +61,7 @@ l1QualityImageTask task = do
 
   findIronLine = do
     ds <- Datasets.find (ByProgram task.programId)
-    case L.find (Spectra.isLine FeI630) ds of
+    case L.find (Spectra.isLineIon FeI) ds of
       Nothing -> throwError $ MissingIron task.programId (fmap (.datasetId) ds)
       Just d -> pure d
 

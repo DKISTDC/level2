@@ -219,6 +219,7 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
     exd <- parseExperiment $ Id d.primaryExperimentId
     emb <- parseEmbargo
     movie <- decodeURI d.browseMovieUrl
+    slines <- mapM parseSpectralLine $ fromMaybe [] d.spectralLines
     pure $
       Dataset'
         { datasetId = Id d.datasetId
@@ -248,7 +249,7 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
         , polarimetricAccuracy = Distribution 0 0 0 0 0 -- d.polarimetricAccuracy
         , lightLevel = d.lightLevel
         , embargo = localTimeToUTC utc <$> emb
-        , spectralLines = fromMaybe [] d.spectralLines
+        , spectralLines = slines
         }
 
   parseExperiment :: Id Experiment -> Either String Text

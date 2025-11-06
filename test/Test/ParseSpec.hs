@@ -22,9 +22,8 @@ spec = do
 
   describe "SpectralLine parser" $ do
     it "parses basic lines" $ do
-      parseSpectralLine "Fe I (630.15 nm)" `shouldBe` SpectralLine (Just FeI) Nothing 630.15
-      parseSpectralLine "Ca II (854.21 nm)" `shouldBe` SpectralLine (Just CaII) Nothing 854.21
-      parseSpectralLine "Mg I b1 (517.27 nm)" `shouldBe` SpectralLine Nothing (Just "B1") 854.21
-      parseSpectralLine "Na I D2 (589.0 nm)" `shouldBe` SpectralLine Nothing (Just "D2") 854.21
-
-      
+      parseSpectralLine "Fe I (630.15 nm)" `shouldBe` Right (SpectralLine FeI Nothing 630.15)
+      parseSpectralLine "Ca II (854.21 nm)" `shouldBe` Right (SpectralLine CaII Nothing 854.21)
+      parseSpectralLine "Mg I b1 (517.27 nm)" `shouldBe` Right (SpectralLine (Ion "Mg I") (Just B1) 517.27)
+      parseSpectralLine "Na I D2 (589.0 nm)" `shouldBe` Right (SpectralLine NaI (Just D2) 589.0)
+      parseSpectralLine "Fe XIII dx (1074.7 nm)" `shouldBe` Right (SpectralLine (Ion "Fe XIII") (Just (Designation "DX")) 1074.7)
