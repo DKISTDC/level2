@@ -12,15 +12,18 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Fetch (FetchResponse (..))
 import Effectful.GraphQL
+import NSO.Data.Spectra (identifyLines, midPoint)
+import NSO.Files.DKIST as DKIST (Publish, inversionDir)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import NSO.Types.Wavelength
-import Network.HTTP.Client (RequestBody)
+import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types
 import Network.URI
+import Numeric (showFFloat)
 
 
 data MetadataService = MetadataService
@@ -31,7 +34,7 @@ data MetadataService = MetadataService
 
 
 data MetadataInversions :: Effect where
-  CreateInversion :: Inversion -> MetadataInversions m [InversionInventory]
+  CreateInversion :: Bucket -> Inversion -> [Dataset] -> MetadataInversions m [InversionInventory]
 type instance DispatchOf MetadataInversions = 'Dynamic
 
 
@@ -93,22 +96,19 @@ runMetadataInversions
   -> Eff (MetadataInversions : es) a
   -> Eff es a
 runMetadataInversions s = interpret $ \_ -> \case
-  CreateInversion inv -> do
-    let r = inversionInventory inv
-    send $ Query s r
+  CreateInversion bucket inv ds -> do
+    let r = inversionInventory bucket inv (identifyLines ds)
+    send $ Mutation s r
 
 
 data InversionInventory = InversionInventory
   { inversionId :: Id Inversion
   , primaryProposalId :: Id Proposal
   , instrumentProgramExecutionId :: Id InstrumentProgram
+  , bucket :: Bucket
+  , asdfObjectKey :: Path Publish Dir Inversion
   , datasetIds :: [Id Dataset]
-  , wavelengths :: [Wavelength Nm]
-  , bucket :: Text
-  , asdfObjectKey :: Text
-  , frameCount :: Int
-  , positionBinCount :: Int
-  , depthCount :: Int
+  , spectralLines :: [Text]
   }
   deriving (Generic, FromJSON, ToJSON, FieldNames)
 instance Request InversionInventory where
@@ -116,62 +116,27 @@ instance Request InversionInventory where
   rootField = "l2Inversions"
   request r =
     let fields = requestFields @InversionInventory
-     in [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]
+     in RequestBody [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]
 
 
--- TODO: wavelengths, bucket (from object inventory), asdfObjectKey (calculate?), frameCount, positionBinCount, depthCount
-inversionInventory :: Inversion -> InversionInventory
-inversionInventory inv =
-  InversionInventory
-    { inversionId = inv.inversionId
-    , primaryProposalId = inv.proposalId
-    , instrumentProgramExecutionId = inv.programId
-    , datasetIds = inv.datasets
-    , wavelengths = [] -- inv.wavelengths, from the inversion process.. Always the same?
-    , bucket = "" -- known by the object inventory
-    , asdfObjectKey = "" -- known by the object inventory
-    , frameCount = 0
-    , positionBinCount = 0
-    , depthCount = 0
-    }
+inversionInventory :: Bucket -> Inversion -> [SpectralLine] -> InversionInventory
+inversionInventory bucket inv slines =
+  let asdfObjectKey = DKIST.inversionDir inv.proposalId inv.inversionId
+   in InversionInventory
+        { inversionId = inv.inversionId
+        , primaryProposalId = inv.proposalId
+        , instrumentProgramExecutionId = inv.programId
+        , datasetIds = inv.datasets
+        , bucket
+        , asdfObjectKey
+        , spectralLines = fmap spectralLineName slines -- inv.wavelengths, from the inversion process.. Always the same?
+        }
 
 
--- runMetadata'
---   :: (IOE :> es, GraphQL :> es)
---   => Service
---   -> Eff (Metadata : es) a
---   -> Eff es a
--- runMetadata' s = interpret $ \_ -> \case
---   DatasetById did -> do
---     send $ Query s (DatasetInventories [] [did])
---   DatasetsByProposal pid -> do
---     send $ Query s (DatasetInventories [pid] [])
---   AvailableDatasets -> do
---     res <- send $ Query s $ DatasetsAvailable $ DatasetInventories [] []
---     pure res
---   AllExperiments -> do
---     send $ Query s ExperimentDescriptions
---
---
--- runMetadataMock
---   :: (IOE :> es, GraphQL :> es, Error GraphQLError :> es)
---   => Service
---   -> Eff (Metadata : es) a
---   -> Eff es a
--- runMetadataMock _ = interpret $ \_ -> \case
---   DatasetById did -> do
---     let r = DatasetInventories [] [did]
---     ds <- datasetInventories r
---     pure $ filter (isDatasetId did) ds
---   DatasetsByProposal pid -> do
---     let r = DatasetInventories [pid] []
---     ds <- datasetInventories r
---     pure $ filter (isProposalId pid) ds
---   AvailableDatasets -> do
---     let r = DatasetsAvailable $ DatasetInventories [] []
---     datasetInventories r
---   AllExperiments -> mockExperiments
---
+spectralLineName :: SpectralLine -> Text
+spectralLineName s =
+  ionName s <> " (" <> cs (showFFloat (Just 2) (midPoint s).value " nm)")
+
 
 data DatasetInventories = DatasetInventories
   { primaryProposalIds :: [Id Proposal]
@@ -191,7 +156,7 @@ instance Request DatasetsAvailable where
   rootField = "datasetInventories"
 
 
-mockMetadata :: Method -> URI -> [Header] -> RequestBody -> IO FetchResponse
+mockMetadata :: Method -> URI -> [Header] -> HTTP.RequestBody -> IO FetchResponse
 mockMetadata _ _ _ _ = pure $ FetchResponse "" [] status200
 
 

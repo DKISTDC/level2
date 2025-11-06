@@ -22,9 +22,10 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import GHC.Generics
 import NSO.Prelude
-import Network.HTTP.Client hiding (Proxy, Request, Response)
+import Network.HTTP.Client hiding (Proxy, Request, RequestBody, Response)
 import Network.HTTP.Client qualified as Http
-import Network.HTTP.Types (methodPost)
+import Network.HTTP.Types (Header, methodPost)
+import Network.URI (URI (..), URIAuth (..), parseURI)
 
 
 data GraphQL :: Effect where
@@ -54,12 +55,16 @@ class Request a where
       _ -> []
 
 
-  request :: a -> Text
-  default request :: (Generic (Data a), FieldNames (Data a)) => a -> Text
+  request :: a -> RequestBody
+  default request :: (Generic (Data a), FieldNames (Data a)) => a -> RequestBody
   request a =
     let params = parametersText (parameters a)
         fields = requestFields @(Data a)
-     in [i|{#{rootField @a}#{params} { #{fields} }}|]
+     in RequestBody [i|{#{rootField @a}#{params} { #{fields} }}|]
+
+
+newtype RequestBody = RequestBody Text
+  deriving (Show)
 
 
 parametersText :: [(Key, A.Value)] -> Text
@@ -72,7 +77,7 @@ parametersText ps = "(" <> T.intercalate "," (fmap paramText ps) <> ")"
 encodeGraphQL :: A.Value -> ByteString
 encodeGraphQL = \case
   Object km ->
-    "{" <> (BL.intercalate "," $ fmap pair $ KM.toList km) <> "}"
+    "{" <> BL.intercalate "," (fmap pair $ KM.toList km) <> "}"
   val -> A.encode val
  where
   pair (k, v) = cs (K.toText k) <> ":" <> encodeGraphQL v
@@ -85,6 +90,7 @@ class RequestParameters a where
 class Mutation a
 
 
+-- The GraphQL endpoint, including auth
 newtype Service = Service Http.Request
 
 
@@ -155,10 +161,14 @@ instance (Request a) => FromJSON (Response a) where
 --      in withObject ("GraphQL Response data.rootField: " <> cs field) $ \v -> do
 --           v .: fromString field
 
-service :: Text -> Maybe Service
+service :: String -> Maybe Service
 service inp = do
-  req <- parseRequest (cs inp)
-  pure $ Service req
+  -- http://dev@localhost:8080/graphql
+  uri <- parseURI inp
+  uauth <- uriAuthority uri
+  req <- requestFromURI uri
+  let authToken = T.dropWhileEnd (== '@') $ cs $ uriUserInfo uauth
+  pure $ Service $ req{requestHeaders = ("Authorization", cs authToken) : req.requestHeaders}
 
 
 -- httpsText :: Text -> Url 'Https
@@ -180,25 +190,29 @@ newtype ReqType = ReqType Text
 
 sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :> es, IOE :> es) => Manager -> Service -> ReqType -> r -> Eff es (Data r)
 sendRequest mgr (Service sv) rt r = do
-  let requestHeaders = [("Content-Type", "application/json")]
-  let requestBody = RequestBodyLBS $ body rt $ request r
-  let req = sv{method = methodPost, requestHeaders, requestBody}
+  let contentType = ("Content-Type", "application/json")
+  let bd = body rt $ request r
+  -- putStrLn $ "REQUEST \n" <> cs bd
+  let req = sv{method = methodPost, requestHeaders = contentType : sv.requestHeaders, requestBody = RequestBodyLBS bd}
   res <- liftIO $ Http.httpLbs req mgr
   parseResponse r (responseBody res)
  where
-  body (ReqType typ) rbody =
-    -- but it isn't escaped if we do this, right?
-    [i|{#{A.encode typ}: #{A.encode rbody}}|]
+  -- this must be valid json, with a single key
+  body (ReqType typ) (RequestBody rbody) =
+    A.encode $
+      Object $
+        KM.fromList
+          [("query", String $ typ <> " " <> rbody)]
 
 
 parseResponse :: forall r es. (Request r, Error GraphQLError :> es, FromJSON (Data r)) => r -> BL.ByteString -> Eff es (Data r)
 parseResponse r body = do
   case A.eitherDecode @(Response r) body of
-    Left e -> throwError $ GraphQLParseError (request r) e
-    Right (Errors es) -> throwError $ GraphQLServerError (request r) es
+    Left e -> throwError $ GraphQLParseError (request r) body e
+    Right (Errors es) -> throwError $ GraphQLServerError (request r) body es
     Right (Data v) -> do
       case A.parseEither parseJSON v of
-        Left e -> throwError $ GraphQLParseError (request r) e
+        Left e -> throwError $ GraphQLParseError (request r) body e
         Right d -> pure d
 
 
@@ -305,6 +319,6 @@ genConName = constructorName @(Rep a) Proxy
 
 
 data GraphQLError
-  = GraphQLParseError Text String
-  | GraphQLServerError Text [ServerError]
+  = GraphQLParseError RequestBody BL.ByteString String
+  | GraphQLServerError RequestBody BL.ByteString [ServerError]
   deriving (Show, Exception)

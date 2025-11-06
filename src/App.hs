@@ -99,13 +99,12 @@ main = do
       rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
       log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
-      app <- webServer config auth fits pubs sync rows
       liftIO $ do
         Warp.run config.app.port $
           Static.staticPolicy (addBase "app") $
             javascript $
               addHeaders [("app-version", cs appVersion)] $
-                app
+                webServer config auth fits pubs sync rows
 
   javascript :: Application -> Application
   javascript app req respond = do
@@ -182,24 +181,7 @@ main = do
       . runMetadataSync sync
 
 
--- waitForAdminAccess :: (Auth :> es, Concurrent :> es, Log :> es, Globus :> es) => Eff (Transfer : Reader (Token Access) : es) () -> Eff es ()
--- waitForAdminAccess work = do
---   checkAndWait $ do
---     tok <- ask @(Token Access)
---     runTransfer tok $ do
---       log Debug " - got admin token"
---       work
---  where
---   checkAndWait next = do
---     admin <- Auth.getAdminToken
---     case admin of
---       Just tok -> do
---         Auth.runWithAccess tok next
---       Nothing -> do
---         log Debug "Waiting for Admin Globus Access Token"
---         Auth.waitForAdmin next
-
-webServer :: (MonadIO m) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> TMVar LogState -> m Application
+webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> TMVar LogState -> Application
 webServer config admin fits pubs sync rows =
   liveApp
     (document documentHead)

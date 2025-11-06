@@ -2,15 +2,15 @@ module App.Worker.Publish where
 
 import App.Effect.Transfer (Transfer, transferPublish)
 import App.Effect.Transfer qualified as Transfer
-import Control.Monad.Catch (Exception)
+import Control.Monad.Catch (Exception, Handler (..), catches)
 import Control.Monad.Loops
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
-import Effectful.Exception (catch)
 import Effectful.GenRandom
 import Effectful.Globus (GlobusError, Task)
+import Effectful.GraphQL (GraphQLError)
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time
@@ -19,6 +19,7 @@ import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files.Scratch as Scratch
 import NSO.InterserviceBus as InterserviceBus
+import NSO.Metadata as Metadata
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Bucket)
@@ -59,9 +60,11 @@ publishTask
      , Tasks PublishTask :> es
      , Transfer :> es
      , Error GlobusError :> es
+     , Error GraphQLError :> es
      , InterserviceBus :> es
      , GenRandom :> es
      , IOE :> es
+     , MetadataInversions :> es
      )
   => PublishTask
   -> Eff es ()
@@ -70,7 +73,8 @@ publishTask task = do
     runErrorNoCallStack @PublishError $
       workWithError
         `catchError` (\_ e -> onCaughtGlobus e)
-        `catch` onCaughtError
+        `catchError` (\_ e -> onCaughtGraphQL e)
+        `catches` [Handler onCaughtError]
   case res of
     Left err -> failed err
     Right a -> pure a
@@ -94,9 +98,20 @@ publishTask task = do
         InterserviceBus.catalogFitsFrames conversationId bucket task.proposalId task.inversionId
         InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
 
+      inv <- loadInversion task.inversionId
+      datasets <- Datasets.find $ Datasets.ByIds inv.datasets
+
+      _ <- send $ Metadata.CreateInversion bucket inv datasets
+
       Inversions.setPublished task.inversionId
 
   runScratchError = runErrorNoCallStackWith (throwError . ScratchError)
+
+  loadInversion invId = do
+    is <- send $ Inversions.ById invId
+    case is of
+      [inv] -> pure inv
+      _ -> throwError $ MissingInversion invId
 
   failed :: (Show e) => e -> Eff es ()
   failed err = do
@@ -109,8 +124,10 @@ data PublishError
   | MissingProposalDatasets (Id Proposal)
   | MixedProposalBuckets (Id Proposal)
   | GlobusError GlobusError
+  | GraphQLError GraphQLError
   | PublishIOError IOError
   | ScratchError ScratchError
+  | MissingInversion (Id Inversion)
   deriving (Show, Exception)
 
 
@@ -136,6 +153,12 @@ onCaughtGlobus :: (Log :> es) => GlobusError -> Eff (Error PublishError : es) a
 onCaughtGlobus e = do
   log Err "Catch GLOBUS"
   throwError $ GlobusError e
+
+
+onCaughtGraphQL :: (Log :> es) => GraphQLError -> Eff (Error PublishError : es) a
+onCaughtGraphQL e = do
+  log Err "Catch GraphQL"
+  throwError $ GraphQLError e
 
 
 proposalBucket
