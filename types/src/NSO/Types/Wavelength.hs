@@ -3,11 +3,14 @@
 module NSO.Types.Wavelength where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Char (isNumber)
 import Data.Scientific (fromFloatDigits)
+import Data.Text qualified as T
 import GHC.Real (Real)
 import NSO.Prelude
 import Rel8 (DBType)
 import Telescope.Asdf
+import Text.Read (readMaybe)
 
 
 -- Wavlength units
@@ -35,30 +38,82 @@ instance ToAsdf (Wavelength a) where
 {- | See https://bitbucket.org/dkistdc/dkist-spectral-lines/src/main/dkist_spectral_lines/lines.py
 there are more spectral lines, but these are the ones we use for inversion
 -}
-data SpectralLine
-  = NaID -- pair of D1 and D2: 589.0 and 589.6
-  | FeI630 -- pair of 630.15 and 630.25
-  | CaII854 -- just the one
-  deriving (Eq, Ord, Show, Bounded, Enum)
+data SpectralLine = SpectralLine
+  { ion :: Ion
+  , designation :: Maybe Designation
+  , wavelength :: Wavelength Nm
+  }
+  deriving (Show, Eq)
+
+
+data Designation
+  = D1
+  | D2
+  | B1
+  | Designation Text
+  deriving (Show, Read, Eq)
 
 
 instance ToAsdf SpectralLine where
-  toValue = String . cs . show
+  toValue = String . renderSpectralLine
 
 
-ionName :: SpectralLine -> Text
+ionName :: Ion -> Text
 ionName = \case
-  NaID -> "Na I"
-  FeI630 -> "Fe I"
-  CaII854 -> "Ca II"
+  NaI -> "Na I"
+  FeI -> "Fe I"
+  CaII -> "Ca II"
+  Ion t -> t
 
 
-fromIonName :: Text -> Maybe SpectralLine
+fromIonName :: Text -> Ion
 fromIonName = \case
-  "Na I" -> pure NaID
-  "Fe I" -> pure FeI630
-  "Ca II" -> pure CaII854
-  _ -> Nothing
+  "Na I" -> NaI
+  "Fe I" -> FeI
+  "Ca II" -> CaII
+  t -> Ion t
+
+
+data Ion
+  = NaI
+  | FeI
+  | CaII
+  | Ion Text
+  deriving (Eq, Ord, Show)
+
+
+renderSpectralLine :: SpectralLine -> Text
+renderSpectralLine _ = "Mg I b1 (517.28 nm)"
+
+
+parseSpectralLine :: Text -> Either String SpectralLine
+parseSpectralLine inp = do
+  (iont, dest) <- prefix inp
+  w <- wavelength inp
+  let md = fmap designation dest
+  let ion = fromIonName iont
+  pure $ SpectralLine ion md w
+ where
+  designation t =
+    case readMaybe (cs t) of
+      Nothing -> Designation t
+      Just d -> d
+
+  -- Na I D1 (...
+  -- (Na I, Just D1)
+  prefix start = do
+    case T.words $ T.takeWhile (/= '(') start of
+      [elm, ion] -> pure (elm <> " " <> ion, Nothing)
+      [elm, ion, des] -> pure (elm <> " " <> ion, Just $ T.toUpper des)
+      ws -> Left $ "Could not match SpectralLine prefix: " <> show ws
+
+  -- asdf2 (630.15 nm)
+  wavelength end = do
+    case T.stripSuffix " nm)" $ T.drop 1 $ T.dropWhile (/= '(') end of
+      Nothing -> Left $ "Could not locate SpectralLine wavelength: " <> show end
+      Just wt -> do
+        f <- maybe (Left $ "Could not parse SpectralLine wavelength: " <> show wt) pure $ readMaybe @Double (cs wt)
+        pure $ Wavelength f
 
 --  Ca II (854.21 nm) cm
 

@@ -12,7 +12,8 @@ import App.View.DataRow qualified as View
 import App.View.Icons qualified as Icons
 import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Qualify (boxRadius)
+import NSO.Data.Qualify (boxRadius, isLineWavBroadEnough)
+import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import Numeric (showFFloat)
@@ -63,8 +64,10 @@ datasetsTableUnsorted sortBy ds = do
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
     tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
-    tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMin ""
-    tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ text . cs $ showFFloat (Just 1) d.wavelengthMax ""
+    tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ do
+      wavelength d d.wavelengthMin
+    tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ do
+      wavelength d d.wavelengthMax
     -- tcol (hd "Bounding Box") $ \d -> cell $ text . cs $ maybe "" show d.boundingBox
     tcol (hd "Bounding Box Radius") $ \d -> cell $ radiusBoundingBox d.boundingBox
     -- tcol (hd "Exposure Time") $ \d -> cell . cs . show $ d.exposureTime
@@ -82,6 +85,17 @@ datasetsTableUnsorted sortBy ds = do
   -- tcol cell (hd "peid") $ \d -> cell . cs $ d.primaryExperimentId
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
+
+  wavColor d w =
+    case Spectra.identifyLine d of
+      Nothing -> id
+      Just l ->
+        if isLineWavBroadEnough w l
+          then id
+          else color Danger
+
+  wavelength d w =
+    el ~ wavColor d w $ text . cs $ showFFloat (Just 1) w ""
 
   embargo :: Dataset -> Text
   embargo d =

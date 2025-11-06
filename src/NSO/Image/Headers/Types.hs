@@ -10,7 +10,7 @@ import Data.Text qualified as T
 import GHC.TypeLits
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
-import NSO.Types.Wavelength (SpectralLine (..), fromIonName, ionName)
+import NSO.Types.Wavelength (Ion, SpectralLine (..), fromIonName, ionName)
 import Telescope.Data.KnownText
 import Telescope.Data.Parser (expected)
 import Telescope.Fits.Header
@@ -286,7 +286,7 @@ instance IsKeyword ProfType where
 instance KeywordInfo ProfType
 
 
-newtype ProfIon = ProfIon SpectralLine
+newtype ProfIon = ProfIon Ion
   deriving (Generic)
 instance IsKeyword ProfIon where
   keyword = "SPECPFIN"
@@ -294,9 +294,6 @@ instance ToKeyword ProfIon where
   toKeywordValue (ProfIon p) = String (ionName p)
 instance FromKeyword ProfIon where
   parseKeywordValue = \case
-    String val ->
-      case fromIonName val of
-        Just ion -> pure $ ProfIon ion
-        Nothing -> expected "ProfIon" val
+    String val -> pure $ ProfIon $ fromIonName val
     other -> expected "ProfIon" other
 instance KeywordInfo ProfIon

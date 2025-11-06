@@ -119,7 +119,7 @@ instance Request InversionInventory where
      in RequestBody [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]
 
 
-inversionInventory :: Bucket -> Inversion -> [SpectralLine] -> InversionInventory
+inversionInventory :: Bucket -> Inversion -> [FocusLine] -> InversionInventory
 inversionInventory bucket inv slines =
   let asdfObjectKey = DKIST.inversionDir inv.proposalId inv.inversionId
    in InversionInventory
@@ -133,7 +133,8 @@ inversionInventory bucket inv slines =
         }
 
 
-spectralLineName :: SpectralLine -> Text
+-- BUG: This should be created from the datasets spectral lines, not the focus point of the dataset
+spectralLineName :: FocusLine -> Text
 spectralLineName s =
   ionName s <> " (" <> cs (showFFloat (Just 2) (midPoint s).value " nm)")
 

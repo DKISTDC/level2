@@ -77,7 +77,7 @@ qualifyOnDisk g = all (\d -> bbOnDisk d.startTime d.boundingBox) g.items
   bbOnDisk t (Just bb) = isOnDisk (dayOfYear t) bb
 
 
-qualifyLine :: SpectralLine -> [SpectralLine] -> Bool
+qualifyLine :: FocusLine -> [FocusLine] -> Bool
 qualifyLine sl sls = sl `elem` sls
 
 
@@ -150,11 +150,10 @@ dayOfYear time =
    in doy
 
 
-isLineBroadEnough :: Wavelength Nm -> Wavelength Nm -> SpectralLine -> Bool
-isLineBroadEnough mn mx ln
-  | ln == FeI630 = isWithin 0.5
-  | otherwise = isWithin 1.0
+isLineWavBroadEnough :: Wavelength Nm -> FocusLine -> Bool
+isLineWavBroadEnough w ln
+  | ln == FeI630 = atLeast 0.5
+  | otherwise = atLeast 1.0
  where
-  isWithin :: Wavelength Nm -> Bool
-  isWithin n =
-    all ((< n) . abs) [midPoint ln - mn, midPoint ln - mx]
+  atLeast :: Wavelength Nm -> Bool
+  atLeast n = abs (midPoint ln - w) >= n
