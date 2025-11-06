@@ -3,9 +3,6 @@
 - [x] Send Han my notebook, and verify QQ
 - [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
 - [ ] Stuart: nice to see units on dataset page
-- [ ] Han - the spectral range is too short on ILFBSO, only sodium Na D1, not the others. Change the criteria to limit it!
-- [ ] Han - the continuum of ILFBSO isn't flat! Han was at a meeting complaining that data was shit.
-- [ ] Han - authorization error
 
 * Han to boulder, 7-17 of December. Come by.
 * Goal for after 5 years. Explore that and by the end of that know if they should do that.
@@ -14,6 +11,18 @@
   * Talk to Cristoph Keller. With Han when there.
   * Retire at the end of the year
   * Wants to see this through. Eventually doing the inversions is fun. It's a bit embarassing that we can't find any datasets to invert
+
+
+- [ ] mag Inclination, Azimuth - negative values +360 degrees
+- [x] Send Han my notebook, and verify QQ
+- [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
+- [ ] Stuart: nice to see units on dataset page
+
+## Nov 6
+- [ ] Han: warnings for narrow spectral ranges. Highlight wav min / max in red?
+- [ ] Han: report bad data to L1, ILFBSO - the continuum is all messed up. 
+- [ ] Han: fix Globus error: invalid token. He was downloading?
+- [ ] Republish: save Inversion to metadata key error, need update?
 
 
 ## Tue, Oct 27
