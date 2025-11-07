@@ -22,7 +22,6 @@ import NSO.Types.Wavelength
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types
 import Network.URI
-import Numeric (showFFloat)
 
 
 data MetadataService = MetadataService
@@ -251,12 +250,12 @@ mockExperiments =
 mockDatasetsAvailable :: (IOE :> es, Error GraphQLError :> es) => Eff es [DatasetAvailable]
 mockDatasetsAvailable = do
   let r = DatasetsAvailable $ DatasetInventories [] []
-  datasetInventories r
+  datasetInventoriesJSON r
 
 
 mockDatasetInventories :: (IOE :> es, Error GraphQLError :> es) => DatasetInventories -> Eff es [ParsedResult DatasetInventory]
 mockDatasetInventories r@(DatasetInventories pids dids) = do
-  filter (isResult isQueryMatch) <$> datasetInventories r
+  filter (isResult isQueryMatch) <$> datasetInventoriesJSON r
  where
   isResult :: (a -> Bool) -> ParsedResult a -> Bool
   isResult _ (ParsedResult _ (A.Error _)) = True
@@ -280,12 +279,13 @@ mockJsonFile r json = do
   parseResponse r cnt
 
 
-datasetInventories :: (IOE :> es, Request r, FromJSON (Data r), Semigroup (Data r), Error GraphQLError :> es) => r -> Eff es (Data r)
-datasetInventories r = do
+datasetInventoriesJSON :: (IOE :> es, Request r, FromJSON (Data r), Semigroup (Data r), Error GraphQLError :> es) => r -> Eff es (Data r)
+datasetInventoriesJSON r = do
   ds1118 <- mockJsonFile r "./deps/dataset_inventories_pid_1_118.json"
   ds2114 <- mockJsonFile r "./deps/dataset_inventories_pid_2_114.json"
   ds354 <- mockJsonFile r "./deps/dataset_inventories_pid_3_54.json"
-  pure $ ds1118 <> ds2114 <> ds354
+  ds2126 <- mockJsonFile r "./deps/dataset_inventories_pid_2_126.json"
+  pure $ ds1118 <> ds2114 <> ds2126 <> ds354
 
 
 data ParsedResult a = ParsedResult Value (A.Result a)

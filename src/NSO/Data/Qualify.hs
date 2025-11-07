@@ -5,7 +5,6 @@ import Data.List.NonEmpty qualified as NE
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (DayOfYear, toOrdinalDate)
 import NSO.Data.Datasets
-import NSO.Data.Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -49,7 +48,7 @@ qualifyVISP g = do
   let sls = concatMap (.spectralLines) $ NE.toList g.items
   check "On Disk" $ qualifyOnDisk g
   check "FeI 630" $ qualifyLine FeI sls
-  check "CaII 854" $ qualifyLine CaII sls
+  -- check "CaII 854" $ qualifyLine CaII sls
   check "Stokes" $ qualifyStokes g
   check "Health" $ qualifyHealth g
   check "GOS" $ qualifyGOS g
@@ -100,6 +99,19 @@ qualifyAO = all (hasPctLocked 0.75)
  where
   hasPctLocked :: Float -> Dataset -> Bool
   hasPctLocked p d = (fromIntegral d.aoLocked / fromIntegral d.frameCount) >= p
+
+
+isWavNarrow :: Ion -> Wavelength Nm -> Bool
+isWavNarrow ion w =
+  -- per Han, these are mid-points of an acceptable window to be able to use the spectral line image
+  case ion of
+    FeI -> narrow 630.3 0.5
+    CaII -> narrow 854.2 1.0
+    NaI -> narrow 589.3 1.0
+    _ -> False
+ where
+  narrow mid dw =
+    abs (mid - w) < dw
 
 
 -- SOLAR RADIUS -------------------------------

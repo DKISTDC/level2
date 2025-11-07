@@ -108,7 +108,7 @@ viewProgramDetails prog now = do
 
   col ~ pad 15 . gap 10 $ do
     viewCriteria prog ds
-    viewWavelengthRanges prog.datasets.items
+    viewWavelengthRanges prog.program.spectralLines prog.datasets.items
     viewFriedHistogram (sample ds).friedParameter
 
 

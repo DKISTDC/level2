@@ -1,0 +1,4939 @@
+{
+  "data": {
+    "datasetInventories": [
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-608.41,-221.75),(-655.96,-282.14)",
+        "browseMovieUrl": "https://vimeo.com/1019717006",
+        "createDate": "2024-10-15T08:38:44.303427",
+        "datasetId": "BWMQG",
+        "endTime": "2024-10-09T20:12:17.049348",
+        "bucket": "public",
+        "exposureTime": 99.97070422535211,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.580465",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:27.569363",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T18:38:50.838958",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5772343510162,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1800,
+        "lightLevel": {
+          "max": 399.60355978682674,
+          "med": 358.69127817733397,
+          "min": 344.84989910487917,
+          "p25": 356.3567547989859,
+          "p75": 360.70586916403647
+        },
+        "friedParameter": {
+          "max": 0.1146601845873583,
+          "med": 0.0464417518739387,
+          "min": 0.014275736888500612,
+          "p25": 0.03134867746409647,
+          "p75": 0.06813211676431352
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-713.85,-193.61),(-761.41,-254.01)",
+        "browseMovieUrl": "https://vimeo.com/1019719791",
+        "createDate": "2024-10-15T08:48:43.997818",
+        "datasetId": "AQDYY",
+        "endTime": "2024-10-09T19:34:22.993203",
+        "bucket": "public",
+        "exposureTime": 99.97070422535211,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.457328",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:33.513219",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T18:38:49.118355",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5772343510162,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1800,
+        "lightLevel": {
+          "max": 333.1058277711664,
+          "med": 311.4483796416067,
+          "min": 303.00627791862854,
+          "p25": 306.60233524775356,
+          "p75": 313.38609199565377
+        },
+        "friedParameter": {
+          "max": 0.11487111769316877,
+          "med": 0.04564798489826052,
+          "min": 0.014915382440899745,
+          "p25": 0.034128779206228546,
+          "p75": 0.061911913723438405
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-677.55,-192.54),(-725.1,-252.94)",
+        "browseMovieUrl": "https://vimeo.com/1019726699",
+        "createDate": "2024-10-15T09:11:42.197963",
+        "datasetId": "BZDRO",
+        "endTime": "2024-10-09T20:41:55.739197",
+        "bucket": "public",
+        "exposureTime": 99.97070422535211,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.676867",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:06.259213",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T18:38:50.815501",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5772343510162,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1632,
+        "lightLevel": {
+          "max": 387.4882633966299,
+          "med": 355.12788672151225,
+          "min": 350.39930322002033,
+          "p25": 353.63796761007916,
+          "p75": 356.1769372725548
+        },
+        "friedParameter": {
+          "max": 10.169479813048703,
+          "med": 0.05139093086393109,
+          "min": 0.017398338213147433,
+          "p25": 0.04089386939918871,
+          "p75": 0.06655206796808871
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-605.51,-265.95),(-653.05,-326.35)",
+        "browseMovieUrl": "https://vimeo.com/1019734907",
+        "createDate": "2024-10-15T09:39:43.373553",
+        "datasetId": "BGODX",
+        "endTime": "2024-10-09T21:14:15.520202",
+        "bucket": "public",
+        "exposureTime": 99.97070422535211,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.781946",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:26.040217",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T18:39:14.471697",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5772343510162,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1732,
+        "lightLevel": {
+          "max": 404.1463237957262,
+          "med": 366.3002362843,
+          "min": 360.39723357651644,
+          "p25": 365.3879201807489,
+          "p75": 368.530518618168
+        },
+        "friedParameter": {
+          "max": 8.693193901650623,
+          "med": 0.05109095616890512,
+          "min": 0.01612978241395224,
+          "p25": 0.036532723515518624,
+          "p75": 0.06922142975502839
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(-618,-253.93),(-665.55,-314.33)",
+        "browseMovieUrl": "https://vimeo.com/1019738187",
+        "createDate": "2024-10-15T09:50:43.701957",
+        "datasetId": "BLVMP",
+        "endTime": "2024-10-09T22:38:45.043370",
+        "bucket": "public",
+        "exposureTime": 99.97070422535211,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.1063085",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:55.563385",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T18:39:15.970512",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5772343510162,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1796,
+        "lightLevel": {
+          "max": 458.80888566944344,
+          "med": 439.16425208257874,
+          "min": 431.07935358134563,
+          "p25": 433.72622065849157,
+          "p75": 447.0422034804505
+        },
+        "friedParameter": {
+          "max": 0.062011728901393885,
+          "med": 0.030631475323952537,
+          "min": 0.012417977582689954,
+          "p25": 0.02441430900131512,
+          "p75": 0.03788383099889327
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(408.26,-162.19),(376.8,-222.45)",
+        "browseMovieUrl": "https://vimeo.com/1023484587",
+        "createDate": "2024-10-26T05:46:36.008667",
+        "datasetId": "AMGDQ",
+        "endTime": "2024-10-15T20:11:08.471539",
+        "bucket": "public",
+        "exposureTime": 99.97070422535211,
+        "frameCount": 1192,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.514011",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:43.225431",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T18:43:47.805136",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5772343510162,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1192,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1192,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1100,
+        "lightLevel": {
+          "max": 495.2619306324486,
+          "med": 436.9803211396837,
+          "min": 0.1717459167658371,
+          "p25": 434.587916731343,
+          "p75": 442.06512478225625
+        },
+        "friedParameter": {
+          "max": 0.34095010623658145,
+          "med": 0.09579998113586007,
+          "min": 0.03263178600175272,
+          "p25": 0.07817124817276688,
+          "p75": 0.12366447535533928
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(484.17,-153.85),(351.37,-229.95)",
+        "browseMovieUrl": "https://vimeo.com/1023542978",
+        "createDate": "2024-10-26T13:36:54.934641",
+        "datasetId": "AJPNL",
+        "endTime": "2024-10-15T19:45:14.469442",
+        "bucket": "public",
+        "exposureTime": 14.995605633802818,
+        "frameCount": 8340,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.464990",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:39:53.744683",
+        "stokesParameters": "I",
+        "updateDate": "2025-06-28T18:45:27.936965",
+        "wavelengthMax": 589.9952196983841,
+        "wavelengthMin": 589.1215257888812,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 8340,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 8340,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 8340,
+        "lightLevel": {
+          "max": 434.6698228730101,
+          "med": 426.23749159207324,
+          "min": 417.32455459547094,
+          "p25": 423.5098566771874,
+          "p75": 427.66570514478883
+        },
+        "friedParameter": {
+          "max": 0.1950549464548367,
+          "med": 0.1189646588080771,
+          "min": 0.035541219521989326,
+          "p25": 0.09430564781081498,
+          "p75": 0.14231695728848467
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(583,-134.96),(450.21,-211.05)",
+        "browseMovieUrl": "https://vimeo.com/1023543415",
+        "createDate": "2024-10-26T13:39:52.282791",
+        "datasetId": "BEKJW",
+        "endTime": "2024-10-15T19:31:09.550365",
+        "bucket": "public",
+        "exposureTime": 14.995605633802818,
+        "frameCount": 8340,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.418344",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:25:48.838452",
+        "stokesParameters": "I",
+        "updateDate": "2025-06-28T18:45:33.266248",
+        "wavelengthMax": 589.9952196983841,
+        "wavelengthMin": 589.1215257888812,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 8340,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 8340,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 8340,
+        "lightLevel": {
+          "max": 406.07133371276797,
+          "med": 404.9844086856039,
+          "min": 403.7433469584864,
+          "p25": 404.77111467549713,
+          "p75": 405.25192735551303
+        },
+        "friedParameter": {
+          "max": 0.19834337773510177,
+          "med": 0.12959809039181674,
+          "min": 0.039210750291852066,
+          "p25": 0.10747978388830225,
+          "p75": 0.1504540722878303
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(582.33,-142.78),(450.8,-193.02)",
+        "browseMovieUrl": "https://vimeo.com/1023552601",
+        "createDate": "2024-10-26T14:41:49.633196",
+        "datasetId": "ANJYE",
+        "endTime": "2024-10-15T19:31:09.550365",
+        "bucket": "public",
+        "exposureTime": 14.995605633802818,
+        "frameCount": 8340,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.418344",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:25:48.838452",
+        "stokesParameters": "I",
+        "updateDate": "2025-06-28T18:45:32.385603",
+        "wavelengthMax": 517.714841672363,
+        "wavelengthMin": 516.609585238116,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 8340,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 8340,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 8340,
+        "lightLevel": {
+          "max": 406.07133371276797,
+          "med": 404.9844086856039,
+          "min": 403.7433469584864,
+          "p25": 404.77111467549713,
+          "p75": 405.25192735551303
+        },
+        "friedParameter": {
+          "max": 0.19834337773510177,
+          "med": 0.12959809039181674,
+          "min": 0.039210750291852066,
+          "p25": 0.10747978388830225,
+          "p75": 0.1504540722878303
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(483.49,-161.67),(351.96,-211.92)",
+        "browseMovieUrl": "https://vimeo.com/1023555872",
+        "createDate": "2024-10-26T15:02:48.358655",
+        "datasetId": "AOKLD",
+        "endTime": "2024-10-15T19:45:14.469442",
+        "bucket": "public",
+        "exposureTime": 14.995605633802818,
+        "frameCount": 8340,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.464990",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:39:53.744683",
+        "stokesParameters": "I",
+        "updateDate": "2025-06-28T18:45:51.625226",
+        "wavelengthMax": 517.714841672363,
+        "wavelengthMin": 516.609585238116,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 8340,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 8340,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 8340,
+        "lightLevel": {
+          "max": 434.6698228730101,
+          "med": 426.23749159207324,
+          "min": 417.32455459547094,
+          "p25": 423.5098566771874,
+          "p75": 427.66570514478883
+        },
+        "friedParameter": {
+          "max": 0.1950549464548367,
+          "med": 0.1189646588080771,
+          "min": 0.035541219521989326,
+          "p25": 0.09430564781081498,
+          "p75": 0.14231695728848467
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(582.48,-139.99),(450.66,-200.64)",
+        "browseMovieUrl": "https://vimeo.com/1041171455",
+        "createDate": "2024-12-20T16:29:42.575594",
+        "datasetId": "BQMYN",
+        "endTime": "2024-10-15T19:31:09.547865",
+        "bucket": "public",
+        "exposureTime": 9.99707042253521,
+        "frameCount": 8340,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.418344",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:25:48.835952",
+        "stokesParameters": "I",
+        "updateDate": "2025-06-28T19:14:35.984554",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5760865240643,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 8340,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 8340,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 8340,
+        "lightLevel": {
+          "max": 406.07133371276797,
+          "med": 404.9844086856039,
+          "min": 403.7433469584864,
+          "p25": 404.77111467549713,
+          "p75": 405.25192735551303
+        },
+        "friedParameter": {
+          "max": 0.19834337773510177,
+          "med": 0.12959809039181674,
+          "min": 0.039210750291852066,
+          "p25": 0.10747978388830225,
+          "p75": 0.1504540722878303
+        }
+      },
+      {
+        "spectralLines": [
+          "Fe I (630.15 nm)",
+          "Fe I (630.25 nm)"
+        ],
+        "boundingBox": "(483.64,-158.88),(351.83,-219.54)",
+        "browseMovieUrl": "https://vimeo.com/1041268036",
+        "createDate": "2024-12-20T22:33:52.546488",
+        "datasetId": "BRNOW",
+        "endTime": "2024-10-15T19:45:14.466943",
+        "bucket": "public",
+        "exposureTime": 9.99707042253521,
+        "frameCount": 8340,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.464990",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:39:53.742183",
+        "stokesParameters": "I",
+        "updateDate": "2025-06-28T19:15:51.973728",
+        "wavelengthMax": 630.6102786077004,
+        "wavelengthMin": 629.5760865240643,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 8340,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 8340,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 8340,
+        "lightLevel": {
+          "max": 434.6698228730101,
+          "med": 426.23749159207324,
+          "min": 417.32455459547094,
+          "p25": 423.5098566771874,
+          "p75": 427.66570514478883
+        },
+        "friedParameter": {
+          "max": 0.1950549464548367,
+          "med": 0.1189646588080771,
+          "min": 0.035541219521989326,
+          "p25": 0.09430564781081498,
+          "p75": 0.14231695728848467
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-716.75,-200.96),(-760.16,-245.33)",
+        "browseMovieUrl": "https://vimeo.com/1041276472",
+        "createDate": "2024-12-20T23:22:17.978928",
+        "datasetId": "ANJOL",
+        "endTime": "2024-10-09T19:34:31.339874",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.168274",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:29.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:12:21.480977",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 333.5951259895483,
+          "med": 311.63139649195426,
+          "min": 303.2541694693089,
+          "p25": 306.6831203325228,
+          "p75": 313.41491178144565
+        },
+        "friedParameter": {
+          "max": 0.10184011144773138,
+          "med": 0.04527628591725025,
+          "min": 0.01871203460668681,
+          "p25": 0.034989635099209764,
+          "p75": 0.06287200668112541
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-716.75,-200.96),(-760.16,-245.33)",
+        "browseMovieUrl": "https://vimeo.com/1041276641",
+        "createDate": "2024-12-20T23:23:18.008022",
+        "datasetId": "AMGML",
+        "endTime": "2024-10-09T19:34:34.769311",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.168274",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:32.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:06:21.760961",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 333.01467722184856,
+          "med": 311.45071661406325,
+          "min": 303.36632690019144,
+          "p25": 306.6543954053914,
+          "p75": 313.35634087028507
+        },
+        "friedParameter": {
+          "max": 0.1047811215010713,
+          "med": 0.044333731910046054,
+          "min": 0.014813701599350438,
+          "p25": 0.034290806847008665,
+          "p75": 0.06180500250223384
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-716.75,-200.96),(-760.16,-245.33)",
+        "browseMovieUrl": "https://vimeo.com/1041276653",
+        "createDate": "2024-12-20T23:23:18.332185",
+        "datasetId": "ALELN",
+        "endTime": "2024-10-09T19:34:38.210704",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.168274",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:36.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:03:22.415277",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 332.48050223349026,
+          "med": 311.57010055018026,
+          "min": 303.1263517359135,
+          "p25": 306.68203376968313,
+          "p75": 313.4518549179904
+        },
+        "friedParameter": {
+          "max": 0.10580392209413489,
+          "med": 0.04389936945237175,
+          "min": 0.017009772391397244,
+          "p25": 0.03323013986690296,
+          "p75": 0.060584675251256555
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(573.31,-110.87),(458.27,-228.75)",
+        "browseMovieUrl": "https://vimeo.com/1041277317",
+        "createDate": "2024-12-20T23:27:18.434230",
+        "datasetId": "AWGMV",
+        "endTime": "2024-10-15T19:31:19.823945",
+        "bucket": "public",
+        "exposureTime": 19.991000000000003,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.155339",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:28:14.645057",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:08:30.827277",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 406.1770062606716,
+          "med": 404.9012780048637,
+          "min": 404.03197599213536,
+          "p25": 404.7492540659871,
+          "p75": 405.26654421275936
+        },
+        "friedParameter": {
+          "max": 0.16741899236912777,
+          "med": 0.1289780649855198,
+          "min": 0.039806987924451115,
+          "p25": 0.08780415428996508,
+          "p75": 0.14837978244782063
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(573.31,-110.87),(458.27,-228.75)",
+        "browseMovieUrl": "https://vimeo.com/1041277634",
+        "createDate": "2024-12-20T23:29:17.594907",
+        "datasetId": "AXJNP",
+        "endTime": "2024-10-15T19:30:48.951051",
+        "bucket": "public",
+        "exposureTime": 0.499,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.155339",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:27:43.772163",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:09:31.297284",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 405.8887911557234,
+          "med": 404.9546058191477,
+          "min": 404.45901243510804,
+          "p25": 404.82646901571206,
+          "p75": 405.1468412066022
+        },
+        "friedParameter": {
+          "max": 0.18614689130592071,
+          "med": 0.14236739757897315,
+          "min": 0.07092846245364852,
+          "p25": 0.11810526884072145,
+          "p75": 0.1571362692483823
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-611.32,-229.09),(-654.71,-273.46)",
+        "browseMovieUrl": "https://vimeo.com/1041277621",
+        "createDate": "2024-12-20T23:29:17.843149",
+        "datasetId": "AQMJN",
+        "endTime": "2024-10-09T20:12:28.923134",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.214106",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:37.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:22:21.924425",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 146,
+        "lightLevel": {
+          "max": 394.3035649609355,
+          "med": 358.68296510925995,
+          "min": 344.7676652696573,
+          "p25": 356.37056966937445,
+          "p75": 360.6741949949121
+        },
+        "friedParameter": {
+          "max": 0.11546786788178731,
+          "med": 0.04565426076617011,
+          "min": 0.014537711078345575,
+          "p25": 0.0337215720264432,
+          "p75": 0.0657119878579536
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(474.47,-129.76),(359.43,-247.65)",
+        "browseMovieUrl": "https://vimeo.com/1041277639",
+        "createDate": "2024-12-20T23:29:18.313823",
+        "datasetId": "AZLDR",
+        "endTime": "2024-10-15T19:44:22.823945",
+        "bucket": "public",
+        "exposureTime": 19.991000000000003,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.171423",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:41:17.645057",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:17:30.733556",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 429.5310187820148,
+          "med": 426.8036080785085,
+          "min": 423.4075472999776,
+          "p25": 424.5055276728583,
+          "p75": 427.7427519359791
+        },
+        "friedParameter": {
+          "max": 0.17980767980065945,
+          "med": 0.1287829295580555,
+          "min": 0.07500917193614946,
+          "p25": 0.11408517518674419,
+          "p75": 0.14005560767946384
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(573.31,-110.87),(458.27,-228.75)",
+        "browseMovieUrl": "https://vimeo.com/1041277644",
+        "createDate": "2024-12-20T23:29:18.384963",
+        "datasetId": "AYKOZ",
+        "endTime": "2024-10-15T19:30:18.087749",
+        "bucket": "public",
+        "exposureTime": 0.191,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.155339",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:27:12.908861",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:15:31.182256",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 405.8631103292458,
+          "med": 404.9532777978993,
+          "min": 403.58058674393334,
+          "p25": 404.2171573446474,
+          "p75": 405.2546610096411
+        },
+        "friedParameter": {
+          "max": 0.1717784219066029,
+          "med": 0.13179141866362315,
+          "min": 0.0905329733423241,
+          "p25": 0.12499382930580166,
+          "p75": 0.15216538188275025
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-611.32,-229.09),(-654.71,-273.46)",
+        "browseMovieUrl": "https://vimeo.com/1041277761",
+        "createDate": "2024-12-20T23:30:18.077348",
+        "datasetId": "ARNZW",
+        "endTime": "2024-10-09T20:12:25.481596",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.214106",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:33.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:15:21.636612",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 146,
+        "lightLevel": {
+          "max": 395.76024904710164,
+          "med": 358.8968800124179,
+          "min": 344.8859109018472,
+          "p25": 356.2653326089581,
+          "p75": 360.66912868008484
+        },
+        "friedParameter": {
+          "max": 0.11194737750533648,
+          "med": 0.04792016377057422,
+          "min": 0.01693512542215996,
+          "p25": 0.03316840735839824,
+          "p75": 0.06829121274290276
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-611.32,-229.09),(-654.71,-273.46)",
+        "browseMovieUrl": "https://vimeo.com/1041278036",
+        "createDate": "2024-12-20T23:32:18.273679",
+        "datasetId": "BVEXY",
+        "endTime": "2024-10-09T20:12:32.340020",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.214106",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:30.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:19:22.028068",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 397.3961470136769,
+          "med": 358.70005691519634,
+          "min": 345.3736913816595,
+          "p25": 356.23387833945606,
+          "p75": 360.7357927596971
+        },
+        "friedParameter": {
+          "max": 0.11299270794408578,
+          "med": 0.04539374910051337,
+          "min": 0.016211552643568224,
+          "p25": 0.03322133772711516,
+          "p75": 0.06992209851363132
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(474.47,-129.76),(359.43,-247.65)",
+        "browseMovieUrl": "https://vimeo.com/1041278619",
+        "createDate": "2024-12-20T23:36:18.227793",
+        "datasetId": "BDJLM",
+        "endTime": "2024-10-15T19:45:24.540495",
+        "bucket": "public",
+        "exposureTime": 0.499,
+        "frameCount": 36,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.171423",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:40:46.772163",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:25:31.541752",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 36,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 36,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 36,
+        "lightLevel": {
+          "max": 433.4596333281592,
+          "med": 425.74037184594954,
+          "min": 420.02926820855106,
+          "p25": 422.61474017350514,
+          "p75": 427.754156534037
+        },
+        "friedParameter": {
+          "max": 0.1907989943921915,
+          "med": 0.14272607027286138,
+          "min": 0.040525603044503374,
+          "p25": 0.11526237972287151,
+          "p75": 0.15956661839650757
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-680.45,-199.89),(-723.85,-244.26)",
+        "browseMovieUrl": "https://vimeo.com/1041278914",
+        "createDate": "2024-12-20T23:38:17.774277",
+        "datasetId": "BZLXR",
+        "endTime": "2024-10-09T20:42:04.481596",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.249888",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:12.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:32:21.876093",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 132,
+        "lightLevel": {
+          "max": 383.0465669788379,
+          "med": 355.23499077283935,
+          "min": 350.4928166123385,
+          "p25": 353.66764112381645,
+          "p75": 356.1361049309256
+        },
+        "friedParameter": {
+          "max": 0.0894823281013655,
+          "med": 0.050248990215236156,
+          "min": 0.01640300196700857,
+          "p25": 0.040681939135869205,
+          "p75": 0.0650334233517244
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(474.47,-129.76),(359.43,-247.65)",
+        "browseMovieUrl": "https://vimeo.com/1041278922",
+        "createDate": "2024-12-20T23:38:18.413941",
+        "datasetId": "BEKMM",
+        "endTime": "2024-10-15T19:44:53.677193",
+        "bucket": "public",
+        "exposureTime": 0.191,
+        "frameCount": 36,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.171423",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:40:15.908861",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:23:31.084078",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 36,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 36,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 36,
+        "lightLevel": {
+          "max": 434.3181904416964,
+          "med": 425.8934823476656,
+          "min": 417.33107397250825,
+          "p25": 423.3274693434056,
+          "p75": 427.7773925941257
+        },
+        "friedParameter": {
+          "max": 0.17666871166623288,
+          "med": 0.10889513224318301,
+          "min": 0.07308845392579194,
+          "p25": 0.09004995213992528,
+          "p75": 0.12577358714230655
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-680.45,-199.89),(-723.85,-244.26)",
+        "browseMovieUrl": "https://vimeo.com/1041279348",
+        "createDate": "2024-12-20T23:41:18.321297",
+        "datasetId": "BYKXZ",
+        "endTime": "2024-10-09T20:42:07.923134",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.249888",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:16.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:35:21.929521",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 133,
+        "lightLevel": {
+          "max": 380.8143184836412,
+          "med": 355.16492471671756,
+          "min": 351.1078284265535,
+          "p25": 353.6395715837947,
+          "p75": 356.1429778720615
+        },
+        "friedParameter": {
+          "max": 0.0972870706947282,
+          "med": 0.050029434434883044,
+          "min": 0.019328757763884298,
+          "p25": 0.040953890152035655,
+          "p75": 0.06346916653614013
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-704.72,-189.3),(-771.4,-256.76)",
+        "browseMovieUrl": "https://vimeo.com/1041279734",
+        "createDate": "2024-12-20T23:44:19.403189",
+        "datasetId": "AOKOX",
+        "endTime": "2024-10-09T19:34:34.769538",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.168190",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:32.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:34:23.945551",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 220,
+        "lightLevel": {
+          "max": 333.01467722184856,
+          "med": 311.5860626757041,
+          "min": 303.1263517359135,
+          "p25": 306.67231075697214,
+          "p75": 313.3778996567841
+        },
+        "friedParameter": {
+          "max": 0.1047811215010713,
+          "med": 0.04488171778438143,
+          "min": 0.014813701599350438,
+          "p25": 0.03442370697031104,
+          "p75": 0.061822858723446436
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-608.41,-273.3),(-651.8,-317.67)",
+        "browseMovieUrl": "https://vimeo.com/1041279973",
+        "createDate": "2024-12-20T23:46:17.689995",
+        "datasetId": "BJPZW",
+        "endTime": "2024-10-09T21:14:30.210704",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.288760",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:28.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:43:21.819637",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 402.8507097152515,
+          "med": 366.27358962418725,
+          "min": 360.56121833014265,
+          "p25": 365.4137907245477,
+          "p75": 368.67377244269676
+        },
+        "friedParameter": {
+          "max": 0.10366013802091205,
+          "med": 0.050663302696623,
+          "min": 0.018532286707925706,
+          "p25": 0.03653008096030235,
+          "p75": 0.06660709829806319
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-680.45,-199.89),(-723.85,-244.26)",
+        "browseMovieUrl": "https://vimeo.com/1041279982",
+        "createDate": "2024-12-20T23:46:18.559583",
+        "datasetId": "ADJMM",
+        "endTime": "2024-10-09T20:42:11.340020",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.249888",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:09.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:41:22.262105",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 133,
+        "lightLevel": {
+          "max": 384.8741311809041,
+          "med": 355.16677877235645,
+          "min": 351.21998585743603,
+          "p25": 353.70880978251495,
+          "p75": 356.0985064072713
+        },
+        "friedParameter": null
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-608.41,-273.3),(-651.8,-317.67)",
+        "browseMovieUrl": "https://vimeo.com/1041280228",
+        "createDate": "2024-12-20T23:48:18.475495",
+        "datasetId": "BKDLX",
+        "endTime": "2024-10-09T21:14:26.769311",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.288760",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:24.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:44:21.960221",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 142,
+        "lightLevel": {
+          "max": 404.77052827650436,
+          "med": 366.2720028975009,
+          "min": 360.50685569410666,
+          "p25": 365.48089891516184,
+          "p75": 368.746735999724
+        },
+        "friedParameter": {
+          "max": 0.10252375451140683,
+          "med": 0.05141793168433434,
+          "min": 0.016956376532088476,
+          "p25": 0.03535374743174509,
+          "p75": 0.06876627987861492
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-599.29,-217.44),(-665.95,-284.89)",
+        "browseMovieUrl": "https://vimeo.com/1041280351",
+        "createDate": "2024-12-20T23:49:18.689545",
+        "datasetId": "BWGYV",
+        "endTime": "2024-10-09T20:12:28.911061",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 219,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.213997",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:33.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:42:23.439584",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 219,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 219,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 219,
+        "lightLevel": {
+          "max": 395.76024904710164,
+          "med": 358.8301340094169,
+          "min": 344.8859109018472,
+          "p25": 356.2076801021024,
+          "p75": 360.60719028647316
+        },
+        "friedParameter": {
+          "max": 0.11299270794408578,
+          "med": 0.04501880856423596,
+          "min": 0.016211552643568224,
+          "p25": 0.033114199976177074,
+          "p75": 0.07051392699684822
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-704.72,-189.3),(-771.4,-256.76)",
+        "browseMovieUrl": "https://vimeo.com/1041280546",
+        "createDate": "2024-12-20T23:51:20.130393",
+        "datasetId": "APLGE",
+        "endTime": "2024-10-09T19:34:38.198094",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 221,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.168190",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:29.333374",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:46:23.625244",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 221,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 221,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 221,
+        "lightLevel": {
+          "max": 333.5951259895483,
+          "med": 311.47265483520465,
+          "min": 303.1793518566427,
+          "p25": 306.6742381124851,
+          "p75": 313.3947155102534
+        },
+        "friedParameter": {
+          "max": 0.10580392209413489,
+          "med": 0.0448719668350047,
+          "min": 0.017009772391397244,
+          "p25": 0.034423286226062534,
+          "p75": 0.0615134840671749
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-608.41,-273.3),(-651.8,-317.67)",
+        "browseMovieUrl": "https://vimeo.com/1041280800",
+        "createDate": "2024-12-20T23:53:17.857114",
+        "datasetId": "BLEMN",
+        "endTime": "2024-10-09T21:14:23.339874",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.288760",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:21.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:44:21.718345",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 407.64077887583863,
+          "med": 366.32324382125176,
+          "min": 360.28386885359,
+          "p25": 365.3985529742502,
+          "p75": 368.33663613942497
+        },
+        "friedParameter": {
+          "max": 0.10532029044200049,
+          "med": 0.0497609555416288,
+          "min": 0.017592750264664482,
+          "p25": 0.03532347336389365,
+          "p75": 0.06467947664176323
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-620.91,-261.28),(-664.3,-305.64)",
+        "browseMovieUrl": "https://vimeo.com/1041280812",
+        "createDate": "2024-12-20T23:53:18.388497",
+        "datasetId": "BOKEX",
+        "endTime": "2024-10-09T22:38:56.922989",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.391137",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:14:05.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:47:22.196181",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 145,
+        "lightLevel": {
+          "max": 458.62015142891636,
+          "med": 439.3127145099257,
+          "min": 430.8935858298408,
+          "p25": 433.8211914247771,
+          "p75": 447.6062416998672
+        },
+        "friedParameter": {
+          "max": 0.05896158636974056,
+          "med": 0.031751046516032055,
+          "min": 0.014726108292809825,
+          "p25": 0.02490785876445569,
+          "p75": 0.03758367881915382
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-620.91,-261.28),(-664.3,-305.64)",
+        "browseMovieUrl": "https://vimeo.com/1041281588",
+        "createDate": "2024-12-20T23:59:18.082980",
+        "datasetId": "BPLVE",
+        "endTime": "2024-10-09T22:38:43.193881",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 145,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.391137",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:14:01.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:52:21.600290",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 145,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 145,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 145,
+        "lightLevel": {
+          "max": 458.5019230437557,
+          "med": 439.4005967472103,
+          "min": 431.12493747951913,
+          "p25": 433.6818612993912,
+          "p75": 446.7935013193977
+        },
+        "friedParameter": {
+          "max": 0.06162750915434621,
+          "med": 0.03084606625589295,
+          "min": 0.013229143645471547,
+          "p25": 0.025880491639060355,
+          "p75": 0.037965805720584944
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-620.91,-261.28),(-664.3,-305.64)",
+        "browseMovieUrl": "https://vimeo.com/1041281704",
+        "createDate": "2024-12-21T00:00:18.007165",
+        "datasetId": "BQMDN",
+        "endTime": "2024-10-09T22:39:00.340020",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.391137",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:58.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:49:21.747722",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 458.70083303151034,
+          "med": 439.3087735637536,
+          "min": 431.1580000344941,
+          "p25": 433.703402838861,
+          "p75": 447.491902519791
+        },
+        "friedParameter": {
+          "max": 0.05652607302083468,
+          "med": 0.030170803277132473,
+          "min": 0.013756965773640214,
+          "p25": 0.024694441104581574,
+          "p75": 0.03830493217735023
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-668.42,-188.23),(-735.08,-255.69)",
+        "browseMovieUrl": "https://vimeo.com/1041282027",
+        "createDate": "2024-12-21T00:02:19.119057",
+        "datasetId": "AEKNM",
+        "endTime": "2024-10-09T20:42:07.911061",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 219,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.249763",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:12.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T04:01:23.558215",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 219,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 219,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 198,
+        "lightLevel": {
+          "max": 383.0465669788379,
+          "med": 355.18419827184766,
+          "min": 350.4928166123385,
+          "p25": 353.68901019299426,
+          "p75": 356.1213414739311
+        },
+        "friedParameter": {
+          "max": 0.0961608859619493,
+          "med": 0.05073119096819735,
+          "min": 0.01640300196700857,
+          "p25": 0.04053444950899043,
+          "p75": 0.06456987526837937
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-599.29,-217.44),(-665.95,-284.89)",
+        "browseMovieUrl": "https://vimeo.com/1041282203",
+        "createDate": "2024-12-21T00:03:18.643601",
+        "datasetId": "BXJXP",
+        "endTime": "2024-10-09T20:12:32.339836",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.213997",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:30.333373",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T03:46:23.176102",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 220,
+        "lightLevel": {
+          "max": 397.3961470136769,
+          "med": 358.7649488625584,
+          "min": 344.7676652696573,
+          "p25": 356.3194279160415,
+          "p75": 360.73796588537624
+        },
+        "friedParameter": {
+          "max": 0.11546786788178731,
+          "med": 0.0475486418096832,
+          "min": 0.014537711078345575,
+          "p25": 0.033267992031158176,
+          "p75": 0.06588215554128919
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-668.42,-188.23),(-735.08,-255.69)",
+        "browseMovieUrl": "https://vimeo.com/1041283030",
+        "createDate": "2024-12-21T00:09:19.932484",
+        "datasetId": "BGMEM",
+        "endTime": "2024-10-09T20:42:11.339836",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.249763",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:09.333373",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T04:03:24.473625",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 200,
+        "lightLevel": {
+          "max": 384.8741311809041,
+          "med": 355.14401269381347,
+          "min": 350.67189251651405,
+          "p25": 353.6614882461496,
+          "p75": 356.17670012590327
+        },
+        "friedParameter": {
+          "max": 0.0972870706947282,
+          "med": 0.04998814659418833,
+          "min": 0.019328757763884298,
+          "p25": 0.040994937644990834,
+          "p75": 0.0631744491381041
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-596.38,-261.64),(-663.03,-329.1)",
+        "browseMovieUrl": "https://vimeo.com/1041283606",
+        "createDate": "2024-12-21T00:14:19.902704",
+        "datasetId": "BNJDL",
+        "endTime": "2024-10-09T21:14:30.198314",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 221,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.288609",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:21.333374",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T04:13:23.564219",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 221,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 221,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 213,
+        "lightLevel": {
+          "max": 407.64077887583863,
+          "med": 366.2720028975009,
+          "min": 360.28386885359,
+          "p25": 365.3946637691658,
+          "p75": 368.4638760973422
+        },
+        "friedParameter": {
+          "max": 0.10532029044200049,
+          "med": 0.05130507442668493,
+          "min": 0.016956376532088476,
+          "p25": 0.03532347336389365,
+          "p75": 0.06669120391863603
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-596.38,-261.64),(-663.03,-329.1)",
+        "browseMovieUrl": "https://vimeo.com/1041283719",
+        "createDate": "2024-12-21T00:15:18.423446",
+        "datasetId": "BMGNL",
+        "endTime": "2024-10-09T21:14:26.769538",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.288609",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:24.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T04:08:24.065343",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 211,
+        "lightLevel": {
+          "max": 404.77052827650436,
+          "med": 366.2891636915541,
+          "min": 360.50685569410666,
+          "p25": 365.4335385729808,
+          "p75": 368.6086519721978
+        },
+        "friedParameter": {
+          "max": 0.10338508293643323,
+          "med": 0.0497609555416288,
+          "min": 0.017592750264664482,
+          "p25": 0.0363109932953815,
+          "p75": 0.06714619770652713
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-608.88,-249.62),(-675.53,-317.07)",
+        "browseMovieUrl": "https://vimeo.com/1041283816",
+        "createDate": "2024-12-21T00:16:18.752417",
+        "datasetId": "BRNEW",
+        "endTime": "2024-10-09T22:38:56.911061",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 219,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.390924",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:14:01.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T04:09:24.992507",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 219,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 219,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 219,
+        "lightLevel": {
+          "max": 458.62015142891636,
+          "med": 439.32796950725236,
+          "min": 430.8935858298408,
+          "p25": 433.6666580431521,
+          "p75": 447.4728531760404
+        },
+        "friedParameter": {
+          "max": 0.06162750915434621,
+          "med": 0.031208004287831843,
+          "min": 0.014726108292809825,
+          "p25": 0.02512196273600927,
+          "p75": 0.03805838799013145
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-608.88,-249.62),(-675.53,-317.07)",
+        "browseMovieUrl": "https://vimeo.com/1041284238",
+        "createDate": "2024-12-21T00:19:19.055442",
+        "datasetId": "AVELY",
+        "endTime": "2024-10-09T22:39:00.339836",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.390924",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:58.333373",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-09T04:09:24.812515",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 219,
+        "lightLevel": {
+          "max": 459.08726996774806,
+          "med": 439.33762784360397,
+          "min": 431.1580000344941,
+          "p25": 433.834191373036,
+          "p75": 447.6254074610648
+        },
+        "friedParameter": {
+          "max": 0.05896158636974056,
+          "med": 0.03050511129851039,
+          "min": 0.013229143645471547,
+          "p25": 0.024932477598645787,
+          "p75": 0.037870861404150045
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(-713.92,-196.44),(-761.34,-246.43)",
+        "browseMovieUrl": "https://vimeo.com/1044889652",
+        "createDate": "2025-01-08T05:24:41.556599",
+        "datasetId": "AKDZD",
+        "endTime": "2024-10-09T19:34:23.018203",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.457328",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:33.538219",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:17:59.756387",
+        "wavelengthMax": 517.7148416723629,
+        "wavelengthMin": 516.6107660676397,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1800,
+        "lightLevel": {
+          "max": 333.1058277711664,
+          "med": 311.4483796416067,
+          "min": 303.00627791862854,
+          "p25": 306.60233524775356,
+          "p75": 313.38609199565377
+        },
+        "friedParameter": {
+          "max": 0.11487111769316877,
+          "med": 0.04564798489826052,
+          "min": 0.014915382440899745,
+          "p25": 0.034128779206228546,
+          "p75": 0.061911913723438405
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(-608.48,-224.58),(-655.89,-274.57)",
+        "browseMovieUrl": "https://vimeo.com/1045223236",
+        "createDate": "2025-01-09T04:42:46.644290",
+        "datasetId": "ALENW",
+        "endTime": "2024-10-09T20:12:17.074347",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.580465",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:27.594363",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:18:09.009136",
+        "wavelengthMax": 517.7148416723629,
+        "wavelengthMin": 516.6107660676397,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1800,
+        "lightLevel": {
+          "max": 399.60355978682674,
+          "med": 358.69127817733397,
+          "min": 344.84989910487917,
+          "p25": 356.3567547989859,
+          "p75": 360.70586916403647
+        },
+        "friedParameter": {
+          "max": 0.1146601845873583,
+          "med": 0.0464417518739387,
+          "min": 0.014275736888500612,
+          "p25": 0.03134867746409647,
+          "p75": 0.06813211676431352
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(-677.62,-195.38),(-725.03,-245.37)",
+        "browseMovieUrl": "https://vimeo.com/1045612496",
+        "createDate": "2025-01-10T08:08:40.943456",
+        "datasetId": "AOKQN",
+        "endTime": "2024-10-09T20:41:55.764197",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.676867",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:06.284213",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:18:11.321271",
+        "wavelengthMax": 517.7148416723629,
+        "wavelengthMin": 516.6107660676397,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1632,
+        "lightLevel": {
+          "max": 387.4882633966299,
+          "med": 355.12788672151225,
+          "min": 350.39930322002033,
+          "p25": 353.63796761007916,
+          "p75": 356.1769372725548
+        },
+        "friedParameter": {
+          "max": 0.10407923903318908,
+          "med": 0.04981287290273494,
+          "min": 0.017398338213147433,
+          "p25": 0.04083610074574887,
+          "p75": 0.06387240415144826
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(-605.58,-268.79),(-652.98,-318.78)",
+        "browseMovieUrl": "https://vimeo.com/1045900675",
+        "createDate": "2025-01-11T04:10:57.567814",
+        "datasetId": "AQMVG",
+        "endTime": "2024-10-09T21:14:15.545201",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.781946",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:26.065217",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:18:12.536748",
+        "wavelengthMax": 517.7148416723629,
+        "wavelengthMin": 516.6107660676397,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1732,
+        "lightLevel": {
+          "max": 404.1463237957262,
+          "med": 366.3002362843,
+          "min": 360.39723357651644,
+          "p25": 365.3879201807489,
+          "p75": 368.530518618168
+        },
+        "friedParameter": {
+          "max": 0.1054617726882121,
+          "med": 0.04970696936450525,
+          "min": 0.017034686996316814,
+          "p25": 0.03608167874836363,
+          "p75": 0.06689462248449818
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(-618.07,-256.76),(-665.48,-306.75)",
+        "browseMovieUrl": "https://vimeo.com/1046637167",
+        "createDate": "2025-01-14T03:04:59.269692",
+        "datasetId": "ARNQJ",
+        "endTime": "2024-10-09T22:38:45.068370",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.1063085",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:55.588386",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:18:21.806060",
+        "wavelengthMax": 517.7148416723629,
+        "wavelengthMin": 516.6107660676397,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1796,
+        "lightLevel": {
+          "max": 458.80888566944344,
+          "med": 439.16425208257874,
+          "min": 431.07935358134563,
+          "p25": 433.72622065849157,
+          "p75": 447.0422034804505
+        },
+        "friedParameter": {
+          "max": 0.062011728901393885,
+          "med": 0.030630197420303772,
+          "min": 0.012417977582689954,
+          "p25": 0.02441430900131512,
+          "p75": 0.03788383099889327
+        }
+      },
+      {
+        "spectralLines": [
+          "Mg I b1 (517.27 nm)"
+        ],
+        "boundingBox": "(408.19,-165.01),(376.83,-214.85)",
+        "browseMovieUrl": "https://vimeo.com/1046959935",
+        "createDate": "2025-01-15T00:09:37.896777",
+        "datasetId": "BVEDJ",
+        "endTime": "2024-10-15T20:11:08.496539",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1192,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.514011",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:43.250431",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-06-28T19:18:26.646386",
+        "wavelengthMax": 517.7148416723629,
+        "wavelengthMin": 516.6107660676397,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1192,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1192,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1100,
+        "lightLevel": {
+          "max": 495.2619306324486,
+          "med": 436.9803211396837,
+          "min": 0.1717459167658371,
+          "p25": 434.587916731343,
+          "p75": 442.06512478225625
+        },
+        "friedParameter": {
+          "max": 0.18332535041509332,
+          "med": 0.0996942639577111,
+          "min": 0.03263178600175272,
+          "p25": 0.0745162406601509,
+          "p75": 0.1250735409678271
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(405.37,-169.71),(362.05,-214)",
+        "browseMovieUrl": "https://vimeo.com/1059878969",
+        "createDate": "2025-02-24T21:15:16.615035",
+        "datasetId": "ZYYOAU",
+        "endTime": "2024-10-15T20:11:04.534826",
+        "bucket": "public",
+        "exposureTime": 19.991000000000003,
+        "frameCount": 96,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.189557",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:47.201806",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:17:57.232436",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 96,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 96,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 89,
+        "lightLevel": {
+          "max": 487.94770700746795,
+          "med": 437.0087614908332,
+          "min": 0.17898966902950966,
+          "p25": 434.80415135992826,
+          "p75": 441.9818604370397
+        },
+        "friedParameter": {
+          "max": 0.17416769260588993,
+          "med": 0.09751741517980601,
+          "min": 0.04586235812559659,
+          "p25": 0.07674267200764359,
+          "p75": 0.1235414555538207
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(405.37,-169.71),(362.05,-214)",
+        "browseMovieUrl": "https://vimeo.com/1059879265",
+        "createDate": "2025-02-24T21:16:16.689862",
+        "datasetId": "VDDNHK",
+        "endTime": "2024-10-15T20:11:11.383558",
+        "bucket": "public",
+        "exposureTime": 0.499,
+        "frameCount": 97,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.189557",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:43.762822",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:17:58.789038",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 97,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 97,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 89,
+        "lightLevel": {
+          "max": 480.70421344923335,
+          "med": 436.78948276159434,
+          "min": 0.17295320880978252,
+          "p25": 434.57361894413685,
+          "p75": 442.0013107742191
+        },
+        "friedParameter": {
+          "max": 0.17808602120126493,
+          "med": 0.09802625126791223,
+          "min": 0.04393259667180772,
+          "p25": 0.07871328407827387,
+          "p75": 0.12413247415883939
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(405.37,-169.71),(362.05,-214)",
+        "browseMovieUrl": "https://vimeo.com/1059879512",
+        "createDate": "2025-02-24T21:17:16.608345",
+        "datasetId": "QZZYJQ",
+        "endTime": "2024-10-15T20:11:07.954165",
+        "bucket": "public",
+        "exposureTime": 0.191,
+        "frameCount": 97,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.189557",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:40.333429",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:17:59.153687",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 97,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 97,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 89,
+        "lightLevel": {
+          "max": 493.88746313447507,
+          "med": 436.6884151704869,
+          "min": 0.1721943395250168,
+          "p25": 434.587916731343,
+          "p75": 442.2828167848088
+        },
+        "friedParameter": {
+          "max": 0.1720471892827951,
+          "med": 0.0988785022163412,
+          "min": 0.03685529090389075,
+          "p25": 0.07827924076581867,
+          "p75": 0.12477134927663092
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(417.38,-158.07),(350.83,-225.41)",
+        "browseMovieUrl": "https://vimeo.com/1059884760",
+        "createDate": "2025-02-24T21:37:16.969375",
+        "datasetId": "BPPTXN",
+        "endTime": "2024-10-15T20:11:07.953918",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 145,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186659.189380",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:40.333374",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:18:01.058318",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 145,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 145,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 134,
+        "lightLevel": {
+          "max": 493.88746313447507,
+          "med": 437.0815612010831,
+          "min": 0.17907590417550576,
+          "p25": 434.587916731343,
+          "p75": 442.2828167848088
+        },
+        "friedParameter": {
+          "max": 0.17416769260588993,
+          "med": 0.10098453477474709,
+          "min": 0.043634359145652626,
+          "p25": 0.0778126628754973,
+          "p75": 0.1253932282895205
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(417.38,-158.07),(350.83,-225.41)",
+        "browseMovieUrl": "https://vimeo.com/1059885508",
+        "createDate": "2025-02-24T21:40:18.082204",
+        "datasetId": "GWWDRP",
+        "endTime": "2024-10-15T20:11:11.383763",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 145,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186659.189380",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:43.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:18:02.300474",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 145,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 145,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 133,
+        "lightLevel": {
+          "max": 487.94770700746795,
+          "med": 436.7682861627085,
+          "min": 0.1721943395250168,
+          "p25": 434.6452631034304,
+          "p75": 441.9357030751453
+        },
+        "friedParameter": {
+          "max": 0.17808602120126493,
+          "med": 0.09637910458216377,
+          "min": 0.03685529090389075,
+          "p25": 0.07829655639613042,
+          "p75": 0.12350940496340321
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(573.27,-111.74),(459.1,-227.66)",
+        "browseMovieUrl": "https://vimeo.com/1071473566",
+        "createDate": "2025-04-01T16:13:20.757159",
+        "datasetId": "WMIXVA",
+        "endTime": "2024-10-15T19:28:08.215665",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 20,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186659.154254",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:26:25.338507",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:19:35.111109",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 20,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 20,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 20,
+        "lightLevel": {
+          "max": 405.28260982045845,
+          "med": 404.74544247253414,
+          "min": 403.68013659647124,
+          "p25": 404.2748486573188,
+          "p75": 404.9975164277953
+        },
+        "friedParameter": {
+          "max": 0.15524732256453497,
+          "med": 0.11613067365112759,
+          "min": 0.05631345490060456,
+          "p25": 0.09115916739751663,
+          "p75": 0.1332859402518633
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(573.27,-111.74),(459.1,-227.66)",
+        "browseMovieUrl": "https://vimeo.com/1071485036",
+        "createDate": "2025-04-01T16:44:16.626171",
+        "datasetId": "ZYODAU",
+        "endTime": "2024-10-15T19:27:51.069012",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 20,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186659.154254",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:26:08.191851",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:19:37.040607",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 20,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 20,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 20,
+        "lightLevel": {
+          "max": 405.8141805074076,
+          "med": 404.8622393542712,
+          "min": 403.58058674393334,
+          "p25": 404.5067435884169,
+          "p75": 404.9979260447388
+        },
+        "friedParameter": {
+          "max": 0.15964797121451504,
+          "med": 0.12625745530682347,
+          "min": 0.06489477392128026,
+          "p25": 0.11079449814759464,
+          "p75": 0.14866623916604008
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(474.43,-130.63),(360.26,-246.55)",
+        "browseMovieUrl": "https://vimeo.com/1071486794",
+        "createDate": "2025-04-01T16:49:17.426864",
+        "datasetId": "VDSGHK",
+        "endTime": "2024-10-15T19:42:02.215667",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 20,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186659.171287",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:40:19.338506",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:19:38.524476",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 20,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 20,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 20,
+        "lightLevel": {
+          "max": 427.1346303099291,
+          "med": 423.93317638536763,
+          "min": 419.94134285369347,
+          "p25": 422.67955882099307,
+          "p75": 425.3097049033304
+        },
+        "friedParameter": {
+          "max": 0.1688387463099653,
+          "med": 0.13339190809219603,
+          "min": 0.07308845392579194,
+          "p25": 0.09409032073768125,
+          "p75": 0.15058153402612634
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(474.43,-130.63),(360.26,-246.55)",
+        "browseMovieUrl": "https://vimeo.com/1071487090",
+        "createDate": "2025-04-01T16:50:17.181904",
+        "datasetId": "QZPOJQ",
+        "endTime": "2024-10-15T19:41:45.069012",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 20,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186659.171287",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:40:02.191851",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:19:39.475317",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 20,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 20,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 20,
+        "lightLevel": {
+          "max": 426.0157982787465,
+          "med": 423.468920853383,
+          "min": 417.33107397250825,
+          "p25": 420.7479087977096,
+          "p75": 424.7755385384867
+        },
+        "friedParameter": {
+          "max": 0.13941000074471763,
+          "med": 0.1154293777760553,
+          "min": 0.076839544312331,
+          "p25": 0.10467667400354826,
+          "p75": 0.12871907396458135
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(408.49,-157.16),(376.76,-232.85)",
+        "browseMovieUrl": "https://vimeo.com/1078136738",
+        "createDate": "2025-04-23T23:55:54.816115",
+        "datasetId": "ZUEBAU",
+        "endTime": "2024-10-15T20:11:08.496539",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1192,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186676.514011",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.13002973",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:54:43.250431",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-09-29T15:20:51.235011",
+        "wavelengthMax": 589.9952196983842,
+        "wavelengthMin": 589.1224827373035,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1192,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1192,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1100,
+        "lightLevel": {
+          "max": 495.2619306324486,
+          "med": 436.9803211396837,
+          "min": 0.1717459167658371,
+          "p25": 434.587916731343,
+          "p75": 442.06512478225625
+        },
+        "friedParameter": {
+          "max": 0.18332535041509332,
+          "med": 0.0996942639577111,
+          "min": 0.03263178600175272,
+          "p25": 0.0745162406601509,
+          "p75": 0.1250735409678271
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-713.6,-188.59),(-761.57,-264.42)",
+        "browseMovieUrl": "https://vimeo.com/1078591914",
+        "createDate": "2025-04-25T07:58:46.022401",
+        "datasetId": "AYOLGG",
+        "endTime": "2024-10-09T19:34:23.018203",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.457328",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:33.538219",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-09-29T15:21:01.044310",
+        "wavelengthMax": 589.9961766468064,
+        "wavelengthMin": 589.1224827373035,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1800,
+        "lightLevel": {
+          "max": 333.1058277711664,
+          "med": 311.4483796416067,
+          "min": 303.00627791862854,
+          "p25": 306.60233524775356,
+          "p75": 313.38609199565377
+        },
+        "friedParameter": {
+          "max": 0.11487111769316877,
+          "med": 0.04564798489826052,
+          "min": 0.014915382440899745,
+          "p25": 0.034128779206228546,
+          "p75": 0.061911913723438405
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-608.15,-216.73),(-656.13,-292.56)",
+        "browseMovieUrl": "https://vimeo.com/1079646481",
+        "createDate": "2025-04-29T02:38:50.621323",
+        "datasetId": "OENEKH",
+        "endTime": "2024-10-09T20:12:17.074347",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.580465",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:27.594363",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-09-29T15:21:04.154388",
+        "wavelengthMax": 589.9961766468064,
+        "wavelengthMin": 589.1224827373035,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1800,
+        "lightLevel": {
+          "max": 399.60355978682674,
+          "med": 358.69127817733397,
+          "min": 344.84989910487917,
+          "p25": 356.3567547989859,
+          "p75": 360.70586916403647
+        },
+        "friedParameter": {
+          "max": 0.1146601845873583,
+          "med": 0.0464417518739387,
+          "min": 0.014275736888500612,
+          "p25": 0.03134867746409647,
+          "p75": 0.06813211676431352
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-677.29,-187.53),(-725.26,-263.36)",
+        "browseMovieUrl": "https://vimeo.com/1080024164",
+        "createDate": "2025-04-30T00:51:47.298484",
+        "datasetId": "HDSJOY",
+        "endTime": "2024-10-09T20:41:55.764197",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.676867",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:06.284213",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-09-29T15:21:01.110318",
+        "wavelengthMax": 589.9961766468064,
+        "wavelengthMin": 589.1224827373035,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1632,
+        "lightLevel": {
+          "max": 387.4882633966299,
+          "med": 355.12788672151225,
+          "min": 350.39930322002033,
+          "p25": 353.63796761007916,
+          "p75": 356.1769372725548
+        },
+        "friedParameter": null
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-605.25,-260.94),(-653.21,-336.76)",
+        "browseMovieUrl": "https://vimeo.com/1080427228",
+        "createDate": "2025-05-01T02:49:51.093988",
+        "datasetId": "LVCMPP",
+        "endTime": "2024-10-09T21:14:15.545201",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.781946",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:26.065217",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-09-29T15:21:24.029538",
+        "wavelengthMax": 589.9961766468064,
+        "wavelengthMin": 589.1224827373035,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1732,
+        "lightLevel": {
+          "max": 404.1463237957262,
+          "med": 366.3002362843,
+          "min": 360.39723357651644,
+          "p25": 365.3879201807489,
+          "p75": 368.530518618168
+        },
+        "friedParameter": {
+          "max": 0.1054617726882121,
+          "med": 0.04970696936450525,
+          "min": 0.017034686996316814,
+          "p25": 0.03608167874836363,
+          "p75": 0.06689462248449818
+        }
+      },
+      {
+        "spectralLines": [
+          "Na I D1 (589.59 nm)"
+        ],
+        "boundingBox": "(-617.75,-248.91),(-665.71,-324.74)",
+        "browseMovieUrl": "https://vimeo.com/1080757553",
+        "createDate": "2025-05-02T07:42:46.602957",
+        "datasetId": "FTQNWI",
+        "endTime": "2024-10-09T22:38:45.068370",
+        "bucket": "public",
+        "exposureTime": 149.9560563380282,
+        "frameCount": 1800,
+        "instrumentName": "VISP",
+        "instrumentProgramExecutionId": "id.186217.1063085",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:55.588386",
+        "stokesParameters": "IQUV",
+        "updateDate": "2025-09-29T15:21:31.623322",
+        "wavelengthMax": 589.9961766468064,
+        "wavelengthMin": 589.1224827373035,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 1800,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 1800,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 1796,
+        "lightLevel": {
+          "max": 458.80888566944344,
+          "med": 439.16425208257874,
+          "min": 431.07935358134563,
+          "p25": 433.72622065849157,
+          "p75": 447.0422034804505
+        },
+        "friedParameter": {
+          "max": 0.062011728901393885,
+          "med": 0.030630197420303772,
+          "min": 0.012417977582689954,
+          "p25": 0.02441430900131512,
+          "p75": 0.03788383099889327
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-716.75,-200.96),(-760.16,-245.33)",
+        "browseMovieUrl": "https://vimeo.com/1099853886",
+        "createDate": "2025-07-09T03:03:18.004142",
+        "datasetId": "PKAVUM",
+        "endTime": "2024-10-09T19:34:38.210704",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.168274",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:36.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:44.656549",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 332.48050223349026,
+          "med": 311.57010055018026,
+          "min": 303.1263517359135,
+          "p25": 306.68203376968313,
+          "p75": 313.4518549179904
+        },
+        "friedParameter": {
+          "max": 0.10580392209413489,
+          "med": 0.04389936945237175,
+          "min": 0.017009772391397244,
+          "p25": 0.03323013986690296,
+          "p75": 0.060584675251256555
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-716.75,-200.96),(-760.16,-245.33)",
+        "browseMovieUrl": "https://vimeo.com/1099854253",
+        "createDate": "2025-07-09T03:06:17.638255",
+        "datasetId": "DXKNEL",
+        "endTime": "2024-10-09T19:34:34.769311",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.168274",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:32.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:45.498257",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 333.01467722184856,
+          "med": 311.45071661406325,
+          "min": 303.36632690019144,
+          "p25": 306.6543954053914,
+          "p75": 313.35634087028507
+        },
+        "friedParameter": {
+          "max": 0.1047811215010713,
+          "med": 0.044333731910046054,
+          "min": 0.014813701599350438,
+          "p25": 0.034290806847008665,
+          "p75": 0.06180500250223384
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(573.31,-110.87),(458.27,-228.75)",
+        "browseMovieUrl": "https://vimeo.com/1099854570",
+        "createDate": "2025-07-09T03:08:17.699860",
+        "datasetId": "BUIRXN",
+        "endTime": "2024-10-15T19:31:26.682422",
+        "bucket": "public",
+        "exposureTime": 19.991000000000003,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.155339",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:28:21.503534",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:45.504668",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 406.1770062606716,
+          "med": 404.9012780048637,
+          "min": 404.03197599213536,
+          "p25": 404.7492540659871,
+          "p75": 405.26654421275936
+        },
+        "friedParameter": {
+          "max": 0.16741899236912777,
+          "med": 0.1289780649855198,
+          "min": 0.039806987924451115,
+          "p25": 0.08780415428996508,
+          "p75": 0.14837978244782063
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(573.31,-110.87),(458.27,-228.75)",
+        "browseMovieUrl": "https://vimeo.com/1099854694",
+        "createDate": "2025-07-09T03:09:18.180082",
+        "datasetId": "PKGHUM",
+        "endTime": "2024-10-15T19:30:55.809528",
+        "bucket": "public",
+        "exposureTime": 0.499,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.155339",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:27:50.630640",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:47.307116",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 405.8887911557234,
+          "med": 404.9546058191477,
+          "min": 404.45901243510804,
+          "p25": 404.82646901571206,
+          "p75": 405.1468412066022
+        },
+        "friedParameter": {
+          "max": 0.18614689130592071,
+          "med": 0.14236739757897315,
+          "min": 0.07092846245364852,
+          "p25": 0.11810526884072145,
+          "p75": 0.1571362692483823
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-716.75,-200.96),(-760.16,-245.33)",
+        "browseMovieUrl": "https://vimeo.com/1099855057",
+        "createDate": "2025-07-09T03:12:17.476701",
+        "datasetId": "MBONDS",
+        "endTime": "2024-10-09T19:34:31.339874",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.168274",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:29.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:47.243495",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 333.5951259895483,
+          "med": 311.63139649195426,
+          "min": 303.2541694693089,
+          "p25": 306.6831203325228,
+          "p75": 313.41491178144565
+        },
+        "friedParameter": {
+          "max": 0.10184011144773138,
+          "med": 0.04527628591725025,
+          "min": 0.01871203460668681,
+          "p25": 0.034989635099209764,
+          "p75": 0.06287200668112541
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-611.32,-229.09),(-654.71,-273.46)",
+        "browseMovieUrl": "https://vimeo.com/1099855440",
+        "createDate": "2025-07-09T03:15:17.757360",
+        "datasetId": "NPQFBO",
+        "endTime": "2024-10-09T20:12:25.481596",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.214106",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:33.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:52.361931",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 146,
+        "lightLevel": {
+          "max": 395.76024904710164,
+          "med": 358.8968800124179,
+          "min": 344.8859109018472,
+          "p25": 356.2653326089581,
+          "p75": 360.66912868008484
+        },
+        "friedParameter": {
+          "max": 0.11194737750533648,
+          "med": 0.04792016377057422,
+          "min": 0.01693512542215996,
+          "p25": 0.03316840735839824,
+          "p75": 0.06829121274290276
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(573.31,-110.87),(458.27,-228.75)",
+        "browseMovieUrl": "https://vimeo.com/1099855458",
+        "createDate": "2025-07-09T03:15:18.211295",
+        "datasetId": "DXTBEL",
+        "endTime": "2024-10-15T19:30:24.946226",
+        "bucket": "public",
+        "exposureTime": 0.191,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.155339",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12992458",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:27:19.767338",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:49.259585",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 405.8631103292458,
+          "med": 404.9532777978993,
+          "min": 403.58058674393334,
+          "p25": 404.2171573446474,
+          "p75": 405.2546610096411
+        },
+        "friedParameter": {
+          "max": 0.1717784219066029,
+          "med": 0.13179141866362315,
+          "min": 0.0905329733423241,
+          "p25": 0.12499382930580166,
+          "p75": 0.15216538188275025
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(474.47,-129.76),(359.43,-247.65)",
+        "browseMovieUrl": "https://vimeo.com/1099855737",
+        "createDate": "2025-07-09T03:17:17.560246",
+        "datasetId": "MBKBDS",
+        "endTime": "2024-10-15T19:44:29.682422",
+        "bucket": "public",
+        "exposureTime": 19.991000000000003,
+        "frameCount": 27,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.171423",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:41:24.503534",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:49.609952",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 27,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 27,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 27,
+        "lightLevel": {
+          "max": 429.5310187820148,
+          "med": 426.8036080785085,
+          "min": 423.4075472999776,
+          "p25": 424.5055276728583,
+          "p75": 427.7427519359791
+        },
+        "friedParameter": {
+          "max": 0.17980767980065945,
+          "med": 0.1287829295580555,
+          "min": 0.07500917193614946,
+          "p25": 0.11408517518674419,
+          "p75": 0.14005560767946384
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-611.32,-229.09),(-654.71,-273.46)",
+        "browseMovieUrl": "https://vimeo.com/1099855982",
+        "createDate": "2025-07-09T03:19:17.450078",
+        "datasetId": "AWNKGG",
+        "endTime": "2024-10-09T20:12:32.340020",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.214106",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:30.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:49.669447",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 397.3961470136769,
+          "med": 358.70005691519634,
+          "min": 345.3736913816595,
+          "p25": 356.23387833945606,
+          "p75": 360.7357927596971
+        },
+        "friedParameter": {
+          "max": 0.11299270794408578,
+          "med": 0.04539374910051337,
+          "min": 0.016211552643568224,
+          "p25": 0.03322133772711516,
+          "p75": 0.06992209851363132
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-611.32,-229.09),(-654.71,-273.46)",
+        "browseMovieUrl": "https://vimeo.com/1099856381",
+        "createDate": "2025-07-09T03:22:17.297314",
+        "datasetId": "EZTGQL",
+        "endTime": "2024-10-09T20:12:28.923134",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.214106",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:37.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:52.155973",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 146,
+        "lightLevel": {
+          "max": 394.3035649609355,
+          "med": 358.68296510925995,
+          "min": 344.7676652696573,
+          "p25": 356.37056966937445,
+          "p75": 360.6741949949121
+        },
+        "friedParameter": {
+          "max": 0.11546786788178731,
+          "med": 0.04565426076617011,
+          "min": 0.014537711078345575,
+          "p25": 0.0337215720264432,
+          "p75": 0.0657119878579536
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(474.47,-129.76),(359.43,-247.65)",
+        "browseMovieUrl": "https://vimeo.com/1099856574",
+        "createDate": "2025-07-09T03:23:18.158808",
+        "datasetId": "TSHBCV",
+        "endTime": "2024-10-15T19:45:00.535670",
+        "bucket": "public",
+        "exposureTime": 0.191,
+        "frameCount": 36,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.171423",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:40:22.767338",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:52.717930",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 36,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 36,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 36,
+        "lightLevel": {
+          "max": 434.3181904416964,
+          "med": 425.8934823476656,
+          "min": 417.33107397250825,
+          "p25": 423.3274693434056,
+          "p75": 427.7773925941257
+        },
+        "friedParameter": {
+          "max": 0.17666871166623288,
+          "med": 0.10889513224318301,
+          "min": 0.07308845392579194,
+          "p25": 0.09004995213992528,
+          "p75": 0.12577358714230655
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(474.47,-129.76),(359.43,-247.65)",
+        "browseMovieUrl": "https://vimeo.com/1099856834",
+        "createDate": "2025-07-09T03:25:18.381834",
+        "datasetId": "YCLMFH",
+        "endTime": "2024-10-15T19:45:31.398972",
+        "bucket": "public",
+        "exposureTime": 0.499,
+        "frameCount": 36,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186656.171423",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opEaWFN2_R001.182330.12997627",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-15T19:40:53.630640",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:55.518355",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 36,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 36,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 36,
+        "lightLevel": {
+          "max": 433.4596333281592,
+          "med": 425.74037184594954,
+          "min": 420.02926820855106,
+          "p25": 422.61474017350514,
+          "p75": 427.754156534037
+        },
+        "friedParameter": {
+          "max": 0.1907989943921915,
+          "med": 0.14272607027286138,
+          "min": 0.040525603044503374,
+          "p25": 0.11526237972287151,
+          "p75": 0.15956661839650757
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-680.45,-199.89),(-723.85,-244.26)",
+        "browseMovieUrl": "https://vimeo.com/1099857784",
+        "createDate": "2025-07-09T03:32:17.619790",
+        "datasetId": "KIWRTD",
+        "endTime": "2024-10-09T20:42:04.481596",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.249888",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:12.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:52.857874",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 132,
+        "lightLevel": {
+          "max": 383.0465669788379,
+          "med": 355.23499077283935,
+          "min": 350.4928166123385,
+          "p25": 353.66764112381645,
+          "p75": 356.1361049309256
+        },
+        "friedParameter": null
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-704.72,-189.3),(-771.4,-256.76)",
+        "browseMovieUrl": "https://vimeo.com/1099858066",
+        "createDate": "2025-07-09T03:34:18.446085",
+        "datasetId": "YCRCFH",
+        "endTime": "2024-10-09T19:34:34.769538",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.168190",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:32.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:57.365138",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 220,
+        "lightLevel": {
+          "max": 333.01467722184856,
+          "med": 311.5860626757041,
+          "min": 303.1263517359135,
+          "p25": 306.67231075697214,
+          "p75": 313.3778996567841
+        },
+        "friedParameter": {
+          "max": 0.1047811215010713,
+          "med": 0.04488171778438143,
+          "min": 0.014813701599350438,
+          "p25": 0.03442370697031104,
+          "p75": 0.061822858723446436
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-680.45,-199.89),(-723.85,-244.26)",
+        "browseMovieUrl": "https://vimeo.com/1099858177",
+        "createDate": "2025-07-09T03:35:17.497672",
+        "datasetId": "OJFAKH",
+        "endTime": "2024-10-09T20:42:07.923134",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.249888",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:16.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:54.695994",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 133,
+        "lightLevel": {
+          "max": 380.8143184836412,
+          "med": 355.16492471671756,
+          "min": 351.1078284265535,
+          "p25": 353.6395715837947,
+          "p75": 356.1429778720615
+        },
+        "friedParameter": {
+          "max": 0.0972870706947282,
+          "med": 0.05055274479005004,
+          "min": 0.020260386110971713,
+          "p25": 0.0412686160825069,
+          "p75": 0.06349772758032841
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-680.45,-199.89),(-723.85,-244.26)",
+        "browseMovieUrl": "https://vimeo.com/1099859065",
+        "createDate": "2025-07-09T03:41:17.913088",
+        "datasetId": "CNHUML",
+        "endTime": "2024-10-09T20:42:11.340020",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.249888",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:09.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:55.957542",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 133,
+        "lightLevel": {
+          "max": 384.8741311809041,
+          "med": 355.16677877235645,
+          "min": 351.21998585743603,
+          "p25": 353.70880978251495,
+          "p75": 356.0985064072713
+        },
+        "friedParameter": {
+          "max": 0.0961608859619493,
+          "med": 0.05089082027542295,
+          "min": 0.021661211350492225,
+          "p25": 0.04105976300569846,
+          "p75": 0.0629345210852235
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-599.29,-217.44),(-665.95,-284.89)",
+        "browseMovieUrl": "https://vimeo.com/1099859255",
+        "createDate": "2025-07-09T03:42:18.364571",
+        "datasetId": "IRDFSO",
+        "endTime": "2024-10-09T20:12:28.911061",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 219,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.213997",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:33.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:56.825274",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 219,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 219,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 219,
+        "lightLevel": {
+          "max": 395.76024904710164,
+          "med": 358.8301340094169,
+          "min": 344.8859109018472,
+          "p25": 356.2076801021024,
+          "p75": 360.60719028647316
+        },
+        "friedParameter": {
+          "max": 0.11299270794408578,
+          "med": 0.04501880856423596,
+          "min": 0.016211552643568224,
+          "p25": 0.033114199976177074,
+          "p75": 0.07051392699684822
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-608.41,-273.3),(-651.8,-317.67)",
+        "browseMovieUrl": "https://vimeo.com/1099859412",
+        "createDate": "2025-07-09T03:43:17.143280",
+        "datasetId": "JGMTIO",
+        "endTime": "2024-10-09T21:14:30.210704",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.288760",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:28.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:56.835795",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 402.8507097152515,
+          "med": 366.27358962418725,
+          "min": 360.56121833014265,
+          "p25": 365.4137907245477,
+          "p75": 368.67377244269676
+        },
+        "friedParameter": {
+          "max": 0.10366013802091205,
+          "med": 0.050692482627903254,
+          "min": 0.018532286707925706,
+          "p25": 0.03665438495547282,
+          "p75": 0.0667306357267871
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-608.41,-273.3),(-651.8,-317.67)",
+        "browseMovieUrl": "https://vimeo.com/1099859566",
+        "createDate": "2025-07-09T03:44:17.529188",
+        "datasetId": "RHXXLI",
+        "endTime": "2024-10-09T21:14:23.339874",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.288760",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:21.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:58.359302",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 141,
+        "lightLevel": {
+          "max": 407.64077887583863,
+          "med": 366.32324382125176,
+          "min": 360.28386885359,
+          "p25": 365.3985529742502,
+          "p75": 368.33663613942497
+        },
+        "friedParameter": {
+          "max": 0.10532029044200049,
+          "med": 0.0497609555416288,
+          "min": 0.017592750264664482,
+          "p25": 0.03532347336389365,
+          "p75": 0.06467947664176323
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-608.41,-273.3),(-651.8,-317.67)",
+        "browseMovieUrl": "https://vimeo.com/1099859573",
+        "createDate": "2025-07-09T03:44:17.603095",
+        "datasetId": "LOZXPP",
+        "endTime": "2024-10-09T21:14:26.769311",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.288760",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:24.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:25:58.325958",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 142,
+        "lightLevel": {
+          "max": 404.77052827650436,
+          "med": 366.2720028975009,
+          "min": 360.50685569410666,
+          "p25": 365.48089891516184,
+          "p75": 368.746735999724
+        },
+        "friedParameter": null
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-704.72,-189.3),(-771.4,-256.76)",
+        "browseMovieUrl": "https://vimeo.com/1099859851",
+        "createDate": "2025-07-09T03:46:18.269907",
+        "datasetId": "TSVNCV",
+        "endTime": "2024-10-09T19:34:38.198094",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 221,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.168190",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9875875",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:09:29.333374",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:00.148551",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 221,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 221,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 221,
+        "lightLevel": {
+          "max": 333.5951259895483,
+          "med": 311.47265483520465,
+          "min": 303.1793518566427,
+          "p25": 306.6742381124851,
+          "p75": 313.3947155102534
+        },
+        "friedParameter": {
+          "max": 0.10580392209413489,
+          "med": 0.0448719668350047,
+          "min": 0.017009772391397244,
+          "p25": 0.034423286226062534,
+          "p75": 0.0615134840671749
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-599.29,-217.44),(-665.95,-284.89)",
+        "browseMovieUrl": "https://vimeo.com/1099859841",
+        "createDate": "2025-07-09T03:46:18.543718",
+        "datasetId": "UTGJYO",
+        "endTime": "2024-10-09T20:12:32.339836",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.213997",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9889544",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T19:47:30.333373",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:00.931117",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 220,
+        "lightLevel": {
+          "max": 397.3961470136769,
+          "med": 358.7649488625584,
+          "min": 344.7676652696573,
+          "p25": 356.3194279160415,
+          "p75": 360.73796588537624
+        },
+        "friedParameter": {
+          "max": 0.11546786788178731,
+          "med": 0.0475486418096832,
+          "min": 0.014537711078345575,
+          "p25": 0.033267992031158176,
+          "p75": 0.06588215554128919
+        }
+      },
+      {
+        "spectralLines": [
+          "Ca II K (393.37 nm)"
+        ],
+        "boundingBox": "(-620.91,-261.28),(-664.3,-305.64)",
+        "browseMovieUrl": "https://vimeo.com/1099859956",
+        "createDate": "2025-07-09T03:47:17.883376",
+        "datasetId": "WDPFVA",
+        "endTime": "2024-10-09T22:38:56.922989",
+        "bucket": "public",
+        "exposureTime": 25.007,
+        "frameCount": 146,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.391137",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:14:05.204314",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:00.481981",
+        "wavelengthMax": 393,
+        "wavelengthMin": 393,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 146,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 146,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 145,
+        "lightLevel": {
+          "max": 458.62015142891636,
+          "med": 439.3127145099257,
+          "min": 430.8935858298408,
+          "p25": 433.8211914247771,
+          "p75": 447.6062416998672
+        },
+        "friedParameter": {
+          "max": 0.05896158636974056,
+          "med": 0.031751046516032055,
+          "min": 0.014726108292809825,
+          "p25": 0.02490785876445569,
+          "p75": 0.03758367881915382
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-620.91,-261.28),(-664.3,-305.64)",
+        "browseMovieUrl": "https://vimeo.com/1099860185",
+        "createDate": "2025-07-09T03:49:17.574931",
+        "datasetId": "VEYOHK",
+        "endTime": "2024-10-09T22:39:00.340020",
+        "bucket": "public",
+        "exposureTime": 0.301,
+        "frameCount": 147,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.391137",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:58.333484",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:00.747138",
+        "wavelengthMax": 450,
+        "wavelengthMin": 450,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 147,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 147,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 147,
+        "lightLevel": {
+          "max": 458.70083303151034,
+          "med": 439.3087735637536,
+          "min": 431.1580000344941,
+          "p25": 433.703402838861,
+          "p75": 447.491902519791
+        },
+        "friedParameter": {
+          "max": 0.05652607302083468,
+          "med": 0.030170803277132473,
+          "min": 0.013756965773640214,
+          "p25": 0.024694441104581574,
+          "p75": 0.03830493217735023
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-620.91,-261.28),(-664.3,-305.64)",
+        "browseMovieUrl": "https://vimeo.com/1099860589",
+        "createDate": "2025-07-09T03:52:17.358199",
+        "datasetId": "ZFSZAU",
+        "endTime": "2024-10-09T22:38:43.193881",
+        "bucket": "public",
+        "exposureTime": 0.6970000000000001,
+        "frameCount": 145,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186200.391137",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:14:01.762921",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:01.446316",
+        "wavelengthMax": 430,
+        "wavelengthMin": 430,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 145,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 145,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 145,
+        "lightLevel": {
+          "max": 458.5019230437557,
+          "med": 439.4005967472103,
+          "min": 431.12493747951913,
+          "p25": 433.6818612993912,
+          "p75": 446.7935013193977
+        },
+        "friedParameter": {
+          "max": 0.06162750915434621,
+          "med": 0.03084606625589295,
+          "min": 0.013229143645471547,
+          "p25": 0.025880491639060355,
+          "p75": 0.037965805720584944
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-668.42,-188.23),(-735.08,-255.69)",
+        "browseMovieUrl": "https://vimeo.com/1099861809",
+        "createDate": "2025-07-09T04:01:18.305000",
+        "datasetId": "HQYROY",
+        "endTime": "2024-10-09T20:42:07.911061",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 219,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.249763",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:12.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:05.888772",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 219,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 219,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 198,
+        "lightLevel": {
+          "max": 383.0465669788379,
+          "med": 355.18419827184766,
+          "min": 350.4928166123385,
+          "p25": 353.68901019299426,
+          "p75": 356.1213414739311
+        },
+        "friedParameter": {
+          "max": 0.0961608859619493,
+          "med": 0.05080330346777075,
+          "min": 0.020648922708135085,
+          "p25": 0.04057371830694545,
+          "p75": 0.06466492880938475
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-668.42,-188.23),(-735.08,-255.69)",
+        "browseMovieUrl": "https://vimeo.com/1099862111",
+        "createDate": "2025-07-09T04:03:19.360335",
+        "datasetId": "XYIEZY",
+        "endTime": "2024-10-09T20:42:11.339836",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.249763",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9900231",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:17:09.333373",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:02.087226",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 200,
+        "lightLevel": {
+          "max": 384.8741311809041,
+          "med": 355.14401269381347,
+          "min": 350.67189251651405,
+          "p25": 353.6614882461496,
+          "p75": 356.17670012590327
+        },
+        "friedParameter": {
+          "max": 0.0972870706947282,
+          "med": 0.05064852532592297,
+          "min": 0.020260386110971713,
+          "p25": 0.04175209348871628,
+          "p75": 0.06323477444817575
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-596.38,-261.64),(-663.03,-329.1)",
+        "browseMovieUrl": "https://vimeo.com/1099862744",
+        "createDate": "2025-07-09T04:08:18.506217",
+        "datasetId": "SLEQNK",
+        "endTime": "2024-10-09T21:14:26.769538",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.288609",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:24.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:02.515274",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 211,
+        "lightLevel": {
+          "max": 404.77052827650436,
+          "med": 366.2891636915541,
+          "min": 360.50685569410666,
+          "p25": 365.4335385729808,
+          "p75": 368.6086519721978
+        },
+        "friedParameter": {
+          "max": 0.10338508293643323,
+          "med": 0.050051572564630026,
+          "min": 0.017592750264664482,
+          "p25": 0.03657151562535917,
+          "p75": 0.06722962226486472
+        }
+      },
+      {
+        "spectralLines": [
+          "H alpha (656.28 nm)"
+        ],
+        "boundingBox": "(-608.88,-249.62),(-675.53,-317.07)",
+        "browseMovieUrl": "https://vimeo.com/1099862895",
+        "createDate": "2025-07-09T04:09:18.397311",
+        "datasetId": "QAMSJQ",
+        "endTime": "2024-10-09T22:38:56.911061",
+        "bucket": "public",
+        "exposureTime": 1.0050000000000001,
+        "frameCount": 219,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.390924",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:14:01.763075",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:03.324575",
+        "wavelengthMax": 656,
+        "wavelengthMin": 656,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 219,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 219,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 219,
+        "lightLevel": {
+          "max": 458.62015142891636,
+          "med": 439.32796950725236,
+          "min": 430.8935858298408,
+          "p25": 433.6666580431521,
+          "p75": 447.4728531760404
+        },
+        "friedParameter": {
+          "max": 0.06162750915434621,
+          "med": 0.031208004287831843,
+          "min": 0.014726108292809825,
+          "p25": 0.02512196273600927,
+          "p75": 0.03805838799013145
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-608.88,-249.62),(-675.53,-317.07)",
+        "browseMovieUrl": "https://vimeo.com/1099862881",
+        "createDate": "2025-07-09T04:09:19.403954",
+        "datasetId": "GVXURP",
+        "endTime": "2024-10-09T22:39:00.339836",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 220,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.390924",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9942436",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T22:13:58.333373",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:04.219166",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 220,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 220,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 219,
+        "lightLevel": {
+          "max": 459.08726996774806,
+          "med": 439.33762784360397,
+          "min": 431.1580000344941,
+          "p25": 433.834191373036,
+          "p75": 447.6254074610648
+        },
+        "friedParameter": {
+          "max": 0.05896158636974056,
+          "med": 0.03050511129851039,
+          "min": 0.013229143645471547,
+          "p25": 0.024932477598645787,
+          "p75": 0.037870861404150045
+        }
+      },
+      {
+        "spectralLines": null,
+        "boundingBox": "(-596.38,-261.64),(-663.03,-329.1)",
+        "browseMovieUrl": "https://vimeo.com/1099863405",
+        "createDate": "2025-07-09T04:13:18.604374",
+        "datasetId": "FMLUWI",
+        "endTime": "2024-10-09T21:14:30.198314",
+        "bucket": "public",
+        "exposureTime": 0.081,
+        "frameCount": 221,
+        "instrumentName": "VBI",
+        "instrumentProgramExecutionId": "id.186203.288609",
+        "isEmbargoed": false,
+        "embargoEndDate": null,
+        "observingProgramExecutionId": "eid_2_126_opps-wxS_R001.182330.9911914",
+        "primaryExperimentId": "eid_2_126",
+        "primaryProposalId": "pid_2_126",
+        "startTime": "2024-10-09T20:49:21.333374",
+        "stokesParameters": "I",
+        "updateDate": "2025-07-17T16:26:04.031765",
+        "wavelengthMax": 668,
+        "wavelengthMin": 668,
+        "health": {
+          "bad": null,
+          "ill": null,
+          "good": 221,
+          "unknown": null
+        },
+        "gosStatus": {
+          "open": 221,
+          "closed": null,
+          "closing": null,
+          "opening": null,
+          "undefined": null
+        },
+        "aoLocked": 213,
+        "lightLevel": {
+          "max": 407.64077887583863,
+          "med": 366.2720028975009,
+          "min": 360.28386885359,
+          "p25": 365.3946637691658,
+          "p75": 368.4638760973422
+        },
+        "friedParameter": {
+          "max": 0.10532029044200049,
+          "med": 0.051335523385873785,
+          "min": 0.017905931326001094,
+          "p25": 0.03537672697655419,
+          "p75": 0.06679371494221674
+        }
+      }
+    ]
+  }
+}

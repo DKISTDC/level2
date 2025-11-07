@@ -20,14 +20,11 @@ import App.View.Icons as Icons
 import App.View.Inversion (inversionStepTag)
 import Data.Grouped
 import Data.List qualified as L
-import Data.List.NonEmpty qualified as NE
-import Data.Text qualified as T
 import Data.Text qualified as Text
 import Effectful.Time
 import NSO.Data.Datasets
 import NSO.Data.Programs
 import NSO.Data.Qualify
-import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
@@ -68,7 +65,7 @@ viewProgramStats now prog = viewDataRow $ do
   -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
   el ~ dataCell $ text $ cs $ show ip.instrument
-  -- not worth showing Stokes in the row. They seem to be present for all VISP
+  -- not worth showing Stokes in the row. They seem to be present for all ViSP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
   code (cs $ showDate ip.startTime) ~ cell . noWrap . color Secondary
@@ -89,11 +86,6 @@ viewProgramStats now prog = viewDataRow $ do
   cell :: (Styleable h) => CSS h -> CSS h
   cell = dataCell . cellData
 
-  unknownIon s =
-    case s.ion of
-      Ion _ -> True
-      _ -> False
-
   -- diskTag = el ~ dataTag . noWrap . Style.tagOutline (light Primary) $ "On Disk"
 
   embargoTag utc =
@@ -108,13 +100,12 @@ ionTag i = ionTag' i ""
 
 ionTag' :: Ion -> Text -> View c ()
 ionTag' i suffix =
-  tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs (show i) <> suffix
+  tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ ionName i <> suffix
 
 
-wavTag :: Wavelength Nm -> View c ()
-wavTag w =
-  code (cs (show (round w :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
-
+-- wavTag :: Wavelength Nm -> View c ()
+-- wavTag w =
+--   code (cs (show (round w :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
 
 dataTag :: (Styleable h) => CSS h -> CSS h
 dataTag = pad (XY 6 1)
@@ -137,41 +128,65 @@ viewCriteria :: ProgramFamily -> Group (Id InstrumentProgram) Dataset -> View c 
 viewCriteria ip gd = do
   col $ do
     case ip.program.instrument of
-      VISP -> vispCriteria gd ip.program.spectralLines
+      VISP -> vispCriteria gd
       VBI -> vbiCriteria
       CRYO_NIRSP -> cryoCriteria
  where
-  vispCriteria :: Group (Id InstrumentProgram) Dataset -> [SpectralLine] -> View c ()
-  vispCriteria ds sls = do
-    el ~ bold $ "VISP Criteria"
+  vispCriteria :: Group (Id InstrumentProgram) Dataset -> View c ()
+  vispCriteria ds = do
+    el ~ bold $ "ViSP Criteria"
     row ~ gap 10 . flexWrap Wrap $ do
-      criteria "Stokes IQUV" $ qualifyStokes ds
-      criteria "On Disk" $ qualifyOnDisk ds
-      criteria "Spectra: FeI 630" $ qualifyLine FeI sls
-      criteria "Spectra: CaII 854" $ qualifyLine CaII sls
-      criteria "Health" $ qualifyHealth ds
-      criteria "GOS Status" $ qualifyGOS ds
-      criteria "AO Lock" $ qualifyAO ds
+      vcriteria "Stokes IQUV" $ qualifyStokes ds
+      vcriteria "On Disk" $ qualifyOnDisk ds
+      -- criteria require "Spectra: FeI" $ qualifyLine FeI sls
+      -- criteria warning "Spectra: CaII" $ qualifyLine CaII sls
+      -- criteria warning "Spectra: NaI" $ qualifyLine NaI sls
+      vcriteria "Health" $ qualifyHealth ds
+      vcriteria "GOS Status" $ qualifyGOS ds
+      vcriteria "AO Lock" $ qualifyAO ds
 
   vbiCriteria = do
     el ~ bold $ "VBI Criteria"
-    criteria "Not Supported" False
+    vcriteria "Not Supported" False
 
   cryoCriteria = do
     el ~ bold $ "CRYO NIRSP Criteria"
-    criteria "Not Supported" False
+    vcriteria "Not Supported" False
 
-  criteria :: Text -> Bool -> View c ()
-  criteria msg b =
-    row ~ gap 2 . color (if b then Success else Danger) $ do
-      el checkmark
-      el (text msg)
-   where
-    checkmark =
-      el ~ width 24 . height 24 $
-        if b
-          then Icons.checkCircle
-          else Icons.xMark
+  vcriteria msg b =
+    criteria (if b then Good else Fail) msg
+
+
+data Criteria
+  = Fail
+  | Warn
+  | Good
+instance Semigroup Criteria where
+  Fail <> _ = Fail
+  _ <> Fail = Fail
+  Warn <> _ = Warn
+  _ <> Warn = Warn
+  Good <> Good = Good
+
+
+criteria :: Criteria -> Text -> View c ()
+criteria c msg =
+  row ~ gap 2 . color clr $ do
+    el checkmark
+    el (text msg)
+ where
+  clr =
+    case c of
+      Fail -> colorValue Danger
+      Warn -> colorValue $ dark Warning
+      Good -> colorValue Success
+
+  checkmark =
+    el ~ width 24 . height 24 $
+      case c of
+        Fail -> Icons.xMark
+        Warn -> Icons.minus
+        Good -> Icons.checkCircle
 
 
 viewFriedHistogram :: Maybe Distribution -> View c ()
@@ -187,21 +202,42 @@ viewFriedHistogram (Just fried) = do
     | otherwise = color Danger
 
 
-viewWavelengthRanges :: NonEmpty Dataset -> View c ()
-viewWavelengthRanges ds = do
+viewWavelengthRanges :: [SpectralLine] -> NonEmpty Dataset -> View c ()
+viewWavelengthRanges sls _ = do
   col ~ gap 4 $ do
-    el ~ bold $ "Spectral Lines"
+    el ~ bold $ "ViSP Spectral Lines"
+    specCriteria validateIron FeI
+    specCriteria (validateOptional CaII) CaII
+    specCriteria (validateOptional NaI) NaI
+ where
+  specCriteria allCriteria i = do
+    let c = runCriteria allCriteria
+    let t = ionName i
+    criteria c $ do
+      case c of
+        Good -> t
+        Warn -> t <> " Missing"
+        Fail -> t <> " Missing"
 
---    row ~ gap 5 $ do
---      forM_ (sortOn fst $ mapMaybe datasetWithLine $ NE.toList ds) $ \(l, d) -> do
---        row $ do
---          let clr = lineColor d l
---          ionTag l ~ fontSize 14 . color clr . borderColor clr
--- where
---  datasetWithLine d = do
---    case d.spectralLines of
---      (s : _) -> Just (s, d)
---      [] -> Nothing
---
---  lineColor d l = Success
---  lineWarning d l = ""
+  runCriteria :: Either Criteria Criteria -> Criteria
+  runCriteria c =
+    case c of
+      Left l -> l
+      Right r -> r
+
+  validateIron :: Either Criteria Criteria
+  validateIron = do
+    lineRequired FeI
+    pure Good
+
+  validateOptional ion = do
+    lineOptional ion
+    pure Good
+
+  lineRequired l
+    | qualifyLine l sls = pure ()
+    | otherwise = Left Fail
+
+  lineOptional l
+    | qualifyLine l sls = pure ()
+    | otherwise = Left Warn

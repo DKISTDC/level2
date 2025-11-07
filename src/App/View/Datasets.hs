@@ -12,10 +12,10 @@ import App.View.DataRow qualified as View
 import App.View.Icons qualified as Icons
 import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Qualify (boxRadius)
-import NSO.Data.Spectra qualified as Spectra
+import NSO.Data.Qualify as Qualify (boxRadius, isWavNarrow)
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.Wavelength
 import Numeric (showFFloat)
 import Web.Atomic.CSS
 import Web.Atomic.Types.ClassName (className)
@@ -30,6 +30,7 @@ data SortField
   | UpdateDate
   | StartTime
   | Instrument
+  | LineIon
   | Stokes
   | WaveMin
   | WaveMax
@@ -49,6 +50,7 @@ datasetsTable sortBy srt ds = do
   sortField StartTime = sortOn (Down . (.startTime))
   sortField Instrument = sortOn (.instrument)
   sortField Stokes = sortOn (.stokesParameters)
+  sortField LineIon = sortOn (.spectralLines)
   sortField WaveMin = sortOn (.wavelengthMin)
   sortField WaveMax = sortOn (.wavelengthMax)
 
@@ -59,11 +61,12 @@ datasetsTableUnsorted sortBy ds = do
   table ds ~ View.table $ do
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd "") $ \d -> cell $ el ~ width 16 $ link d.browseMovieUrl.uri @ Style.blank ~ Style.link $ Icons.videoCamera
-    tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
+    -- tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
     tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
+    tcol (hd $ sortBtn LineIon "Ion") $ \d -> cell $ text $ fromMaybe "" $ listToMaybe $ fmap (ionName . (.ion)) d.spectralLines
     tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ do
       wavelength d d.wavelengthMin
     tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ do
@@ -86,16 +89,17 @@ datasetsTableUnsorted sortBy ds = do
   -- tcol cell (hd "ppid") $ \d -> cell . cs $ d.primaryProposalId
   -- tcol cell (hd "ExperimentDescription") $ \d -> cell . cs . show $ d.experimentDescription
 
-  -- wavColor d w =
-  --   case Spectra.identifyLine d of
-  --     Nothing -> id
-  --     Just l ->
-  --       if isLineWavBroadEnough w l
-  --         then id
-  --         else color Danger
-  --
-  wavelength d w =
-    el $ text . cs $ showFFloat (Just 1) w ""
+  wavColor UnknownIon _ = id
+  wavColor (Ion _) _ = id
+  wavColor ion w =
+    if Qualify.isWavNarrow ion w
+      then color Danger
+      else color Success
+
+  wavelength :: Dataset -> Wavelength Nm -> View c ()
+  wavelength d w = do
+    let dsetIon :: Ion = fromMaybe UnknownIon $ fmap (.ion) <$> listToMaybe $ d.spectralLines
+    el ~ wavColor dsetIon w $ text . cs $ showFFloat (Just 1) w ""
 
   embargo :: Dataset -> Text
   embargo d =

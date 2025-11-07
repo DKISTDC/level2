@@ -18,11 +18,24 @@
 - [ ] After downloading the fits files, get caught in a loop SUCCEEDED, over and over. Because it's still in the Transferring step, but it is no longer transferring. Somebody should update the status. Maybe fixed?
 - [ ] Stuart: nice to see units on dataset page
 
-## Nov 6
-- [ ] Han: warnings for narrow spectral ranges. Highlight wav min / max in red?
-- [x] Han: report bad data to L1, ILFBSO - the continuum is all messed up. 
-- [ ] Han: fix Globus error: invalid token. He was downloading?
+
+
+
+## TODO:
 - [ ] Republish: save Inversion to metadata key error, need update?
+
+## Fri, Nov 7
+- [x] Verify Blanca profile output wavelength reference values
+- [ ] Relax Calcium qualification
+- [ ] Globus downloads - use links instead of tracked downloads
+- [ ] Han: warnings for narrow spectral ranges. Highlight wav min / max in red?
+- [x] Identify missing spectral lines when imported
+
+
+## Nov 6
+- [x] Big refactor of Spectral Line
+- [x] Han: report bad data to L1, ILFBSO - the continuum is all messed up. 
+- --- Han: fix Globus error: invalid token. He was downloading? Nope, see above, get rid of downloads
 
 
 ## Tue, Oct 27
