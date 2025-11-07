@@ -27,3 +27,8 @@ spec = do
       parseSpectralLine "Mg I b1 (517.27 nm)" `shouldBe` Right (SpectralLine (Ion "Mg I") (Just B1) 517.27)
       parseSpectralLine "Na I D2 (589.0 nm)" `shouldBe` Right (SpectralLine NaI (Just D2) 589.0)
       parseSpectralLine "Fe XIII dx (1074.7 nm)" `shouldBe` Right (SpectralLine (Ion "Fe XIII") (Just (Designation "DX")) 1074.7)
+
+    it "renders spectral lines" $ do
+      spectralLineName (SpectralLine FeI Nothing 630.15) `shouldBe` "Fe I (630.15 nm)"
+      spectralLineName (SpectralLine (Ion "Fe XIII") (Just (Designation "DX")) 1074.7) `shouldBe` "Fe XIII DX (1074.70 nm)"
+      spectralLineName (SpectralLine NaI (Just D2) 589.0) `shouldBe` "Na I D2 (589.00 nm)"

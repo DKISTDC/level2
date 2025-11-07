@@ -77,7 +77,7 @@ viewProgramStats now prog = viewDataRow $ do
     maybe none embargoTag ip.embargo
     -- if ip.onDisk then diskTag else none
     mapM_ ionTag $ L.sort $ L.nub $ fmap (.ion) ip.spectralLines
-    mapM_ wavTag $ fmap (.wavelength) $ ip.spectralLines
+  -- mapM_ wavTag $ fmap (.wavelength) $ ip.spectralLines
 
   space
 

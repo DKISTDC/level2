@@ -128,6 +128,8 @@ data ArmWavBreak = ArmWavBreak
   deriving (Eq, Show)
 
 
+-- | Profiles come with 3 HDUs: [2] = visp arm ids, like [9,9,9,9,9,23,23,23]
+-- create an `Arms` of breaks, identifying the line and how long it is
 profileWavMetas :: forall es. (Error BlancaError :> es, Log :> es) => [LineId] -> [WavOffset MA] -> Eff es (Arms ArmWavMeta)
 profileWavMetas [] _ = throwError NoLineIds
 profileWavMetas _ [] = throwError NoWavOffsets
@@ -172,6 +174,8 @@ calciumLine :: SpectralLine
 calciumLine = SpectralLine CaII Nothing 854.2091
 
 
+-- | Profiles come with 3 HDUs: [1] = wavelength offsets, [2] = visp arm ids
+-- given 1 and 2, split the wavelength offsets into 
 splitWavs :: Error BlancaError :> es => Arms ArmWavBreak -> [WavOffset MA] -> Eff es (Arms (NonEmpty (WavOffset MA)))
 splitWavs breaks wavs = do
   as <- evalState wavs $ mapM (\brk -> nextWavsN brk.length) breaks.arms
@@ -195,7 +199,7 @@ toNanometers (WavOffset w) = WavOffset (w / 10000)
 -- | profile for the arm section derived from the wave offsets and the HDU of the line breaks
 armWavMeta :: ArmWavBreak -> [WavOffset MA] -> ArmWavMeta
 armWavMeta bk ws =
-  -- The space between each offset is the same to 5 significant digits
+  -- The space between each offset is equal, to 5 significant digits
   -- For WCS we need a delta. Use the average to get the most accurate
   let delta = avgDelta ws
    in ArmWavMeta

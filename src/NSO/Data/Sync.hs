@@ -19,6 +19,7 @@ import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets (Datasets)
 import NSO.Data.Datasets qualified as Datasets
+import NSO.Image.Blanca qualified as Blanca
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
@@ -219,7 +220,7 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
     exd <- parseExperiment $ Id d.primaryExperimentId
     emb <- parseEmbargo
     movie <- decodeURI d.browseMovieUrl
-    slines <- mapM parseSpectralLine $ fromMaybe [] d.spectralLines
+    slines <- parseSpectralLines (fromMaybe [] d.spectralLines)
     pure $
       Dataset'
         { datasetId = Id d.datasetId
@@ -251,6 +252,22 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
         , embargo = localTimeToUTC utc <$> emb
         , spectralLines = slines
         }
+
+  -- if L1 didn't parse any lines, try looking them up from our DeSiRE ions
+  parseSpectralLines :: [Text] -> Either String [SpectralLine]
+  parseSpectralLines = \case
+    [] -> case estimatedKnownLine of
+      Nothing -> pure []
+      Just l -> pure [l]
+    ls -> mapM parseSpectralLine ls
+
+  estimatedKnownLine :: Maybe SpectralLine
+  estimatedKnownLine =
+    L.find isLineWithinRange [Blanca.ironLine, Blanca.calciumLine, Blanca.sodiumLine]
+
+  isLineWithinRange ref =
+    let wiggle = 0.5
+     in Wavelength (d.wavelengthMin - wiggle) <= ref.wavelength && ref.wavelength <= Wavelength (d.wavelengthMax + wiggle)
 
   parseExperiment :: Id Experiment -> Either String Text
   parseExperiment eid =

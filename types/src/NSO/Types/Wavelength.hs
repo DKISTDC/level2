@@ -7,6 +7,7 @@ import Data.Scientific (fromFloatDigits)
 import Data.Text qualified as T
 import GHC.Real (Real)
 import NSO.Prelude
+import Numeric (showFFloat)
 import Rel8 (DBType, parseTypeInformation, typeInformation)
 import Telescope.Asdf
 import Text.Read (readMaybe)
@@ -42,7 +43,11 @@ data SpectralLine = SpectralLine
   , designation :: Maybe Designation
   , wavelength :: Wavelength Nm
   }
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord)
+
+
+instance Show SpectralLine where
+  show = cs . spectralLineName
 
 
 instance DBType SpectralLine where
@@ -72,6 +77,7 @@ ionName = \case
   FeI -> "Fe I"
   CaII -> "Ca II"
   Ion t -> t
+  UnknownIon -> ""
 
 
 fromIonName :: Text -> Ion
@@ -79,6 +85,7 @@ fromIonName = \case
   "Na I" -> NaI
   "Fe I" -> FeI
   "Ca II" -> CaII
+  "" -> UnknownIon
   t -> Ion t
 
 
@@ -87,11 +94,21 @@ data Ion
   | FeI
   | CaII
   | Ion Text
+  | UnknownIon
   deriving (Eq, Ord, Show)
 
 
 spectralLineName :: SpectralLine -> Text
-spectralLineName _ = "Mg I b1 (517.28 nm)"
+spectralLineName s =
+  T.intercalate " " $
+    catMaybes
+      [ knownIonName s.ion
+      , designationName <$> s.designation
+      , Just $ cs $ "(" <> showFFloat (Just 2) s.wavelength " nm)"
+      ]
+ where
+  knownIonName UnknownIon = Nothing
+  knownIonName i = pure $ ionName i
 
 
 parseSpectralLine :: Text -> Either String SpectralLine
@@ -113,7 +130,7 @@ parseSpectralLine inp = do
     case T.words $ T.takeWhile (/= '(') start of
       [elm, ion] -> pure (elm <> " " <> ion, Nothing)
       [elm, ion, des] -> pure (elm <> " " <> ion, Just $ T.toUpper des)
-      ws -> Left $ "Could not match SpectralLine prefix: " <> show ws
+      _ -> Left $ "Could not match SpectralLine prefix: " <> cs start
 
   -- asdf2 (630.15 nm)
   wavelength end = do
