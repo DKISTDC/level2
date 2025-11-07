@@ -152,6 +152,7 @@ wavBreaks lids = do
     line <- blancaWavLine lineId
     pure $ ArmWavBreak{ length = length ls, line}
 
+  -- Map Visp Arm Ids to known reference values
   blancaWavLine :: LineId -> Either LineId SpectralLine
   blancaWavLine = \case
     LineId 23 -> pure ironLine
@@ -160,14 +161,15 @@ wavBreaks lids = do
     n -> Left n
 
 
+-- | Known reference values for DeSiRE output. The Wavelength Offsets are relative to this value
 sodiumLine :: SpectralLine
-sodiumLine = SpectralLine FeI Nothing 589.29
+sodiumLine = SpectralLine FeI Nothing 588.95095
 
 ironLine :: SpectralLine
-ironLine = SpectralLine NaI Nothing 630.3
+ironLine = SpectralLine NaI Nothing 630.15012
 
 calciumLine :: SpectralLine
-calciumLine = SpectralLine CaII Nothing 854.209
+calciumLine = SpectralLine CaII Nothing 854.2091
 
 
 splitWavs :: Error BlancaError :> es => Arms ArmWavBreak -> [WavOffset MA] -> Eff es (Arms (NonEmpty (WavOffset MA)))
@@ -190,8 +192,11 @@ toNanometers :: WavOffset MA -> WavOffset Nm
 toNanometers (WavOffset w) = WavOffset (w / 10000)
 
 
+-- | profile for the arm section derived from the wave offsets and the HDU of the line breaks
 armWavMeta :: ArmWavBreak -> [WavOffset MA] -> ArmWavMeta
 armWavMeta bk ws =
+  -- The space between each offset is the same to 5 significant digits
+  -- For WCS we need a delta. Use the average to get the most accurate
   let delta = avgDelta ws
    in ArmWavMeta
         { delta = toNanometers delta
