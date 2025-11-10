@@ -84,6 +84,10 @@ data BusConnection = BusConnection
   }
 
 
+initDummyBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
+initDummyBusConnection _ = pure $ BusConnection (error "Dummy Bus Connection") (key "catalog" & word "frame" & word "m") (key "catalog" & word "object" & word "m")
+
+
 initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
 initBusConnection cfg = do
   cnn <- setExchange cfg.exchangeName <$> Worker.connect cfg.options
