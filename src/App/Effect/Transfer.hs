@@ -23,7 +23,7 @@ import NSO.Files.Inversion (InversionFiles (..))
 import NSO.Files.RemoteFolder (Remote (..), remotePath)
 import NSO.Files.Scratch (Scratch)
 import NSO.Files.Scratch qualified as Scratch
-import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..), User)
+import NSO.Files.TransferForm (TransferForm (..), User)
 import NSO.Files.TransferForm qualified as TransferForm
 import NSO.Prelude
 import NSO.Types.Common as App
@@ -188,11 +188,10 @@ transferStatus = send . TransferStatus
 
 -- Download Datasets ----------------------------------------------------------------------
 
-userDownloadDatasets :: (Transfer :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (Id Task)
-userDownloadDatasets tform df ds = do
-  let dest = TransferForm.remote tform
-  downloadL1To tform.label (TransferForm.dataset tform df) dest ds
-
+-- userDownloadDatasets :: (Transfer :> es) => TransferForm -> DownloadFolder -> [Dataset] -> Eff es (Id Task)
+-- userDownloadDatasets tform df ds = do
+--   let dest = TransferForm.remote tform
+--   downloadL1To tform.label (TransferForm.dataset tform df) dest ds
 
 scratchDownloadDatasets :: (Transfer :> es, Scratch :> es) => [Dataset] -> Eff es (Id Task)
 scratchDownloadDatasets ds = do
@@ -205,7 +204,7 @@ downloadL1To
   :: forall dest es
    . (Transfer :> es)
   => Text
-  -> (Dataset -> Path dest File Dataset)
+  -> (Dataset -> Path dest Dir Dataset)
   -> Remote dest
   -> [Dataset]
   -> Eff es (Id Task)
@@ -214,7 +213,7 @@ downloadL1To lbl toDestPath dest ds = do
   source <- send RemoteLevel1
   send $ TransferFiles lbl source dest xfers
  where
-  datasetTransfer :: Dataset -> FileTransfer Level1 dest File Dataset
+  datasetTransfer :: Dataset -> FileTransfer Level1 dest Dir Dataset
   datasetTransfer d =
     FileTransfer
       { sourcePath = DKIST.dataset d

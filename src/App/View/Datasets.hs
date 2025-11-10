@@ -2,9 +2,8 @@
 
 module App.View.Datasets where
 
--- import App.Colors
-
 import App.Colors
+import App.Effect.FileManager as FileManager (openTransfer)
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
@@ -13,6 +12,9 @@ import App.View.Icons qualified as Icons
 import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify as Qualify (boxRadius, isWavNarrow)
+import NSO.Files.DKIST (Level1)
+import NSO.Files.DKIST qualified as DKIST
+import NSO.Files.RemoteFolder (Remote (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength
@@ -37,10 +39,10 @@ data SortField
   deriving (Show, Read, Generic, ToParam, FromParam)
 
 
-datasetsTable :: forall id. (ViewAction (Action id)) => (SortField -> Action id) -> SortField -> [Dataset] -> View id ()
-datasetsTable sortBy srt ds = do
+datasetsTable :: forall id. (ViewAction (Action id)) => Remote Level1 -> (SortField -> Action id) -> SortField -> [Dataset] -> View id ()
+datasetsTable l1 sortBy srt ds = do
   let sorted = sortField srt ds
-  datasetsTableUnsorted sortBy sorted
+  datasetsTableUnsorted l1 sortBy sorted
  where
   sortField :: SortField -> ([Dataset] -> [Dataset])
   sortField DatasetId = sortOn (.datasetId)
@@ -55,18 +57,20 @@ datasetsTable sortBy srt ds = do
   sortField WaveMax = sortOn (.wavelengthMax)
 
 
-datasetsTableUnsorted :: forall id. (ViewAction (Action id)) => (SortField -> Action id) -> [Dataset] -> View id ()
-datasetsTableUnsorted sortBy ds = do
+datasetsTableUnsorted :: forall id. (ViewAction (Action id)) => Remote Level1 -> (SortField -> Action id) -> [Dataset] -> View id ()
+datasetsTableUnsorted l1 sortBy ds = do
   -- is there a way to do alternating rows here?
   table ds ~ View.table $ do
     tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text . cs $ d.datasetId.fromId
+    tcol (hd "") $ \d -> cell $ el ~ width 16 $ do
+      downloadDatasetLink l1 d ~ Style.link $ Icons.downTray
     tcol (hd "") $ \d -> cell $ el ~ width 16 $ link d.browseMovieUrl.uri @ Style.blank ~ Style.link $ Icons.videoCamera
     -- tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
     tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
-    tcol (hd $ sortBtn LineIon "Ion") $ \d -> cell $ text $ fromMaybe "" $ listToMaybe $ fmap (ionName . (.ion)) d.spectralLines
+    tcol (hd $ sortBtn LineIon "Ion") $ \d -> cell $ text $ cs $ show $ fromMaybe UnknownIon $ listToMaybe $ fmap (.ion) d.spectralLines
     tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ do
       wavelength d d.wavelengthMin
     tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ do
@@ -113,6 +117,11 @@ datasetsTableUnsorted sortBy ds = do
 
   hd = View.hd
   cell = View.cell
+
+
+downloadDatasetLink :: Remote Level1 -> Dataset -> View c () -> View c ()
+downloadDatasetLink rm d cnt = do
+  link (FileManager.openTransfer rm.collection (DKIST.dataset d)) @ Style.blank $ cnt
 
 
 radiusBoundingBox :: Maybe BoundingBox -> View c ()

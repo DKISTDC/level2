@@ -2,15 +2,19 @@ module App.Page.Dataset where
 
 import App.Colors
 import App.Effect.Auth
+import App.Effect.Transfer (Transfer (RemoteLevel1))
 import App.Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
-import App.View.Datasets (radiusBoundingBox)
+import App.View.Datasets (downloadDatasetLink, radiusBoundingBox)
+import App.View.Icons qualified as Icons
 import App.View.Layout
 import Data.Aeson (encode)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import NSO.Data.Datasets as Datasets
+import NSO.Files.DKIST (Level1)
+import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Wavelength (spectralLineName)
@@ -19,9 +23,10 @@ import Web.Hyperbole
 import Web.Hyperbole.Data.URI (uriToText)
 
 
-page :: (Hyperbole :> es, Datasets :> es, Auth :> es) => Id Dataset -> Page es '[]
+page :: (Hyperbole :> es, Datasets :> es, Auth :> es, Transfer :> es) => Id Dataset -> Page es '[]
 page di = do
   ds <- Datasets.find (ByIds [di])
+  l1 <- send RemoteLevel1
 
   let sorted = sortOn (Down . (.scanDate)) ds
 
@@ -31,11 +36,16 @@ page di = do
         text "Dataset: "
         text di.fromId
 
-      mapM_ viewDataset sorted
+      mapM_ (viewDataset l1) sorted
 
 
-viewDataset :: Dataset -> View c ()
-viewDataset d =
+viewDataset :: Remote Level1 -> Dataset -> View c ()
+viewDataset l1 d = do
+  downloadDatasetLink l1 d ~ Style.btn Primary $ do
+    row ~ gap 10 $ do
+      el ~ width 24 $ Icons.downTray
+      text "Download Dataset"
+
   col ~ Style.card $ do
     el ~ Style.cardHeader Secondary . bold $ "Dataset Details"
     col ~ gap 10 . pad 10 $ do

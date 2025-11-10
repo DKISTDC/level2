@@ -10,7 +10,7 @@ import Data.Text qualified as T
 import GHC.TypeLits
 import NSO.Image.Headers.Keywords
 import NSO.Prelude
-import NSO.Types.Wavelength (Ion, SpectralLine (..), fromIonName, ionName)
+import NSO.Types.Wavelength (Ion, fromIonName, ionName)
 import Telescope.Data.KnownText
 import Telescope.Data.Parser (expected)
 import Telescope.Fits.Header

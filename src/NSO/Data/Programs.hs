@@ -18,7 +18,6 @@ module NSO.Data.Programs
   , toProposals
   ) where
 
-import Data.Either (lefts, rights)
 import Data.Grouped as G
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
@@ -27,12 +26,10 @@ import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Qualify
-import NSO.Data.Spectra qualified as Spectra
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Status
-import NSO.Types.Wavelength
 
 
 loadAllProposals :: (Datasets :> es) => Eff es [Proposal]

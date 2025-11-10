@@ -4,6 +4,7 @@ module App.Page.Proposal where
 
 import App.Colors
 import App.Effect.Auth
+import App.Effect.Transfer (Transfer (RemoteLevel1))
 import App.Error (expectFound)
 import App.Page.Program (viewProgramDetails)
 import App.Route as Route
@@ -19,6 +20,8 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
+import NSO.Files.DKIST (Level1)
+import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
@@ -103,7 +106,7 @@ data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSummary es where
+instance (Datasets :> es, Time :> es, Inversions :> es, Transfer :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
     = ProgramDetails SortField
     | GenIronImage
@@ -115,7 +118,8 @@ instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView ProgramSumm
       ProgramSummary _ progId <- viewId
       now <- currentTime
       progs <- Programs.loadProgram progId
-      pure $ mapM_ (viewProgramSummary srt now) progs
+      l1 <- send RemoteLevel1
+      pure $ mapM_ (viewProgramSummary l1 srt now) progs
     GenIronImage -> pure none
 
 
@@ -125,13 +129,13 @@ viewProgramSummaryLoad = do
     el ~ pad 20 . width 600 $ skeleton
 
 
-viewProgramSummary :: SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
-viewProgramSummary srt now prog = do
+viewProgramSummary :: Remote Level1 -> SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
+viewProgramSummary l1 srt now prog = do
   let ds = prog.datasets
   programCard $ do
     viewProgramDetails prog now
     col ~ pad (TRBL 0 15 15 15) $ do
-      DatasetsTable.datasetsTable ProgramDetails srt (NE.toList ds.items)
+      DatasetsTable.datasetsTable l1 ProgramDetails srt (NE.toList ds.items)
 
 
 programCard :: View ProgramSummary () -> View ProgramSummary ()

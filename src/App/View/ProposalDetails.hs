@@ -100,7 +100,7 @@ ionTag i = ionTag' i ""
 
 ionTag' :: Ion -> Text -> View c ()
 ionTag' i suffix =
-  tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ ionName i <> suffix
+  tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs (show i) <> suffix
 
 
 -- wavTag :: Wavelength Nm -> View c ()

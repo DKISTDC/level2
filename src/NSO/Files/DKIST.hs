@@ -29,7 +29,7 @@ data Level1
 -- datasetParentFolder :: Dataset -> Path DKIST Dir Dataset
 -- datasetParentFolder d = Path (cs d.bucket.bucketName) </> Path (cs d.primaryProposalId.fromId)
 
-dataset :: Dataset -> Path Level1 File Dataset
+dataset :: Dataset -> Path Level1 Dir Dataset
 dataset d = Path (cs d.bucket.bucketName) </> Path (cs d.primaryProposalId.fromId) </> Path (cs d.datasetId.fromId)
 
 

@@ -95,7 +95,13 @@ data Ion
   | CaII
   | Ion Text
   | UnknownIon
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+instance Show Ion where
+  show (Ion t) = cs t
+  show UnknownIon = ""
+  show NaI = "NaI"
+  show CaII = "CaII"
+  show FeI = "FeI"
 
 
 spectralLineName :: SpectralLine -> Text

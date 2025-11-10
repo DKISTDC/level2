@@ -20,7 +20,7 @@ import NSO.Image.Headers.WCS
 import NSO.Image.Types.Frame (Arms (..), Stokes)
 import NSO.Image.Types.Profile
 import NSO.Prelude
-import NSO.Types.Wavelength (SpectralLine (..), Wavelength (..), ionName)
+import NSO.Types.Wavelength (SpectralLine (..), ionName)
 import Telescope.Data.Axes (AxisOrder (..))
 import Telescope.Data.DataCube
 import Telescope.Data.KnownText

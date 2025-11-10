@@ -30,7 +30,6 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Spectra qualified as Spectra
 import NSO.Files (Publish)
 import NSO.Files.DKIST qualified as DKIST
 import NSO.Files.Image qualified as Files

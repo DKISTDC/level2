@@ -4,10 +4,8 @@ module App.Page.Program where
 
 import App.Colors
 import App.Effect.Auth as Auth
-import App.Effect.FileManager (FileLimit (Folders))
-import App.Effect.Transfer
+import App.Effect.Transfer (Transfer (RemoteLevel1))
 import App.Error (expectFound)
-import App.Page.Datasets.Download (ActiveDownload (..))
 import App.Route as Route
 import App.Style qualified as Style
 import App.Types (App)
@@ -18,12 +16,9 @@ import App.View.Icons qualified as Icons
 import App.View.Inversion (rowInversion)
 import App.View.Layout
 import App.View.ProposalDetails
-import App.View.Transfer (TransferAction (..))
-import App.View.Transfer qualified as Transfer
 import App.Worker.Generate
 import Data.Grouped (Group (..), sample)
 import Data.List.NonEmpty qualified as NE
-import Data.Text qualified as T
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus (Globus)
@@ -36,25 +31,29 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
+import NSO.Files.DKIST (Level1)
+import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
-import Network.Globus (Task)
 import Web.Atomic.CSS
 import Web.Hyperbole
 
 
+-- import App.Page.Datasets.Download (ActiveDownload (..))
+
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es, Transfer :> es)
   => Id Proposal
   -> Id InstrumentProgram
-  -> Page es '[ProgramInversions, ProgramDatasets, DownloadTransfer, ProgramDetails]
+  -> Page es '[ProgramInversions, ProgramDatasets, ProgramDetails]
 page propId progId = do
   ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
   progs <- Programs.loadProgram progId >>= expectFound
   let prog = head progs
   now <- currentTime
-  ActiveDownload download <- query
+  l1 <- send RemoteLevel1
+  -- ActiveDownload download <- query
 
   appLayout Route.Proposals $ do
     col ~ Style.page . gap 30 $ do
@@ -65,7 +64,7 @@ page propId progId = do
       col ~ Style.card $ do
         el ~ Style.cardHeader Secondary $ text "Program"
         hyper (ProgramDetails propId progId) $ viewProgramDetails prog now
-        hyper (ProgramDatasets propId progId) $ viewDatasets (NE.toList prog.datasets.items) ByLatest download
+        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList prog.datasets.items) ByLatest
 
       col ~ gap 10 $ do
         el ~ bold $ "Experiment"
@@ -221,88 +220,22 @@ data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es) => HyperView ProgramDatasets es where
+instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es, Transfer :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
-    = GoDownload
-    | SortDatasets SortField
+    = SortDatasets SortField
     deriving (Generic, ViewAction)
 
 
-  type Require ProgramDatasets = '[DownloadTransfer]
-
-
-  update GoDownload = do
-    ProgramDatasets propId progId <- viewId
-    ds <- Datasets.find $ Datasets.ByProgram progId
-    -- r <- request
-    let submitUrl = routeUri $ Route.Proposal propId $ Route.Program progId Route.SubmitDownload
-    Auth.openFileManager (Folders 1) ("Download Datasets: " <> T.intercalate "," (fmap (\d -> d.datasetId.fromId) ds)) submitUrl
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
     progs <- Programs.loadProgram progId
-    ActiveDownload download <- query
+    l1 <- send RemoteLevel1
     pure $ do
       forM_ progs $ \prog -> do
-        viewDatasets (NE.toList prog.datasets.items) srt download
+        viewDatasets l1 (NE.toList prog.datasets.items) srt
 
 
-viewDatasets :: [Dataset] -> SortField -> Maybe (Id Task) -> View ProgramDatasets ()
-viewDatasets ds srt xfer = do
-  ProgramDatasets propId progId <- viewId
+viewDatasets :: Remote Level1 -> [Dataset] -> SortField -> View ProgramDatasets ()
+viewDatasets l1 ds srt = do
   col ~ gap 15 . pad 15 $ do
-    DatasetsTable.datasetsTable SortDatasets srt ds
-    case xfer of
-      Nothing -> iconButton GoDownload Icons.downTray "Download Datasets" ~ Style.btn Primary
-      Just taskId -> hyper (DownloadTransfer propId progId taskId) viewDownloadLoad
-
-
--- ----------------------------------------------------------------
--- DOWNLOAD
--- ----------------------------------------------------------------
-
-data DownloadTransfer = DownloadTransfer (Id Proposal) (Id InstrumentProgram) (Id Task)
-  deriving (Generic, ViewId)
-
-
-instance (Datasets :> es, Log :> es, Transfer :> es) => HyperView DownloadTransfer es where
-  data Action DownloadTransfer
-    = DwnTransfer TransferAction
-    deriving (Generic, ViewAction)
-
-
-  type Require DownloadTransfer = '[ProgramDatasets]
-
-
-  update (DwnTransfer action) = do
-    DownloadTransfer _ progId taskId <- viewId
-    case action of
-      TaskFailed -> do
-        pure $ col ~ gap 10 $ do
-          redownloadBtn ~ Style.btn Primary $ "Download Datasets"
-          Transfer.viewTransferFailed taskId
-      TaskSucceeded -> do
-        ds <- Datasets.find (Datasets.ByProgram progId)
-        pure $ col ~ gap 10 $ do
-          redownloadBtn ~ Style.btn Primary $ "Download Datasets"
-          row ~ gap 10 . color Success $ do
-            el "Successfully Downloaded: "
-            el $ text $ T.intercalate ", " $ fmap (\d -> d.datasetId.fromId) ds
-      CheckTransfer -> do
-        tview <- Transfer.checkTransfer DwnTransfer taskId
-        pure $ col ~ gap 10 $ do
-          redownloadBtn ~ Style.btnLoading Secondary . Style.disabled $ "Downloading"
-          tview
-
-
-viewDownloadLoad :: View DownloadTransfer ()
-viewDownloadLoad = do
-  col ~ gap 10 $ do
-    redownloadBtn ~ Style.btn Secondary @ att "disabled" "" $ "Download Datasets"
-    Transfer.viewLoadTransfer DwnTransfer
-
-
-redownloadBtn :: Text -> View DownloadTransfer ()
-redownloadBtn lbl = do
-  DownloadTransfer propId progId _ <- viewId
-  target (ProgramDatasets propId progId) $ do
-    iconButton GoDownload Icons.downTray lbl
+    DatasetsTable.datasetsTable l1 SortDatasets srt ds

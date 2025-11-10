@@ -58,8 +58,8 @@ instance Route InversionRoute where
 
 data ProgramRoute
   = Prog
-  | SubmitDownload
-  | SubmitUpload (Id Inversion)
+  | -- | SubmitDownload
+    SubmitUpload (Id Inversion)
   | InvUpload (Id Inversion)
   deriving (Show, Generic, Eq)
 instance Route ProgramRoute where

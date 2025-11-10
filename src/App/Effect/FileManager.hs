@@ -20,6 +20,16 @@ data FileLimit
   | Files Int
 
 
+-- fileManagerTransferUrl :: Id Collection -> URI
+-- fileManagerTransferUrl col =
+--   [uri|https://app.globus.org/file-manager|]
+--     { uriQuery =
+--         queryString
+--           [ ("two_Patn", Just "true")
+--           , ("origin_id", Just $ cs col.fromId)
+--           ]
+--     }
+
 fileManagerSelectUrl :: FileLimit -> Text -> AppDomain -> URI -> URI -> URI
 fileManagerSelectUrl lmt lbl domain submitUrl cancelUrl =
   [uri|https://app.globus.org/file-manager|]
@@ -58,6 +68,18 @@ openDir origin dir =
         queryString
           [ ("origin_id", Just $ cs origin.unTagged)
           , ("origin_path", Just $ cs dir.filePath)
+          ]
+    }
+
+
+openTransfer :: Globus.Id Collection -> Path s Dir a -> URI
+openTransfer origin dir =
+  [uri|https://app.globus.org/file-manager|]
+    { uriQuery =
+        queryString
+          [ ("origin_id", Just $ cs origin.unTagged)
+          , ("origin_path", Just $ cs dir.filePath)
+          , ("two_pane", Just "true")
           ]
     }
 

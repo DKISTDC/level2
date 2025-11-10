@@ -11,7 +11,6 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics (Rep, from)
-import NSO.Data.Spectra qualified as Spectra
 import NSO.Files
 import NSO.Files.Image (L2Asdf, L2Fits)
 import NSO.Files.Image qualified as Files

@@ -26,9 +26,9 @@
 
 ## Fri, Nov 7
 - [x] Verify Blanca profile output wavelength reference values
-- [ ] Relax Calcium qualification
+- [x] Relax Calcium qualification
 - [ ] Globus downloads - use links instead of tracked downloads
-- [ ] Han: warnings for narrow spectral ranges. Highlight wav min / max in red?
+- [x] Han: warnings for narrow spectral ranges. Highlight wav min / max in red?
 - [x] Identify missing spectral lines when imported
 
 
