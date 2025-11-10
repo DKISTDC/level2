@@ -38,46 +38,47 @@ default-extensions:
 dependencies:
   - base >= 4.18
   - nso-level2-types
+
+  - aeson
+  - amqp-worker >= 2.0.1
   - atomic-css >= 0.1.0
-  - warp >= 3.4
+  - binary
+  - bytestring
+  - casing
+  - containers
+  - data-default
+  - data-diverse >= 4.7
+  - directory
+  - effectful >= 2.3 && <3
+  - exceptions
+  - filepath
+  - globus >= 0.2.1
+  - hasql
+  - http-api-data
+  - http-client
+  - http-client-tls
+  - http-types
+  - hyperbole == 0.6.0
+  - lens
+  - massiv
+  - megaparsec
+  - monad-loops
+  - network-uri
+  - random
+  - rel8 >= 1.6
+  - string-conversions
+  - string-interpolate
+  - tagged
+  - telescope >= 0.4
+  - text
+  - time
+  - unix
+  - unordered-containers
+  - uuid
   - wai
   - wai-extra
   - wai-middleware-static
-  - http-types
-  - http-client
-  - http-client-tls
-  - casing
-  - time
-  - text
-  - tagged
-  - filepath
-  - unix
-  - directory
-  - string-interpolate
-  - string-conversions
-  - rel8 >= 1.6
-  - random
-  - network-uri
-  - lens
-  - hyperbole == 0.6.0
-  - amqp-worker >= 2.0.1
-  - hasql
-  - exceptions
-  - binary
-  - effectful >= 2.3 && <3
-  - data-diverse >= 4.7
-  - data-default
-  - containers
-  - unordered-containers
-  - bytestring
-  - aeson
-  - http-api-data
-  - globus >= 0.2.1
-  - massiv
-  - telescope >= 0.4
-  - uuid
-  - megaparsec
-  - monad-loops
+  - warp >= 3.4
 
 
 library:

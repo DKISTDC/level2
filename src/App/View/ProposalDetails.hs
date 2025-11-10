@@ -19,7 +19,7 @@ import App.View.Datasets (boxPlot)
 import App.View.Icons as Icons
 import App.View.Inversion (inversionStepTag)
 import Data.Grouped
-import Data.List qualified as L
+import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import Effectful.Time
 import NSO.Data.Datasets
@@ -72,14 +72,28 @@ viewProgramStats now prog = viewDataRow $ do
 
   row ~ dataCell . gap 5 . fontSize 14 $ do
     maybe none embargoTag ip.embargo
-    -- if ip.onDisk then diskTag else none
-    mapM_ ionTag $ L.sort $ L.nub $ fmap (.ion) ip.spectralLines
-  -- mapM_ wavTag $ fmap (.wavelength) $ ip.spectralLines
+
+    let dlines :: NonEmpty [SpectralLine] = fmap (.spectralLines) prog.datasets.items
+    mapM_ lineTag $ sortOn linesIon $ NE.filter isKnownIon dlines
+    mapM_ lineTag $ NE.filter (not . isKnownIon) dlines
 
   space
 
   code ip.programId.fromId ~ color (light Secondary) . minWidth 0 . fontSize 12 . pad 2
  where
+  linesIon :: [SpectralLine] -> Ion
+  linesIon [] = UnknownIon
+  linesIon (s : _) = s.ion
+
+  isKnownIon :: [SpectralLine] -> Bool
+  isKnownIon = \case
+    (s : _) ->
+      case s.ion of
+        Ion _ -> True
+        UnknownIon -> False
+        _ -> True
+    _ -> False
+
   cellData :: (Styleable h) => CSS h -> CSS h
   cellData = fontSize 14 . pad 2
 
@@ -94,6 +108,21 @@ viewProgramStats now prog = viewDataRow $ do
       else none
 
 
+lineTag :: [SpectralLine] -> View c ()
+lineTag [] = none
+lineTag (s : _) =
+  case s.ion of
+    Ion _ -> lineTag' s
+    UnknownIon -> wavTag s.wavelength
+    _ -> lineTag' s
+
+
+lineTag' :: SpectralLine -> View c ()
+lineTag' s =
+  tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ do
+    spectralLineShort s
+
+
 ionTag :: Ion -> View c ()
 ionTag i = ionTag' i ""
 
@@ -103,9 +132,10 @@ ionTag' i suffix =
   tag "pre" ~ dataTag . Style.tagOutline (light Secondary) $ text $ cs (show i) <> suffix
 
 
--- wavTag :: Wavelength Nm -> View c ()
--- wavTag w =
---   code (cs (show (round w :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
+wavTag :: Wavelength Nm -> View c ()
+wavTag w =
+  code (cs (show (round w :: Integer) <> "nm")) ~ (pad 2 . color (light Secondary))
+
 
 dataTag :: (Styleable h) => CSS h -> CSS h
 dataTag = pad (XY 6 1)

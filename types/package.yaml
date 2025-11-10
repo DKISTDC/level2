@@ -31,33 +31,35 @@ default-extensions:
 
 dependencies:
   - base >=4.18 && <5
-  - time
-  - text
-  - tagged
-  - string-interpolate
-  - string-conversions
-  - filepath
+  - aeson
   - ansi-terminal
-  - rel8
-  - hasql
-  - random
-  - modern-uri
-  - lens
-  - hyperbole == 0.6.0
-  - exceptions
+  - bytestring
+  - casing
+  - containers
+  - data-diverse
+  - data-diverse
   - effectful >= 2.4 && <3
+  - exceptions
+  - filepath
+  - globus >= 0.2.1
+  - hasql
   - http-api-data
   - http-client
   - http-types
-  - data-diverse
-  - data-diverse
-  - containers
-  - bytestring
-  - aeson
-  - globus >= 0.2.1
-  - telescope >= 0.4
-  - scientific
+  - hyperbole == 0.6.0
+  - lens
+  - megaparsec
+  - modern-uri
   - network-uri
+  - random
+  - rel8
+  - scientific
+  - string-conversions
+  - string-interpolate
+  - tagged
+  - telescope >= 0.4
+  - text
+  - time
 
 
 library:

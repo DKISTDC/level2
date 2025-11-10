@@ -60,6 +60,7 @@ library
     , ansi-terminal
     , base >=4.18 && <5
     , bytestring
+    , casing
     , containers
     , data-diverse
     , effectful >=2.4 && <3
@@ -72,6 +73,7 @@ library
     , http-types
     , hyperbole ==0.6.0
     , lens
+    , megaparsec
     , modern-uri
     , network-uri
     , random

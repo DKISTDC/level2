@@ -70,7 +70,7 @@ datasetsTableUnsorted l1 sortBy ds = do
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument
     tcol (hd $ sortBtn Stokes "Stokes") $ \d -> cell $ text . cs . show $ d.stokesParameters
-    tcol (hd $ sortBtn LineIon "Ion") $ \d -> cell $ text $ cs $ show $ fromMaybe UnknownIon $ listToMaybe $ fmap (.ion) d.spectralLines
+    tcol (hd $ sortBtn LineIon "Line") $ \d -> cell $ text $ fromMaybe "" $ fmap spectralLineShort <$> listToMaybe $ d.spectralLines
     tcol (hd $ sortBtn WaveMin "Wave Min") $ \d -> cell $ do
       wavelength d d.wavelengthMin
     tcol (hd $ sortBtn WaveMax "Wave Max") $ \d -> cell $ do

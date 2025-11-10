@@ -3,14 +3,23 @@
 module NSO.Types.Wavelength where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Char (toUpper)
 import Data.Scientific (fromFloatDigits)
 import Data.Text qualified as T
+import Data.Void (Void)
 import GHC.Real (Real)
 import NSO.Prelude
 import Numeric (showFFloat)
 import Rel8 (DBType, parseTypeInformation, typeInformation)
-import Telescope.Asdf
+import Telescope.Asdf (ToAsdf (..), Value (..))
+import Text.Casing (wordify)
+import Text.Megaparsec as M hiding (ParseError, Token)
+import Text.Megaparsec.Char as M
+import Text.Megaparsec.Char.Lexer as ML
 import Text.Read (readMaybe)
+
+
+type SpecParser = Parsec Void Text
 
 
 -- Wavlength units
@@ -58,12 +67,16 @@ data Designation
   = D1
   | D2
   | B1
+  | Alpha
+  | Beta
   | Designation Text
   deriving (Show, Read, Eq, Ord)
 
 
 designationName :: Designation -> Text
 designationName (Designation t) = t
+designationName Alpha = "alpha"
+designationName Beta = "beta"
 designationName d = cs (show d)
 
 
@@ -71,80 +84,103 @@ instance ToAsdf SpectralLine where
   toValue = String . spectralLineName
 
 
-ionName :: Ion -> Text
-ionName = \case
-  NaI -> "Na I"
-  FeI -> "Fe I"
-  CaII -> "Ca II"
-  Ion t -> t
-  UnknownIon -> ""
-
-
-fromIonName :: Text -> Ion
-fromIonName = \case
-  "Na I" -> NaI
-  "Fe I" -> FeI
-  "Ca II" -> CaII
-  "" -> UnknownIon
-  t -> Ion t
-
-
 data Ion
   = NaI
   | FeI
   | CaII
+  | H
+  | SrI
   | Ion Text
   | UnknownIon
-  deriving (Eq, Ord)
-instance Show Ion where
-  show (Ion t) = cs t
-  show UnknownIon = ""
-  show NaI = "NaI"
-  show CaII = "CaII"
-  show FeI = "FeI"
+  deriving (Eq, Ord, Show, Read)
 
 
-spectralLineName :: SpectralLine -> Text
-spectralLineName s =
+ionShort :: Ion -> Text
+ionShort = T.replace " " "" . ionName
+
+
+-- | Fe I, H, Mg I
+ionName :: Ion -> Text
+ionName = \case
+  Ion t -> cs $ wordify $ cs t
+  UnknownIon -> ""
+  i -> cs $ wordify $ show i
+
+
+-- | Fe I, H, Mg I
+fromIonName :: Text -> Ion
+fromIonName = \case
+  "" -> UnknownIon
+  t -> case readMaybe (cs $ T.replace " " "" t) of
+    Just i -> i
+    Nothing -> Ion (T.replace " " "" t)
+
+
+spectralLineShort :: SpectralLine -> Text
+spectralLineShort s =
   T.intercalate " " $
     catMaybes
       [ knownIonName s.ion
       , designationName <$> s.designation
-      , Just $ cs $ "(" <> showFFloat (Just 2) s.wavelength " nm)"
       ]
  where
   knownIonName UnknownIon = Nothing
   knownIonName i = pure $ ionName i
 
 
+spectralLineName :: SpectralLine -> Text
+spectralLineName s =
+  spectralLineShort s <> " " <> cs ("(" <> showFFloat (Just 2) s.wavelength " nm)")
+
+
 parseSpectralLine :: Text -> Either String SpectralLine
-parseSpectralLine inp = do
-  (iont, dest) <- prefix inp
-  w <- wavelength inp
-  let md = fmap designation dest
-  let ion = fromIonName iont
-  pure $ SpectralLine ion md w
+parseSpectralLine inp =
+  case M.runParser spectralLine (cs inp) inp of
+    Left err -> Left $ M.errorBundlePretty err
+    Right s -> pure s
  where
-  designation t =
-    case readMaybe (cs t) of
-      Nothing -> Designation t
-      Just d -> d
+  -- ion ion
+  -- ion ion d
+  -- ion d
 
-  -- Na I D1 (...
-  -- (Na I, Just D1)
-  prefix start = do
-    case T.words $ T.takeWhile (/= '(') start of
-      [elm, ion] -> pure (elm <> " " <> ion, Nothing)
-      [elm, ion, des] -> pure (elm <> " " <> ion, Just $ T.toUpper des)
-      _ -> Left $ "Could not match SpectralLine prefix: " <> cs start
+  spectralLine :: SpecParser SpectralLine
+  spectralLine = do
+    i <- ion
+    M.space
+    d <- optional designation
+    M.space
+    w <- wavelength
+    pure $ SpectralLine i d w
 
-  -- asdf2 (630.15 nm)
-  wavelength end = do
-    case T.stripSuffix " nm)" $ T.drop 1 $ T.dropWhile (/= '(') end of
-      Nothing -> Left $ "Could not locate SpectralLine wavelength: " <> show end
-      Just wt -> do
-        f <- maybe (Left $ "Could not parse SpectralLine wavelength: " <> show wt) pure $ readMaybe @Double (cs wt)
-        pure $ Wavelength f
+  ion :: SpecParser Ion
+  ion = M.try ionWithNumeral <|> (fromIonName <$> nextWord)
+
+  ionWithNumeral = do
+    i <- nextWord
+    M.space
+    num <- M.takeWhile1P (Just "Numeral") (`elem` ("IVX" :: String))
+    pure $ fromIonName (i <> " " <> num)
+
+  designation :: SpecParser Designation
+  designation = do
+    w <- nextWord
+    let ws = upperFirst $ cs w
+    case readMaybe ws of
+      Nothing -> pure $ Designation $ T.toUpper $ cs ws
+      Just d -> pure d
+   where
+    upperFirst (c : s) = toUpper c : s
+    upperFirst s = s
+
+  nextWord :: SpecParser Text
+  nextWord = cs <$> M.some M.alphaNumChar
+
+  wavelength :: SpecParser (Wavelength Nm)
+  wavelength = do
+    _ <- M.char '('
+    d <- ML.float
+    _ <- M.string' " nm)"
+    pure $ Wavelength d
 
 --  Ca II (854.21 nm) cm
 
