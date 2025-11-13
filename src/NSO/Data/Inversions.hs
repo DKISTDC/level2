@@ -11,6 +11,8 @@ module NSO.Data.Inversions
   , inversionStep
   , distinctProgramIds
   , InversionStep (..)
+  , Generated (..)
+  , generated
   ) where
 
 import Data.List qualified as L
@@ -78,3 +80,18 @@ findByProgram ip = do
 distinctProgramIds :: [Inversion] -> [Id InstrumentProgram]
 distinctProgramIds inv =
   L.nub $ fmap (.programId) inv
+
+
+data Generated = Generated
+  { genFits :: UTCTime
+  , genAsdf :: UTCTime
+  , genTransfer :: UTCTime
+  }
+
+
+generated :: Inversion -> Maybe Generated
+generated inv = do
+  genFits <- inv.generate.fits
+  genAsdf <- inv.generate.asdf
+  genTransfer <- inv.generate.transfer
+  pure Generated{genFits, genAsdf, genTransfer}

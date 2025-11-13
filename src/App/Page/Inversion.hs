@@ -5,26 +5,24 @@ module App.Page.Inversion where
 import App.Colors
 import App.Effect.Auth
 import App.Effect.FileManager qualified as FileManager
-import App.Effect.Transfer (Transfer (..))
+import App.Effect.Transfer as Transfer (Transfer (..), transferStatus)
 import App.Error (expectFound)
 import App.Page.Inversions.CommitForm as CommitForm
 import App.Route as Route
 import App.Style qualified as Style
 import App.View.Common qualified as View
-import App.View.Icons qualified as Icons
 import App.View.Inversion (Step (..), stepGenerate, stepMetadata, stepPublish, stepUpload, viewInversionContainer)
 import App.View.Layout
-import App.View.Loading (inputLoader)
+import App.View.Loading (inputLoader, loadingMessage)
 import App.View.ProposalDetails (ionTag)
-import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
 import App.Worker.Generate as Gen (GenStatus (..), GenTask (..))
 import App.Worker.Publish as Publish
+import Control.Monad ((>=>))
 import Data.Text qualified as T
 import Effectful
 import Effectful.Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
-import Effectful.Globus (Task)
 import Effectful.Log hiding (Info)
 import Effectful.Tasks
 import Effectful.Time
@@ -54,7 +52,6 @@ page
 page propId invId = do
   inv <- loadInversion invId
   ds <- loadDatasets inv.programId
-  gen <- send $ TaskLookupStatus $ GenTask propId invId
   pub <- send $ TaskLookupStatus $ PublishTask propId invId
   scratch <- send RemoteScratch
   publish <- send RemotePublish
@@ -75,7 +72,7 @@ page propId invId = do
           appRoute (Route.Proposal inv.proposalId PropRoot) ~ Style.link $ do
             text inv.proposalId.fromId
 
-      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion publish scratch inv ds gen pub
+      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion publish scratch inv ds pub
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
@@ -124,26 +121,11 @@ viewMoreInversions = do
 --- INVERSION STATUS
 -------------------------------------------------------------------
 
-type InversionViews = '[Metadata, GenerateStep, GenerateTransfer, PublishStep, InversionMeta]
+type InversionViews = '[Metadata, GenerateStep, PublishStep, InversionMeta]
 
 
 data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Generic, ViewId)
-
-
-data Generated = Generated
-  { genFits :: UTCTime
-  , genAsdf :: UTCTime
-  , genTransfer :: UTCTime
-  }
-
-
-generated :: Inversion -> Maybe Generated
-generated inv = do
-  genFits <- inv.generate.fits
-  genAsdf <- inv.generate.asdf
-  genTransfer <- inv.generate.transfer
-  pure Generated{genFits, genAsdf, genTransfer}
 
 
 instance (Inversions :> es, Transfer :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
@@ -176,13 +158,12 @@ instance (Inversions :> es, Transfer :> es, Datasets :> es, Auth :> es, Tasks Ge
       inv <- loadInversion invId
       publish <- send RemotePublish
       scratch <- send RemoteScratch
-      gen <- send $ TaskLookupStatus $ GenTask propId invId
       pub <- send $ TaskLookupStatus $ PublishTask propId invId
-      pure $ viewInversion publish scratch inv ds gen pub
+      pure $ viewInversion publish scratch inv ds pub
 
 
-viewInversion :: Remote Publish -> Remote Scratch -> Inversion -> NonEmpty Dataset -> Maybe GenStatus -> Maybe PublishStatus -> View InversionStatus ()
-viewInversion publish scratch inv ds gen pub = do
+viewInversion :: Remote Publish -> Remote Scratch -> Inversion -> NonEmpty Dataset -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion publish scratch inv ds pub = do
   col ~ gap 30 $ do
     if inv.deleted
       then restoreButton
@@ -197,7 +178,7 @@ viewInversion publish scratch inv ds gen pub = do
 
         stepGenerate (generateStep inv) $ do
           hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
-            viewGenerate scratch inv gen
+            viewGenerate scratch inv
 
         stepPublish (publishStep inv) $ do
           hyper (PublishStep (head ds).bucket inv.proposalId inv.programId inv.inversionId) $
@@ -318,19 +299,6 @@ instance (Log :> es, Inversions :> es, Time :> es) => HyperView Metadata es wher
         pure $ commitForm SaveCommit (Just commit) invalidCommit
 
 
--- invertReload :: (Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenTask :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
--- invertReload propId invId vw = do
---   inv <- loadInversion invId
---   pure $ target (InversionStatus inv.proposalId inv.inversionId) $ onLoad Reload 0 none
-
--- -- | Check to see if we are have all the inversion fields filled out and need to reload
--- checkInvertReload :: (HyperViewHandled InversionStatus id, Hyperbole :> es, Inversions :> es, Globus :> es, Tasks GenTask :> es) => Id Proposal -> Id Inversion -> View id () -> Eff es (View id ())
--- checkInvertReload propId invId vw = do
---   inv <- loadInversion invId
---   pure $ case inv.step of
---     StepGenerate _ -> hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ onLoad Reload 0 none
---     _ -> vw
-
 metadataStep :: Inversion -> Step
 metadataStep inv
   | isInverted inv = StepDone
@@ -374,52 +342,87 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Transfer :> es, Tasks GenTask :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
+instance (Transfer :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
   data Action GenerateStep
-    = ReloadGen
-    | RegenError
+    = RegenError
     | RegenFits
     | RegenAsdf
+    | WatchGen
     deriving (Generic, ViewAction)
 
 
-  type Require GenerateStep = '[GenerateTransfer, InversionStatus]
+  type Require GenerateStep = '[InversionStatus]
 
 
   update action = do
     GenerateStep propId _ invId <- viewId
     case action of
-      ReloadGen ->
-        refresh
       RegenError -> do
         Inversions.clearError invId
-        refreshInversion
+        watchGenerate
       RegenFits -> do
         Fits.deleteL2FramesFits propId invId
         Inversions.resetGeneratingFits invId
-        refreshInversion
+        watchGenerate
       RegenAsdf -> do
         Inversions.resetGeneratingAsdf invId
-        refreshInversion
+        watchGenerate
+      WatchGen ->
+        watchGenerate
    where
-    refresh = do
-      GenerateStep _ _ invId <- viewId
-      inv <- loadInversion invId
-      if isGenerated inv
-        then refreshInversion
-        else loadGenerate
-
-    loadGenerate = do
+    watchGenerate = do
       GenerateStep propId _ invId <- viewId
+      let task = GenTask propId invId
+      taskWatchStatus (generateStatus >=> pushUpdate) task
+
       inv <- loadInversion invId
       scratch <- send RemoteScratch
-      status <- send $ TaskLookupStatus $ GenTask propId invId
-      pure $ do
-        viewGenerate scratch inv status
+      pure $ viewGenerate scratch inv
 
-    refreshInversion = do
-      GenerateStep propId progId invId <- viewId
-      pure $ target (InversionStatus propId progId invId) $ el @ onLoad Reload 0 $ "RELOAD?"
+
+generateStatus :: (Transfer :> es) => GenStatus -> Eff es (View GenerateStep ())
+generateStatus = \case
+  GenWaiting -> pure $ do
+    loadingMessage "Waiting for job to start"
+  GenStarted -> pure $ do
+    loadingMessage "Started"
+  GenTransferring taskId -> do
+    trans <- Transfer.transferStatus taskId
+    pure $ do
+      loadingMessage "Generating FITS - Transferring L1 Files"
+      Transfer.viewTransferStatus trans
+  GenTransferComplete -> pure $ do
+    loadingMessage "Generating FITS - Transfer Complete, waiting to start generation"
+  GenFrames{complete, total, throughput, skipped} -> pure $ do
+    loadingMessage "Generating FITS"
+    genProgress complete total throughput skipped
+  GenAsdf -> pure $ do
+    loadingMessage "Generating ASDF"
+ where
+  speedMessage throughput = do
+    case throughput of
+      0 -> none
+      _ ->
+        el $ do
+          text $ cs $ showFFloat (Just 2) (throughput * 60) ""
+          text " frames per minute"
+
+  genProgress complete total throughput skipped = do
+    col $ do
+      let done = complete + skipped
+      row ~ gap 5 $ do
+        speedMessage throughput
+        space
+        text $ cs $ show complete
+        case skipped of
+          0 -> pure ()
+          _ -> do
+            text " + "
+            text $ cs $ show skipped
+            text " skipped"
+        el " / "
+        el $ text $ cs $ show total
+      View.progress (fromIntegral done / fromIntegral total)
 
 
 generateStep :: Inversion -> Step
@@ -429,21 +432,26 @@ generateStep inv
   | otherwise = StepNext
 
 
-viewGenerate :: Remote Scratch -> Inversion -> Maybe GenStatus -> View GenerateStep ()
-viewGenerate scratch inv status
+viewGenerate :: Remote Scratch -> Inversion -> View GenerateStep ()
+viewGenerate scratch inv
   | inv.deleted = none
-  | isInverted inv = viewGenerate' scratch inv status
+  | isInverted inv = viewGenerate' scratch inv
   | otherwise = none
 
 
-viewGenerate' :: Remote Scratch -> Inversion -> Maybe GenStatus -> View GenerateStep ()
-viewGenerate' scratch inv status =
-  col ~ gap 10 $ viewGen
+viewGenerate' :: Remote Scratch -> Inversion -> View GenerateStep ()
+viewGenerate' scratch inv =
+  col ~ gap 10 $ viewStage
  where
-  viewGen =
-    case generated inv of
-      Just gen -> viewGenComplete gen
-      Nothing -> maybe (viewGenerateStep status) viewGenError inv.invError
+  viewStage
+    | Just gen <- generated inv = viewGenComplete gen
+    | Just err <- inv.invError = viewGenError err
+    | otherwise = viewStartWatch
+
+  viewStartWatch :: View GenerateStep ()
+  viewStartWatch =
+    el @ onLoad WatchGen 500 $ do
+      loadingMessage "Watching"
 
   viewGenError e = do
     col ~ gap 15 $ do
@@ -457,101 +465,13 @@ viewGenerate' scratch inv status =
   viewGenComplete :: Generated -> View GenerateStep ()
   viewGenComplete _generated = do
     row ~ gap 10 $ do
-      viewGeneratedFiles scratch inv
+      viewGeneratedFiles
       button RegenFits ~ Style.btnOutline Secondary $ "Regen FITS"
       button RegenAsdf ~ Style.btnOutline Secondary $ "Regen ASDF"
 
-  viewGenerateStep Nothing =
-    row @ onLoad ReloadGen 1000 $ do
-      loadingMessage "Adding to Queue"
-  viewGenerateStep (Just gen) =
-    case gen of
-      GenWaiting -> do
-        row @ onLoad ReloadGen 1000 $ do
-          loadingMessage "Waiting for job to start"
-          space
-      GenStarted ->
-        row @ onLoad ReloadGen 1000 $ do
-          loadingMessage "Started"
-      GenTransferring taskId -> do
-        el "Generating FITS - Transferring L1 Files"
-        hyper (GenerateTransfer inv.proposalId inv.programId inv.inversionId taskId) $ do
-          Transfer.viewLoadTransfer GenTransfer
-      GenTransferComplete -> do
-        el "Generating FITS - Transfer Complete"
-        row @ onLoad ReloadGen 1000 $ do
-          loadingMessage "Waiting for frame generation to start"
-          space
-      GenFrames{complete, total, throughput, skipped} -> do
-        loadingMessage "Generating FITS"
-        col @ onLoad ReloadGen 1000 $ do
-          let done = complete + skipped
-          row ~ gap 5 $ do
-            speedMessage throughput
-            space
-            text $ cs $ show complete
-            case skipped of
-              0 -> pure ()
-              _ -> do
-                text " + "
-                text $ cs $ show skipped
-                text " skipped"
-            el " / "
-            el $ text $ cs $ show gen.total
-          View.progress (fromIntegral done / fromIntegral total)
-      GenAsdf -> do
-        loadingMessage "Generating ASDF"
-        el @ onLoad ReloadGen 1000 $ none
-
-  speedMessage throughput = do
-    case throughput of
-      0 -> none
-      _ ->
-        el $ do
-          text $ cs $ showFFloat (Just 2) (throughput * 60) ""
-          text " frames per minute"
-
-  loadingMessage msg =
-    row ~ gap 5 $ do
-      el ~ width 20 $ Icons.spinnerCircle
-      col $ do
-        space
-        el $ text msg
-        space
-
-
--- GenerateTransfer ---------------------------------------------
-
-data GenerateTransfer = GenerateTransfer (Id Proposal) (Id InstrumentProgram) (Id Inversion) (Id Task)
-  deriving (Generic, ViewId)
-
-
-instance (Tasks GenTask :> es, Inversions :> es, Datasets :> es, Log :> es, Transfer :> es) => HyperView GenerateTransfer es where
-  type Require GenerateTransfer = '[GenerateStep]
-  data Action GenerateTransfer
-    = GenTransfer TransferAction
-    deriving (Generic, ViewAction)
-
-
-  update (GenTransfer action) = do
-    GenerateTransfer propId progId invId taskId <- viewId
-    case action of
-      TaskFailed -> do
-        pure $ do
-          Transfer.viewTransferFailed taskId
-          target (GenerateStep propId progId invId) $ do
-            button RegenFits ~ Style.btn Primary $ "Restart Transfer"
-      TaskSucceeded ->
-        pure $ do
-          target (GenerateStep propId progId invId) $ do
-            el @ onLoad ReloadGen 1000 $ "SUCCEEDED"
-      CheckTransfer -> do
-        Transfer.checkTransfer GenTransfer taskId
-
-
-viewGeneratedFiles :: Remote Scratch -> Inversion -> View c ()
-viewGeneratedFiles scratch inv = do
-  link (FileManager.openInversion scratch $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
+  viewGeneratedFiles :: View c ()
+  viewGeneratedFiles = do
+    link (FileManager.openInversion scratch $ Files.outputL2Dir inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ "View Generated Files"
 
 
 -- ----------------------------------------------------------------
@@ -569,88 +489,83 @@ data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id I
   deriving (Generic, ViewId)
 
 
+-- it can't turn green when it succeeds, because  it is outside of this view
 instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Transfer :> es) => HyperView PublishStep es where
-  type Require PublishStep = '[InversionStatus]
-
-
   data Action PublishStep
     = StartPublish
-    | CheckPublish
-    | PublishTransfer (Id Task) TransferAction
+    | WatchPublish
     deriving (Generic, ViewAction)
 
 
   update action = do
-    PublishStep bucket propId _ invId <- viewId
+    PublishStep _ propId _ invId <- viewId
+    let task = PublishTask propId invId
     case action of
       StartPublish -> do
         Inversions.resetPublished invId
         Inversions.clearError invId
-        Publish.startPublish propId invId
-        refreshInversion
-      CheckPublish -> do
-        inv <- loadInversion invId
-        mstatus <- send $ TaskLookupStatus $ PublishTask propId invId
-        pub <- send RemotePublish
-        pure $ viewPublish pub bucket inv mstatus
-      PublishTransfer taskId TaskFailed -> do
-        pure $ do
-          Transfer.viewTransferFailed taskId
-          button StartPublish ~ Style.btn Primary . grow $ "Restart Publish"
-      PublishTransfer _ TaskSucceeded -> do
-        refreshInversion
-      PublishTransfer taskId CheckTransfer -> do
-        Transfer.checkTransfer (PublishTransfer taskId) taskId
+        send $ TaskAdd task
+        taskWatchStatus onPublishStatus task
+        loadPublish
+      WatchPublish -> do
+        taskWatchStatus onPublishStatus task
+        loadPublish
    where
-    refreshInversion = do
-      PublishStep _ propId progId invId <- viewId
-      pure $ target (InversionStatus propId progId invId) $ do
-        el @ onLoad Reload 0 $ none
+    loadPublish = do
+      PublishStep bucket _ _ invId <- viewId
+      publish <- send RemotePublish
+      inv <- loadInversion invId
+      pure $ viewPublish publish bucket inv Nothing
+
+    onPublishStatus = publishStatus >=> pushUpdate
 
 
--- what if it is actively being published?
+publishStatus :: (Transfer :> es) => PublishStatus -> Eff es (View PublishStep ())
+publishStatus = \case
+  PublishWaiting -> do
+    pure $ loadingMessage "Waiting to start..."
+  PublishStarted -> do
+    pure $ loadingMessage "Started..."
+  PublishMessages -> do
+    pure $ loadingMessage "Sending Messages..."
+  PublishSave -> do
+    pure $ loadingMessage "Saving..."
+  PublishTransferring it -> do
+    trans <- Transfer.transferStatus it
+    pure $ Transfer.viewTransferStatus trans
+
+
 viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe PublishStatus -> View PublishStep ()
 viewPublish pub bucket inv mstatus
-  | isPublished inv = viewPublished pub bucket inv.proposalId inv.inversionId
-  | Just _ <- generated inv = viewPublishStep inv mstatus
+  | isPublished inv = viewPublished
+  | Just _ <- generated inv = viewPublishStep
   | otherwise = none
-
-
-viewPublishStep :: Inversion -> Maybe PublishStatus -> View PublishStep ()
-viewPublishStep inv mstatus =
-  -- has the transfer started?
-  case mstatus of
-    Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
-    Just ps -> viewPublishStatus ps
  where
+  viewPublishStep :: View PublishStep ()
+  viewPublishStep =
+    case mstatus of
+      Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
+      Just ps -> viewStartWatchPublish ps
+
   viewNeedsPublish =
     button StartPublish ~ Style.btn Primary . grow $ "Publish Inversion "
 
+  viewPublishError :: Text -> View PublishStep ()
+  viewPublishError e = do
+    col ~ gap 15 $ do
+      row $ View.systemError $ cs e
+      row ~ gap 10 $ do
+        button StartPublish ~ Style.btn Primary . grow $ "Retry Publish"
+        when ("GlobusError" `T.isPrefixOf` e) $ do
+          route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
-viewPublishError :: Text -> View PublishStep ()
-viewPublishError e = do
-  col ~ gap 15 $ do
-    row $ View.systemError $ cs e
+  viewStartWatchPublish :: PublishStatus -> View PublishStep ()
+  viewStartWatchPublish _ =
+    el @ onLoad WatchPublish 100 ~ height 24 $ none
+
+  viewPublished :: View PublishStep ()
+  viewPublished = do
     row ~ gap 10 $ do
-      button StartPublish ~ Style.btn Primary . grow $ "Retry Publish"
-      when ("GlobusError" `T.isPrefixOf` e) $ do
-        route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
-
-
-viewPublishStatus :: PublishStatus -> View PublishStep ()
-viewPublishStatus = \case
-  PublishWaiting ->
-    el @ onLoad CheckPublish 1000 $ "Waiting to start..."
-  PublishStarted ->
-    el @ onLoad CheckPublish 1000 $ "Starting Transfer"
-  PublishTransferring taskId -> do
-    el "Publishing..."
-    Transfer.viewLoadTransfer (PublishTransfer taskId)
-
-
-viewPublished :: Remote Publish -> Bucket -> Id Proposal -> Id Inversion -> View PublishStep ()
-viewPublished remote bucket propId invId = do
-  row ~ gap 10 $ do
-    link (FileManager.openPublish remote $ DKIST.publishDir bucket propId invId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
-      "View Published Files"
-    button StartPublish ~ Style.btnOutline Secondary $ "Republish"
+      link (FileManager.openPublish pub $ DKIST.publishDir bucket inv.proposalId inv.inversionId) ~ Style.btnOutline Success . grow @ att "target" "_blank" $ do
+        "View Published Files"
+      button StartPublish ~ Style.btnOutline Secondary $ "Republish"

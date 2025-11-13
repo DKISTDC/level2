@@ -56,7 +56,7 @@ syncMetadataTask task = do
   let propIds = fmap (\g -> Id (sample g).primaryProposalId) gs
   send $ Sync.SetProposals task.syncId propIds
   let tasks = fmap (\g -> SyncProposalTask task.syncId $ Id (sample g).primaryProposalId) gs
-  send $ TasksAdd tasks
+  tasksAdd tasks
 
 
 -- SYNC PROPOSAL -------------------------------------------------------------------------------------------------------------------

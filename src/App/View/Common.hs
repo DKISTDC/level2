@@ -37,6 +37,11 @@ progress p = do
       space
 
 
+progressComplete :: View c ()
+progressComplete = do
+  row ~ bg Success . height 20 $ space
+
+
 iconButton :: (ViewAction (Action id)) => Action id -> View id () -> Text -> View id ()
 iconButton action icon txt =
   button action $ do

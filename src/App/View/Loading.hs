@@ -13,6 +13,16 @@ loadingCard = do
   el ~ width 400 $ skeleton
 
 
+loadingMessage :: Text -> View c ()
+loadingMessage msg = do
+  row ~ gap 5 $ do
+    el ~ width 20 $ Icons.spinnerCircle
+    col $ do
+      space
+      el $ text msg
+      space
+
+
 inputLoader :: View id () -> View id ()
 inputLoader inp = do
   el ~ stack $ do

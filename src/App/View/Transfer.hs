@@ -54,6 +54,15 @@ viewPollTransfer toAction it task = do
     viewTransferProgress it task
 
 
+viewTransferStatus :: Task -> View c ()
+viewTransferStatus task = do
+  let it :: Id Task = Id task.task_id.unTagged
+  case task.status of
+    Succeeded -> viewTransferSucceeded it
+    Failed -> viewTransferFailed it
+    _ -> viewTransferProgress it task
+
+
 viewTransferProgress :: Id Task -> Task -> View c ()
 viewTransferProgress it task = do
   row ~ gap 5 $ do
@@ -65,6 +74,14 @@ viewTransferProgress it task = do
  where
   rate :: String
   rate = showFFloat (Just 2) (fromIntegral task.effective_bytes_per_second / (1000 * 1000) :: Float) ""
+
+
+viewTransferSucceeded :: Id Task -> View c ()
+viewTransferSucceeded it = do
+  row ~ flexWrap Wrap $ do
+    space
+    activityLink it
+  View.progressComplete
 
 
 -- viewTransferError :: Id Task -> GlobusError -> View c ()

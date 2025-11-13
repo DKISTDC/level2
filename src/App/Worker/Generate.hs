@@ -66,7 +66,7 @@ instance Show GenStatus where
   show GenStarted = "GenFits Started"
   show (GenTransferring _) = "GenFits Transferring"
   show GenTransferComplete = "GenFits Transfer Complete"
-  show GenFrames{complete, total} = "GenFits Creating " <> show complete <> " " <> show total
+  show GenFrames{complete, skipped, total} = "GenFits Creating " <> show (complete + skipped) <> " " <> show total
   show GenAsdf = "GenAsdf"
 
 
@@ -96,7 +96,7 @@ generateTask task = do
   workWithError :: Eff (Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     logContext ("GEN " <> cs task.inversionId.fromId) $ do
-      log Info "start"
+      logStatus "starting"
       send $ TaskSetStatus task GenStarted
 
       files <- Inputs.inversionFiles task.proposalId task.inversionId
@@ -105,12 +105,15 @@ generateTask task = do
       inv <- Inputs.loadInversion task.inversionId
       log Debug $ dump "Got Inversion" inv.inversionId
 
+      logStatus "downloading"
       down <- downloadL1Frames task inv
       send $ TaskSetStatus task GenTransferComplete
       Inversions.setGenTransferred inv.inversionId
 
+      logStatus "canonical dataset"
       dcanon <- Level1.canonicalDataset slice down
 
+      logStatus "loading inputs"
       frames <- Inputs.loadFrameInputs files dcanon down
       log Info $ dump "Fits Frames" (length frames)
 
@@ -118,11 +121,13 @@ generateTask task = do
       send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length frames, throughput = 0}
 
       -- Generate them in parallel with N = available CPUs
+      logStatus "generating frames"
       metas :: Frames (Either Skipped L2FitsMeta) <- CPU.parallelize $ fmap (workFrame task slice) frames
 
       log Debug $ dump "WRITTEN: " (length $ NE.filter isRight metas.frames)
       Inversions.setGeneratedFits task.inversionId
 
+      logStatus "generating ASDF"
       send $ TaskSetStatus task GenAsdf
       Asdf.generateAsdf files inv dcanon slice
       Inversions.setGeneratedAsdf inv.inversionId

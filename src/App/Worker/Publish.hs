@@ -41,7 +41,9 @@ data PublishStatus
   = PublishWaiting
   | PublishStarted
   | PublishTransferring (Id Task)
-  deriving (Eq, Ord)
+  | PublishMessages
+  | PublishSave
+  deriving (Eq, Ord, Show)
 
 
 startPublish :: (Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
@@ -91,6 +93,8 @@ publishTask task = do
 
       logStatus "transferring"
       untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
+
+      send $ TaskSetStatus task PublishMessages
       logStatus "sending frame messages"
 
       conversationId <- randomId "l2pub"
@@ -98,6 +102,7 @@ publishTask task = do
         InterserviceBus.catalogFitsFrames conversationId bucket task.proposalId task.inversionId
         InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
 
+      send $ TaskSetStatus task PublishSave
       inv <- loadInversion task.inversionId
       datasets <- Datasets.find $ Datasets.ByIds inv.datasets
 
