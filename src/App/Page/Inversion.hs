@@ -24,6 +24,7 @@ import Effectful
 import Effectful.Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
 import Effectful.Log hiding (Info)
+import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
@@ -180,8 +181,8 @@ viewInversion publish scratch inv ds pub = do
           hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
             viewGenerate scratch inv
 
-        stepPublish (publishStep inv) $ do
-          hyper (PublishStep (head ds).bucket inv.proposalId inv.programId inv.inversionId) $
+        hyper (PublishStep (head ds).bucket inv.proposalId inv.programId inv.inversionId) $
+          viewPublishStep inv $ do
             viewPublish publish (head ds).bucket inv pub
 
         hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
@@ -515,34 +516,43 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
       PublishStep bucket _ _ invId <- viewId
       publish <- send RemotePublish
       inv <- loadInversion invId
-      pure $ viewPublish publish bucket inv Nothing
+      pure $ viewPublishStep inv $ viewPublish publish bucket inv Nothing
 
     onPublishStatus = publishStatus >=> pushUpdate
 
 
-publishStatus :: (Transfer :> es) => PublishStatus -> Eff es (View PublishStep ())
+publishStatus :: (Transfer :> es, Hyperbole :> es, Inversions :> es, Reader PublishStep :> es) => PublishStatus -> Eff es (View PublishStep ())
 publishStatus = \case
   PublishWaiting -> do
-    pure $ loadingMessage "Waiting to start..."
+    step $ loadingMessage "Waiting to start..."
   PublishStarted -> do
-    pure $ loadingMessage "Started..."
+    step $ loadingMessage "Started..."
   PublishMessages -> do
-    pure $ loadingMessage "Sending Messages..."
+    step $ loadingMessage "Sending Messages..."
   PublishSave -> do
-    pure $ loadingMessage "Saving..."
+    step $ loadingMessage "Saving..."
   PublishTransferring it -> do
     trans <- Transfer.transferStatus it
-    pure $ Transfer.viewTransferStatus trans
+    step $ Transfer.viewTransferStatus trans
+ where
+  step cnt = do
+    PublishStep _ _ _ invId <- ask
+    inv <- loadInversion invId
+    pure $ viewPublishStep inv cnt
+
+
+viewPublishStep :: Inversion -> View PublishStep () -> View PublishStep ()
+viewPublishStep inv = stepPublish (publishStep inv)
 
 
 viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe PublishStatus -> View PublishStep ()
 viewPublish pub bucket inv mstatus
   | isPublished inv = viewPublished
-  | Just _ <- generated inv = viewPublishStep
+  | Just _ <- generated inv = viewPublishing
   | otherwise = none
  where
-  viewPublishStep :: View PublishStep ()
-  viewPublishStep =
+  viewPublishing :: View PublishStep ()
+  viewPublishing =
     case mstatus of
       Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
       Just ps -> viewStartWatchPublish ps
