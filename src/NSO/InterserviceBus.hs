@@ -21,6 +21,15 @@ import NSO.Types.Inversion
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, ExchangeName)
+import Network.Endpoint (Endpoint (..), Mock (..))
+import Network.URI (uriToString)
+
+
+data InterserviceBusConfig = InterserviceBusConfig
+  { options :: Either Mock ConnectionOpts
+  , exchangeName :: ExchangeName
+  }
+  deriving (Show)
 
 
 data InterserviceBus :: Effect where
@@ -70,13 +79,6 @@ runInterserviceBus bus = interpret $ \_ -> \case
       }
 
 
-data InterserviceBusConfig = InterserviceBusConfig
-  { options :: ConnectionOpts
-  , exchangeName :: ExchangeName
-  }
-  deriving (Show)
-
-
 data BusConnection = BusConnection
   { connection :: Connection
   , catalogFrame :: Key Route CatalogFrameMessage
@@ -84,32 +86,34 @@ data BusConnection = BusConnection
   }
 
 
-initDummyBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
-initDummyBusConnection _ = pure $ BusConnection (error "Dummy Bus Connection") (key "catalog" & word "frame" & word "m") (key "catalog" & word "object" & word "m")
-
-
 initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
 initBusConnection cfg = do
-  cnn <- setExchange cfg.exchangeName <$> Worker.connect cfg.options
-  let frameMessagesKey = key "catalog" & word "frame" & word "m"
-  _ <- Worker.queueNamed cnn "catalog.frame.q" frameMessagesKey
-
-  let catalogObjectKey = key "catalog" & word "object" & word "m"
-  _ <- Worker.queueNamed cnn "catalog.object.q" catalogObjectKey
-  pure $
-    BusConnection
-      { connection = cnn
-      , catalogFrame = frameMessagesKey
-      , catalogObject = catalogObjectKey
-      }
+  let catalogFrame = key "catalog" & word "frame" & word "m"
+  let catalogObject = key "catalog" & word "object" & word "m"
+  case cfg.options of
+    Left _ ->
+      pure $ BusConnection (error "Dummy Bus Connection") catalogFrame catalogObject
+    Right options -> do
+      cnn <- setExchange cfg.exchangeName <$> Worker.connect options
+      _ <- Worker.queueNamed cnn "catalog.frame.q" catalogFrame
+      _ <- Worker.queueNamed cnn "catalog.object.q" catalogObject
+      pure $
+        BusConnection{connection = cnn, catalogFrame, catalogObject}
  where
   setExchange exg cnn = cnn{exchange = exg}
 
 
-initBusConfig :: String -> String -> Eff es InterserviceBusConfig
-initBusConfig uri exc = do
-  options <- Worker.parseURI uri
-  pure $ InterserviceBusConfig{options, exchangeName = cs exc}
+initBusConfig :: Either Mock Endpoint -> String -> Eff es InterserviceBusConfig
+initBusConfig end exg = do
+  options <- parseOptions
+  pure $ InterserviceBusConfig{options, exchangeName = cs exg}
+ where
+  parseOptions =
+    case end of
+      Left _ -> pure $ Left Mock
+      Right (Endpoint _ u) -> do
+        opts <- Worker.parseURI $ uriToString id u ""
+        pure $ Right opts
 
 
 data Conversation

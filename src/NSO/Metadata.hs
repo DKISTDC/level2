@@ -19,13 +19,14 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import NSO.Types.Wavelength
+import Network.Endpoint (Mock)
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types
 import Network.URI
 
 
 data MetadataService = MetadataService
-  { datasets :: Maybe Service
+  { datasets :: Either Mock Service
   , inversions :: Service
   }
   deriving (Show)
@@ -54,7 +55,7 @@ runMetadata
   -> Eff es a
 runMetadata ms =
   runMetadataInversions ms.inversions
-    . maybe runMetadataDatasetsMock runMetadataDatasets ms.datasets
+    . either (const runMetadataDatasetsMock) runMetadataDatasets ms.datasets
 
 
 runMetadataDatasetsMock

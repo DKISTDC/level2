@@ -34,6 +34,7 @@ import NSO.InterserviceBus as ISB (InterserviceBusConfig (..), initBusConfig)
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
+import Network.Endpoint (Endpoint (..), Mock (..), envEndpoint, envEndpointMock)
 import Network.Globus (Token, Token' (..), UserEmail (..))
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
@@ -43,7 +44,6 @@ import Web.Hyperbole
 
 data Config = Config
   { services :: Services
-  , servicesIsMock :: Bool
   , app :: App
   , globus :: GlobusConfig
   , scratch :: Scratch.Config
@@ -75,7 +75,7 @@ initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Er
 initConfig = do
   app <- initApp
   db <- initDb
-  (services, servicesIsMock) <- initServices
+  services <- initServices
   globus <- initGlobus
   scratch <- initScratch
   auth <- initAuth globus
@@ -86,14 +86,14 @@ initConfig = do
 
   log Debug $ dump " (config) metadata datasets" services.metadata.datasets
   log Debug $ dump " (config) metadata inversions" services.metadata.inversions
-  pure $ Config{services, servicesIsMock, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, bus}
+  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, bus}
 
 
 initBus :: (Environment :> es) => Eff es InterserviceBusConfig
 initBus = do
-  isb <- getEnv "ISB_CONNECTION_URL"
-  exc <- getEnv "ISB_EXCHANGE"
-  ISB.initBusConfig isb exc
+  isb <- envEndpointMock "ISB_CONNECTION_URL"
+  exg <- getEnv "ISB_EXCHANGE"
+  ISB.initBusConfig isb exg
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
@@ -106,20 +106,15 @@ initAuth = \case
 
 
 type IsMock = Bool
-initServices :: (Environment :> es, Fail :> es) => Eff es (Services, IsMock)
+initServices :: forall es. (Environment :> es, Fail :> es) => Eff es Services
 initServices = do
-  mock <- parseServices <$> lookupEnv "SERVICES"
-  metaDatasets <- parseMockService <$> getEnv "METADATA_API_DATASETS"
-  metaInversions <- parseService =<< getEnv "METADATA_API_INVERSIONS"
-  pure (Services (MetadataService metaDatasets metaInversions), mock)
+  metaDatasets <- parseMockService =<< envEndpointMock "METADATA_API_DATASETS"
+  metaInversions <- parseService =<< envEndpoint "METADATA_API_INVERSIONS"
+  pure $ Services (MetadataService metaDatasets metaInversions)
  where
-  parseServices (Just "MOCK") = True
-  parseServices _ = False
-
-  -- the env is still required
-  parseMockService :: String -> Maybe Service
-  parseMockService "MOCK" = Nothing
-  parseMockService s = parseService s
+  parseMockService :: Either Mock Endpoint -> Eff es (Either Mock Service)
+  parseMockService (Left _) = pure $ Left Mock
+  parseMockService (Right e) = Right <$> parseService e
 
 
 initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es, Log :> es) => Eff es CPUWorkers
@@ -128,10 +123,10 @@ initCPUWorkers = do
   cpuWorkers num
 
 
-parseService :: (MonadFail m) => String -> m Service
-parseService u =
-  case service (cs u) of
-    Nothing -> fail $ "Could not parse service url: " <> cs u
+parseService :: (MonadFail m) => Endpoint -> m Service
+parseService e =
+  case service e of
+    Nothing -> fail $ "Could not parse service: " <> show e
     Just s -> pure s
 
 

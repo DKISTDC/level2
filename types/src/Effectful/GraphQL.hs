@@ -22,10 +22,11 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import GHC.Generics
 import NSO.Prelude
+import Network.Endpoint (Endpoint (..))
 import Network.HTTP.Client hiding (Proxy, Request, RequestBody, Response)
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Types (methodPost)
-import Network.URI (URI (..), URIAuth (..), parseURI)
+import Network.URI (URI (..), URIAuth (..))
 
 
 data GraphQL :: Effect where
@@ -161,10 +162,9 @@ instance (Request a) => FromJSON (Response a) where
 --      in withObject ("GraphQL Response data.rootField: " <> cs field) $ \v -> do
 --           v .: fromString field
 
-service :: String -> Maybe Service
-service inp = do
+service :: Endpoint -> Maybe Service
+service (Endpoint _ uri) = do
   -- http://dev@localhost:8080/graphql
-  uri <- parseURI inp
   uauth <- uriAuthority uri
   req <- requestFromURI uri
   let authToken = T.dropWhileEnd (== '@') $ cs $ uriUserInfo uauth
@@ -290,7 +290,7 @@ requestFields :: forall a. (FieldNames a) => String
 requestFields = allFields $ fieldNames @a Proxy
  where
   allFields :: [NestedFields] -> String
-  allFields = L.intercalate " " . fmap fields
+  allFields = L.unwords . fmap fields
 
   fields :: NestedFields -> String
   fields (NestedFields nm []) = nm

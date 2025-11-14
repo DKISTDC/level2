@@ -29,6 +29,7 @@ library
       Effectful.Rel8
       Effectful.Tasks
       Effectful.Time
+      Network.Endpoint
       NSO.Prelude
       NSO.Types.Common
       NSO.Types.Dataset
