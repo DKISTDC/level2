@@ -230,7 +230,7 @@ instance (Inversions :> es, Debug :> es) => HyperView InversionMeta es where
         pure $ viewInversionMeta inv
       Delete -> do
         send $ Inversions.Deleted invId True
-        pure $ target (InversionStatus propId progId invId) $ do
+        pure $ target (InversionStatus propId progId invId) () $ do
           el @ onLoad Reload 100 $ ""
 
 

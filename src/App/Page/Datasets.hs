@@ -164,7 +164,7 @@ instance (Datasets :> es, Time :> es, Log :> es, Metadata es) => HyperView ScanP
 
 viewPropInit :: View ScanProp ()
 viewPropInit = do
-  ScanProp propId <- context
+  ScanProp propId <- viewId
   col ~ gap 10 $ do
     el ~ bold @ onLoad RunScanProposal 100 $ text propId.fromId
     View.loadingCard

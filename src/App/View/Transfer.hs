@@ -30,27 +30,27 @@ data TransferAction
 
 -- I want it to reload itself and call these when necessary
 checkTransfer :: (ViewAction (Action id), Hyperbole :> es, Transfer :> es, Log :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
-checkTransfer toAction it = do
+checkTransfer action it = do
   task <- Transfer.transferStatus it
-  pure $ viewTransfer toAction it task
+  pure $ viewTransfer action it task
 
 
 viewLoadTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> View id ()
-viewLoadTransfer toAction = do
-  el ~ height 45 @ onLoad (toAction CheckTransfer) 0 $ Icons.spinner
+viewLoadTransfer action = do
+  el ~ height 45 @ onLoad (action CheckTransfer) 0 $ Icons.spinner
 
 
 viewTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
-viewTransfer toAction it task =
+viewTransfer action it task =
   case task.status of
-    Succeeded -> el @ onLoad (toAction TaskSucceeded) 0 $ none
-    Failed -> el @ onLoad (toAction TaskFailed) 0 $ none
-    _ -> viewPollTransfer toAction it task
+    Succeeded -> el @ onLoad (action TaskSucceeded) 0 $ none
+    Failed -> el @ onLoad (action TaskFailed) 0 $ none
+    _ -> viewPollTransfer action it task
 
 
 viewPollTransfer :: (ViewAction (Action id)) => (TransferAction -> Action id) -> Id Task -> Task -> View id ()
-viewPollTransfer toAction it task = do
-  col @ onLoad (toAction CheckTransfer) 1000 $ do
+viewPollTransfer action it task = do
+  col @ onLoad (action CheckTransfer) 1000 $ do
     viewTransferProgress it task
 
 

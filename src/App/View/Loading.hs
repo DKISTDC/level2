@@ -33,9 +33,9 @@ inputLoader inp = do
 
 
 liveTextArea :: (ViewAction (Action id)) => (Text -> Action id) -> Text -> View id ()
-liveTextArea toAction t = do
+liveTextArea action t = do
   el ~ stack $ do
-    tag "textarea" @ onInput toAction 500 ~ Style.input $ text t
+    tag "textarea" @ onInput action 500 ~ Style.input $ text t
     row ~ Style.noClick . pad 5 . display None . whenLoading (display Flex) $ do
       space
       loader

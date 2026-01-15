@@ -51,16 +51,16 @@ iconButton action icon txt =
 
 
 toggleBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> View id () -> View id ()
-toggleBtn toAction sel =
-  button (toAction $ not sel) ~ Style.btn (if sel then on else off)
+toggleBtn action sel =
+  button (action $ not sel) ~ Style.btn (if sel then on else off)
  where
   on = Primary
   off = Gray
 
 
 checkBtn :: (ViewAction (Action id)) => (Bool -> Action id) -> Bool -> View id ()
-checkBtn toAction sel = do
-  button (toAction $ not sel) $ do
+checkBtn action sel = do
+  button (action $ not sel) $ do
     checkCircle sel
 
 
