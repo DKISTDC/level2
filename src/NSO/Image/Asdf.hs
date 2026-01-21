@@ -342,7 +342,11 @@ profileGWCSAnchor l = Anchor $ "ProfileGWCS" <> spectralLineKeyword l
 spectralLineKeyword :: SpectralLine -> Text
 spectralLineKeyword l =
   let Wavelength w = l.wavelength
-   in T.replace " " "" (spectralLineShort l) <> cs (showFFloat (Just 0) w "")
+   in T.replace " " "" (simplifyDesignationName $ spectralLineShort l) <> cs (showFFloat (Just 0) w "")
+ where
+  simplifyDesignationName =
+    -- remove the numeric suffixes
+    T.replace "1" "" . T.replace "2" ""
 
 
 instance ToAsdf (Arm SpectralLine (Profiles AlignedAxesF)) where

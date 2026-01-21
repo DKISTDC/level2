@@ -14,7 +14,7 @@ import NSO.Image.Types.Profile
 import Effectful.State.Static.Local
 import NSO.Prelude
 import NSO.Image.Types.Frame
-import NSO.Types.Wavelength (MA, Nm, SpectralLine (..), Wavelength (..), Ion(..))
+import NSO.Types.Wavelength (MA, Nm, SpectralLine (..), Wavelength (..), Ion(..), Designation(..))
 import Telescope.Data.Array (ArrayError)
 import Telescope.Data.DataCube as DC
 import Telescope.Fits as Fits
@@ -165,10 +165,10 @@ wavBreaks lids = do
 
 -- | Known reference values for DeSiRE output. The Wavelength Offsets are relative to this value
 sodiumLine :: SpectralLine
-sodiumLine = SpectralLine FeI Nothing 588.95095
+sodiumLine = SpectralLine NaI (Just D2) 588.95095
 
 ironLine :: SpectralLine
-ironLine = SpectralLine NaI Nothing 630.15012
+ironLine = SpectralLine FeI Nothing 630.15012
 
 calciumLine :: SpectralLine
 calciumLine = SpectralLine CaII Nothing 854.2091
