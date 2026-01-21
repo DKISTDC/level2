@@ -165,7 +165,7 @@ library
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.4
+    , telescope >=0.4.1
     , text
     , time
     , unix
@@ -232,7 +232,7 @@ executable level2
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.4
+    , telescope >=0.4.1
     , text
     , time
     , unix
@@ -311,7 +311,7 @@ test-suite spec
     , string-conversions
     , string-interpolate
     , tagged
-    , telescope >=0.4
+    , telescope >=0.4.1
     , text
     , time
     , unix

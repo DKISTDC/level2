@@ -95,7 +95,7 @@ viewPrograms fs gds = do
  where
   isMatch :: Text -> Group (Id InstrumentProgram) Dataset -> Bool
   isMatch t g =
-    any (\d -> t `T.isInfixOf` d.datasetId.fromId) g.items
+    any (\d -> T.toUpper t `T.isInfixOf` d.datasetId.fromId) g.items
 
 
 ----------------------------------------------------

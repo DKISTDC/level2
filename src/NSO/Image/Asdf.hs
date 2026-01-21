@@ -33,7 +33,8 @@ import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId, spectralLines))
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
-import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName, spectralLineName)
+import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName, spectralLineName, spectralLineShort)
+import Numeric (showFFloat)
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Class (GToObject (..))
 import Telescope.Asdf.Core (Unit (..))
@@ -331,11 +332,17 @@ instance ToAsdf (Arm SpectralLine ProfileGWCS) where
   schema (Arm _ g) = schema g
   anchor (Arm l _) = Just $ profileGWCSAnchor l
   toValue (Arm l g) =
-    Object [(cs (show l), Node (schema g) (anchor (Arm l g)) (toValue g))]
+    Object [(spectralLineKeyword l, Node (schema g) (anchor (Arm l g)) (toValue g))]
 
 
 profileGWCSAnchor :: SpectralLine -> Anchor
-profileGWCSAnchor l = Anchor $ "ProfileGWCS" <> cs (show l)
+profileGWCSAnchor l = Anchor $ "ProfileGWCS" <> spectralLineKeyword l
+
+
+spectralLineKeyword :: SpectralLine -> Text
+spectralLineKeyword l =
+  let Wavelength w = l.wavelength
+   in T.replace " " "" (spectralLineShort l) <> cs (showFFloat (Just 0) w "")
 
 
 instance ToAsdf (Arm SpectralLine (Profiles AlignedAxesF)) where
@@ -347,7 +354,7 @@ instance ToAsdf (Arm SpectralLine (Profiles AlignedAxesF)) where
 
 
 profileKey :: SpectralLine -> ProfileType -> Key
-profileKey line pt = cs $ show line <> "_" <> suffix pt
+profileKey line pt = cs $ spectralLineKeyword line <> "_" <> suffix pt
  where
   suffix Original = "orig"
   suffix Fit = "fit"

@@ -65,7 +65,7 @@ instance (MetadataSync :> es, Log :> es) => HyperView Syncs es where
 loadSyncs :: (MetadataSync :> es) => Eff es [SyncState]
 loadSyncs = do
   syncIds <- send Sync.History
-  mapM (\s -> send $ Sync.Get s) syncIds
+  mapM (send . Sync.Get) syncIds
 
 
 viewSyncs :: [SyncState] -> View Syncs ()
