@@ -252,6 +252,7 @@ test-suite spec
       Test.BlancaSpec
       Test.FitsGenSpec
       Test.FrameSpec
+      Test.GWCSSpec
       Test.ParseSpec
       Test.QualifySpec
       Test.QuantitySpec

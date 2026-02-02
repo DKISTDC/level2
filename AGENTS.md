@@ -7,6 +7,14 @@ cabal test
 fourmolu --mode inplace <myfiles>
 ```
 
+
+How to run a single spec:
+
+```
+cabal run tests -- test/Test/GWCSSpec.hs
+
+```
+
 ## Project Structure & Module Organization
 - `src/App` hosts Hyperbole web UI handlers; `src/NSO/Data|Image|Files` cover NSO integrations and file orchestration.
 - `types/` is the shared library; move cross-project types and anything that might belong on hackage here before reusing them in `src/`.
@@ -28,7 +36,7 @@ fourmolu --mode inplace <myfiles>
 - Tests use Skeletest; add suites in `test/Test/...`
 - Mirror module names in test files (`Test/App/UploadSpec.hs`)
 - Do not test live databases
-- Avoid using fixtures
+- You can run a single spec with the syntax: `cabal run tests -- test/Test/GWCSSpec.hs`
 
 ## Commit & Pull Request Guidelines
 - Write concise, sub-80 character summaries

@@ -1,5 +1,6 @@
 module NSO.Image.GWCS.L1GWCS where
 
+import Debug.Trace
 import NSO.Image.Asdf.Ref
 import NSO.Image.Headers.WCS (X, Y)
 import NSO.Prelude hiding (identity)
@@ -146,26 +147,45 @@ instance FromAsdf L1GWCS where
       (next, _) <- parseCompose t
       (_, ccat) <- parseCompose next
       (_, coupled) <- parseConcat ccat
-      n <- parseDirect coupled
-      pure $ L1WCSTransform n
+      node <- parseCoupled coupled
+      pure $ L1WCSTransform node
+
+    parseCoupled :: (Parser :> es) => Transformation -> Eff es Node
+    parseCoupled f = parseAt "coupled_compound_model" $ do
+      ts <- parseDirectForward f
+      case ts of
+        [comp, _] -> do
+          (_, c2) <- parseCompose comp
+          (_, v :: Transformation) <- parseCompose c2
+          parseDirect v
+        other -> expected "coupled" other
 
     parseCompose :: (Parser :> es) => Transformation -> Eff es (Transformation, Transformation)
-    parseCompose t = parseAt "forward" $ do
+    parseCompose t = parseAt "compose" $ do
       case t.forward of
         Compose t1 t2 -> pure (t1, t2)
         other -> expected "Compose" other
 
     parseConcat :: (Parser :> es) => Transformation -> Eff es (Transformation, Transformation)
-    parseConcat t = parseAt "forward" $ do
+    parseConcat t = parseAt "concat" $ do
       case t.forward of
         Concat t1 t2 -> pure (t1, t2)
         other -> expected "Concat" other
 
+    -- Direct gives me the entire Node (schema) _ (parent node)
     parseDirect :: (Parser :> es) => Transformation -> Eff es Node
-    parseDirect t = parseAt "forward" $ do
+    parseDirect t = parseAt "Direct" $ do
       case t.forward of
         Direct n -> pure n
         other -> expected "Direct" other
+
+    parseDirectForward :: (Parser :> es) => Transformation -> Eff es [Transformation]
+    parseDirectForward t = do
+      n <- parseDirect t
+      case n.value of
+        Object o -> do
+          o .: "forward"
+        val -> expected "Object" val
 
 -- fixWavStokes0 :: (ToAxes out) => Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) out -> Transform (Pix X, Pix Y) out
 -- fixWavStokes0 (Transform t) = transform $ FixInputs t [(1, 0), (3, 0)]
