@@ -23,7 +23,7 @@ varyingTransform
   :: (ToAxes (inp Stokes))
   => L1WCSTransform
   -> Transform (VaryingInput inp) VaryingOutput
-varyingTransform = transform
+varyingTransform = _ -- transform
 
 
 varyingTransformRef
@@ -43,6 +43,15 @@ data HPLon deriving (Generic, ToAxes)
 data Time deriving (Generic, ToAxes)
 
 
+data L1GWCS = L1GWCS
+  { transform :: L1WCSTransform
+  , helioFrame :: L1HelioFrame
+  }
+  deriving (Generic, ToAsdf)
+
+
+-- Overall L1 Asdf Structure ---------------------------------------
+
 data L1Asdf = L1Asdf
   { dataset :: L1AsdfDataset
   }
@@ -55,80 +64,13 @@ data L1AsdfDataset = L1AsdfDataset
   deriving (Generic, FromAsdf)
 
 
-data L1GWCS = L1GWCS
-  { transform :: L1WCSTransform
-  , helioFrame :: L1HelioFrame
-  }
-  deriving (Generic, ToAsdf)
-
-
-newtype L1WCSTransform = L1WCSTransform {node :: Node}
-instance KnownText L1WCSTransform where
-  knownText = "L1WCSTransform"
-
-
-instance ToAsdf L1WCSTransform where
-  schema l1 = l1.node.schema
-  anchor _ = Just $ Anchor $ knownText @L1WCSTransform
-  toNode l1 = Node (schema l1.node) (anchor l1) (toValue l1)
-
-
-  -- toValue (L1WCSTransform n) = toValue n
-  toValue l1 =
-    toValue $ l1WCSTransformation l1
-
-
-l1WCSTransformation :: L1WCSTransform -> Transformation
-l1WCSTransformation l1 =
-  Transformation
-    (toAxes @(VaryingInput Pix))
-    (toAxes @VaryingOutput)
-    (Direct l1.node)
-
-
-newtype L1HelioFrame = L1HelioFrame {frame :: HelioprojectiveFrame}
-
-
-instance KnownText L1HelioFrame where
-  knownText = "L1HelioFrame"
-
-
-instance ToAsdf L1HelioFrame where
-  schema (L1HelioFrame h) = schema h
-  anchor _ = Just $ Anchor $ knownText @L1HelioFrame
-  toValue (L1HelioFrame h) = toValue h
-
-
-data Zero a deriving (Generic, ToAxes)
-
-
 instance FromAsdf L1GWCS where
-  -- transform: !transform/compose-1.2.0
-  --   forward:
-  --   - !transform/compose-1.2.0
-  --     forward:
-  --     - !transform/remap_axes-1.3.0
-  --       inputs: [x0, x1, x2, x3]
-  --       mapping: [1, 0, 2, 3]
-  --       outputs: [x0, x1, x2, x3]
-  --     - !transform/concatenate-1.2.0
-  --       forward:
-  --       - !transform/linear1d-1.0.0
-  --         inputs: [x]
-  --         intercept: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 nm,
-  --           value: 853.7012736084624}
-  --         name: Spectral
-  --         outputs: [y]
-  --         slope: !unit/quantity-1.1.0 {datatype: float64, unit: !unit/unit-1.0.0 nm.pixel**-1,
-  --           value: 0.000999852488051306}
-  --       - !<asdf://dkist.nso.edu/tags/coupled_compound_model-1.0.0>
-  --         forward:
   parseValue = \case
     Object o -> do
       ss <- o .: "steps"
       case ss of
         [GWCSStep _ (Just t1), GWCSStep f2 Nothing] -> do
-          t <- parseAt "[0].transform" $ parseTransformNoSpectral t1
+          t <- parseAt "[0].transform" $ parseTransform t1
           h <- parseAt "[1].frame" $ parseHelioFrame f2
           pure $ L1GWCS t $ L1HelioFrame h
         _ -> expected "l1 gwcs [GWCSStep _ trans, GWCSStep frame ~]" ss
@@ -142,23 +84,33 @@ instance FromAsdf L1GWCS where
           celest .: "reference_frame"
         other -> expected "final step composite frame [spectral, celest, temporal, stokes]" other
 
-    parseTransformNoSpectral :: (Parser :> es) => Transformation -> Eff es L1WCSTransform
-    parseTransformNoSpectral t = do
-      (next, _) <- parseCompose t
-      (_, ccat) <- parseCompose next
-      (_, coupled) <- parseConcat ccat
-      node <- parseCoupled coupled
-      pure $ L1WCSTransform node
+    parseTransform :: (Parser :> es) => Transformation -> Eff es L1WCSTransform
+    parseTransform t = do
+      -- pull out the part we care about
+      (cmp, _finalRemap) <- parseCompose t
+      (_remap, cat) <- parseCompose cmp
+      (_linearWav, coupled) <- parseConcat cat
+      coupledNode <- parseDirect coupled
+      parseValue coupledNode.value
 
-    parseCoupled :: (Parser :> es) => Transformation -> Eff es Node
-    parseCoupled f = parseAt "coupled_compound_model" $ do
-      ts <- parseDirectForward f
-      case ts of
-        [comp, _] -> do
-          (_, c2) <- parseCompose comp
-          (_, v :: Transformation) <- parseCompose c2
-          parseDirect v
-        other -> expected "coupled" other
+    -- coupled is the coupled_compound_model transfomation with a Direct node
+
+    -- parseTransformNoSpectral :: (Parser :> es) => Transformation -> Eff es CoupledCompoundModel
+    -- parseTransformNoSpectral t = do
+    --   (next, _) <- parseCompose t
+    --   (_, ccat) <- parseCompose next
+    --   (_, coupledNode) <- parseConcat ccat
+    --   parseCoupled coupledNode
+    --
+    -- parseCoupled :: (Parser :> es) => Transformation -> Eff es CoupledCompoundModel
+    -- parseCoupled f = parseAt "coupled_compound_model" $ do
+    --   ts <- parseDirectForward f
+    --   case ts of
+    --     [comp, cnct] -> do
+    --       (_, c2) <- parseCompose comp
+    --       (_, v :: Transformation) <- parseCompose c2
+    --       parseDirect v
+    --     other -> expected "coupled" other
 
     parseCompose :: (Parser :> es) => Transformation -> Eff es (Transformation, Transformation)
     parseCompose t = parseAt "compose" $ do
@@ -179,13 +131,129 @@ instance FromAsdf L1GWCS where
         Direct n -> pure n
         other -> expected "Direct" other
 
-    parseDirectForward :: (Parser :> es) => Transformation -> Eff es [Transformation]
-    parseDirectForward t = do
-      n <- parseDirect t
+
+-- L1 WCS Transform -----------------------------------------------
+
+data L1WCSTransform = L1WCSTransform
+  -- CoupledCompoundModel(spatial, time + stokes), shared_inputs = n
+  { sharedInputs :: Int
+  , spatial :: VaryingSpatialTransform -- Compose series left hand in coupled compound model
+  , time :: Tabular Time -- Concat series right hand (time, stokes)
+  , stokes :: Tabular Stokes -- Concat series right hand (time, stokes)
+  }
+  deriving (Generic)
+instance KnownText L1WCSTransform where
+  knownText = "L1WCSTransform"
+
+
+instance ToAsdf L1WCSTransform where
+  -- TODO: you must turn this into a transformation to serialize it properly
+  schema _ = "asdf://dkist.nso.edu/tags/coupled_compound_model-1.0.0"
+  anchor _ = Just $ Anchor $ knownText @L1WCSTransform
+  toValue l1 = do
+    Object [("forward", toNode [l1.spatial.node, l1.time.node])]
+
+
+data CoupledCompoundModel = CoupledCompoundModel
+  { sharedInputs :: Int
+  , left :: Transformation
+  , right :: Transformation
+  }
+
+
+data VaryingSpatialTransform = VaryingSpatialTransform
+  { node :: Node
+  }
+
+
+data Tabular var = Tabular
+  { node :: Node
+  }
+
+
+instance FromAsdf (Tabular var) where
+  parseNode n = do
+    expectSchema "!transform/tabular-1.2.0" n
+    parseValue n.value
+
+
+  parseValue v = pure $ Tabular $ Node "!transform/tabular-1.2.0" Nothing v
+
+
+-- instance ToAsdf L1WCSTransform where
+--   schema _ = "asdf://dkist.nso.edu/tags/coupled_compound_model-1.0.0"
+--   anchor _ = Just $ Anchor $ knownText @L1WCSTransform
+--
+--
+--   -- toNode l1 = Node (schema l1) (anchor l1) (toValue l1)
+--
+--   toValue l1 =
+--     -- TODO: serialize a CoupledCompoundModel
+--     toValue $ l1WCSTransformation l1
+
+-- l1WCSTransformation :: L1WCSTransform -> Transformation
+-- l1WCSTransformation l1 =
+--   Transformation
+--     (toAxes @(VaryingInput Pix))
+--     (toAxes @VaryingOutput)
+--     (Direct l1.node)
+
+-- Parsing L1GWCS --------------------------------------------------
+-- starts at the top level wcs node
+
+instance FromAsdf L1WCSTransform where
+  -- require a coupled_compound_model schema
+  parseNode n = do
+    expectSchema "asdf://dkist.nso.edu/tags/coupled_compound_model-1.0.0" n
+    parseValue n.value
+
+
+  parseValue = \case
+    Object o -> do
+      sharedInputs :: Int <- o .: "shared_inputs"
+      fwd <- o .: "forward"
+      case fwd of
+        Array [left, right] -> do
+          let spatial = VaryingSpatialTransform left
+          (time, stokes) <- parseConcatTabulars right
+          pure $
+            L1WCSTransform
+              { sharedInputs
+              , spatial
+              , time
+              , stokes
+              }
+        other -> expected "Array[a,b]" other
+    other -> expected "Object" other
+   where
+    parseConcatTabulars :: (Parser :> es) => Node -> Eff es (Tabular Time, Tabular Stokes)
+    parseConcatTabulars n = do
       case n.value of
         Object o -> do
-          o .: "forward"
-        val -> expected "Object" val
+          ts <- o .: "forward"
+          case ts of
+            Array [t1, t2] -> do
+              time <- parseNode t1
+              stokes <- parseNode t2
+              pure (time, stokes)
+            other -> expected "Array[a, b]" other
+        other -> expected "concat object" other
+
+
+-- this node is a concat
+
+expectSchema :: (Parser :> es) => SchemaTag -> Node -> Eff es ()
+expectSchema s1 (Node s2 _ _) = do
+  when (s1 /= s2) $ expected (show s1) s2
+
+
+-- parseDirectForward :: (Parser :> es) => Transformation -> Eff es [Transformation]
+-- parseDirectForward t = do
+--   n <- parseDirect t
+--   case n.value of
+--     Object o -> do
+--       o .: "forward"
+--     val -> expected "Object" val
 
 -- fixWavStokes0 :: (ToAxes out) => Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) out -> Transform (Pix X, Pix Y) out
 -- fixWavStokes0 (Transform t) = transform $ FixInputs t [(1, 0), (3, 0)]
@@ -203,3 +271,20 @@ instance FromAsdf L1GWCS where
 --         [ ("keys", toNode $ fmap fst fs)
 --         , ("values", toNode $ fmap snd fs)
 --         ]
+
+-- L1 Helio Frame ------------------------------------------------
+
+newtype L1HelioFrame = L1HelioFrame {frame :: HelioprojectiveFrame}
+
+
+instance KnownText L1HelioFrame where
+  knownText = "L1HelioFrame"
+
+
+instance ToAsdf L1HelioFrame where
+  schema (L1HelioFrame h) = schema h
+  anchor _ = Just $ Anchor $ knownText @L1HelioFrame
+  toValue (L1HelioFrame h) = toValue h
+
+
+data Zero a deriving (Generic, ToAxes)
