@@ -1,6 +1,5 @@
 module NSO.Image.GWCS.L1GWCS where
 
-import Debug.Trace
 import NSO.Image.Asdf.Ref
 import NSO.Image.Headers.WCS (X, Y)
 import NSO.Prelude hiding (identity)
@@ -11,29 +10,16 @@ import Telescope.Data.KnownText
 import Telescope.Data.Parser
 
 
-type VaryingInput inp = (Scale X, Pix Y, inp Stokes)
-type VaryingOutput = (HPLon, HPLat, Time, Stokes)
-
-
---  existing transform is (X, Y, Stokes) -> (HPLon, HPLat, Time, Stokes)
---  so the remaps in L1 are to swap: (X, Wav, Y, Stokes) -> (Wav, X, Y, Stokes)
---  and afterwards (Wav, HPLon, HPLat, Time, Stokes) -> (HPLon, Wav, HPLat, Time, Stokes)
---  yeah, you can tell by the axes_order in the final frame
-varyingTransform
-  :: (ToAxes (inp Stokes))
-  => L1WCSTransform
-  -> Transform (VaryingInput inp) VaryingOutput
-varyingTransform = _ -- transform
+type VaryingInput = (Scale X, Pix Y)
+type VaryingOutput = (HPLon, HPLat, Time)
 
 
 varyingTransformRef
-  :: forall inp
-   . (ToAxes (inp Stokes))
-  => Transform (VaryingInput inp) VaryingOutput
+  :: Transform VaryingInput VaryingOutput
 varyingTransformRef =
   Transform $
     Transformation
-      (toAxes @(VaryingInput inp))
+      (toAxes @VaryingInput)
       (toAxes @VaryingOutput)
       (Direct $ toNode (Ref @L1WCSTransform))
 
@@ -47,7 +33,19 @@ data L1GWCS = L1GWCS
   { transform :: L1WCSTransform
   , helioFrame :: L1HelioFrame
   }
-  deriving (Generic, ToAsdf)
+  deriving (Generic)
+instance ToAsdf L1GWCS where
+  toValue l1 =
+    -- eh...
+    let Transform t = varyingTransform l1.transform
+        Node s _ v = toNode t -- don't forget the anchor!
+     in Object [("transform", Node s (anchor l1.transform) v), ("helioFrame", toNode l1.helioFrame)]
+   where
+    --  existing transform is (X, Y) -> (HPLon, HPLat, Time)
+    --    stokes removing by parsing!
+    --    keep the existing asymmetricmapping nodes
+    varyingTransform :: L1WCSTransform -> Transform VaryingInput VaryingOutput
+    varyingTransform = transform
 
 
 -- Overall L1 Asdf Structure ---------------------------------------
@@ -147,11 +145,13 @@ instance KnownText L1WCSTransform where
 
 
 instance ToAsdf L1WCSTransform where
-  -- TODO: you must turn this into a transformation to serialize it properly
   schema _ = "asdf://dkist.nso.edu/tags/coupled_compound_model-1.0.0"
   anchor _ = Just $ Anchor $ knownText @L1WCSTransform
   toValue l1 = do
-    Object [("forward", toNode [l1.spatial.node, l1.time.node])]
+    Object
+      [ ("forward", toNode [l1.spatial.node, l1.time.node])
+      , ("shared_inputs", toNode l1.sharedInputs)
+      ]
 
 
 data CoupledCompoundModel = CoupledCompoundModel
@@ -188,7 +188,6 @@ instance FromAsdf (Tabular var) where
 --   -- toNode l1 = Node (schema l1) (anchor l1) (toValue l1)
 --
 --   toValue l1 =
---     -- TODO: serialize a CoupledCompoundModel
 --     toValue $ l1WCSTransformation l1
 
 -- l1WCSTransformation :: L1WCSTransform -> Transformation
@@ -246,14 +245,6 @@ expectSchema :: (Parser :> es) => SchemaTag -> Node -> Eff es ()
 expectSchema s1 (Node s2 _ _) = do
   when (s1 /= s2) $ expected (show s1) s2
 
-
--- parseDirectForward :: (Parser :> es) => Transformation -> Eff es [Transformation]
--- parseDirectForward t = do
---   n <- parseDirect t
---   case n.value of
---     Object o -> do
---       o .: "forward"
---     val -> expected "Object" val
 
 -- fixWavStokes0 :: (ToAxes out) => Transform (Pix X, Pix Wav, Pix Y, Pix Stokes) out -> Transform (Pix X, Pix Y) out
 -- fixWavStokes0 (Transform t) = transform $ FixInputs t [(1, 0), (3, 0)]

@@ -445,7 +445,7 @@ instance (KnownText fit) => ToAsdf (ProfileTreeMeta fit) where
   toValue m =
     Object
       [ ("ion", toNode $ ionName m.spectralLine.ion)
-      , ("wavelength", toNode $ m.spectralLine.wavelength)
+      , ("wavelength", toNode m.spectralLine.wavelength)
       , ("profile", toNode m.profile)
       , ("headers", toNode m.headers)
       , ("inventory", toNode (Ref @InversionInventory))
