@@ -12,7 +12,7 @@ import NSO.Image.Headers (Observation (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), PixelsPerBin (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
-import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
+import NSO.Image.Types.Frame (Depth, Frames (..), middleFrame)
 import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude hiding (identity)
 import Numeric (showFFloat)
@@ -27,23 +27,12 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 transformProfile
   :: PixelsPerBin
   -> ProfileAxes 'WCSMain
-  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Linear Wav, HPLon, HPLat, Time)
+  -> Transform (Pix Wav, Pix X, Pix Y) (Linear Wav, HPLon, HPLat, Time)
 transformProfile bin axes =
-  reorderInput
-    |> (linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransformRef) <&> stokes)
-    |> reorderOutput
+  linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransformRef)
  where
-  reorderInput :: Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Pix Wav, Pix X, Pix Y, Pix Stokes)
-  reorderInput = transform $ Mapping [1, 2, 3, 0]
-
   scaleAxes :: Transform (Pix X, Pix Y) (Scale X, Pix Y)
   scaleAxes = scaleX bin <&> GWCS.identity @(Pix Y)
-
-  reorderOutput :: Transform (Linear Wav, HPLon, HPLat, Time, Stokes) (Stokes, Linear Wav, HPLon, HPLat, Time)
-  reorderOutput = transform $ Mapping [4, 0, 1, 2, 3]
-
-  stokes :: Transform (Pix Stokes) Stokes
-  stokes = transform Identity
 
 
 data LinearSpectral = LinearSpectral {intercept :: Quantity, slope :: Quantity}
@@ -241,42 +230,35 @@ profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS inputStep outputStep
         { name = "pixel"
         , axes =
             NE.fromList
-              [ FrameAxis 0 "stokes" (AxisType "PIXEL") Pixel
-              , FrameAxis 1 "wavelength" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "slit_x" (AxisType "PIXEL") Pixel
-              , FrameAxis 3 "frame_y" (AxisType "PIXEL") Pixel
+              [ FrameAxis 0 "wavelength" (AxisType "PIXEL") Pixel
+              , FrameAxis 1 "slit_x" (AxisType "PIXEL") Pixel
+              , FrameAxis 2 "frame_y" (AxisType "PIXEL") Pixel
               ]
         }
 
-  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame))
+  outputStep :: GWCSStep (CompositeFrame (SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (stokesFrame, spectralFrame, celestialFrame 2 l1gwcs.helioFrame.frame, temporalFrame)
-
-    stokesFrame =
-      StokesFrame
-        { name = "polarization state"
-        , axisOrder = 0
-        }
+      CompositeFrame (spectralFrame, celestialFrame 1 l1gwcs.helioFrame.frame, temporalFrame)
 
     spectralFrame =
       SpectralFrame
         { name = "wavelength"
-        , axisOrder = 1
+        , axisOrder = 0
         }
 
     temporalFrame =
       TemporalFrame
         { name = "temporal"
-        , axisOrder = 4
+        , axisOrder = 3
         , time = primary.observation.dateAvg.ktype
         }
 
 
 newtype ProfileGWCS
   = ProfileGWCS
-      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame)))
 
 
 data WCSFrame s = WCSFrame
