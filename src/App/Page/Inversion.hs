@@ -368,17 +368,32 @@ instance (Transfer :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inver
       RegenAsdf -> do
         Inversions.resetGeneratingAsdf invId
         watchGenerate
-      WatchGen ->
+      WatchGen -> do
         watchGenerate
    where
     watchGenerate = do
       GenerateStep propId _ invId <- viewId
       let task = GenTask propId invId
-      taskWatchStatus (generateStatus >=> pushUpdate) task
+
+      generateStatus GenWaiting >>= pushUpdate
+
+      -- wait until it starts
+      log Debug $ dump "Waiting" task
+      taskWaitStatus task
+
+      -- watch status
+      log Debug $ dump "Watching" task
+      taskWatchStatus onStatus task
+
+      log Debug "done"
 
       inv <- loadInversion invId
       scratch <- send RemoteScratch
       pure $ viewGenerate scratch inv
+
+    onStatus s = do
+      vw <- generateStatus s
+      pushUpdate vw
 
 
 generateStatus :: (Transfer :> es) => GenStatus -> Eff es (View GenerateStep ())
@@ -396,19 +411,11 @@ generateStatus = \case
     loadingMessage "Generating FITS - Transfer Complete, waiting to start generation"
   GenFrames{complete, total, throughput, skipped} -> pure $ do
     loadingMessage "Generating FITS"
-    genProgress complete total throughput skipped
+    fitsGenProgress complete total throughput skipped
   GenAsdf -> pure $ do
     loadingMessage "Generating ASDF"
  where
-  speedMessage throughput = do
-    case throughput of
-      0 -> none
-      _ ->
-        el $ do
-          text $ cs $ showFFloat (Just 2) (throughput * 60) ""
-          text " frames per minute"
-
-  genProgress complete total throughput skipped = do
+  fitsGenProgress complete total throughput skipped = do
     col $ do
       let done = complete + skipped
       row ~ gap 5 $ do
@@ -424,6 +431,14 @@ generateStatus = \case
         el " / "
         el $ text $ cs $ show total
       View.progress (fromIntegral done / fromIntegral total)
+
+  speedMessage throughput = do
+    case throughput of
+      0 -> none
+      _ ->
+        el $ do
+          text $ cs $ showFFloat (Just 2) (throughput * 60) ""
+          text " frames per minute"
 
 
 generateStep :: Inversion -> Step

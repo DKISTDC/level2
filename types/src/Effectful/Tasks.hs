@@ -62,20 +62,37 @@ taskSave t s = do
   send $ TaskSave t s
 
 
+-- | call onStatus every time status updates, until the task disappears
 taskWatchStatus :: forall t es. (Eq (Status t), Tasks t :> es) => (Status t -> Eff es ()) -> t -> Eff es ()
 taskWatchStatus onStatus t = do
   checkNext Nothing
  where
   checkNext :: Maybe (Status t) -> Eff es ()
-  checkNext mold = do
+  checkNext !mold = do
     ms <- send $ TaskLookupStatus t
     case ms of
       Nothing -> pure ()
       Just s -> do
-        when (ms /= mold) $ do
+        when (Just s /= mold) $ do
           onStatus s
+
         send $ TaskWatchDelay t
         checkNext ms
+
+
+-- | Wait for a task to start, then continue
+taskWaitStatus :: forall t es. (Eq (Status t), Tasks t :> es) => t -> Eff es ()
+taskWaitStatus t = do
+  checkNext
+ where
+  checkNext :: Eff es ()
+  checkNext = do
+    ms <- send $ TaskLookupStatus t
+    case ms of
+      Just _ -> pure ()
+      Nothing -> do
+        send $ TaskWatchDelay t
+        checkNext
 
 
 -- taskModStatus :: (Eq t, WorkerTask t) => TaskChan t -> t -> (Status t -> Status t) -> STM ()
