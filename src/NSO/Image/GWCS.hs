@@ -1,25 +1,28 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module NSO.Image.GWCS where
 
 import Data.List.NonEmpty qualified as NE
+import GHC.Exts (IsList (toList))
 import NSO.Image.Asdf.Ref (Ref (..))
 import NSO.Image.Fits.Profile (ProfileAxes (..), ProfileAxis (..))
-import NSO.Image.Fits.Quantity
+import NSO.Image.Fits.Quantity hiding (toList)
+import NSO.Image.GWCS.AxisMeta (OrderedAxis (..), ToOrderedAxes (..))
 import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1HelioFrame, Time)
 import NSO.Image.GWCS.L1GWCS qualified as L1
 import NSO.Image.Headers (Observation (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), PixelsPerBin (..))
 import NSO.Image.Headers.WCS (PC (..), PCXY (..), WCSAxisKeywords (..), WCSCommon (..), WCSHeader (..), Wav, X, Y, toWCSAxis)
 import NSO.Image.Primary (PrimaryHeader (..))
-import NSO.Image.Types.Frame (Depth, Frames (..), middleFrame)
+import NSO.Image.Types.Frame (Depth, Frames (..), Stokes, middleFrame)
 import NSO.Image.Types.Quantity (OpticalDepth)
 import NSO.Prelude as Prelude hiding (identity)
 import Numeric (showFFloat)
 import Telescope.Asdf (Anchor (..), ToAsdf (..), Value (..))
 import Telescope.Asdf.Core (Quantity (..), Unit (Nanometers, Pixel, Unit))
 import Telescope.Asdf.Core qualified as Unit
-import Telescope.Asdf.GWCS as GWCS
+import Telescope.Asdf.GWCS as GWCS hiding (celestial)
 import Telescope.Data.KnownText
 import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
@@ -27,12 +30,15 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 transformProfile
   :: PixelsPerBin
   -> ProfileAxes 'WCSMain
-  -> Transform (Pix Wav, Pix X, Pix Y) (Linear Wav, HPLon, HPLat, Time)
+  -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Linear Wav, HPLon, HPLat, Time)
 transformProfile bin axes =
-  linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransformRef)
+  stokes <&> linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransformRef)
  where
   scaleAxes :: Transform (Pix X, Pix Y) (Scale X, Pix Y)
   scaleAxes = scaleX bin <&> GWCS.identity @(Pix Y)
+
+  stokes :: Transform (Pix Stokes) Stokes
+  stokes = transform Identity
 
 
 data LinearSpectral = LinearSpectral {intercept :: Quantity, slope :: Quantity}
@@ -58,13 +64,9 @@ transformQuantity
   -> Frames (QuantityAxes 'WCSMain)
   -> Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time)
 transformQuantity bin axes =
-  fullTransform
+  let mid = middleFrame axes
+   in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
  where
-  fullTransform :: Transform (Pix Depth, Pix X, Pix Y) (Linear Depth, HPLon, HPLat, Time)
-  fullTransform =
-    let mid = middleFrame axes
-     in transformOpticalDepth (toWCSAxis mid.depth.keys) <&> spaceTimeTransform
-
   spaceTimeTransform :: Transform (Pix X, Pix Y) (HPLon, HPLat, Time)
   spaceTimeTransform = duplicateInputs |> scaleZeroAxes |> L1.varyingTransformRef
 
@@ -122,10 +124,18 @@ wcsShift wcs =
   Shift (realToFrac $ negate (wcs.crpix.ktype - 1))
 
 
-quantityGWCS :: PixelsPerBin -> L1GWCS -> Frames PrimaryHeader -> Frames (QuantityHeader OpticalDepth) -> QuantityGWCS
+-- | Force input and output to match transform
+quantityGWCS
+  :: forall input output
+   . (input ~ (Pix Depth, Pix X, Pix Y), output ~ (Linear Depth, HPLon, HPLat, Time))
+  => PixelsPerBin
+  -> L1GWCS
+  -> Frames PrimaryHeader
+  -> Frames (QuantityHeader OpticalDepth)
+  -> QuantityGWCS
 quantityGWCS bin l1gwcs primaries quants =
   let firstPrim = head primaries.frames
-   in QuantityGWCS $ GWCS inputStep (outputStep firstPrim)
+   in QuantityGWCS $ GWCS mempty inputStep (outputStep firstPrim)
  where
   inputStep :: GWCSStep CoordinateFrame
   inputStep = GWCSStep pixelFrame (Just (transformQuantity bin (fmap axis quants)).transformation)
@@ -135,35 +145,39 @@ quantityGWCS bin l1gwcs primaries quants =
 
     pixelFrame :: CoordinateFrame
     pixelFrame =
-      CoordinateFrame
-        { name = "pixel"
-        , axes =
-            NE.fromList
-              [ FrameAxis 0 "optical_depth" (AxisType "PIXEL") Pixel
-              , FrameAxis 1 "slit_x" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "frame_y" (AxisType "PIXEL") Pixel
-              ]
-        }
+      let axes = orderedAxes @input
+       in CoordinateFrame
+            { name = "pixel"
+            , axes = fmap (\ax -> FrameAxis ax.axisOrder ax.axisName (AxisType "PIXEL") Pixel) (NE.fromList $ toList axes)
+            }
 
   outputStep :: PrimaryHeader -> GWCSStep (CompositeFrame (CoordinateFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame))
   outputStep h0 = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (opticalDepthFrame, celestialFrame 1 l1gwcs.helioFrame.frame, temporalFrame)
+      let (depth, lon, lat, time) = orderedAxes @output
+       in CompositeFrame (opticalDepth depth, celestial lon lat, temporal time)
 
-    opticalDepthFrame =
+    opticalDepth :: OrderedAxis (Linear Depth) -> CoordinateFrame
+    opticalDepth depth =
       CoordinateFrame
-        { name = "optical_depth"
+        { name = depth.axisName
         , axes =
             NE.fromList
-              [ FrameAxis 0 "optical depth" "phys.absorption.opticalDepth" Pixel
+              [ FrameAxis depth.axisOrder depth.axisName "phys.absorption.opticalDepth" Pixel
               ]
         }
 
-    temporalFrame =
+    celestial :: OrderedAxis HPLon -> OrderedAxis HPLat -> CelestialFrame (Ref L1HelioFrame)
+    celestial lon _ =
+      celestialFrame lon.axisOrder l1gwcs.helioFrame.frame
+
+    -- TODO: this isn't correct. I'm using a tabular temporal frame? Or does the frame want the first value?
+    temporal :: OrderedAxis Time -> TemporalFrame
+    temporal axis =
       TemporalFrame
-        { name = "temporal"
-        , axisOrder = 3
+        { name = axis.axisName
+        , axisOrder = axis.axisOrder
         , time = h0.observation.dateAvg.ktype
         }
 
@@ -218,47 +232,67 @@ celestialFrame n _helioFrame =
 --       value: 695700.0}
 -- unit: [!unit/unit-1.0.0 deg, !unit/unit-1.0.0 deg]
 
-profileGWCS :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> WCSHeader ProfileAxes -> ProfileGWCS
-profileGWCS bin l1gwcs primary wcs = ProfileGWCS $ GWCS inputStep outputStep
+profileGWCS
+  :: forall input output
+   . (input ~ (Pix Stokes, Pix Wav, Pix X, Pix Y), output ~ (Stokes, Linear Wav, HPLon, HPLat, Time))
+  => PixelsPerBin
+  -> L1GWCS
+  -> PrimaryHeader
+  -> WCSHeader ProfileAxes
+  -> ProfileGWCS
+profileGWCS bin l1gwcs primary wcs =
+  ProfileGWCS $ GWCS{name = mempty, input = inputStep, output = outputStep}
  where
   inputStep :: GWCSStep CoordinateFrame
-  inputStep = GWCSStep pixelFrame (Just (transformProfile bin wcs.axes).transformation)
+  inputStep =
+    let trans :: Transform input output = transformProfile bin wcs.axes
+     in GWCSStep pixelFrame (Just trans.transformation)
    where
     pixelFrame :: CoordinateFrame
     pixelFrame =
-      CoordinateFrame
-        { name = "pixel"
-        , axes =
-            NE.fromList
-              [ FrameAxis 0 "wavelength" (AxisType "PIXEL") Pixel
-              , FrameAxis 1 "slit_x" (AxisType "PIXEL") Pixel
-              , FrameAxis 2 "frame_y" (AxisType "PIXEL") Pixel
-              ]
-        }
+      let axes = orderedAxes @input
+       in CoordinateFrame
+            { name = "pixel"
+            , axes = fmap (\ax -> FrameAxis ax.axisOrder ax.axisName (AxisType "PIXEL") Pixel) (NE.fromList $ toList axes)
+            }
 
-  outputStep :: GWCSStep (CompositeFrame (SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame))
+  outputStep :: GWCSStep (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame))
   outputStep = GWCSStep compositeFrame Nothing
    where
     compositeFrame =
-      CompositeFrame (spectralFrame, celestialFrame 1 l1gwcs.helioFrame.frame, temporalFrame)
+      let (stk, wav, lon, lat, time) = orderedAxes @output
+       in CompositeFrame (stokes stk, spectral wav, celestial lon lat, temporal time)
 
-    spectralFrame =
+    spectral :: OrderedAxis (Linear Wav) -> SpectralFrame
+    spectral OrderedAxis{axisName, axisOrder} =
       SpectralFrame
-        { name = "wavelength"
-        , axisOrder = 0
+        { name = axisName
+        , axisOrder
         }
 
-    temporalFrame =
+    celestial :: OrderedAxis HPLon -> OrderedAxis HPLat -> CelestialFrame (Ref L1HelioFrame)
+    celestial lon _ =
+      celestialFrame lon.axisOrder l1gwcs.helioFrame.frame
+
+    temporal :: OrderedAxis Time -> TemporalFrame
+    temporal OrderedAxis{axisName, axisOrder} =
       TemporalFrame
-        { name = "temporal"
-        , axisOrder = 3
+        { name = axisName
+        , axisOrder
         , time = primary.observation.dateAvg.ktype
+        }
+
+    stokes :: OrderedAxis Stokes -> StokesFrame
+    stokes OrderedAxis{axisName, axisOrder} =
+      StokesFrame
+        { name = axisName
+        , axisOrder
         }
 
 
 newtype ProfileGWCS
   = ProfileGWCS
-      (GWCS CoordinateFrame (CompositeFrame (SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame)))
+      (GWCS CoordinateFrame (CompositeFrame (StokesFrame, SpectralFrame, CelestialFrame (Ref L1HelioFrame), TemporalFrame)))
 
 
 data WCSFrame s = WCSFrame

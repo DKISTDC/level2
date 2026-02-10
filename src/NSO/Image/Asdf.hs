@@ -17,16 +17,20 @@ import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch (ScratchError (..), pathExists)
 import NSO.Image.Asdf.FileManager (FileManager, fileManager)
 import NSO.Image.Asdf.HeaderTable
-import NSO.Image.Asdf.NDCollection
 import NSO.Image.Asdf.Ref
-import NSO.Image.Fits
-import NSO.Image.Fits.Quantity hiding (quantities)
+import NSO.Image.Fits.Frame
+import NSO.Image.Fits.Meta
+import NSO.Image.Fits.Profile
+import NSO.Image.Fits.Quantity hiding (quantities, toList)
 import NSO.Image.GWCS
+import NSO.Image.GWCS.AxisMeta
 import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Types (PixelsPerBin)
+import NSO.Image.Headers.WCS
 import NSO.Image.Primary
-import NSO.Image.Types.Frame (Arm (..), Arms (..), Frames (..), armsFrames)
+import NSO.Image.Types.Frame (Arm (..), Arms (..), Depth, Frames (..), armsFrames)
+import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
@@ -38,21 +42,10 @@ import Numeric (showFFloat)
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Class (GToObject (..))
 import Telescope.Asdf.Core (Unit (..))
+import Telescope.Asdf.GWCS (Pix)
 import Telescope.Data.KnownText
 import Text.Casing (quietSnake)
 
-
--- DONE: move extra keys into meta.inventory
--- DONE: support ND collection
--- DONE: 3-arm profiles sodium
--- DONE: fit/orig separate GWCS + anchors
--- DONE: fix gwcs
--- DONE: labeled meta.axes for profiles
--- DONE: Reuse varyingCelestialTransform as an anchor...
--- DONE: 2x Profile GWCS, one per Arm. But the spatial is the same for both
--- DONE: Profile Spectral GWCS - doesn't line up with L1 at all!
--- DONE: Profiles Spectral WCS-based
--- DONE: Fix center line wavelengths.. Generically, or just for L2?
 
 asdfDocument :: Id Inversion -> Dataset -> [Dataset] -> PixelsPerBin -> UTCTime -> L1Asdf -> Frames L2FitsMeta -> Document
 asdfDocument inversionId dscanon dsets bin now l1asdf metas =
@@ -64,18 +57,10 @@ asdfDocument inversionId dscanon dsets bin now l1asdf metas =
     InversionTree
       { fileuris
       , meta = inversionMeta $ fmap (.primary) sorted
-      , quantities = quantitiesSection (fmap (.quantities) sorted) (qgwcs sorted)
+      , quantities = quantitiesSection bin l1asdf (fmap (.quantities) sorted) (fmap (.primary) sorted)
       , profiles = profilesSection bin l1asdf.dataset.wcs (head sorted.frames).primary $ fmap (.profiles) sorted
       }
-
-  -- choose a single frame from which to calculate the GWCS
-  qgwcs :: Frames L2FitsMeta -> QuantityGWCS
-  qgwcs sorted =
-    quantityGWCS
-      bin
-      l1asdf.dataset.wcs
-      (fmap (.primary) sorted)
-      (fmap (\m -> m.quantities.items.opticalDepth) sorted)
+  -- = orderedAxes @(Depth, HPLon, HPLat, Time)
 
   inversionMeta :: Frames PrimaryHeader -> InversionMeta
   inversionMeta headers =
@@ -162,7 +147,7 @@ instance ToAsdf Fileuris where
 
 
 data QuantitiesSection = QuantitiesSection
-  { axes :: [AxisMeta]
+  { axes :: (OrderedAxis (Pix Depth), OrderedAxis (Pix X), OrderedAxis (Pix Y))
   , items :: Quantities (DataTree QuantityMeta)
   , gwcs :: QuantityGWCS
   }
@@ -176,25 +161,28 @@ instance ToAsdf QuantitiesSection where
       ]
    where
     aligned :: Quantities AlignedAxesF
-    aligned = quantitiesFrom AlignedAxesF (alignedAxes section.axes).axes
+    aligned = quantitiesFrom AlignedAxesF (alignedAxes $ FitsOrderAxes section.axes).axes
 
     meta =
       Object
-        [ ("axes", toNode section.axes)
+        [ ("axes", toNode $ FitsOrderAxes section.axes)
         , ("gwcs", toNode section.gwcs)
         ]
 
 
 -- Quantities ------------------------------------------------
 
-quantitiesSection :: Frames FrameQuantitiesMeta -> QuantityGWCS -> QuantitiesSection
-quantitiesSection metas gwcs =
+quantitiesSection
+  :: forall inputs
+   . (inputs ~ (Pix Depth, Pix X, Pix Y))
+  => PixelsPerBin
+  -> L1Asdf
+  -> Frames FrameQuantitiesMeta
+  -> Frames PrimaryHeader
+  -> QuantitiesSection
+quantitiesSection bin l1asdf metas prims =
   QuantitiesSection
-    { axes =
-        [ AxisMeta "frame_y" True
-        , AxisMeta "slit_x" True
-        , AxisMeta "optical_depth" True
-        ]
+    { axes = orderedAxes @inputs
     , gwcs
     , items =
         Quantities
@@ -212,6 +200,15 @@ quantitiesSection metas gwcs =
           }
     }
  where
+  -- choose a single frame from which to calculate the GWCS
+  gwcs :: QuantityGWCS
+  gwcs =
+    quantityGWCS @inputs
+      bin
+      l1asdf.dataset.wcs
+      prims
+      (fmap (\m -> m.items.opticalDepth) metas)
+
   quantity
     :: forall info ext btype unit
      . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info)
@@ -283,8 +280,9 @@ data QuantityMeta info = QuantityMeta
 
 -- Profiles ------------------------------------------------
 
+-- . (inputs ~ (Pix Depth, Pix X, Pix Y))
 data ProfilesSection = ProfilesSection
-  { axes :: [AxisMeta]
+  { axes :: (OrderedAxis (Pix Stokes), OrderedAxis (Pix Wav), OrderedAxis (Pix X), OrderedAxis (Pix Y))
   , arms :: Arms (Profiles ProfileTree)
   , gwcs :: Arms (Arm SpectralLine ProfileGWCS)
   }
@@ -313,12 +311,12 @@ instance ToAsdf ProfilesSection where
 
     alignedArmAxes :: Profiles ProfileTree -> Arm SpectralLine (Profiles AlignedAxesF)
     alignedArmAxes pfs =
-      let AlignedAxes axs = alignedAxes section.axes
+      let AlignedAxes axs = alignedAxes $ FitsOrderAxes section.axes
        in Arm pfs.fit.meta.spectralLine $ Profiles{fit = AlignedAxesF axs, original = AlignedAxesF axs}
 
     meta =
       Object
-        [ ("axes", toNode section.axes)
+        [ ("axes", toNode $ FitsOrderAxes $ section.axes)
         , ("gwcs", toNode section.gwcs)
         ]
 
@@ -364,18 +362,25 @@ profileKey line pt = cs $ spectralLineKeyword line <> "_" <> suffix pt
   suffix Fit = "fit"
 
 
-profilesSection :: PixelsPerBin -> L1GWCS -> PrimaryHeader -> Frames (Arms ArmFrameProfileMeta) -> ProfilesSection
+profilesSection
+  :: forall inputs
+   . (inputs ~ (Pix Stokes, Pix Wav, Pix X, Pix Y))
+  => PixelsPerBin
+  -> L1GWCS
+  -> PrimaryHeader
+  -> Frames (Arms ArmFrameProfileMeta)
+  -> ProfilesSection
 profilesSection bin l1gwcs primary profs =
   let sampleFrame :: Arms ArmFrameProfileMeta = head profs.frames
    in ProfilesSection
-        { axes = [AxisMeta "frame_y" True, AxisMeta "slit_x" True, AxisMeta "wavelength" False, AxisMeta "stokes" True]
+        { axes = orderedAxes @inputs
         , arms = profilesArmsTree profs
         , gwcs = fmap armGWCS sampleFrame
         }
  where
   armGWCS :: ArmFrameProfileMeta -> Arm SpectralLine ProfileGWCS
   armGWCS am =
-    Arm am.arm.line $ profileGWCS bin l1gwcs primary am.fit.wcs
+    Arm am.arm.line $ profileGWCS @inputs bin l1gwcs primary am.fit.wcs
 
 
 profilesArmsTree :: Frames (Arms ArmFrameProfileMeta) -> Arms (Profiles ProfileTree)
