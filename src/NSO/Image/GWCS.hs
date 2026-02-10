@@ -9,7 +9,7 @@ import NSO.Image.Asdf.Ref (Ref (..))
 import NSO.Image.Fits.Profile (ProfileAxes (..), ProfileAxis (..))
 import NSO.Image.Fits.Quantity hiding (toList)
 import NSO.Image.GWCS.AxisMeta (OrderedAxis (..), ToOrderedAxes (..))
-import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1HelioFrame, Time)
+import NSO.Image.GWCS.L1GWCS (HPLat, HPLon, L1GWCS (..), L1HelioFrame, Tabular, Time)
 import NSO.Image.GWCS.L1GWCS qualified as L1
 import NSO.Image.Headers (Observation (..))
 import NSO.Image.Headers.Types (Degrees (..), Key (..), PixelsPerBin (..))
@@ -29,16 +29,17 @@ import Telescope.Data.WCS (WCSAlt (..), WCSAxis (..))
 
 transformProfile
   :: PixelsPerBin
+  -> Tabular Stokes
   -> ProfileAxes 'WCSMain
   -> Transform (Pix Stokes, Pix Wav, Pix X, Pix Y) (Stokes, Linear Wav, HPLon, HPLat, Time)
-transformProfile bin axes =
+transformProfile bin tabStokes axes =
   stokes <&> linearSpectral (toWCSAxis axes.wavelength.keys) <&> (scaleAxes |> L1.varyingTransformRef)
  where
   scaleAxes :: Transform (Pix X, Pix Y) (Scale X, Pix Y)
   scaleAxes = scaleX bin <&> GWCS.identity @(Pix Y)
 
   stokes :: Transform (Pix Stokes) Stokes
-  stokes = transform Identity
+  stokes = transform tabStokes.node
 
 
 data LinearSpectral = LinearSpectral {intercept :: Quantity, slope :: Quantity}
@@ -245,7 +246,7 @@ profileGWCS bin l1gwcs primary wcs =
  where
   inputStep :: GWCSStep CoordinateFrame
   inputStep =
-    let trans :: Transform input output = transformProfile bin wcs.axes
+    let trans :: Transform input output = transformProfile bin l1gwcs.transform.stokes wcs.axes
      in GWCSStep pixelFrame (Just trans.transformation)
    where
     pixelFrame :: CoordinateFrame
