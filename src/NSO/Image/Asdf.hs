@@ -27,6 +27,7 @@ import NSO.Image.GWCS.AxisMeta
 import NSO.Image.GWCS.L1GWCS
 import NSO.Image.Headers.DataCommon
 import NSO.Image.Headers.Types (PixelsPerBin)
+import NSO.Image.Headers.Types qualified as Image
 import NSO.Image.Headers.WCS
 import NSO.Image.Primary
 import NSO.Image.Types.Frame (Arm (..), Arms (..), Depth, Frames (..), armsFrames)
@@ -41,7 +42,7 @@ import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName, sp
 import Numeric (showFFloat)
 import Telescope.Asdf as Asdf
 import Telescope.Asdf.Class (GToObject (..))
-import Telescope.Asdf.Core (Unit (..))
+import Telescope.Asdf.Core as Telescope (Unit (..))
 import Telescope.Asdf.GWCS (Pix)
 import Telescope.Data.KnownText
 import Text.Casing (quietSnake)
@@ -211,7 +212,7 @@ quantitiesSection bin l1asdf metas prims =
 
   quantity
     :: forall info ext btype unit
-     . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info)
+     . (info ~ DataHDUInfo ext btype unit, KnownText unit, HDUOrder info, ToAstropyUnit unit)
     => (Quantities QuantityHeader -> QuantityHeader info)
     -> DataTree QuantityMeta info
   quantity f = quantityTree shape $ fmap f items
@@ -258,17 +259,37 @@ instance ToAsdf QuantitiesAlignedAxes where
 
 quantityTree
   :: forall info ext btype unit
-   . (KnownText unit, HDUOrder info, info ~ DataHDUInfo ext btype unit)
+   . (KnownText unit, HDUOrder info, ToAstropyUnit unit, info ~ DataHDUInfo ext btype unit)
   => Shape Quantity
   -> Frames (QuantityHeader info)
   -> DataTree QuantityMeta info
 quantityTree shape heads =
   DataTree
-    { unit = Pixel
+    { unit = toAstropyUnit @unit
     , wcs = Ref
     , data_ = fileManager shape.axes (hduIndex @info)
     , meta = QuantityMeta{headers = HeaderTable heads, inventory = Ref}
     }
+
+
+class ToAstropyUnit a where
+  toAstropyUnit :: Unit
+instance ToAstropyUnit Image.Dimensionless where
+  toAstropyUnit = DimensionlessUnscaled
+instance ToAstropyUnit Image.Kelvin where
+  toAstropyUnit = Kelvin
+instance ToAstropyUnit Image.N_m2 where
+  toAstropyUnit = Product Newtons (Exponent (-2) Meters)
+instance ToAstropyUnit Image.Km_s where
+  toAstropyUnit = Product Telescope.Kilometers (Exponent (-1) Seconds)
+instance ToAstropyUnit Image.Tesla where
+  toAstropyUnit = Tesla
+instance ToAstropyUnit Image.Deg where
+  toAstropyUnit = Degrees
+instance ToAstropyUnit Image.Km where
+  toAstropyUnit = Telescope.Kilometers
+instance ToAstropyUnit Image.Kg_m3 where
+  toAstropyUnit = Product Kilograms (Exponent (-3) Meters)
 
 
 data QuantityMeta info = QuantityMeta
@@ -316,7 +337,7 @@ instance ToAsdf ProfilesSection where
 
     meta =
       Object
-        [ ("axes", toNode $ FitsOrderAxes $ section.axes)
+        [ ("axes", toNode $ FitsOrderAxes section.axes)
         , ("gwcs", toNode section.gwcs)
         ]
 
