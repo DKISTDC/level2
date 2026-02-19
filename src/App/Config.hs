@@ -3,7 +3,6 @@ module App.Config
   , initConfig
   , initServices
   , Services (..)
-  , IsMock
   , initDb
   , initGlobus
   , initApp
@@ -15,6 +14,7 @@ module App.Config
   , GlobusConfig (..)
   ) where
 
+import App.Config.MeshConfig
 import App.Types
 import App.Worker.CPU
 import Data.Tagged
@@ -34,7 +34,7 @@ import NSO.InterserviceBus as ISB (InterserviceBusConfig (..), initBusConfig)
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
-import Network.Endpoint (Endpoint (..), Mock (..), envEndpoint, envEndpointMock)
+import Network.Endpoint (Endpoint (..), EndpointAuth (..), toURI)
 import Network.Globus (Token, Token' (..), UserEmail (..))
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
@@ -53,7 +53,6 @@ data Config = Config
   , manager :: Http.Manager
   , level1 :: Remote Level1
   , publish :: Remote Publish
-  , bus :: InterserviceBusConfig
   }
 
 
@@ -64,7 +63,9 @@ data AuthInfo = AuthInfo
 
 
 data Services = Services
-  {metadata :: MetadataService}
+  { metadata :: MetadataService
+  , interserviceBus :: InterserviceBusConfig
+  }
 
 
 data GlobusConfig
@@ -74,26 +75,49 @@ data GlobusConfig
 initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
 initConfig = do
   app <- initApp
+
   db <- initDb
-  services <- initServices
   globus <- initGlobus
   scratch <- initScratch
   auth <- initAuth globus
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   cpus <- initCPUWorkers
   (level1, publish) <- initRemotes
-  bus <- initBus
+
+  -- DKIST Services
+  mesh <- initMesh
+  services <- initServices mesh
 
   log Debug $ dump " (config) metadata datasets" services.metadata.datasets
   log Debug $ dump " (config) metadata inversions" services.metadata.inversions
-  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, bus}
+  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
 
 
-initBus :: (Environment :> es) => Eff es InterserviceBusConfig
-initBus = do
-  isb <- envEndpointMock "ISB_CONNECTION_URL"
-  exg <- getEnv "ISB_EXCHANGE"
-  ISB.initBusConfig isb exg
+initMesh :: (Environment :> es) => Eff es (MeshConfig Endpoint)
+initMesh = do
+  var <- getEnv "MESH_CONFIG"
+  mesh <- parseMeshConfig var
+  auths <- meshAuths
+
+  pure $ meshEndpoints auths mesh meshPaths
+ where
+  meshPaths =
+    MeshConfig
+      { interserviceBus = ""
+      , internalApiGateway = "/graphql"
+      }
+
+  meshAuths = do
+    userISB <- getEnv "ISB_USERNAME"
+    passISB <- getEnv "ISB_PASSWORD"
+
+    tokGQL <- getEnv "GQL_AUTH_TOKEN"
+
+    pure $
+      MeshConfig
+        { interserviceBus = AuthUser (cs userISB) (cs passISB)
+        , internalApiGateway = AuthToken (cs tokGQL)
+        }
 
 
 initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
@@ -105,29 +129,41 @@ initAuth = \case
   admins = [UserEmail "shess@nso.edu"]
 
 
-type IsMock = Bool
-initServices :: forall es. (Environment :> es, Fail :> es) => Eff es Services
-initServices = do
-  metaDatasets <- parseMockService =<< envEndpointMock "METADATA_API_DATASETS"
-  metaInversions <- parseService =<< envEndpoint "METADATA_API_INVERSIONS"
-  pure $ Services (MetadataService metaDatasets metaInversions)
+initServices :: forall es. (Environment :> es, Fail :> es) => MeshConfig Endpoint -> Eff es Services
+initServices mesh = do
+  bus <- isbService mesh.interserviceBus
+  metadata <- metadataService
+  pure $
+    Services
+      { metadata = metadata
+      , interserviceBus = bus
+      }
  where
-  parseMockService :: Either Mock Endpoint -> Eff es (Either Mock Service)
-  parseMockService (Left _) = pure $ Left Mock
-  parseMockService (Right e) = Right <$> parseService e
+  metadataService :: Eff es MetadataService
+  metadataService = do
+    gateway <- parseService mesh.internalApiGateway
+    pure $
+      MetadataService
+        { datasets = gateway
+        , inversions = gateway
+        }
+
+  isbService :: (Environment :> es) => Endpoint -> Eff es InterserviceBusConfig
+  isbService endpoint = do
+    exg <- getEnv "ISB_EXCHANGE"
+    ISB.initBusConfig endpoint exg
+
+  parseService :: (MonadFail m) => Endpoint -> m Service
+  parseService e =
+    case service e of
+      Nothing -> fail $ "Could not parse service: " <> show e <> " || " <> show (toURI e)
+      Just s -> pure s
 
 
 initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es, Log :> es) => Eff es CPUWorkers
 initCPUWorkers = do
   num <- readEnv "CPU_WORKERS"
   cpuWorkers num
-
-
-parseService :: (MonadFail m) => Endpoint -> m Service
-parseService e =
-  case service e of
-    Nothing -> fail $ "Could not parse service: " <> show e
-    Just s -> pure s
 
 
 initScratch :: (Environment :> es, Fail :> es) => Eff es Scratch.Config

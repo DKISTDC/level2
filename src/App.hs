@@ -81,7 +81,7 @@ main = do
       props <- atomically taskChanNew
       sync <- initMetadataSync
       admin <- initAdmin config.auth.admins config.auth.adminToken
-      bus <- initBusConnection config.bus
+      bus <- initBusConnection config.services.interserviceBus
 
       concurrently_
         (startWebServer config admin fits pubs sync)

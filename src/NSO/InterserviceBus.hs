@@ -21,12 +21,12 @@ import NSO.Types.Inversion
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, ExchangeName)
-import Network.Endpoint (Endpoint (..), Mock (..))
+import Network.Endpoint as Endpoint (Endpoint (..), toURI)
 import Network.URI (uriToString)
 
 
 data InterserviceBusConfig = InterserviceBusConfig
-  { options :: Either Mock ConnectionOpts
+  { options :: ConnectionOpts
   , exchangeName :: ExchangeName
   }
   deriving (Show)
@@ -90,30 +90,19 @@ initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnectio
 initBusConnection cfg = do
   let catalogFrame = key "catalog" & word "frame" & word "m"
   let catalogObject = key "catalog" & word "object" & word "m"
-  case cfg.options of
-    Left _ ->
-      pure $ BusConnection (error "Dummy Bus Connection") catalogFrame catalogObject
-    Right options -> do
-      cnn <- setExchange cfg.exchangeName <$> Worker.connect options
-      _ <- Worker.queueNamed cnn "catalog.frame.q" catalogFrame
-      _ <- Worker.queueNamed cnn "catalog.object.q" catalogObject
-      pure $
-        BusConnection{connection = cnn, catalogFrame, catalogObject}
+  cnn <- setExchange cfg.exchangeName <$> Worker.connect cfg.options
+  _ <- Worker.queueNamed cnn "catalog.frame.q" catalogFrame
+  _ <- Worker.queueNamed cnn "catalog.object.q" catalogObject
+  pure $
+    BusConnection{connection = cnn, catalogFrame, catalogObject}
  where
   setExchange exg cnn = cnn{exchange = exg}
 
 
-initBusConfig :: Either Mock Endpoint -> String -> Eff es InterserviceBusConfig
-initBusConfig end exg = do
-  options <- parseOptions
+initBusConfig :: Endpoint -> String -> Eff es InterserviceBusConfig
+initBusConfig endpoint exg = do
+  options <- Worker.parseURI $ uriToString id (Endpoint.toURI endpoint) ""
   pure $ InterserviceBusConfig{options, exchangeName = cs exg}
- where
-  parseOptions =
-    case end of
-      Left _ -> pure $ Left Mock
-      Right (Endpoint _ u) -> do
-        opts <- Worker.parseURI $ uriToString id u ""
-        pure $ Right opts
 
 
 data Conversation

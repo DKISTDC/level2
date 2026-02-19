@@ -22,11 +22,10 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import GHC.Generics
 import NSO.Prelude
-import Network.Endpoint (Endpoint (..))
+import Network.Endpoint as Endpoint (Endpoint (..), EndpointAuth (..), toURI)
 import Network.HTTP.Client hiding (Proxy, Request, RequestBody, Response)
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Types (methodPost)
-import Network.URI (URI (..), URIAuth (..))
 
 
 data GraphQL :: Effect where
@@ -163,12 +162,14 @@ instance (Request a) => FromJSON (Response a) where
 --           v .: fromString field
 
 service :: Endpoint -> Maybe Service
-service (Endpoint _ uri) = do
-  -- http://dev@localhost:8080/graphql
-  uauth <- uriAuthority uri
-  req <- requestFromURI uri
-  let authToken = T.dropWhileEnd (== '@') $ cs $ uriUserInfo uauth
+service endpoint = do
+  req <- requestFromURI $ Endpoint.toURI endpoint
+  authToken <- maybeTokenAuth endpoint.auth
   pure $ Service $ req{requestHeaders = ("Authorization", cs authToken) : req.requestHeaders}
+ where
+  maybeTokenAuth = \case
+    AuthToken t -> pure t
+    _ -> Nothing
 
 
 -- httpsText :: Text -> Url 'Https

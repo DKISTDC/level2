@@ -24,6 +24,7 @@ library
       App
       App.Colors
       App.Config
+      App.Config.MeshConfig
       App.Effect.Auth
       App.Effect.FileManager
       App.Effect.Globus
