@@ -1,15 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
-# export METADATA_STORE_API_DIR="${METADATA_STORE_API_DIR:-../metdata-store-api}"
+# export METADATA_STORE_API_DIR="${METADATA_STORE_API_DIR:-../metadata-store-api}"
 
 # cleanup() {
-#   echo "Shutting down: metdata-store-api"
+#   echo "Shutting down: metadata-store-api"
 #   (cd $METADATA_STORE_API_DIR && docker-compose down)
 # }
 # trap cleanup EXIT
 
 # (cd $METADATA_STORE_API_DIR && docker-compose --profile full up --build -d)
 
-docker-compose up
+docker compose stop
 
+if [[ " $* " == *" --dkist "* ]]; then
+  echo "*** Removing DKIST containers"
+
+  docker compose rm -f \
+    metadata-store-api \
+    frame-cataloger \
+    object-cataloger \
+    metadata-postgres \
+    metadata-mongodb
+fi
+
+
+docker compose up
