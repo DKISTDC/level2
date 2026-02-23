@@ -193,7 +193,6 @@ sendRequest :: forall r es. (Request r, FromJSON (Data r), Error GraphQLError :>
 sendRequest mgr (Service sv) rt r = do
   let contentType = ("Content-Type", "application/json")
   let bd = body rt $ request r
-  -- putStrLn $ "REQUEST \n" <> cs bd
   let req = sv{method = methodPost, requestHeaders = contentType : sv.requestHeaders, requestBody = RequestBodyLBS bd}
   res <- liftIO $ Http.httpLbs req mgr
   parseResponse r (responseBody res)

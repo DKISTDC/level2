@@ -32,7 +32,7 @@ data MetadataService = MetadataService
 
 
 data MetadataInversions :: Effect where
-  CreateInversion :: Bucket -> Inversion -> [Dataset] -> MetadataInversions m [InversionInventory]
+  CreateInversion :: Bucket -> Inversion -> [Dataset] -> MetadataInversions m InversionInventory
 type instance DispatchOf MetadataInversions = 'Dynamic
 
 
@@ -108,10 +108,10 @@ data InversionInventory = InversionInventory
   , datasetIds :: [Id Dataset]
   , spectralLines :: [Text]
   }
-  deriving (Generic, FromJSON, ToJSON, FieldNames)
+  deriving (Generic, FromJSON, ToJSON, FieldNames, Show)
 instance Request InversionInventory where
-  type Data InversionInventory = [InversionInventory]
-  rootField = "l2Inversions"
+  type Data InversionInventory = InversionInventory
+  rootField = "createL2InversionInventory"
   request r =
     let fields = requestFields @InversionInventory
      in RequestBody [i|{ createL2InversionInventory(createParams:#{encodeGraphQL (toJSON r)}) { #{fields} }}|]

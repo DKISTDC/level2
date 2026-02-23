@@ -88,8 +88,8 @@ initConfig = do
   mesh <- initMesh
   services <- initServices mesh
 
-  log Debug $ dump " (config) metadata datasets" services.metadata.datasets
-  log Debug $ dump " (config) metadata inversions" services.metadata.inversions
+  log Debug $ dump " (mesh) internalApiGateway " mesh.internalApiGateway
+  log Debug $ dump " (mesh) interserviceBus " mesh.interserviceBus
   pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
 
 

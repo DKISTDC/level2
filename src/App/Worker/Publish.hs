@@ -102,11 +102,13 @@ publishTask task = do
         InterserviceBus.catalogFitsFrames conversationId bucket task.proposalId task.inversionId
         InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
 
+      logStatus "creating inversion metadata"
       send $ TaskSetStatus task PublishSave
       inv <- loadInversion task.inversionId
       datasets <- Datasets.find $ Datasets.ByIds inv.datasets
 
       _ <- send $ Metadata.CreateInversion bucket inv datasets
+      logStatus "created"
 
       Inversions.setPublished task.inversionId
 
