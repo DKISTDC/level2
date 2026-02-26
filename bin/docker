@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+# Build the image
+echo '||> BUILD DOCKER IMAGE <||'
+docker build -t level2 .
+
+# Run via docker with 24 cpus
+echo '||> RUN DOCKER IMAGE <||'
+docker run --network=host \
+    --env-file <(direnv exec . env) \
+    -e THREADS=8 \
+    --cpuset-cpus="0-7" \
+    --cpuset-mems="0" \
+    level2

@@ -19,6 +19,7 @@ import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Dynamic
 import System.Console.ANSI qualified as ANSI
+import System.IO (hPutStrLn, stderr)
 import Prelude
 
 
@@ -110,25 +111,25 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
       pure st
     liftIO $ do
       forM_ (reverse st.buffer) $ \msg -> do
-        putStrLn msg
+        hPutStrLn stderr msg
         -- TEST: should this go before putStrLn?
-        ANSI.clearFromCursorToLineEnd
+        ANSI.hClearFromCursorToLineEnd stderr
 
   displayRows :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
   displayRows = do
     st <- modifyState incrementCount
     liftIO $ do
-      ANSI.clearFromCursorToLineEnd
-      putStrLn ""
-      ANSI.clearFromCursorToLineEnd
+      ANSI.hClearFromCursorToLineEnd stderr
+      hPutStrLn stderr ""
+      ANSI.hClearFromCursorToLineEnd stderr
       mapM_ (displayRow st) $ Map.toList st.rows
-      ANSI.cursorUp (length st.rows + 1)
+      ANSI.hCursorUp stderr (length st.rows + 1)
 
   displayRow :: LogState -> (RowId, String) -> IO ()
   displayRow st (rid, r) = do
     let anim = animation st.count
-    putStrLn $ anim : ' ' : "[" <> rid <> "] " <> r
-    ANSI.clearFromCursorToLineEnd
+    hPutStrLn stderr $ anim : ' ' : "[" <> rid <> "] " <> r
+    ANSI.hClearFromCursorToLineEnd stderr
 
   animation :: Int -> Char
   animation n =

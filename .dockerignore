@@ -1,0 +1,17 @@
+.git
+.gitignore
+.github
+.DS_Store
+.envrc
+.hlint.yaml
+.ignore
+.env
+dist-newstyle
+cabal.project.local
+Dockerfile
+bin/*
+
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
