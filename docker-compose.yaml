@@ -121,23 +121,61 @@ services:
   nginx:
     image: nginx:1.28.0-alpine
     volumes:
+      # - ./deps/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./deps/nginx.conf:/etc/nginx/conf.d/default.conf
       - ~/certs:/etc/nginx/certs:ro
     ports:
       - "443:443"
-      # - "4033:4033"
     attach: false
 
-  # level2:
-  #   build: .
-  #   depends_on:
-  #     - postgres
-  #   environment:
-  #     PORT: "8080"
-  #     DATABASE_URL: postgres://guest:guest@postgres:5432/level2
-  #     METADATA_API: http://internal-api-gateway.service.prod.consul/graphql
-  #   ports:
-  #     - "8080:8080"
+  level2:
+    profiles: ["app"]
+    image: level2
+    cpus: 4.0
+    build:
+      context: .
+    depends_on:
+      postgres:
+        condition: service_started
+      interservice-bus:
+        condition: service_healthy
+      metadata-store-api:
+        condition: service_started
+    ports:
+      - "3033:3033"
+    environment:
+      # APP
+      APP_DOMAIN: "localhost"
+      APP_PORT: 3033
+      CPU_WORKERS: 4
+
+      # LOCAL SERVICES
+      DATABASE_URL: postgres://dev:dev@postgres:5432/level2
+
+      # TMP
+      SCRATCH_DIR: ${SCRATCH_DIR:-/tmp/level2}
+
+      # GLOBUS
+      GLOBUS_CLIENT_ID: ${GLOBUS_CLIENT_ID}
+      GLOBUS_CLIENT_SECRET: ${GLOBUS_CLIENT_SECRET}
+      GLOBUS_SCRATCH: ${GLOBUS_SCRATCH:-globus://03232d38-5e57-11ef-b967-17fffa478f3e/Data/level2}   # TARDIGRADE}
+      GLOBUS_LEVEL1: ${GLOBUS_LEVEL1:-globus://d26bd00b-62dc-40d2-9179-7aece2b8c437/}
+      GLOBUS_PUBLISH: ${GLOBUS_PUBLISH:-globus://03232d38-5e57-11ef-b967-17fffa478f3e/Data/level2}
+
+
+      # DKIST
+      ISB_USERNAME: guest
+      ISB_PASSWORD: guest
+      ISB_EXCHANGE: master.direct.x
+
+      GQL_AUTH_TOKEN: dev
+
+      MESH_CONFIG: '{
+          "interservice-bus": {"mesh_address": "interservice-bus", "mesh_port": 5672}, 
+          "internal-api-gateway": {"mesh_address": "internal-api-gateway.service.prod.consul", "mesh_port": 80}
+        }'
+
+
 
 networks:
   default:

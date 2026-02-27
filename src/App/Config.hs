@@ -17,6 +17,7 @@ module App.Config
 import App.Config.MeshConfig
 import App.Types
 import App.Worker.CPU
+import Data.String.Conversions (ConvertibleStrings)
 import Data.Tagged
 import Effectful
 import Effectful.Concurrent
@@ -93,9 +94,9 @@ initConfig = do
   pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
 
 
-initMesh :: (Environment :> es) => Eff es (MeshConfig Endpoint)
+initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
 initMesh = do
-  var <- getEnv "MESH_CONFIG"
+  var <- requireEnv "MESH_CONFIG"
   mesh <- parseMeshConfig var
   auths <- meshAuths
 
@@ -108,15 +109,15 @@ initMesh = do
       }
 
   meshAuths = do
-    userISB <- getEnv "ISB_USERNAME"
-    passISB <- getEnv "ISB_PASSWORD"
+    userISB <- requireEnv "ISB_USERNAME"
+    passISB <- requireEnv "ISB_PASSWORD"
 
-    tokGQL <- getEnv "GQL_AUTH_TOKEN"
+    tokGQL <- requireEnv "GQL_AUTH_TOKEN"
 
     pure $
       MeshConfig
-        { interserviceBus = AuthUser (cs userISB) (cs passISB)
-        , internalApiGateway = AuthToken (cs tokGQL)
+        { interserviceBus = AuthUser userISB passISB
+        , internalApiGateway = AuthToken tokGQL
         }
 
 
@@ -150,7 +151,7 @@ initServices mesh = do
 
   isbService :: (Environment :> es) => Endpoint -> Eff es InterserviceBusConfig
   isbService endpoint = do
-    exg <- getEnv "ISB_EXCHANGE"
+    exg <- requireEnv "ISB_EXCHANGE"
     ISB.initBusConfig endpoint exg
 
   parseService :: (MonadFail m) => Endpoint -> m Service
@@ -168,44 +169,53 @@ initCPUWorkers = do
 
 initScratch :: (Environment :> es, Fail :> es) => Eff es Scratch.Config
 initScratch = do
-  mountPath <- Path . cs <$> getEnv "SCRATCH_DIR"
-  remote <- parseGlobusRemoteURI =<< getEnv "GLOBUS_SCRATCH"
+  mountPath <- Path <$> requireEnv "SCRATCH_DIR"
+  remote <- parseGlobusRemoteURI =<< requireEnv "GLOBUS_SCRATCH"
   pure $ Scratch.Config{mount = mountPath, remote}
 
 
 initRemotes :: (Environment :> es, Fail :> es) => Eff es (Remote Level1, Remote Publish)
 initRemotes = do
-  level1 <- parseGlobusRemoteURI =<< getEnv "GLOBUS_LEVEL1"
-  publish <- parseGlobusRemoteURI =<< getEnv "GLOBUS_PUBLISH"
+  level1 <- parseGlobusRemoteURI =<< requireEnv "GLOBUS_LEVEL1"
+  publish <- parseGlobusRemoteURI =<< requireEnv "GLOBUS_PUBLISH"
   pure (level1, publish)
 
 
-initGlobus :: (Environment :> es, Log :> es) => Eff es GlobusConfig
+initGlobus :: (Environment :> es, Fail :> es, Log :> es) => Eff es GlobusConfig
 initGlobus = do
-  clientId <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_ID"
-  clientSecret <- Tagged . cs <$> getEnv "GLOBUS_CLIENT_SECRET"
+  clientId <- Tagged <$> requireEnv "GLOBUS_CLIENT_ID"
+  clientSecret <- Tagged <$> requireEnv "GLOBUS_CLIENT_SECRET"
   pure $ GlobusLive $ GlobusClient{clientId, clientSecret}
 
 
-initDb :: (Environment :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection
+initDb :: (Environment :> es, Fail :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection
 initDb = do
-  postgres <- cs <$> getEnv "DATABASE_URL"
+  postgres <- requireEnv "DATABASE_URL"
   Rel8.connect [Rel8.connectionSettingFromUrl postgres]
 
 
 initApp :: (Environment :> es, Fail :> es) => Eff es App
 initApp = do
-  let port = 3033 -- readEnv "APP_PORT" -- hard coded, since nginx is hard coded
-  domain <- Tagged . cs <$> getEnv "APP_DOMAIN"
+  port <- readEnv @Int "APP_PORT" -- readEnv "APP_PORT" -- hard coded, since nginx is hard coded
+  domain <- Tagged <$> requireEnv "APP_DOMAIN"
   pure $ App{port, domain}
 
 
-readEnv :: (Environment :> es, Fail :> es) => (Read a) => String -> Eff es a
+readEnv :: (Read a, Environment :> es, Fail :> es) => String -> Eff es a
 readEnv e = do
-  env <- getEnv e
+  env <- requireEnv e
   case readMaybe env of
-    Nothing -> fail $ "Could not read env: " <> env
+    Nothing -> fail $ "Required ENV (" <> e <> ") could not be read: " <> env
     Just a -> pure a
+
+
+requireEnv :: (Environment :> es, Fail :> es, ConvertibleStrings String t) => String -> Eff es t
+requireEnv e = do
+  env <- lookupEnv e
+  case env of
+    Nothing -> fail $ "Required ENV Missing: " <> e
+    Just "" -> fail $ "Required ENV Empty '': " <> e
+    Just v -> pure $ cs v
 
 
 documentHead :: View DocumentHead ()

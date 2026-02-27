@@ -3,7 +3,7 @@
 
 set -e
 
-echo "MIGRATING"
+echo "MIGRATING $DATABASE_URL"
 /root/.cargo/bin/sqlx migrate run
 
 echo "RUNNING"

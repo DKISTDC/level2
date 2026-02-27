@@ -97,9 +97,14 @@ main = do
     runLogger "Server" $ do
       rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
-      log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/"
+      log Debug $ "Develop using https://" <> cs config.app.domain.unTagged <> "/ (" <> show config.app.port <> ")"
+
       liftIO $ do
-        Warp.run config.app.port $
+        let settings =
+              Warp.setPort config.app.port
+                . Warp.setHost "0.0.0.0"
+                $ Warp.defaultSettings
+        Warp.runSettings settings $
           Static.staticPolicy (addBase "app") $
             javascript $
               addHeaders [("app-version", cs appVersion)] $

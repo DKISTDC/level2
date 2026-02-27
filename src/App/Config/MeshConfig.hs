@@ -30,9 +30,8 @@ instance FromJSON MeshService where
   parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}
 
 
-parseMeshConfig :: String -> Eff es (MeshConfig MeshService)
-parseMeshConfig json = do
-  let bs = cs json
+parseMeshConfig :: ByteString -> Eff es (MeshConfig MeshService)
+parseMeshConfig bs = do
   case eitherDecode bs of
     Left e -> throwM $ MeshConfigInvalid e bs
     Right a -> pure a
