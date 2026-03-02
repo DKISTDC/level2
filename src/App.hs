@@ -72,7 +72,7 @@ main = do
   runEff $ runConcurrent $ do
     logs <- Log.init
     runReader logs $ runInit $ do
-      log Info "NSO Level 2"
+      log Info "NSO Level 2a"
       config <- initConfig
 
       fits <- atomically taskChanNew

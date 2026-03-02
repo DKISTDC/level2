@@ -29,12 +29,12 @@ jobs:
     - name: PG_config version check
       run: pg_config --version
 
-    - name: Cache GHCup
-      id: ghc-cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.ghcup
-        key: ${{ runner.os }}-ghc-9.6.7
+    # - name: Cache GHCup
+    #   id: ghc-cache
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: ~/.ghcup
+    #     key: ${{ runner.os }}-ghc-9.6.7
 
 
     - name: Set up Haskell
