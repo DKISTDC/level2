@@ -14,9 +14,6 @@ jobs:
 
     runs-on: ubuntu-22.04
 
-    # container:
-    #   image: haskell:9.6.7
-
     steps:
     - uses: actions/checkout@v4
 
