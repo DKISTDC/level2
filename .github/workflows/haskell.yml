@@ -14,8 +14,8 @@ jobs:
 
     runs-on: ubuntu-22.04
 
-    env:
-      GHCUP_INSTALL_BASE_PREFIX: /home/runner/.ghcup-build
+    # env:
+    #   GHCUP_INSTALL_BASE_PREFIX: /home/runner/.ghcup-build
 
     steps:
     - uses: actions/checkout@v4
@@ -32,15 +32,14 @@ jobs:
     - name: PG_config version check
       run: pg_config --version
 
-    # ✅ Cache GHCup BEFORE setup
-    - name: Cache GHCup
-      id: ghc-cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          /home/runner/.ghcup
-          /home/runner/.ghcup-build
-        key: ${{ runner.os }}-ghc-9.6.7-v3   # <- bump to avoid old invalid empty cache
+    # # ✅ Cache GHCup BEFORE setup
+    # - name: Cache GHCup
+    #   id: ghc-cache
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       /home/runner/.ghcup
+    #     key: ${{ runner.os }}-ghc-9.6.7-v3   # <- bump to avoid old invalid empty cache
 
 
     - name: Set up Haskell
@@ -49,12 +48,12 @@ jobs:
         ghc-version: "9.6.7"
         cabal-version: "3.10.3.0"
 
-    - name: Check GHCUP Cache
-      run: |
-        echo " -- check .ghcup --"
-        ls -ahl ~/.ghcup
-        echo " -- check .ghcup-build
-        ls -ahl /home/runner/.ghcup-build
+    # - name: Check GHCUP Cache
+    #   run: |
+    #     echo " -- check .ghcup --"
+    #     ls -ahl ~/.ghcup
+    #     echo " -- check .ghcup-build
+    #     ls -ahl /home/runner/.ghcup-build
 
     - uses: actions/cache@v4
       id: cabal-cache
