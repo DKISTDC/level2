@@ -78,10 +78,7 @@ jobs:
 
       - name: Login to Artifactory
         run: |
-          echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | \
-            docker login ${{secrets.ARTIFACTORY_URL}} \
-            -u "${{ secrets.ARTIFACTORY_USER }}" \
-            --password-stdin
+          docker login dkistdc-docker.jfrog.io --username ${{secrets.ARTIFACTORY_USER}} --password ${{secrets.ARTIFACTORY_PASSWORD}}
 
 
       - name: Build and push
