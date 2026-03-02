@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     env:
-      GHCUP_INSTALL_BASE_PREFIX: ~/.ghcup
+      GHCUP_INSTALL_BASE_PREFIX: ~/.ghcup-build
 
     steps:
     - uses: actions/checkout@v4
@@ -37,7 +37,9 @@ jobs:
       id: ghc-cache
       uses: actions/cache@v4
       with:
-        path: ~/.ghcup
+        path: |
+          ~/.ghcup
+          ~/.ghcup-build
         key: ${{ runner.os }}-ghc-9.6.7-v3   # <- bump to avoid old invalid empty cache
 
 
@@ -49,7 +51,6 @@ jobs:
 
     - name: Check GHCUP Cache
       run: |
-        echo "HOME ${{ env.HOME }}"
         echo " -- check .ghcup --"
         ls -ahl ~/.ghcup
         echo " -- check /home/runner/.ghcup --"
