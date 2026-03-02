@@ -33,7 +33,7 @@ jobs:
       run: pg_config --version
 
     - name: Set up Haskell
-      uses: haskell/actions/setup@v2
+      uses: haskell-actions/setup@v2
       with:
         ghc-version: "9.6.7"
         cabal-version: "3.10.3.0"
