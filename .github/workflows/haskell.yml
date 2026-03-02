@@ -14,43 +14,35 @@ jobs:
 
     runs-on: ubuntu-24.04
 
-    container:
-      image: haskell:9.6.7
+    # container:
+    #   image: haskell:9.6.7
 
     steps:
     - uses: actions/checkout@v4
 
-    # - uses: actions/setup-haskell@v1
-    #   with:
-    #     ghc-version: '9.6'
-    #     cabal-version: '3.2'
-
-    # - name: Cache
-    #   uses: actions/cache@v3
-    #   env:
-    #     cache-name: cache-cabal
-    #   with:
-    #     path: ~/.cabal
-    #     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-build-${{ env.cache-name }}-
-    #       ${{ runner.os }}-build-
-    #       ${{ runner.os }}-
-
     - name: Install System Dependencies
       run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             libpq-dev \
             pkg-config \
             ca-certificates
-          rm -rf /var/lib/apt/lists/*
+          sudo rm -rf /var/lib/apt/lists/*
+
+    - name: PG_config version check
+      run: pg_config --version
+
+    - name: Set up Haskell
+      uses: haskell/actions/setup@v2
+      with:
+        ghc-version: "9.6.7"
+        cabal-version: "3.10.3.0"
 
     - uses: actions/cache@v4
+      id: cabal-cache
       with:
         path: |
-          /root/.cabal
-          /root/.cache/cabal
+          ~/.cabal/store
           dist-newstyle
         key: ${{ runner.os }}-ghc96-${{ hashFiles('**/*.cabal', '**/cabal.project*') }}
         restore-keys: |
@@ -61,9 +53,9 @@ jobs:
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
 
-    - name: Build
-      run: cabal build --enable-tests --enable-benchmarks all
 
-    - name: Test
-      run: cabal test --test-show-details=direct
+    - name: Build and Test
+      run: |
+        cabal build --enable-tests --enable-benchmarks all
+        cabal test --test-show-details=direct
 
