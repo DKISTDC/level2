@@ -35,7 +35,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.ghcup
-        key: ${{ runner.os }}-ghc-9.6.7-v2   # <- bump once to avoid old empty cache
+        key: ${{ runner.os }}-ghc-9.6.7-v3   # <- bump to avoid old invalid empty cache
 
 
     - name: Set up Haskell
@@ -43,6 +43,14 @@ jobs:
       with:
         ghc-version: "9.6.7"
         cabal-version: "3.10.3.0"
+
+    - name: Check GHCUP Cache
+      run: |
+        echo "HOME ${{ env.HOME }}"
+        echo " -- check .ghcup --"
+        ls -ahl ~/.ghcup
+        echo " -- check /home/runner/.ghcup --"
+        ls -ahl /home/runner/.ghcup
 
     - uses: actions/cache@v4
       id: cabal-cache
@@ -70,6 +78,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
 
+    env:
+      ARTIFACTORY: dkistdc-docker.jfrog.io
+
+
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +91,7 @@ jobs:
 
       - name: Login to Artifactory
         run: |
-          docker login dkistdc-docker.jfrog.io --username ${{secrets.ARTIFACTORY_USER}} --password ${{secrets.ARTIFACTORY_PASSWORD}}
+          docker login ${{env.ARTIFACTORY}} --username ${{secrets.ARTIFACTORY_USER}} --password ${{secrets.ARTIFACTORY_PASSWORD}}
 
 
       - name: Build and push
@@ -88,7 +100,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.ARTIFACTORY_URL }}/level2:${{secrets.VERSION_PREFIX}}.${{ github.run_number }}
-            ${{ secrets.ARTIFACTORY_DOCKER_REGISTRY }}/level2:latest
+            ${{ env.ARTIFACTORY }}/level2:${{secrets.VERSION_PREFIX}}.${{ github.run_number }}
+            ${{ env.ARTIFACTORY }}/level2:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
