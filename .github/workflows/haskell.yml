@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  test:
 
     runs-on: ubuntu-22.04
 
@@ -64,3 +64,33 @@ jobs:
         cabal build --enable-tests --enable-benchmarks all
         cabal test --test-show-details=direct
 
+  docker:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+
+      - name: Login to Artifactory
+        run: |
+          echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | \
+            docker login ${{secrets.ARTIFACTORY_URL}} \
+            -u "${{ secrets.ARTIFACTORY_USER }}" \
+            --password-stdin
+
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.ARTIFACTORY_URL }}/level2:${{secrets.VERSION_PREFIX}}.${{ github.run_number }}
+            ${{ secrets.ARTIFACTORY_DOCKER_REGISTRY }}/level2:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
