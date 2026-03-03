@@ -91,11 +91,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-
       - name: Login to Artifactory
         run: |
-          docker login ${{env.ARTIFACTORY}} --username ${{secrets.ARTIFACTORY_USER}} --password ${{secrets.ARTIFACTORY_PASSWORD}}
+          echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | \
+            docker login "${{ env.ARTIFACTORY }}" \
+            --username "${{ secrets.ARTIFACTORY_USER }}" \
+            --password-stdin
 
+      - name: Validate VERSION_PREFIX
+        run: |
+          if [ -z "${{ secrets.VERSION_PREFIX }}" ]; then
+            echo "VERSION_PREFIX secret is empty or unavailable"
+            exit 1
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -103,7 +111,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.ARTIFACTORY }}/level2:${{secrets.VERSION_PREFIX}}.${{ github.run_number }}
-            ${{ env.ARTIFACTORY }}/level2:latest
+            ${{env.ARTIFACTORY}}/level2:${{secrets.VERSION_PREFIX}}.${{ github.run_number }}
+            ${{env.ARTIFACTORY}}/level2:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
