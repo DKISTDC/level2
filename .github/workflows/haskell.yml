@@ -98,13 +98,6 @@ jobs:
             --username "${{ secrets.ARTIFACTORY_USER }}" \
             --password-stdin
 
-      - name: Validate VERSION_PREFIX
-        run: |
-          if [ -z "${{ secrets.VERSION_PREFIX }}" ]; then
-            echo "VERSION_PREFIX secret is empty or unavailable"
-            exit 1
-          fi
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
