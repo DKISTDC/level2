@@ -148,6 +148,7 @@ library
     , effectful >=2.3 && <3
     , exceptions
     , filepath
+    , gitrev
     , globus >=0.2.1
     , hasql
     , http-api-data
@@ -214,6 +215,7 @@ executable level2
     , effectful >=2.3 && <3
     , exceptions
     , filepath
+    , gitrev
     , globus >=0.2.1
     , hasql
     , http-api-data
@@ -293,6 +295,7 @@ test-suite spec
     , effectful >=2.3 && <3
     , exceptions
     , filepath
+    , gitrev
     , globus >=0.2.1
     , hasql
     , http-api-data

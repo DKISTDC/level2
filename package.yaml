@@ -53,6 +53,7 @@ dependencies:
   - exceptions
   - filepath
   - globus >= 0.2.1
+  - gitrev
   - hasql
   - http-api-data
   - http-client

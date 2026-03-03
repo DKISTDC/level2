@@ -5,9 +5,8 @@
 
 module NSO.Image.Headers where
 
-import App.Version (appVersion)
+import App.Version (AppVersion (..), appVersion)
 import Data.List qualified as L
-import Data.Text (pack)
 import Data.Text qualified as T
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Data.UUID qualified as UUID
@@ -29,7 +28,7 @@ import Telescope.Fits.Header.Class (GFromHeader (..), GToHeader (..))
 
 
 headerSpecVersion :: Text
-headerSpecVersion = "L2." <> pack appVersion
+headerSpecVersion = "L2." <> appVersion.value
 
 
 -- NOPE: PROV_URL - create a provenance URL page

@@ -16,6 +16,7 @@ module App.Config
 
 import App.Config.MeshConfig
 import App.Types
+import App.Version
 import App.Worker.CPU
 import Data.String.Conversions (ConvertibleStrings)
 import Data.Tagged
@@ -89,6 +90,8 @@ initConfig = do
   mesh <- initMesh
   services <- initServices mesh
 
+  log Debug $ dump "AppVersion" appVersion.value
+  log Debug $ dump "GitVersion" gitVersion.value
   log Debug $ dump "MESH internalApiGateway " mesh.internalApiGateway
   log Debug $ dump "MESH interserviceBus " mesh.interserviceBus
   pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}

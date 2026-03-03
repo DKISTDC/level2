@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module App.Page.Dashboard where
@@ -34,11 +35,12 @@ page = do
   appLayout Dashboard mainView
  where
   mainView :: View (Root '[Work]) ()
-  mainView =
+  mainView = do
     col ~ pad 20 . gap 20 $ do
       col $ do
         el ~ fontSize 24 . bold $ "Level 2"
-        el $ text $ cs appVersion
+        el $ text $ appVersion.value
+        link gitVersionURI ~ Style.link $ text $ gitVersion.value
 
       col $ do
         el ~ bold . fontSize 18 $ "Admin"

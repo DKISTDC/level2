@@ -107,7 +107,7 @@ main = do
         Warp.runSettings settings $
           Static.staticPolicy (addBase "app") $
             javascript $
-              addHeaders [("app-version", cs appVersion)] $
+              addHeaders [("app-version", cs appVersion.value)] $
                 webServer config auth fits pubs sync rows
 
   javascript :: Application -> Application
