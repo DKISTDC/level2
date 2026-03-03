@@ -84,7 +84,6 @@ jobs:
     env:
       ARTIFACTORY: dkistdc-docker.jfrog.io
 
-
     steps:
       - uses: actions/checkout@v4
 
@@ -98,13 +97,23 @@ jobs:
             --username "${{ secrets.ARTIFACTORY_USER }}" \
             --password-stdin
 
+      - name: Short Git Commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+
+      - name: Confirm git commit SHA output
+        run: echo ${{ env.COMMIT_SHORT_SHA }}
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ${{env.ARTIFACTORY}}/level2:${{secrets.VERSION_PREFIX}}.${{ github.run_number }}
+            ${{env.ARTIFACTORY}}/level2:${{secrets.VERSION_PREFIX}}.${{github.run_number}}
+            ${{env.ARTIFACTORY}}/level2:${{secrets.VERSION_PREFIX}}.${{env.COMMIT_SHORT_SHA}}
             ${{env.ARTIFACTORY}}/level2:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

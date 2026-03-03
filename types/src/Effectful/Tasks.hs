@@ -9,7 +9,6 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import Effectful.Log
 import Effectful.NonDet
 import NSO.Prelude
 

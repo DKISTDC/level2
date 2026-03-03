@@ -19,7 +19,9 @@ data Endpoint = Endpoint
   , port :: Port
   , path :: Path
   }
-  deriving (Show, Eq)
+  deriving (Eq)
+instance Show Endpoint where
+  show e = "Endpoint " <> e.scheme.value <> "://" <> e.domain.value <> ":" <> show e.port
 
 
 data EndpointAuth

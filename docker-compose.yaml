@@ -147,7 +147,7 @@ services:
       # APP
       APP_DOMAIN: "localhost"
       APP_PORT: 3033
-      CPU_WORKERS: 4
+      CPU_WORKERS: 3
 
       # LOCAL SERVICES
       DATABASE_URL: postgres://dev:dev@postgres:5432/level2

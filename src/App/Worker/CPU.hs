@@ -26,8 +26,9 @@ data CPUWorkers = CPUWorkers
 cpuWorkers :: (Concurrent :> es, Log :> es) => Int -> Eff es CPUWorkers
 cpuWorkers requested = do
   cores <- getNumCapabilities
+  -- Max available (cores - 1) as CPU Workers. Leaving 1 CPU always available to respond to the web interface, logger, etc
   let totalWorkers = max 1 (min requested (cores - 1))
-  log Debug $ "CPU Workers (" <> show totalWorkers <> ") requested=" <> show requested <> " cores=" <> show cores
+  log Info $ "CPU Workers (" <> show totalWorkers <> ") requested=" <> show requested <> " cores=" <> show cores
   CPUWorkers totalWorkers <$> newTVarIO 0
 
 
