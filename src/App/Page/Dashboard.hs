@@ -1,4 +1,3 @@
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module App.Page.Dashboard where
@@ -39,8 +38,8 @@ page = do
     col ~ pad 20 . gap 20 $ do
       col $ do
         el ~ fontSize 24 . bold $ "Level 2"
-        el $ text $ appVersion.value
-        link gitVersionURI ~ Style.link $ text $ gitVersion.value
+        el $ text appVersion.value
+        link gitVersionURI ~ Style.link $ text gitVersion.value
 
       col $ do
         el ~ bold . fontSize 18 $ "Admin"
