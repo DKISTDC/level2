@@ -1,4 +1,4 @@
-name: Haskell CI
+name: Level2 CI
 
 on:
   push:
@@ -81,9 +81,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
 
-    env:
-      ARTIFACTORY: dkistdc-docker.jfrog.io
-
     steps:
       - uses: actions/checkout@v4
 
@@ -93,7 +90,7 @@ jobs:
       - name: Login to Artifactory
         run: |
           echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | \
-            docker login "${{ env.ARTIFACTORY }}" \
+            docker login "${{ vars.ARTIFACTORY }}" \
             --username "${{ secrets.ARTIFACTORY_USER }}" \
             --password-stdin
 
@@ -112,8 +109,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{env.ARTIFACTORY}}/level2:${{secrets.VERSION_PREFIX}}.${{github.run_number}}
-            ${{env.ARTIFACTORY}}/level2:${{secrets.VERSION_PREFIX}}.${{env.COMMIT_SHORT_SHA}}
-            ${{env.ARTIFACTORY}}/level2:latest
+            ${{vars.ARTIFACTORY}}/level2:${{vars.VERSION_PREFIX}}.${{github.run_number}}
+            ${{vars.ARTIFACTORY}}/level2:${{vars.VERSION_PREFIX}}.${{env.COMMIT_SHORT_SHA}}
+            ${{vars.ARTIFACTORY}}/level2:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
