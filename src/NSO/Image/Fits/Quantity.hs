@@ -94,7 +94,7 @@ quantityHDUs qs = runPureEff $ do
   electronPressure <- dataHDU @ElectronPressure $ convertData dyneCmToNm qs.electronPressure
   microturbulence <- dataHDU @Microturbulence $ convertData cmsToKms qs.microturbulence
   magStrength <- dataHDU @MagStrength $ convertData gaussToTesla qs.magStrength
-  magInclination <- dataHDU @MagInclination qs.magInclination
+  magInclination <- dataHDU @MagInclination $ convertData forcePositive360 qs.magInclination
   magAzimuth <- dataHDU @MagAzimuth $ convertData forcePositive360 qs.magAzimuth
   geoHeight <- dataHDU @GeoHeight qs.geoHeight
   gasPressure <- dataHDU @GasPressure $ convertData dyneCmToNm qs.gasPressure
