@@ -34,6 +34,7 @@ import NSO.Image.Types.Frame (Arm (..), Arms (..), Depth, Frames (..), armsFrame
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
+import NSO.Remote (Output)
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId, spectralLines))
 import NSO.Types.InstrumentProgram (Proposal)
@@ -136,7 +137,7 @@ instance ToAsdf InversionInventory where
   anchor _ = Just $ Anchor (knownText @InversionInventory)
 
 
-newtype Fileuris = Fileuris [Path Scratch Filename L2Fits]
+newtype Fileuris = Fileuris [Path Output Filename L2Fits]
 
 
 instance ToAsdf Fileuris where
@@ -478,7 +479,7 @@ instance (KnownText fit) => ToAsdf (ProfileTreeMeta fit) where
       ]
 
 
-generatedL2FrameAsdf :: (Scratch :> es, Error ScratchError :> es) => Id Proposal -> Id Inversion -> Eff es (Path Scratch Filename L2Asdf)
+generatedL2FrameAsdf :: (Scratch Output :> es, Error ScratchError :> es) => Id Proposal -> Id Inversion -> Eff es (Path Output Filename L2Asdf)
 generatedL2FrameAsdf propId invId = do
   let fname = Files.filenameL2Asdf propId invId
   let fpath = filePath (Files.outputL2Dir propId invId) fname

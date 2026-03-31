@@ -5,7 +5,8 @@ module App.Page.Inversion where
 import App.Colors
 import App.Effect.Auth
 import App.Effect.FileManager qualified as FileManager
-import App.Effect.Transfer as Transfer (Transfer (..), transferStatus)
+import App.Effect.GlobusAccess
+import App.Effect.Transfer as Transfer (Transfer (..))
 import App.Error (expectFound)
 import App.Page.Inversions.CommitForm as CommitForm
 import App.Route as Route
@@ -21,7 +22,6 @@ import App.Worker.Publish as Publish
 import Control.Monad ((>=>))
 import Data.Text qualified as T
 import Effectful
-import Effectful.Debug (Debug, delay)
 import Effectful.Dispatch.Dynamic
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic
@@ -29,13 +29,14 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Files (Publish)
 import NSO.Files.DKIST qualified as DKIST
 import NSO.Files.Image qualified as Files
 import NSO.Files.RemoteFolder (Remote)
-import NSO.Files.Scratch (Scratch (..))
+import NSO.Files.Scratch as Scratch (Scratch (..))
+import NSO.Files.Scratch qualified as Scratch
 import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
+import NSO.Remote (Ingest, Output, Publish)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength (SpectralLine (..))
@@ -46,16 +47,16 @@ import Web.Hyperbole.Data.URI as URI (pathUri)
 
 
 page
-  :: (Hyperbole :> es, Transfer :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es)
+  :: (Hyperbole :> es, Transfer Output Publish :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es)
   => Id Proposal
   -> Id Inversion
   -> Page es (InversionStatus : MoreInversions : InversionViews)
 page propId invId = do
   inv <- loadInversion invId
   ds <- loadDatasets inv.programId
-  pub <- send $ TaskLookup $ PublishTask propId invId
-  scratch <- send RemoteScratch
-  publish <- send RemotePublish
+  pub <- send $ TaskLookupStatus $ PublishTask propId invId
+  scratch :: Remote Output <- send (RemoteSource @Output @Publish)
+  publish :: Remote Publish <- send (RemoteDest @Output @Publish)
   appLayout Inversions $ do
     col ~ Style.page $ do
       col ~ gap 5 $ do
@@ -129,7 +130,7 @@ data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id 
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Transfer :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Scratch :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
+instance (Inversions :> es, Transfer Output Publish :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Reload
     | SetDataset (Id Dataset) Bool
@@ -157,13 +158,13 @@ instance (Inversions :> es, Transfer :> es, Datasets :> es, Auth :> es, Tasks Ge
       InversionStatus propId progId invId <- viewId
       ds <- loadDatasets progId
       inv <- loadInversion invId
-      publish <- send RemotePublish
-      scratch <- send RemoteScratch
-      pub <- send $ TaskLookup $ PublishTask propId invId
+      publish <- send (RemoteDest @Output @Publish)
+      scratch <- send (RemoteSource @Output @Publish)
+      pub <- send $ TaskLookupStatus $ PublishTask propId invId
       pure $ viewInversion publish scratch inv ds pub
 
 
-viewInversion :: Remote Publish -> Remote Scratch -> Inversion -> NonEmpty Dataset -> Maybe (Task PublishTask) -> View InversionStatus ()
+viewInversion :: Remote Publish -> Remote Output -> Inversion -> NonEmpty Dataset -> Maybe PublishStatus -> View InversionStatus ()
 viewInversion publish scratch inv ds pub = do
   col ~ gap 30 $ do
     if inv.deleted
@@ -210,7 +211,7 @@ data InversionMeta = InversionMeta (Id Proposal) (Id InstrumentProgram) (Id Inve
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Debug :> es) => HyperView InversionMeta es where
+instance (Inversions :> es) => HyperView InversionMeta es where
   data Action InversionMeta
     = SetNotes Text
     | Delete
@@ -224,7 +225,6 @@ instance (Inversions :> es, Debug :> es) => HyperView InversionMeta es where
     InversionMeta propId progId invId <- viewId
     case action of
       SetNotes notes -> do
-        delay 1000
         Inversions.setNotes invId notes
         inv <- loadInversion invId
         pure $ viewInversionMeta inv
@@ -343,7 +343,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Transfer :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Scratch :> es, Time :> es) => HyperView GenerateStep es where
+instance (GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = RegenError
     | RegenFits
@@ -388,7 +388,7 @@ instance (Transfer :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inver
       log Debug "done"
 
       inv <- loadInversion invId
-      scratch <- send RemoteScratch
+      scratch <- Scratch.remote @Output
       pure $ viewGenerate scratch inv
 
     onStatus s = do
@@ -396,14 +396,14 @@ instance (Transfer :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inver
       pushUpdate vw
 
 
-generateStatus :: (Transfer :> es) => GenStatus -> Eff es (View GenerateStep ())
+generateStatus :: (GlobusAccess Ingest :> es) => GenStatus -> Eff es (View GenerateStep ())
 generateStatus = \case
   GenWaiting -> pure $ do
     loadingMessage "Waiting for job to start"
   GenStarted -> pure $ do
     loadingMessage "Started"
   GenTransferring taskId -> do
-    trans <- Transfer.transferStatus taskId
+    trans <- transferStatus @Ingest taskId
     pure $ do
       loadingMessage "Generating FITS - Transferring L1 Files"
       Transfer.viewTransferStatus trans
@@ -448,14 +448,14 @@ generateStep inv
   | otherwise = StepNext
 
 
-viewGenerate :: Remote Scratch -> Inversion -> View GenerateStep ()
+viewGenerate :: Remote Output -> Inversion -> View GenerateStep ()
 viewGenerate scratch inv
   | inv.deleted = none
   | isInverted inv = viewGenerate' scratch inv
   | otherwise = none
 
 
-viewGenerate' :: Remote Scratch -> Inversion -> View GenerateStep ()
+viewGenerate' :: Remote Output -> Inversion -> View GenerateStep ()
 viewGenerate' scratch inv =
   col ~ gap 10 $ viewStage
  where
@@ -506,7 +506,7 @@ data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id I
 
 
 -- it can't turn green when it succeeds, because  it is outside of this view
-instance (Inversions :> es, Scratch :> es, Time :> es, Queue PublishTask :> es, Tasks PublishTask :> es, Log :> es, Transfer :> es) => HyperView PublishStep es where
+instance (Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
   data Action PublishStep
     = StartPublish
     | WatchPublish
@@ -529,14 +529,14 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Queue PublishTask :> es, 
    where
     loadPublish = do
       PublishStep bucket _ _ invId <- viewId
-      publish <- send RemotePublish
+      publish <- send (RemoteDest @Output @Publish)
       inv <- loadInversion invId
       pure $ viewPublishStep inv $ viewPublish publish bucket inv Nothing
 
     onPublishStatus = publishStatus >=> pushUpdate
 
 
-publishStatus :: (Transfer :> es, Hyperbole :> es, Inversions :> es, Reader PublishStep :> es) => PublishStatus -> Eff es (View PublishStep ())
+publishStatus :: (GlobusAccess Output :> es, Hyperbole :> es, Inversions :> es, Reader PublishStep :> es) => PublishStatus -> Eff es (View PublishStep ())
 publishStatus = \case
   PublishWaiting -> do
     step $ loadingMessage "Waiting to start..."
@@ -547,7 +547,7 @@ publishStatus = \case
   PublishSave -> do
     step $ loadingMessage "Saving..."
   PublishTransferring it -> do
-    trans <- Transfer.transferStatus it
+    trans <- transferStatus @Output it
     step $ Transfer.viewTransferStatus trans
  where
   step cnt = do

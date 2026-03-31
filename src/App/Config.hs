@@ -4,14 +4,15 @@ module App.Config
   , initServices
   , Services (..)
   , initDb
+  , initScratch
   , initGlobus
   , initApp
+  , initRemotes
   , App (..)
   , AuthInfo (..)
   , Tagged (..)
   , AppDomain
   , documentHead
-  , GlobusConfig (..)
   ) where
 
 import App.Config.MeshConfig
@@ -29,11 +30,12 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
-import NSO.Files.DKIST (Level1, Publish)
 import NSO.Files.RemoteFolder
+import NSO.Files.Scratch (Scratches (..))
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Metadata
 import NSO.Prelude
+import NSO.Remote (Level1, Publish)
 import NSO.Types.Common
 import Network.AMQP.Config (AMQPConfig (..), initAMQPConfig, initAMQPConnection)
 import Network.AMQP.Worker.Connection qualified as AMQP
@@ -48,8 +50,8 @@ import Web.Hyperbole
 data Config = Config
   { services :: Services
   , app :: App
-  , globus :: GlobusConfig
-  , scratch :: Scratch.Config
+  , globus :: GlobusClient
+  , scratch :: Scratch.Scratches
   , auth :: AuthInfo
   , db :: Rel8.Connection
   , cpuWorkers :: CPUWorkers
@@ -70,10 +72,6 @@ data Services = Services
   { metadata :: MetadataService
   , interserviceBus :: AMQPConfig
   }
-
-
-data GlobusConfig
-  = GlobusLive GlobusClient
 
 
 initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
@@ -97,6 +95,26 @@ initConfig = do
 
   log Debug $ dump "AppVersion" appVersion.value
   log Debug $ dump "GitVersion" gitVersion.value
+
+  -- DKIST Services
+  services <- initServices
+
+  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
+
+
+initAuth :: (Environment :> es) => GlobusClient -> Eff es AuthInfo
+initAuth _ = do
+  adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
+  pure $ AuthInfo{admins, adminToken}
+ where
+  admins = [UserEmail "shess@nso.edu"]
+
+
+initServices :: forall es. (Environment :> es, Fail :> es, Log :> es) => Eff es Services
+initServices = do
+  mesh <- initMesh
+  bus <- isbService mesh.interserviceBus
+
   log Debug $ dump "MESH internalApiGateway " mesh.internalApiGateway
   log Debug $ dump "MESH interserviceBus " mesh.interserviceBus
   pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, amqp}
@@ -175,11 +193,17 @@ initCPUWorkers = do
   cpuWorkers num
 
 
-initScratch :: (Environment :> es, Fail :> es) => Eff es Scratch.Config
+initScratch :: (Environment :> es, Fail :> es) => Eff es Scratch.Scratches
 initScratch = do
-  mountPath <- Path <$> requireEnv "SCRATCH_DIR"
-  remote <- parseGlobusRemoteURI =<< requireEnv "GLOBUS_SCRATCH"
-  pure $ Scratch.Config{mount = mountPath, remote}
+  ingestGlobus <- parseGlobusRemoteURI =<< requireEnv "SCRATCH_INGEST_GLOBUS"
+  ingestMount <- Path <$> requireEnv "SCRATCH_INGEST_DIR"
+  let ingest = Scratch.Config ingestMount ingestGlobus
+
+  outputGlobus <- parseGlobusRemoteURI =<< requireEnv "SCRATCH_OUTPUT_GLOBUS"
+  outputMount <- Path <$> requireEnv "SCRATCH_OUTPUT_DIR"
+  let output = Scratch.Config outputMount outputGlobus
+
+  pure $ Scratches{ingest, output}
 
 
 initRemotes :: (Environment :> es, Fail :> es) => Eff es (Remote Level1, Remote Publish)
@@ -189,11 +213,11 @@ initRemotes = do
   pure (level1, publish)
 
 
-initGlobus :: (Environment :> es, Fail :> es, Log :> es) => Eff es GlobusConfig
+initGlobus :: (Environment :> es, Fail :> es, Log :> es) => Eff es GlobusClient
 initGlobus = do
   clientId <- Tagged <$> requireEnv "GLOBUS_CLIENT_ID"
   clientSecret <- Tagged <$> requireEnv "GLOBUS_CLIENT_SECRET"
-  pure $ GlobusLive $ GlobusClient{clientId, clientSecret}
+  pure $ GlobusClient{clientId, clientSecret}
 
 
 initDb :: (Environment :> es, Fail :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection

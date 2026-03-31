@@ -1,7 +1,7 @@
 module NSO.Files.Image where
 
 import Data.Text qualified as T
-import NSO.Files.Scratch (Scratch)
+import NSO.Files.Scratch (Ingest, Output)
 import NSO.Image.Headers (fitsFrameFilename)
 import NSO.Prelude
 import NSO.Types.Common
@@ -32,32 +32,32 @@ fileProfileOrig = Path "per_ori.fits"
 data Input
 
 
-dataset :: Dataset -> Path Scratch f Dataset
+dataset :: Dataset -> Path Ingest f Dataset
 dataset d = dataset' d.primaryProposalId d.datasetId
 
 
-dataset' :: Id Proposal -> Id Dataset -> Path Scratch f Dataset
+dataset' :: Id Proposal -> Id Dataset -> Path Ingest f Dataset
 dataset' propId dsetId =
   "input" </> Path (cs propId.fromId) </> Path (cs dsetId.fromId)
 
 
-blancaInput :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
+blancaInput :: Id Proposal -> Id Inversion -> Path Ingest Dir Inversion
 blancaInput ip ii =
   "input" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
-blancaFile :: Path Scratch Dir Inversion -> Path s Filename a -> Path Scratch File Inversion
+blancaFile :: Path Ingest Dir Inversion -> Path s Filename a -> Path Ingest File Inversion
 blancaFile folder (Path filename) = folder </> Path filename
 
 
-isAsdf :: Path Scratch Filename Dataset -> Bool
+isAsdf :: Path Ingest Filename Dataset -> Bool
 isAsdf p = do
   takeExtension p.filePath == ".asdf"
 
 
 -- GENRATED OUTPUTS -------------------------------------------------------------------------------------------
 
-outputL2Dir :: Id Proposal -> Id Inversion -> Path Scratch Dir Inversion
+outputL2Dir :: Id Proposal -> Id Inversion -> Path Output Dir Inversion
 outputL2Dir ip ii =
   "generated" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
 
@@ -69,12 +69,12 @@ inversionDir propId invId = Path (cs propId.fromId) </> Path (cs invId.fromId)
 data L2Asdf
 
 
-outputL2AsdfPath :: Id Proposal -> Id Inversion -> Path Scratch File L2Asdf
+outputL2AsdfPath :: Id Proposal -> Id Inversion -> Path Output File L2Asdf
 outputL2AsdfPath ip ii =
   filePath (outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
-filenameL2Asdf :: Id Proposal -> Id Inversion -> Path Scratch Filename L2Asdf
+filenameL2Asdf :: Id Proposal -> Id Inversion -> Path Output Filename L2Asdf
 filenameL2Asdf _ ii =
   Path $ cs (T.toUpper $ T.map toUnderscore ii.fromId) <> "_L2_metadata.asdf"
  where
@@ -86,7 +86,7 @@ filenameL2Asdf _ ii =
 data L2Fits
 
 
-filenameL2Fits :: Id Inversion -> LocalTime -> Path Scratch Filename L2Fits
+filenameL2Fits :: Id Inversion -> LocalTime -> Path Output Filename L2Fits
 filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
 
 

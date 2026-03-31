@@ -47,7 +47,7 @@ inversionFiles propId invId = do
   pure fs
 
 
-sliceMeta :: (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => InversionFiles Identity File -> Eff es SliceXY
+sliceMeta :: (Error FetchError :> es, Error GenerateError :> es, Scratch Ingest :> es, Log :> es) => InversionFiles Identity File -> Eff es SliceXY
 sliceMeta u = do
   f <- readFits u.profileFit
   slice :: SliceXY <- runParseError InvalidSliceKeys $ requireSlice f.primaryHDU.header
@@ -63,7 +63,7 @@ sliceMeta u = do
 loadFrameInputs
   :: forall es
    . ( Log :> es
-     , Scratch :> es
+     , Scratch Ingest :> es
      , Error FetchError :> es
      , Error QuantityError :> es
      , Error BlancaError :> es

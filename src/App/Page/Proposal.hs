@@ -4,7 +4,7 @@ module App.Page.Proposal where
 
 import App.Colors
 import App.Effect.Auth
-import App.Effect.Transfer (Transfer (RemoteLevel1))
+import App.Effect.Transfer
 import App.Error (expectFound)
 import App.Page.Program (viewProgramDetails)
 import App.Route as Route
@@ -20,9 +20,9 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
-import NSO.Files.DKIST (Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
+import NSO.Remote (Ingest, Level1)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Web.Atomic.CSS
@@ -106,7 +106,7 @@ data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Time :> es, Inversions :> es, Transfer :> es) => HyperView ProgramSummary es where
+instance (Datasets :> es, Time :> es, Inversions :> es, Transfer Level1 Ingest :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
     = ProgramDetails SortField
     | GenIronImage
@@ -118,7 +118,7 @@ instance (Datasets :> es, Time :> es, Inversions :> es, Transfer :> es) => Hyper
       ProgramSummary _ progId <- viewId
       now <- currentTime
       progs <- Programs.loadProgram progId
-      l1 <- send RemoteLevel1
+      l1 <- send (RemoteSource @Level1 @Ingest)
       pure $ mapM_ (viewProgramSummary l1 srt now) progs
     GenIronImage -> pure none
 

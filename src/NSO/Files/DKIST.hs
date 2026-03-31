@@ -2,6 +2,7 @@ module NSO.Files.DKIST where
 
 import NSO.Files.Image qualified as Image
 import NSO.Prelude
+import NSO.Remote (Level1, Publish)
 import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
@@ -9,8 +10,6 @@ import NSO.Types.Inversion (Inversion)
 
 
 -- DKIST -----------------------------------------
-data Level1
-
 
 -- remote :: Remote Level1
 -- remote =
@@ -34,9 +33,6 @@ dataset d = Path (cs d.bucket.bucketName) </> Path (cs d.primaryProposalId.fromI
 
 
 -- Publish --------------------------------------
-
-data Publish
-
 
 -- is this part of the *PATH* ?
 -- baseDir :: Path DKIST Dir SoftPublish

@@ -26,8 +26,9 @@ library
       App.Config
       App.Config.MeshConfig
       App.Effect.Auth
+      App.Effect.Auth.Globus
       App.Effect.FileManager
-      App.Effect.Globus
+      App.Effect.GlobusAccess
       App.Effect.Transfer
       App.Effect.Transfer.UploadStatus
       App.Error
@@ -67,7 +68,6 @@ library
       App.Worker.Generate.Fits
       App.Worker.Generate.Inputs
       App.Worker.Generate.Level1
-      App.Worker.L1QualityImages
       App.Worker.Publish
       App.Worker.PuppetMaster
       App.Worker.SyncMetadata
@@ -114,6 +114,8 @@ library
       NSO.Image.Types.Quantity
       NSO.InterserviceBus
       NSO.Metadata
+      NSO.Remote
+      Publisher
       System.FileCopy
   other-modules:
       Paths_nso_level2

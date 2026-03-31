@@ -35,7 +35,7 @@ genFrame
   :: ( Time :> es
      , GenRandom :> es
      , Log :> es
-     , Scratch :> es
+     , Scratch Output :> es
      , Error GenerateError :> es
      , Error FetchError :> es
      , Error QuantityError :> es

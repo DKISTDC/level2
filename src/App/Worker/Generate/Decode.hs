@@ -13,7 +13,7 @@ import Telescope.Fits (Fits (..))
 import Telescope.Fits.Encoding qualified as Fits
 
 
-readFits :: (Scratch :> es, Error FetchError :> es) => Path Scratch File a -> Eff es Fits
+readFits :: (Scratch s :> es, Error FetchError :> es) => Path s File a -> Eff es Fits
 readFits path = do
   inp <- Scratch.readFile path
   runErrorNoCallStackWith (throwError . ParseError path.filePath) $ fitsDecode inp

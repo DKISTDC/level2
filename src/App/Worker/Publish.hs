@@ -1,7 +1,7 @@
 module App.Worker.Publish where
 
+import App.Effect.GlobusAccess (GlobusAccess, transferStatus)
 import App.Effect.Transfer (Transfer, transferPublish)
-import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception, Handler (..), catches)
 import Control.Monad.Loops
 import Data.Aeson (FromJSON, ToJSON)
@@ -22,6 +22,7 @@ import NSO.Files.Scratch as Scratch
 import NSO.InterserviceBus as InterserviceBus
 import NSO.Metadata as Metadata
 import NSO.Prelude
+import NSO.Remote (Publish)
 import NSO.Types.Common
 import NSO.Types.Dataset (Bucket)
 import NSO.Types.InstrumentProgram
@@ -62,11 +63,12 @@ publishTask
    . ( Datasets :> es
      , Inversions :> es
      , Time :> es
-     , Scratch :> es
      , Log :> es
      , Concurrent :> es
+     , Scratch Output :> es
      , Tasks PublishTask :> es
-     , Transfer :> es
+     , Transfer Output Publish :> es
+     , GlobusAccess Output :> es
      , Error GlobusError :> es
      , Error GraphQLError :> es
      , InterserviceBus :> es
@@ -143,9 +145,9 @@ data PublishError
   deriving (Show, Exception)
 
 
-isTransferComplete :: (Log :> es, Transfer :> es, Error PublishError :> es) => Id Globus.Task -> Eff es Bool
+isTransferComplete :: (Log :> es, GlobusAccess Output :> es, Error PublishError :> es) => Id Task -> Eff es Bool
 isTransferComplete it = do
-  task <- Transfer.transferStatus it
+  task <- transferStatus @Output it
   case task.status of
     Globus.Succeeded -> do
       pure True

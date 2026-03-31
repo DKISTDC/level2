@@ -4,12 +4,12 @@ import NSO.Files.RemoteFolder
 import NSO.Prelude
 import Data.Bifunctor (first)
 import NSO.Types.Common
+import NSO.Remote (User)
 import NSO.Types.Dataset
 import Web.FormUrlEncoded qualified as FUE
 import Web.Hyperbole
 
 
-data User
 
 
 -- Transfer Forms -----------------------------------------------------------------------

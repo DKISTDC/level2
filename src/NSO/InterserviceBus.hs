@@ -6,7 +6,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom (GenRandom)
 import Effectful.Log
-import NSO.Files.DKIST as DKIST (Publish, inversionDir)
+import NSO.Files.DKIST as DKIST (inversionDir)
 import NSO.Files.Image (L2Asdf, L2Fits)
 import NSO.Files.Scratch as Scratch
 import NSO.Image.Asdf as Asdf (generatedL2FrameAsdf)
@@ -14,6 +14,7 @@ import NSO.Image.Fits.Frame as Frames (generatedL2FrameFits)
 import NSO.Image.Headers.Types (Constant (..))
 import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
+import NSO.Remote (Publish)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
@@ -95,7 +96,7 @@ data Conversation
 
 -- Catalog FITS Frames -------------------------------------------------------
 
-catalogFitsFrames :: (Error ScratchError :> es, Scratch :> es, InterserviceBus :> es) => Id Conversation -> Bucket -> Id Proposal -> Id Inversion -> Eff es ()
+catalogFitsFrames :: (Error ScratchError :> es, Scratch Output :> es, InterserviceBus :> es) => Id Conversation -> Bucket -> Id Proposal -> Id Inversion -> Eff es ()
 catalogFitsFrames convId bucket propId invId = do
   Frames fnames <- Frames.generatedL2FrameFits propId invId
   let dir = DKIST.inversionDir propId invId
@@ -114,14 +115,14 @@ data CatalogFrameMessage = CatalogFrameMessage
 
 -- Catalog ASDF  -------------------------------------------------------
 
-catalogAsdf :: (Error ScratchError :> es, Scratch :> es, InterserviceBus :> es) => Id Conversation -> Bucket -> Id Proposal -> Id Inversion -> Eff es ()
+catalogAsdf :: (Error ScratchError :> es, Scratch Output :> es, InterserviceBus :> es) => Id Conversation -> Bucket -> Id Proposal -> Id Inversion -> Eff es ()
 catalogAsdf convId bucket propId invId = do
-  sname :: Path Scratch Filename L2Asdf <- Asdf.generatedL2FrameAsdf propId invId
+  sname :: Path Output Filename L2Asdf <- Asdf.generatedL2FrameAsdf propId invId
   let pth :: Path Publish File L2Asdf = filePath (DKIST.inversionDir propId invId) (publishFileName sname)
   send $ CatalogAsdf convId bucket invId pth
 
 
-publishFileName :: Path Scratch Filename a -> Path Publish Filename a
+publishFileName :: Path Output Filename a -> Path Publish Filename a
 publishFileName (Path f) = Path f
 
 

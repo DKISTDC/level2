@@ -6,7 +6,7 @@ module App.Page.InversionUpload where
 import App.Colors
 import App.Effect.Auth (Auth, openFileManager)
 import App.Effect.FileManager (FileLimit (Files))
-import App.Effect.Transfer (Transfer)
+import App.Effect.GlobusAccess
 import App.Effect.Transfer qualified as Transfer
 import App.Effect.Transfer.UploadStatus
 import App.Page.Inversions.CommitForm (commitForm)
@@ -20,7 +20,7 @@ import App.View.Inversion qualified as Inversion
 import App.View.Layout
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
-import Effectful.Globus (Task)
+import Effectful.Globus (Globus, Task)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
@@ -28,6 +28,7 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Files
 import NSO.Prelude
+import NSO.Remote (Ingest)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Atomic.CSS
@@ -79,7 +80,7 @@ page propId progId invId = do
 
 submitUpload
   :: forall es
-   . (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Scratch :> es, Transfer :> es)
+   . (Log :> es, Hyperbole :> es, GlobusAccess Ingest :> es, GlobusAccess User :> es, Auth :> es, Globus :> es, Datasets :> es, Inversions :> es, Scratch Ingest :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion
@@ -95,7 +96,7 @@ submitUpload propId progId invId = do
   log Debug $ dump "Upload" taskId
   let new = uploads taskId tup
   files <- query
-  redirect $ setUploadQuery (allClearUploading files <> new) $ routeUri $ Route.inversionUpload propId progId invId
+  redirect $ setUploadQuery (files <> new) $ routeUri $ Route.inversionUpload propId progId invId
  where
   uploads :: Id Task -> InversionFiles Maybe Filename -> InversionFiles UploadStatus Filename
   uploads taskId up =
@@ -161,7 +162,7 @@ data Uploads = Uploads (Id Proposal) (Id InstrumentProgram) (Id Inversion)
   deriving (Generic, ViewId)
 
 
-instance (Log :> es, Inversions :> es, Datasets :> es, Reader App :> es, Transfer :> es) => HyperView Uploads es where
+instance (Log :> es, Inversions :> es, Datasets :> es, GlobusAccess User :> es, Reader App :> es) => HyperView Uploads es where
   data Action Uploads
     = Upload
     | UpTransfer (Id Task) TransferAction
@@ -190,7 +191,7 @@ instance (Log :> es, Inversions :> es, Datasets :> es, Reader App :> es, Transfe
             setQuery $ QueryState uploads' def
             pure $ viewUpload dall uploads' metadata
           CheckTransfer -> do
-            tview <- Transfer.checkTransfer (UpTransfer taskId) taskId
+            tview <- Transfer.checkTransfer @User (UpTransfer taskId) taskId
             pure $ viewUploadWithTransfer dall uploads metadata $ do
               tview
    where

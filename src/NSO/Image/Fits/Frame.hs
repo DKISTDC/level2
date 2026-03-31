@@ -20,6 +20,7 @@ import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
+import NSO.Remote (Output)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
@@ -49,12 +50,12 @@ instance Show L2FrameInputs where
      in [i| L2FrameInputs { quantities = , profiles = #{ps}, l1Frame = #{length ks}} |]
 
 
-outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path Scratch File L2Fits
+outputL2Fits :: Id Proposal -> Id Inversion -> LocalTime -> Path Output File L2Fits
 outputL2Fits ip ii dt =
   filePath (Files.outputL2Dir ip ii) $ Files.filenameL2Fits ii dt
 
 
-deleteL2FramesFits :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es ()
+deleteL2FramesFits :: (Scratch Output :> es) => Id Proposal -> Id Inversion -> Eff es ()
 deleteL2FramesFits propId invId = do
   send $ RemoveDir $ Files.outputL2Dir propId invId
 
@@ -127,7 +128,7 @@ instance HDUOrder (Arms a) where
   hduIndex = 12
 
 
-generatedL2FrameFits :: (Scratch :> es, Error ScratchError :> es) => Id Proposal -> Id Inversion -> Eff es (Frames (Path Scratch Filename L2Fits))
+generatedL2FrameFits :: (Scratch Output :> es, Error ScratchError :> es) => Id Proposal -> Id Inversion -> Eff es (Frames (Path Output Filename L2Fits))
 generatedL2FrameFits propId invId = do
   let dir = Files.outputL2Dir propId invId
   files <- filter Files.isFits <$> Scratch.listDirectory dir
@@ -136,5 +137,5 @@ generatedL2FrameFits propId invId = do
     (f : fs) -> do
       pure $ Frames $ fmap l2FitsFilename (f :| fs)
  where
-  l2FitsFilename :: Path Scratch Filename Inversion -> Path Scratch Filename L2Fits
+  l2FitsFilename :: Path Output Filename Inversion -> Path Output Filename L2Fits
   l2FitsFilename (Path f) = Path f

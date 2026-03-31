@@ -16,6 +16,7 @@ import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Prelude
+import NSO.Remote (Ingest)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Telescope.Asdf qualified as Asdf
@@ -28,7 +29,7 @@ newtype Canonical a = Canonical {value :: a}
 newtype Downloaded a = Downloaded {value :: a}
 
 
-canonicalDataset :: (Datasets :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => SliceXY -> Downloaded [Id Dataset] -> Eff es (Canonical Dataset)
+canonicalDataset :: (Datasets :> es, Error FetchError :> es, Error GenerateError :> es, Scratch Ingest :> es, Log :> es) => SliceXY -> Downloaded [Id Dataset] -> Eff es (Canonical Dataset)
 canonicalDataset slice (Downloaded ids) = do
   dss :: [Dataset] <- Datasets.find $ Datasets.ByIds ids
   when (null dss) $ do
@@ -38,7 +39,7 @@ canonicalDataset slice (Downloaded ids) = do
   pure dc
 
 
-requireCanonicalDataset :: (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es (Canonical Dataset)
+requireCanonicalDataset :: (Error FetchError :> es, Error GenerateError :> es, Scratch Ingest :> es, Log :> es) => SliceXY -> [Dataset] -> Eff es (Canonical Dataset)
 requireCanonicalDataset slice ds = do
   vas :: [VISPArmId] <- mapM datasetVISPArmId ds
   let canon = L.find ((== slice.fiducialArmId) . snd) $ zip ds vas
@@ -47,7 +48,7 @@ requireCanonicalDataset slice ds = do
     Just (d, _) -> pure $ Canonical d
 
 
-datasetVISPArmId :: (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Log :> es) => Dataset -> Eff es VISPArmId
+datasetVISPArmId :: (Error FetchError :> es, Error GenerateError :> es, Scratch Ingest :> es, Log :> es) => Dataset -> Eff es VISPArmId
 datasetVISPArmId d = do
   f <- sampleIntensityFrame d
   frameArmId f
@@ -66,7 +67,7 @@ datasetVISPArmId d = do
 
 
 -- | read all downloaded files in the L1 scratch directory
-canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Error GenerateError :> es, Scratch :> es) => Id Proposal -> Id Dataset -> Eff es (NonEmpty L1Fits)
+canonicalL1Frames :: forall es. (Log :> es, Error FetchError :> es, Error GenerateError :> es, Scratch Ingest :> es) => Id Proposal -> Id Dataset -> Eff es (NonEmpty L1Fits)
 canonicalL1Frames propId dsetId = do
   let fdir = Files.dataset' propId dsetId
   -- VSPARMID, see datasetVISPArmId and requireCanonicalDataset
@@ -74,7 +75,7 @@ canonicalL1Frames propId dsetId = do
   mapM (readLevel1File fdir) fs
 
 
-allL1IntensityFrames :: (Scratch :> es, Error FetchError :> es) => Id Proposal -> Id Dataset -> Eff es (NonEmpty L1Frame)
+allL1IntensityFrames :: (Scratch Ingest :> es, Error FetchError :> es) => Id Proposal -> Id Dataset -> Eff es (NonEmpty L1Frame)
 allL1IntensityFrames propId dsetId = do
   fnames <- send $ Scratch.ListDirectory (Files.dataset' propId dsetId)
   let fs = L.sort $ mapMaybe runParseFileName $ filter isL1IntensityFile fnames
@@ -82,13 +83,13 @@ allL1IntensityFrames propId dsetId = do
     [] -> throwError (MissingFrames dsetId)
     (f : fs') -> pure $ f :| fs'
  where
-  isL1IntensityFile :: Path Scratch Filename Dataset -> Bool
+  isL1IntensityFile :: Path Ingest Filename Dataset -> Bool
   isL1IntensityFile (Path f) =
     -- VISP_2023_05_01T19_00_59_515_00630200_V_AOPPO_L1.fits
     Files.isFits (Path f) && "_I_" `L.isInfixOf` f
 
 
-readLevel1File :: forall es. (Scratch :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> L1Frame -> Eff es L1Fits
+readLevel1File :: forall es. (Scratch Ingest :> es, Error FetchError :> es) => Path Ingest Dir Dataset -> L1Frame -> Eff es L1Fits
 readLevel1File dir frame = do
   let path = filePath dir frame.file
   fits <- readFits path
@@ -97,7 +98,7 @@ readLevel1File dir frame = do
     _ -> throwError $ MissingL1HDU frame.file.filePath
 
 
-readLevel1Asdf :: (Scratch :> es, IOE :> es, Error FetchError :> es) => Path Scratch Dir Dataset -> Eff es L1Asdf
+readLevel1Asdf :: (Scratch Ingest :> es, IOE :> es, Error FetchError :> es) => Path Ingest Dir Dataset -> Eff es L1Asdf
 readLevel1Asdf dir = do
   files <- Scratch.listDirectory dir
   case filter Files.isAsdf files of

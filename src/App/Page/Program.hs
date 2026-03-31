@@ -4,7 +4,7 @@ module App.Page.Program where
 
 import App.Colors
 import App.Effect.Auth as Auth
-import App.Effect.Transfer (Transfer (RemoteLevel1))
+import App.Effect.Transfer
 import App.Error (expectFound)
 import App.Route as Route
 import App.Style qualified as Style
@@ -30,9 +30,9 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
-import NSO.Files.DKIST (Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
+import NSO.Remote (Ingest, Level1)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Atomic.CSS
@@ -42,7 +42,7 @@ import Web.Hyperbole
 -- import App.Page.Datasets.Download (ActiveDownload (..))
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es, Transfer :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es, Transfer Level1 Ingest :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es '[ProgramInversions, ProgramDatasets, ProgramDetails]
@@ -51,7 +51,7 @@ page propId progId = do
   progs <- Programs.loadProgram progId >>= expectFound
   let prog = head progs
   now <- currentTime
-  l1 <- send RemoteLevel1
+  l1 <- send (RemoteSource @Level1 @Ingest)
   -- ActiveDownload download <- query
 
   appLayout Route.Proposals $ do
@@ -219,7 +219,7 @@ data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es, Transfer :> es) => HyperView ProgramDatasets es where
+instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es, Transfer Level1 Ingest :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
     = SortDatasets SortField
     deriving (Generic, ViewAction)
@@ -228,7 +228,7 @@ instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
     progs <- Programs.loadProgram progId
-    l1 <- send RemoteLevel1
+    l1 <- send (RemoteSource @Level1 @Ingest)
     pure $ do
       forM_ progs $ \prog -> do
         viewDatasets l1 (NE.toList prog.datasets.items) srt

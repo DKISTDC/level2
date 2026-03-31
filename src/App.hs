@@ -1,8 +1,9 @@
 module App where
 
 import App.Config
-import App.Effect.Auth as Auth (AdminState (..), Auth, initAdmin, runAuth)
+import App.Effect.Auth as Auth (Auth, runAuth)
 import App.Effect.Auth qualified as Auth
+import App.Effect.GlobusAccess
 import App.Effect.Transfer (Transfer, runTransfer)
 import App.Page.Auth qualified as Auth
 import App.Page.Dashboard qualified as Dashboard
@@ -52,7 +53,7 @@ import NSO.Files.Scratch qualified as Scratch
 import NSO.InterserviceBus
 import NSO.Metadata as Metadata
 import NSO.Prelude
-import Network.HTTP.Client qualified as Http
+import NSO.Remote (Ingest, Level1, Output, Publish, User (..))
 import Network.HTTP.Types (status200)
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
@@ -76,25 +77,26 @@ main = do
       log Info "NSO Level 2a"
       config <- initConfig
 
-      fits <- atomically queueChanNew
-      pubs <- initQueueAMQP publishKey config.amqp
-      metas <- atomically queueChanNew
-      props <- atomically queueChanNew
-      sync <- initMetadataSync
-      admin <- initAdmin config.auth.admins config.auth.adminToken
-      bus <- initBus config.amqp
+      runGlobus config.globus config.manager $ do
+        fits <- atomically taskChanNew
+        pubs <- atomically taskChanNew
+        metas <- atomically taskChanNew
+        props <- atomically taskChanNew
+        sync <- initMetadataSync
+        bus <- initBusConnection config.services.interserviceBus
+        globusAccess <- initGlobusClientAccess
 
-      concurrently_
-        (startWebServer config admin fits pubs sync)
-        (runWorkers config admin fits pubs sync metas props bus startWorkers)
+        concurrently_
+          (startWebServer config fits pubs sync globusAccess)
+          (runWorkers config fits pubs sync metas props bus globusAccess startWorkers)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> AdminState -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> Eff es ()
-  startWebServer config auth fits pubs sync =
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> ClientAccess -> Eff es ()
+  startWebServer config fits pubs sync globusAccess =
     runLogger "Server" $ do
       rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
@@ -109,7 +111,7 @@ main = do
           Static.staticPolicy (addBase "app") $
             javascript $
               addHeaders [("app-version", cs appVersion.value)] $
-                webServer config auth fits pubs sync rows
+                webServer config fits pubs sync rows globusAccess
 
   javascript :: Application -> Application
   javascript app req respond = do
@@ -125,10 +127,6 @@ main = do
   startGen = do
     runLogger "Generate" $
       startWorker Gen.generateTask
-
-  startPublishWorker = do
-    runLogger "Publish" $
-      startWorker Publish.publishTask
 
   startLogUpdater = do
     log Debug "start log updater"
@@ -149,8 +147,8 @@ main = do
       , startGen
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
-      , startPublishWorker
-      , startLogUpdater
+      , -- , startPublishWorker
+        startLogUpdater
       ]
 
   runInit =
@@ -160,23 +158,26 @@ main = do
       . runErrorWith @GlobusError crashWithError
       . runFailIO
       . runEnvironment
+      . runTime
 
-  runWorkers config admin fits pubs sync metas props bus =
+  runWorkers config fits pubs sync metas props bus globusAccess =
     runFileSystem
       . runDebugIO
       . runReader config.scratch
       . runReader config.cpuWorkers
       . runRel8 config.db
-      . runScratch config.scratch
-      . runGlobus' config.globus config.manager
+      . runScratch @Ingest config.scratch.ingest
+      . runScratch @Output config.scratch.output
       . runFetchHttp config.manager
-      . runAuth config.app.domain Login admin
-      . runTransfer config.level1 config.publish config.scratch.remote
+      . runGlobusClientAccess @Level1 globusAccess
+      . runGlobusClientAccess @Ingest globusAccess
+      . runGlobusClientAccess @Publish globusAccess
+      . runTransfer @Level1 @Publish config.level1 config.publish
+      . runTransfer @Level1 @Ingest config.level1 config.scratch.ingest.remote
       . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
       . runInterserviceBus bus
-      . runTime
       . runDataInversions
       . runDataDatasets
       . runTaskQueueIO @GenTask fits
@@ -186,8 +187,8 @@ main = do
       . runMetadataSync sync
 
 
-webServer :: Config -> AdminState -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> Application
-webServer config admin fits pubs sync rows =
+webServer :: Config -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
+webServer config fits pubs sync rows globusAccess =
   liveApp
     (document documentHead)
     respond
@@ -220,27 +221,30 @@ webServer config admin fits pubs sync rows =
         "/redirect" -> runPage Auth.login
         -- otherwise, check login status and redirect to the auth page
         _ -> do
-          muser <- Auth.getAccessToken
-          madmin <- Auth.getAdminToken
-          case (muser, madmin) of
-            (Just _, Just _) -> runApp . routeRequest $ router
+          us <- Auth.lookupUser
+          case us.user of
+            (Just u) -> runApp u . routeRequest $ router
             _ -> runPage Auth.page
 
-  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Reader App : Auth : Globus : Scratch : FileSystem : Error GlobusError : Log : Reader (TMVar LogState) : es) a -> Eff es a
+  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Time : Reader App : Scratch Output : Scratch Ingest : FileSystem : Globus : Error GlobusError : Log : Reader (TMVar LogState) : es) a -> Eff es a
   runBasic =
     runReader rows
       . runLogger "AppBasic"
       . runErrorWith @GlobusError onGlobus
+      . runGlobus config.globus config.manager
       . runFileSystem
-      . runScratch config.scratch
-      . runGlobus' config.globus config.manager
-      . runAuth config.app.domain Login admin
+      . runScratch config.scratch.ingest
+      . runScratch config.scratch.output
       . runReader config.app
+      . runTime
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Scratch :> es, Globus :> es, Reader (TMVar LogState) :> es) => Eff (Transfer : Debug : MetadataSync : Queue PublishTask : Tasks PublishTask : Queue GenTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
-  runApp =
-    runTime
-      . runLogger "App"
+  runApp
+    :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Ingest :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
+    => User
+    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
+    -> Eff es Response
+  runApp u =
+    runLogger "App"
       . runErrorWith @Rel8Error crashWithError
       . runErrorWith @GraphQLError crashWithError
       . runGenRandom
@@ -254,12 +258,14 @@ webServer config admin fits pubs sync rows =
       . runTaskQueueAMQP pubs
       . runMetadataSync sync
       . runDebugIO
-      . runTransfer config.level1 config.publish config.scratch.remote
-
-
-runGlobus' :: forall es a. (Log :> es, IOE :> es, Scratch :> es, Error GlobusError :> es) => GlobusConfig -> Http.Manager -> Eff (Globus : es) a -> Eff es a
-runGlobus' (GlobusLive g) mgr action = do
-  runGlobus g mgr action
+      . runAuth u
+      . runGlobusClientAccess @Ingest globusAccess
+      . runGlobusClientAccess @Output globusAccess
+      . runGlobusClientAccess @Publish globusAccess
+      . runGlobusClientAccess @Level1 globusAccess
+      . runGlobusUserAccess
+      . runTransfer @Output @Publish config.scratch.output.remote config.publish
+      . runTransfer @Level1 @Ingest config.level1 config.scratch.ingest.remote
 
 
 onGlobus :: (IOE :> es, Log :> es, Hyperbole :> es) => CallStack -> GlobusError -> Eff es a

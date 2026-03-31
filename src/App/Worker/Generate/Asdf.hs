@@ -39,7 +39,8 @@ generateAsdf
   :: forall es
    . ( Datasets :> es
      , Time :> es
-     , Scratch :> es
+     , Scratch Output :> es
+     , Scratch Ingest :> es
      , Log :> es
      , IOE :> es
      , Error FetchError :> es
@@ -87,7 +88,7 @@ generateAsdf files inv (Canonical dcanon) slice = do
 
 requireMetas
   :: forall es
-   . (Error FetchError :> es, Error GenerateError :> es, Scratch :> es, Error ProfileError :> es, Error QuantityError :> es)
+   . (Error FetchError :> es, Error GenerateError :> es, Scratch Output :> es, Error ProfileError :> es, Error QuantityError :> es)
   => Id Proposal
   -> Id Inversion
   -> SliceXY
@@ -107,12 +108,12 @@ requireMetas propId invId slice arms l1fits = do
 
 
 loadL2FitsMeta
-  :: (Error FetchError :> es, Scratch :> es, Error ProfileError :> es, Error QuantityError :> es)
+  :: (Error FetchError :> es, Scratch Output :> es, Error ProfileError :> es, Error QuantityError :> es)
   => Id Proposal
   -> Id Inversion
   -> SliceXY
   -> Arms ArmWavMeta
-  -> Path Scratch Filename L2Fits
+  -> Path Output Filename L2Fits
   -> L1Fits
   -> Eff es L2FitsMeta
 loadL2FitsMeta propId invId slice arms path l1 = do
@@ -120,13 +121,13 @@ loadL2FitsMeta propId invId slice arms path l1 = do
   runErrorNoCallStackWith (throwError . ParseError path.filePath) $ Meta.frameMetaFromL2Fits path slice arms l1 fits
 
 
-readLevel2Fits :: forall es. (Scratch :> es, Error FetchError :> es) => Id Proposal -> Id Inversion -> Path Scratch Filename L2Fits -> Eff es Fits
+readLevel2Fits :: forall es. (Scratch Output :> es, Error FetchError :> es) => Id Proposal -> Id Inversion -> Path Output Filename L2Fits -> Eff es Fits
 readLevel2Fits pid iid path = do
   let dir = Files.outputL2Dir pid iid
   readFits $ filePath dir path
 
 
-l2FramePaths :: (Scratch :> es) => Id Proposal -> Id Inversion -> Eff es [Path Scratch Filename L2Fits]
+l2FramePaths :: (Scratch Output :> es) => Id Proposal -> Id Inversion -> Eff es [Path Output Filename L2Fits]
 l2FramePaths pid iid = do
   let dir = Files.outputL2Dir pid iid
   fmap (fmap (\p -> Path p.filePath)) $ filter Files.isFits <$> Scratch.listDirectory dir

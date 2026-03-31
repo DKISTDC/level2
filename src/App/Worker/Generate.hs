@@ -1,5 +1,6 @@
 module App.Worker.Generate where
 
+import App.Effect.GlobusAccess (GlobusAccess, waitForTransfer)
 import App.Effect.Transfer (Transfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
@@ -34,6 +35,7 @@ import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
+import NSO.Remote (Ingest, Output)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 
@@ -72,14 +74,15 @@ generateTask
      , Datasets :> es
      , Inversions :> es
      , Time :> es
-     , Scratch :> es
      , Log :> es
      , IOE :> es
+     , Scratch Ingest :> es
+     , Scratch Output :> es
      , Concurrent :> es
      , Tasks GenTask :> es
      , GenRandom :> es
-     , Transfer :> es
-     , IOE :> es
+     , GlobusAccess Level1 :> es
+     , Transfer Level1 Ingest :> es
      )
   => GenTask
   -> Eff es ()
@@ -133,7 +136,7 @@ workFrame
      , Time :> es
      , GenRandom :> es
      , Log :> es
-     , Scratch :> es
+     , Scratch Output :> es
      , Error GenerateError :> es
      , Error QuantityError :> es
      , Error ProfileError :> es
@@ -172,7 +175,7 @@ workFrame t slice frameInputs = do
 
 
 downloadL1Frames
-  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch :> es, Transfer :> es, Datasets :> es, Tasks GenTask :> es)
+  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch Ingest :> es, Transfer Level1 Ingest :> es, GlobusAccess Level1 :> es, Datasets :> es, Tasks GenTask :> es)
   => GenTask
   -> Inversion
   -> Eff es (Downloaded [Id Dataset])
@@ -191,5 +194,5 @@ downloadL1Frames task inv = do
     log Debug $ dump "Download" downloadTaskId
     send $ TaskSetStatus task $ GenTransferring downloadTaskId
     log Debug " - waiting..."
-    Transfer.waitForTransfer (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
+    waitForTransfer @Level1 (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
     pure $ Downloaded $ datasetIds ds

@@ -16,33 +16,44 @@ import System.FilePath (takeDirectory)
 import System.Posix.Files (createSymbolicLink)
 
 
-data Config = Config
-  { mount :: Path Scratch Dir ()
-  , remote :: Remote Scratch
+data Ingest
+data Output
+
+
+data Config s = Config
+  { mount :: Path s Dir ()
+  , remote :: Remote s
+  }
+
+
+data Scratches = Scratches
+  { ingest :: Config Ingest
+  , output :: Config Output
   }
 
 
 data Mounted a
 
 
-data Scratch :: Effect where
-  ListDirectory :: Path Scratch Dir a -> Scratch m [Path Scratch Filename a]
-  ReadFile :: Path Scratch File a -> Scratch es ByteString
-  WriteFile :: Path Scratch File a -> ByteString -> Scratch es ()
-  CopyFile :: Path Scratch File a -> Path Scratch File a -> Scratch es ()
-  PathExists :: Path Scratch File a -> Scratch es Bool
-  DirExists :: Path Scratch File a -> Scratch es Bool
-  CreateSymbolicLink :: Path Scratch f a -> Path Scratch f b -> Scratch es ()
-  RemoveDir :: Path Scratch Dir a -> Scratch es ()
-  Globus :: Scratch es (Remote Scratch)
-  MountedPath :: Path Scratch x a -> Scratch es (Path Scratch (Mounted x) a)
-type instance DispatchOf Scratch = 'Dynamic
+data Scratch s :: Effect where
+  ListDirectory :: Path s Dir a -> Scratch s m [Path s Filename a]
+  ReadFile :: Path s File a -> Scratch s es ByteString
+  WriteFile :: Path s File a -> ByteString -> Scratch s es ()
+  CopyFile :: Path s File a -> Path s File a -> Scratch s es ()
+  PathExists :: Path s File a -> Scratch s es Bool
+  DirExists :: Path s File a -> Scratch s es Bool
+  CreateSymbolicLink :: Path s f a -> Path s f b -> Scratch s es ()
+  RemoveDir :: Path s Dir a -> Scratch s es ()
+  GetConfig :: Scratch s es (Config s)
+  MountedPath :: Path s x a -> Scratch s es (Path s (Mounted x) a)
+type instance DispatchOf (Scratch s) = 'Dynamic
 
 
 runScratch
-  :: (FileSystem :> es, Log :> es, IOE :> es)
-  => Config
-  -> Eff (Scratch : es) a
+  :: forall s a es
+   . (FileSystem :> es, Log :> es, IOE :> es)
+  => Config s
+  -> Eff (Scratch s : es) a
   -> Eff es a
 runScratch cfg = interpret $ \_ -> \case
   ListDirectory dir -> do
@@ -71,53 +82,54 @@ runScratch cfg = interpret $ \_ -> \case
     exists <- FS.doesDirectoryExist (absolutePath dir)
     when exists $ do
       FS.removeDirectoryRecursive (absolutePath dir)
-  Globus -> pure cfg.remote
+  GetConfig -> pure cfg
   MountedPath p -> do
     log Debug $ "MountedPath " <> show p <> " " <> show cfg.mount <> " "
     pure $ mounted p
  where
-  mounted :: Path Scratch x a -> Path Scratch (Mounted x) a
+  mounted :: Path s x b -> Path s (Mounted x) b
   mounted p =
     cfg.mount </> p
 
-  absolutePath :: Path Scratch x a -> FilePath
+  absolutePath :: Path s x b -> FilePath
   absolutePath p = (mounted p).filePath
 
 
-readFile :: (Scratch :> es) => Path Scratch File a -> Eff es ByteString
+readFile :: (Scratch s :> es) => Path s File a -> Eff es ByteString
 readFile = send . ReadFile
 
 
-writeFile :: (Scratch :> es) => Path Scratch File a -> ByteString -> Eff es ()
+writeFile :: (Scratch s :> es) => Path s File a -> ByteString -> Eff es ()
 writeFile f cnt = send $ WriteFile f cnt
 
 
-copyFile :: (Scratch :> es) => Path Scratch File a -> Path Scratch File a -> Eff es ()
+copyFile :: (Scratch s :> es) => Path s File a -> Path s File a -> Eff es ()
 copyFile s d = send $ CopyFile s d
 
 
-listDirectory :: (Scratch :> es) => Path Scratch Dir a -> Eff es [Path Scratch Filename a]
+listDirectory :: (Scratch s :> es) => Path s Dir a -> Eff es [Path s Filename a]
 listDirectory = send . ListDirectory
 
 
-pathExists :: (Scratch :> es) => Path Scratch File a -> Eff es Bool
+pathExists :: (Scratch s :> es) => Path s File a -> Eff es Bool
 pathExists s = send $ PathExists s
 
 
-symLink :: (Scratch :> es, Log :> es) => Path Scratch f a -> Path Scratch f a -> Eff es ()
+symLink :: (Scratch s :> es, Log :> es) => Path s f a -> Path s f a -> Eff es ()
 symLink src dest = do
-  log Debug "EH?"
   send $ CreateSymbolicLink src dest
 
 
-mountedPath :: (Scratch :> es) => Path Scratch x a -> Eff es (Path Scratch (Mounted x) a)
+mountedPath :: (Scratch s :> es) => Path s x a -> Eff es (Path s (Mounted x) a)
 mountedPath = send . MountedPath
 
 
 -- Remote Folder ----------------------------------------
 
-remote :: (Scratch :> es) => Eff es (Remote Scratch)
-remote = send Globus
+remote :: (Scratch s :> es) => Eff es (Remote s)
+remote = do
+  cfg <- send GetConfig
+  pure cfg.remote
 
 
 data ScratchError

@@ -2,7 +2,7 @@ module App.Page.Dataset where
 
 import App.Colors
 import App.Effect.Auth
-import App.Effect.Transfer (Transfer (RemoteLevel1))
+import App.Effect.Transfer
 import App.Route
 import App.Style qualified as Style
 import App.View.Common (showDate, showTimestamp)
@@ -13,9 +13,9 @@ import Data.Aeson (encode)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import NSO.Data.Datasets as Datasets
-import NSO.Files.DKIST (Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
+import NSO.Remote (Ingest, Level1)
 import NSO.Types.Common
 import NSO.Types.Wavelength (spectralLineName)
 import Web.Atomic.CSS
@@ -23,10 +23,10 @@ import Web.Hyperbole
 import Web.Hyperbole.Data.URI (uriToText)
 
 
-page :: (Hyperbole :> es, Datasets :> es, Auth :> es, Transfer :> es) => Id Dataset -> Page es '[]
+page :: (Hyperbole :> es, Datasets :> es, Auth :> es, Transfer Level1 Ingest :> es) => Id Dataset -> Page es '[]
 page di = do
   ds <- Datasets.find (ByIds [di])
-  l1 <- send RemoteLevel1
+  l1 <- send (RemoteSource @Level1 @Ingest)
 
   let sorted = sortOn (Down . (.scanDate)) ds
 

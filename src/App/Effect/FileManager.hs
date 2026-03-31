@@ -6,8 +6,8 @@ import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import NSO.Files.DKIST as DKIST
 import NSO.Files.RemoteFolder
-import NSO.Files.Scratch (Scratch)
 import NSO.Prelude
+import NSO.Remote (Output, Publish)
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
 import Web.Hyperbole.Data.URI hiding (Path)
@@ -94,5 +94,5 @@ openPublish :: Remote Publish -> Path Publish Dir (Bucketed Inversion) -> URI
 openPublish = openRemoteDir
 
 
-openInversion :: Remote Scratch -> Path Scratch Dir Inversion -> URI
+openInversion :: Remote Output -> Path Output Dir Inversion -> URI
 openInversion = openRemoteDir

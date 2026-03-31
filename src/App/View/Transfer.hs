@@ -1,12 +1,14 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module App.View.Transfer where
 
 import App.Colors
-import App.Effect.Transfer as Transfer
+import App.Effect.GlobusAccess as GlobusAccess
 import App.Style qualified as Style
 import App.View.Common qualified as View
 import App.View.Icons as Icons
 import Effectful
-import Effectful.Globus (Task, TaskStatus (..))
+import Effectful.Globus hiding (Id)
 import Effectful.Log
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
@@ -29,9 +31,9 @@ data TransferAction
 
 
 -- I want it to reload itself and call these when necessary
-checkTransfer :: (ViewAction (Action id), Hyperbole :> es, Transfer :> es, Log :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
+checkTransfer :: forall remote id es. (ViewAction (Action id), Hyperbole :> es, GlobusAccess remote :> es, Log :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer action it = do
-  task <- Transfer.transferStatus it
+  task <- GlobusAccess.transferStatus @remote it
   pure $ viewTransfer action it task
 
 
