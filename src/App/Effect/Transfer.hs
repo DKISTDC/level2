@@ -12,20 +12,19 @@ import Effectful.Exception
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import Effectful.Log
+import NSO.Files
 import NSO.Files.DKIST as DKIST
 import NSO.Files.Image qualified as Image
-import NSO.Files.Inversion (InversionFiles (..))
 import NSO.Files.RemoteFolder (Remote (..), remotePath)
 import NSO.Files.Scratch (Scratch (..))
 import NSO.Files.Scratch qualified as Scratch
-import NSO.Files.TransferForm (TransferForm (..))
 import NSO.Files.TransferForm qualified as TransferForm
 import NSO.Prelude
-import NSO.Remote
 import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
+import NSO.Types.User (CurrentAccess (..))
 
 
 -- 1. User -> Scratch Workspace (Ingest)

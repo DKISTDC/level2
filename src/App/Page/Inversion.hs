@@ -29,6 +29,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Files (Ingest, Output, Publish)
 import NSO.Files.DKIST qualified as DKIST
 import NSO.Files.Image qualified as Files
 import NSO.Files.RemoteFolder (Remote)
@@ -36,7 +37,6 @@ import NSO.Files.Scratch as Scratch (Scratch (..))
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
-import NSO.Remote (Ingest, Output, Publish)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength (SpectralLine (..))

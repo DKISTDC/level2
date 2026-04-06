@@ -1,23 +1,10 @@
-module NSO.Remote
-  ( Level1
-  , User (..)
-  , CurrentAccess (..)
-  , Publish
-  , Remote
-  , Ingest
-  , Output
-  ) where
+module NSO.Types.User where
 
 import Data.Aeson (FromJSON, ToJSON)
-import NSO.Files.RemoteFolder (Remote (..))
-import NSO.Files.Scratch (Ingest, Output)
+import Effectful.Globus hiding (Id)
 import NSO.Prelude
 import Network.Globus
 import Web.Hyperbole.Data.Param
-
-
-data Level1
-data Publish
 
 
 data User = User

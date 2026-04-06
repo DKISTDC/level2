@@ -14,7 +14,7 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Time
 import NSO.Prelude
-import NSO.Remote (User (..))
+import NSO.Types.User (User (..))
 import Web.Atomic.CSS
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (pathUri)

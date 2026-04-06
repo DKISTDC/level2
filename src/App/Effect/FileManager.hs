@@ -5,9 +5,8 @@ import Data.Tagged
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import NSO.Files.DKIST as DKIST
-import NSO.Files.RemoteFolder
+import NSO.Files.RemoteFolder (Output, Publish, Remote (..), remotePath)
 import NSO.Prelude
-import NSO.Remote (Output, Publish)
 import NSO.Types.Common
 import NSO.Types.Inversion (Inversion)
 import Web.Hyperbole.Data.URI hiding (Path)

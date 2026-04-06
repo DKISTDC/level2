@@ -28,14 +28,13 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Files
+import NSO.Files (Ingest, Level1, Output, Scratch)
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError)
 import NSO.Image.Headers.Types (SliceXY (..))
 import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
-import NSO.Remote (Ingest, Output)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 

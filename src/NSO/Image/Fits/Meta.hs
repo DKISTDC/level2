@@ -6,6 +6,7 @@ import Data.Massiv.Array ()
 import Effectful
 import Effectful.Error.Static
 import NSO.Files.Image (L2Fits)
+import NSO.Files.RemoteFolder (Output)
 import NSO.Image.Fits.Frame
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
@@ -17,7 +18,6 @@ import NSO.Image.Types.Frame (Arms (..))
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
-import NSO.Remote (Output)
 import NSO.Types.Common
 import NSO.Types.Wavelength (SpectralLine (..))
 import Telescope.Asdf as Asdf

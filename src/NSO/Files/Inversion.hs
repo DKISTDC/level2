@@ -3,7 +3,7 @@ module NSO.Files.Inversion where
 import Data.Bifunctor (first)
 import Data.List qualified as L
 import NSO.Files.Image qualified as Files
-import NSO.Files.Scratch (Ingest)
+import NSO.Files.RemoteFolder (Ingest)
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Inversion

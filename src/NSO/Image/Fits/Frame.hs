@@ -10,6 +10,7 @@ import Effectful.Error.Static
 import Effectful.GenRandom
 import NSO.Files.Image (L2Fits)
 import NSO.Files.Image qualified as Files
+import NSO.Files.RemoteFolder (Output)
 import NSO.Files.Scratch as Scratch (Scratch (..), ScratchError (..), listDirectory)
 import NSO.Image.Fits.Profile as Profile
 import NSO.Image.Fits.Quantity as Quantity
@@ -20,7 +21,6 @@ import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
-import NSO.Remote (Output)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)

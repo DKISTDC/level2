@@ -15,7 +15,7 @@ import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import Effectful.Time
 import NSO.Prelude
-import NSO.Remote (CurrentAccess (..))
+import NSO.Types.User (CurrentAccess (..))
 import Network.Globus (UserEmail (..), UserInfo (..), UserInfoResponse (..), UserProfile (..))
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI

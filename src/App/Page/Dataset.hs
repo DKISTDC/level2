@@ -13,9 +13,9 @@ import Data.Aeson (encode)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import NSO.Data.Datasets as Datasets
+import NSO.Files (Ingest, Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
-import NSO.Remote (Ingest, Level1)
 import NSO.Types.Common
 import NSO.Types.Wavelength (spectralLineName)
 import Web.Atomic.CSS

@@ -12,9 +12,9 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Fetch (FetchResponse (..))
 import Effectful.GraphQL
+import NSO.Files (Publish)
 import NSO.Files.DKIST as DKIST (inversionDir)
 import NSO.Prelude
-import NSO.Remote (Publish)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram

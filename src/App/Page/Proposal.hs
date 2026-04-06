@@ -20,9 +20,9 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
+import NSO.Files (Ingest, Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
-import NSO.Remote (Ingest, Level1)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Web.Atomic.CSS

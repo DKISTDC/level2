@@ -2,7 +2,7 @@ module Publisher where
 
 import App.Config qualified as Config
 import App.Effect.GlobusAccess as GlobusAccess
-import App.Effect.Transfer (Transfer, runTransfer)
+import App.Effect.Transfer (runTransfer)
 import App.Worker.Publish as Publish
 import Control.Monad.Catch (Exception, throwM)
 import Effectful
@@ -14,23 +14,21 @@ import Effectful.Fail
 import Effectful.Fetch
 import Effectful.FileSystem
 import Effectful.GenRandom
-import Effectful.Globus (Globus (..), GlobusError, runGlobus)
+import Effectful.Globus (GlobusError, runGlobus)
 import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
 import Effectful.Tasks
 import Effectful.Time
-import NSO.Data.Datasets (Datasets, runDataDatasets)
-import NSO.Data.Inversions (Inversions, runDataInversions)
-import NSO.Files.Scratch (Scratch, runScratch)
+import NSO.Data.Datasets (runDataDatasets)
+import NSO.Data.Inversions (runDataInversions)
+import NSO.Files (Output, Publish)
 import NSO.Files.Scratch as Scratch
-import NSO.Files.Scratch qualified as Scratch
 import NSO.InterserviceBus
 import NSO.InterserviceBus qualified as ISB
 import NSO.Metadata as Metadata
 import NSO.Prelude
-import NSO.Remote (Level1, Publish)
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)

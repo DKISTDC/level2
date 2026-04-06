@@ -1,10 +1,31 @@
-module NSO.Files.RemoteFolder where
+module NSO.Files.RemoteFolder
+  ( User
+  , Level1
+  , Publish
+  , Ingest
+  , Output
+  , Source
+  , Dest
+  , Remote (..)
+  , remotePath
+  , parseGlobusRemoteURI
+  )
+where
 
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
 import NSO.Prelude
 import NSO.Types.Common as App
+import NSO.Types.User (User)
 import Network.URI qualified as URI
+
+
+data Level1
+data Publish
+
+
+data Ingest
+data Output
 
 
 data Source

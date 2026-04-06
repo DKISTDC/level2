@@ -114,7 +114,6 @@ library
       NSO.Image.Types.Quantity
       NSO.InterserviceBus
       NSO.Metadata
-      NSO.Remote
       Publisher
       System.FileCopy
   other-modules:

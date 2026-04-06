@@ -18,11 +18,11 @@ import Effectful.Time
 import NSO.Data.Datasets (Datasets)
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
+import NSO.Files (Output, Publish)
 import NSO.Files.Scratch as Scratch
 import NSO.InterserviceBus as InterserviceBus
 import NSO.Metadata as Metadata
 import NSO.Prelude
-import NSO.Remote (Publish)
 import NSO.Types.Common
 import NSO.Types.Dataset (Bucket)
 import NSO.Types.InstrumentProgram

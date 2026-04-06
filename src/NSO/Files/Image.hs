@@ -1,7 +1,7 @@
 module NSO.Files.Image where
 
 import Data.Text qualified as T
-import NSO.Files.Scratch (Ingest, Output)
+import NSO.Files.RemoteFolder (Ingest, Output)
 import NSO.Image.Headers (fitsFrameFilename)
 import NSO.Prelude
 import NSO.Types.Common

@@ -1,8 +1,8 @@
 module NSO.Files.DKIST where
 
 import NSO.Files.Image qualified as Image
+import NSO.Files.RemoteFolder (Level1, Publish)
 import NSO.Prelude
-import NSO.Remote (Level1, Publish)
 import NSO.Types.Common as App
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram (Proposal)

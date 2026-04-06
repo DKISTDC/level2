@@ -15,8 +15,8 @@ import Effectful.Globus qualified as Globus
 import Effectful.Log
 import Effectful.Time
 import NSO.Prelude
-import NSO.Remote (CurrentAccess (..), User (..))
 import NSO.Types.Common
+import NSO.Types.User (CurrentAccess (..), User (..))
 
 
 -- Transfer relies on a single implementation of (GlobusAccess remote) for each remote

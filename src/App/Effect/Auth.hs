@@ -13,7 +13,7 @@ import Effectful.Globus
 import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
-import NSO.Remote (User (..))
+import NSO.Types.User (User (..))
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI
 

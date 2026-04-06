@@ -16,7 +16,6 @@ import NSO.Image.Headers.Parse (requireKey)
 import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Prelude
-import NSO.Remote (Ingest)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import Telescope.Asdf qualified as Asdf

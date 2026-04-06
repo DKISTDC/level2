@@ -30,12 +30,11 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
-import NSO.Files.RemoteFolder
+import NSO.Files.RemoteFolder (Level1, Publish, Remote (..), parseGlobusRemoteURI)
 import NSO.Files.Scratch (Scratches (..))
 import NSO.Files.Scratch qualified as Scratch
 import NSO.Metadata
 import NSO.Prelude
-import NSO.Remote (Level1, Publish)
 import NSO.Types.Common
 import Network.AMQP.Config (AMQPConfig (..), initAMQPConfig, initAMQPConnection)
 import Network.AMQP.Worker.Connection qualified as AMQP

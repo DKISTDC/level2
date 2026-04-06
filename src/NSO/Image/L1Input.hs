@@ -6,7 +6,7 @@ import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
 import Data.Void (Void)
 import NSO.Data.Datasets
 import NSO.Prelude
-import NSO.Remote (Ingest)
+import NSO.Files.RemoteFolder (Ingest)
 import NSO.Types.Common
 import NSO.Types.Wavelength
 import Telescope.Fits (Header)

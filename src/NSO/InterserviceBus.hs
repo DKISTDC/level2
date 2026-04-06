@@ -6,6 +6,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom (GenRandom)
 import Effectful.Log
+import NSO.Files (Output, Publish)
 import NSO.Files.DKIST as DKIST (inversionDir)
 import NSO.Files.Image (L2Asdf, L2Fits)
 import NSO.Files.Scratch as Scratch
@@ -14,7 +15,6 @@ import NSO.Image.Fits.Frame as Frames (generatedL2FrameFits)
 import NSO.Image.Headers.Types (Constant (..))
 import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
-import NSO.Remote (Publish)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram

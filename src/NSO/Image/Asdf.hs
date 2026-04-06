@@ -11,7 +11,7 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Error.Static
 import GHC.Generics (Rep, from)
-import NSO.Files
+import NSO.Files (Output, Scratch)
 import NSO.Files.Image (L2Asdf, L2Fits)
 import NSO.Files.Image qualified as Files
 import NSO.Files.Scratch as Scratch (ScratchError (..), pathExists)
@@ -34,7 +34,6 @@ import NSO.Image.Types.Frame (Arm (..), Arms (..), Depth, Frames (..), armsFrame
 import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
-import NSO.Remote (Output)
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId, spectralLines))
 import NSO.Types.InstrumentProgram (Proposal)

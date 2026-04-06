@@ -16,10 +16,6 @@ import System.FilePath (takeDirectory)
 import System.Posix.Files (createSymbolicLink)
 
 
-data Ingest
-data Output
-
-
 data Config s = Config
   { mount :: Path s Dir ()
   , remote :: Remote s

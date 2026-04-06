@@ -28,7 +28,6 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Files
 import NSO.Prelude
-import NSO.Remote (Ingest)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Atomic.CSS

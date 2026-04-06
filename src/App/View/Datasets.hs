@@ -12,10 +12,10 @@ import App.View.Icons qualified as Icons
 import Data.Ord (Down (..))
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Qualify as Qualify (boxRadius, isWavNarrow)
+import NSO.Files (Level1)
 import NSO.Files.DKIST qualified as DKIST
 import NSO.Files.RemoteFolder (Remote (..))
 import NSO.Prelude
-import NSO.Remote (Level1)
 import NSO.Types.Common
 import NSO.Types.Wavelength
 import Numeric (showFFloat)

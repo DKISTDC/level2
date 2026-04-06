@@ -30,9 +30,8 @@ import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs hiding (programInversions)
 import NSO.Data.Programs qualified as Programs
 import NSO.Data.Qualify (qualify)
-import NSO.Files.RemoteFolder (Remote)
+import NSO.Files.RemoteFolder (Ingest, Level1, Remote)
 import NSO.Prelude
-import NSO.Remote (Ingest, Level1)
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (Proposal)
 import Web.Atomic.CSS
