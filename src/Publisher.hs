@@ -4,9 +4,11 @@ import App.Config qualified as Config
 import App.Effect.GlobusAccess as GlobusAccess
 import App.Effect.Transfer (runTransfer)
 import App.Worker.Publish as Publish
+import Control.Monad (forever)
 import Control.Monad.Catch (Exception, throwM)
 import Effectful
 import Effectful.Concurrent
+import Effectful.Concurrent.Async
 import Effectful.Concurrent.STM
 import Effectful.Environment
 import Effectful.Error.Static
@@ -31,26 +33,30 @@ import NSO.Metadata as Metadata
 import NSO.Prelude
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
-import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 
 
--- TODO: How do we get admin auth in here for globus?
--- TODO: a way to run the Tasks interface with AMQP instead of in-process workers
+-- DONE: How do we get admin auth in here for globus?
+-- TODO: run the same Tasks interface with AMQP instead of in-process workers!
 
 main :: IO ()
 main = do
-  hSetBuffering stdout LineBuffering
-  hSetBuffering stderr LineBuffering
-
-  runEff $ runConcurrent . runLogs . runCore . runInit $ do
-    runWorker $ do
-      log Info "NSO L2 Publish Worker"
-      startWorker Publish.publishTask
- where
-  runLogs action = do
+  runEff $ runConcurrent $ do
     logs <- Log.init
-    runReader logs . runLogger "Publish" $ action
+    runReader logs $ do
+      concurrently_ Log.startUpdater start
 
+
+start :: (IOE :> es, Reader Logs :> es, Concurrent :> es) => Eff es ()
+start = do
+  runLogger "Publisher" . runCore . runInit $ do
+    runWorker $ do
+      liftIO $ putStrLn "HELLO3"
+      log Info "NSO L2 Publish Worker"
+      liftIO $ putStrLn "HELLO4"
+      forever $ do
+        log Debug "NSO L2 Publish Worker"
+        threadDelay 1000000
+ where
   runInit =
     runErrorWith @Rel8Error crashWithError
       . runErrorWith @GraphQLError crashWithError

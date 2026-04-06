@@ -42,7 +42,6 @@ import Effectful.GraphQL hiding (Request (..), Response (..))
 import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8 as Rel8
-import Effectful.State.Static.Shared as State
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
@@ -61,7 +60,6 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Network.Wai.Middleware.Static as Static (addBase)
 import Network.Wai.Middleware.Static qualified as Static
-import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (pathUri)
 import Web.Hyperbole.Effect.Request (reqPath)
@@ -69,27 +67,30 @@ import Web.Hyperbole.Effect.Request (reqPath)
 
 main :: IO ()
 main = do
-  hSetBuffering stdout LineBuffering
-  hSetBuffering stderr LineBuffering
-
+  putStrLn "APP MAIN"
   runEff $ runConcurrent $ do
     logs <- Log.init
-    runReader logs $ runInit $ do
-      log Info "NSO Level 2a"
-      config <- initConfig
+    runReader logs start
 
-      runGlobus config.globus config.manager $ do
-        fits <- atomically taskChanNew
-        pubs <- atomically taskChanNew
-        metas <- atomically taskChanNew
-        props <- atomically taskChanNew
-        sync <- initMetadataSync
-        bus <- initBusConnection config.services.interserviceBus
-        globusAccess <- initGlobusClientAccess
 
-        concurrently_
-          (startWebServer config fits pubs sync globusAccess)
-          (runWorkers config fits pubs sync metas props bus globusAccess startWorkers)
+start :: (IOE :> es, Reader Logs :> es, Concurrent :> es) => Eff es ()
+start = do
+  runInit $ do
+    log Info "NSO Level 2a"
+    config <- initConfig
+
+    runGlobus config.globus config.manager $ do
+      fits <- atomically taskChanNew
+      pubs <- atomically taskChanNew
+      metas <- atomically taskChanNew
+      props <- atomically taskChanNew
+      sync <- initMetadataSync
+      bus <- initBusConnection config.services.interserviceBus
+      globusAccess <- initGlobusClientAccess
+
+      concurrently_
+        (startWebServer config fits pubs sync globusAccess)
+        (runWorkers config fits pubs sync metas props bus globusAccess startWorkers)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
@@ -129,18 +130,6 @@ main = do
     runLogger "Generate" $
       startWorker Gen.generateTask
 
-  startLogUpdater = do
-    log Debug "start log updater"
-    logContext "logger" $ do
-      logStatus "start"
-      _ <- runState (0 :: Int) $ forever $ do
-        n <- State.get @Int
-        logStatus (show n)
-        State.put (n + 1)
-        send Log.Render
-        threadDelay (250 * 1000)
-      pure ()
-
   startWorkers =
     mapConcurrently_
       id
@@ -149,7 +138,7 @@ main = do
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
       , -- , startPublishWorker
-        startLogUpdater
+        Log.startUpdater
       ]
 
   runInit =

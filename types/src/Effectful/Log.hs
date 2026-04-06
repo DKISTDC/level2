@@ -2,7 +2,7 @@
 
 module Effectful.Log where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, forever)
 import Data.Char (isAlpha)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
@@ -18,16 +18,16 @@ import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Dynamic
+import Effectful.State.Static.Shared as State
 import System.Console.ANSI qualified as ANSI
 import System.IO (hPutStrLn, stderr)
-import Prelude
+import Prelude hiding (log)
 
 
 data Log :: Effect where
   Log :: LogLevel -> String -> Log m ()
   Context :: String -> m a -> Log m a
   Status :: String -> Log m ()
-  Render :: Log m ()
 
 
 data LogLevel
@@ -51,7 +51,7 @@ newtype ThreadName = ThreadName Text
 
 
 runLogger
-  :: (IOE :> es, Concurrent :> es, Reader (TMVar LogState) :> es)
+  :: (IOE :> es, Concurrent :> es, Reader Logs :> es)
   => ThreadName
   -> Eff (Log : es) a
   -> Eff es a
@@ -70,9 +70,6 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     let rid = fromMaybe "default" ctx
     _ <- modifyState $ \st -> st{rows = Map.insert rid s st.rows}
     pure ()
-  Render -> do
-    flushBuffer
-    displayRows
  where
   cleanupContext ctx = do
     mr <- getRow ctx
@@ -104,29 +101,64 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
       then ' '
       else c
 
-  flushBuffer :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
-  flushBuffer = do
-    var <- ask
-    st <- atomically $ do
-      st <- readTMVar var
-      writeTMVar var $ st{buffer = []}
-      pure st
-    liftIO $ do
-      forM_ (reverse st.buffer) $ \msg -> do
-        hPutStrLn stderr msg
-        -- TEST: should this go before putStrLn?
-        ANSI.hClearFromCursorToLineEnd stderr
 
-  displayRows :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
-  displayRows = do
-    st <- modifyState incrementCount
-    liftIO $ do
-      ANSI.hClearFromCursorToLineEnd stderr
-      hPutStrLn stderr ""
-      ANSI.hClearFromCursorToLineEnd stderr
-      mapM_ (displayRow st) $ Map.toList st.rows
-      ANSI.hCursorUp stderr (length st.rows + 1)
+putMessage :: (Reader (TMVar LogState) :> es, Concurrent :> es) => String -> Eff es ()
+putMessage msg = do
+  _ <- modifyState $ \st -> st{buffer = msg : st.buffer}
+  pure ()
 
+
+removeRow :: (Reader (TMVar LogState) :> es, Concurrent :> es) => RowId -> Eff es ()
+removeRow rid = do
+  _ <- modifyState $ \st -> st{rows = Map.delete rid st.rows}
+  pure ()
+
+
+getRow :: (Concurrent :> es, Reader (TMVar LogState) :> es) => RowId -> Eff es (Maybe String)
+getRow rid = do
+  rows <- ask @(TMVar LogState)
+  st <- atomically $ readTMVar rows
+  pure $ Map.lookup rid st.rows
+
+
+modifyState :: (Concurrent :> es, Reader (TMVar LogState) :> es) => (LogState -> LogState) -> Eff es LogState
+modifyState f = do
+  rows <- ask
+  atomically $ do
+    st :: LogState <- readTMVar rows
+    let st' = f st
+    writeTMVar rows st'
+    pure st'
+
+
+incrementCount :: LogState -> LogState
+incrementCount st = st{count = st.count + 1}
+
+
+flushBuffer :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
+flushBuffer = do
+  var <- ask
+  st <- atomically $ do
+    st <- readTMVar var
+    writeTMVar var $ st{buffer = []}
+    pure st
+  liftIO $ do
+    forM_ (reverse st.buffer) $ \msg -> do
+      hPutStrLn stderr msg
+      -- TEST: should this go before putStrLn?
+      ANSI.hClearFromCursorToLineEnd stderr
+
+
+displayRows :: (Concurrent :> es, IOE :> es, Reader (TMVar LogState) :> es) => Eff es ()
+displayRows = do
+  st <- modifyState incrementCount
+  liftIO $ do
+    ANSI.hClearFromCursorToLineEnd stderr
+    hPutStrLn stderr ""
+    ANSI.hClearFromCursorToLineEnd stderr
+    mapM_ (displayRow st) $ Map.toList st.rows
+    ANSI.hCursorUp stderr (length st.rows + 1)
+ where
   displayRow :: LogState -> (RowId, String) -> IO ()
   displayRow st (rid, r) = do
     let anim = animation st.count
@@ -139,24 +171,6 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     -- ◐◓◑◒
     "◐◓◑◒" !! (n `mod` 4)
 
-  getRow :: (Concurrent :> es, Reader (TMVar LogState) :> es) => RowId -> Eff es (Maybe String)
-  getRow rid = do
-    rows <- ask @(TMVar LogState)
-    st <- atomically $ readTMVar rows
-    pure $ Map.lookup rid st.rows
-
-  modifyState :: (Concurrent :> es, Reader (TMVar LogState) :> es) => (LogState -> LogState) -> Eff es LogState
-  modifyState f = do
-    rows <- ask
-    atomically $ do
-      st :: LogState <- readTMVar rows
-      let st' = f st
-      writeTMVar rows st'
-      pure st'
-
-  incrementCount :: LogState -> LogState
-  incrementCount st = st{count = st.count + 1}
-
 
 type RowId = String
 
@@ -168,7 +182,10 @@ data LogState = LogState
   }
 
 
-init :: (Concurrent :> es) => Eff es (TMVar LogState)
+type Logs = TMVar LogState
+
+
+init :: (Concurrent :> es) => Eff es Logs
 init = newTMVarIO $ LogState 0 mempty mempty
 
 
@@ -200,3 +217,17 @@ logStatus = send . Status
 padSpace :: Int -> String -> String
 padSpace n s =
   s <> replicate (n - length s) ' '
+
+
+-- TODO: this should be external to the log effect?
+startUpdater :: (IOE :> es, Reader Logs :> es, Concurrent :> es) => Eff es ()
+startUpdater = do
+  liftIO $ putStrLn "Starting Log Updater"
+  forever $ do
+    -- _ <- runState (0 :: Int) $ forever $ do
+    -- n <- State.get @Int
+    -- logStatus (show n)
+    -- State.put (n + 1)
+    flushBuffer
+    displayRows
+    threadDelay (250 * 1000)
