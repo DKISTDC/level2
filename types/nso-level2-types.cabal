@@ -28,8 +28,11 @@ library
       Effectful.Log
       Effectful.Rel8
       Effectful.Tasks
+      Effectful.Tasks.TasksRel8
+      Effectful.Tasks.WorkerTask
       Effectful.Time
       Network.Endpoint
+      NSO.Generic
       NSO.Prelude
       NSO.Types.Common
       NSO.Types.Dataset
@@ -67,6 +70,7 @@ library
     , effectful >=2.4 && <3
     , exceptions
     , filepath
+    , generic-data
     , globus >=0.2.1
     , hasql
     , http-api-data

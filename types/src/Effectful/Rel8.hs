@@ -24,6 +24,7 @@ module Effectful.Rel8
   , Expr
   , lit
   , (==.)
+  , (&&.)
   , Returning (..)
   , values
   , OnConflict (..)

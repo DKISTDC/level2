@@ -30,7 +30,7 @@ import Web.Hyperbole hiding (content)
 page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Page es '[Current, Syncs, ScanProp, DatasetRow]
 page = do
   ids <- send Datasets.Ids
-  syncs <- loadSyncs
+  syncs <- send History
   appLayout (Datasets DatasetRoot) $ do
     col ~ Style.page $ do
       col ~ section $ do
@@ -57,15 +57,9 @@ instance (MetadataSync :> es, Log :> es) => HyperView Syncs es where
 
 
   update SyncsRefresh = do
-    syncs <- loadSyncs
+    syncs <- send History
     -- res <- runScanProposals gds
     pure $ viewSyncs syncs
-
-
-loadSyncs :: (MetadataSync :> es) => Eff es [SyncState]
-loadSyncs = do
-  syncIds <- send Sync.History
-  mapM (send . Sync.Get) syncIds
 
 
 viewSyncs :: [SyncState] -> View Syncs ()
@@ -82,7 +76,7 @@ viewSyncs syncs = do
 viewSyncSummary :: SyncState -> View Syncs ()
 viewSyncSummary s = do
   row ~ gap 10 $ do
-    appRoute (Route.Datasets (Route.Sync s.started)) ~ Style.link $ text $ cs $ showDate s.started
+    appRoute (Route.Datasets (Route.Sync s.syncId)) ~ Style.link $ text $ cs $ showDate s.started
     scanProgress s.scans s.proposals
  where
   scanProgress _ Nothing = "Loading..."
@@ -124,7 +118,7 @@ viewSyncProposal scan = do
 viewSyncDataset :: SyncDataset -> View Syncs ()
 viewSyncDataset s = do
   row ~ gap 10 . pad (XY 5 0) $ do
-    appRoute (Route.Datasets $ Route.Dataset s.dataset.datasetId) ~ Style.link $ text s.dataset.datasetId.fromId
+    appRoute (Route.Datasets $ Route.Dataset s.item.datasetId) ~ Style.link $ text s.item.datasetId.fromId
     case s.sync of
       New -> el "New"
       Update -> el "Update"
@@ -178,7 +172,7 @@ viewPropScan scan = do
     el ~ color Danger $ text $ cs $ show e
   forM_ scan.datasets $ \d -> do
     row ~ gap 10 $ do
-      el (text d.dataset.datasetId.fromId)
+      el (text d.item.datasetId.fromId)
       case d.sync of
         New -> el "New"
         Update -> el "Update"

@@ -63,13 +63,7 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     putMessage [i|| #{nm} | #{now} | #{lvl} |#{messageContext mctx} #{msg} |]
   Context ctx m -> do
     a <- localSeqUnlift env $ \unlift -> local (const $ Just ctx) (unlift m)
-
-    mr <- getRow ctx
-    removeRow ctx
-    case mr of
-      Nothing -> pure ()
-      Just r -> do
-        putMessage $ "● [" <> ctx <> "] " <> r
+    cleanupContext ctx
     pure a
   Status s -> do
     ctx <- ask @(Maybe String)
@@ -80,6 +74,14 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
     flushBuffer
     displayRows
  where
+  cleanupContext ctx = do
+    mr <- getRow ctx
+    removeRow ctx
+    case mr of
+      Nothing -> pure ()
+      Just r -> do
+        putMessage $ "● [" <> ctx <> "] " <> r
+
   putMessage :: (Reader (TMVar LogState) :> es, Concurrent :> es) => String -> Eff es ()
   putMessage msg = do
     _ <- modifyState $ \st -> st{buffer = msg : st.buffer}

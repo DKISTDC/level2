@@ -70,18 +70,11 @@ instance (Concurrent :> es, Tasks GenTask :> es) => HyperView Work es where
 
 
   update Refresh = do
-    gens <- allTasks
+    gens <- send TasksAll
     pure $ workView gens
 
 
-allTasks :: forall task es. (Tasks task :> es, WorkerTask task) => Eff es [(task, Status task)]
-allTasks = do
-  wait <- send TasksWaiting
-  work <- send TasksWorking
-  pure $ fmap (,idle @task) wait <> work
-
-
-workView :: [(GenTask, GenStatus)] -> View Work ()
+workView :: [Task GenTask] -> View Work ()
 workView gens = do
   col ~ gap 20 @ onLoad Refresh 1000 $ do
     col ~ Style.card $ do
@@ -90,11 +83,11 @@ workView gens = do
       taskTable gens
 
 
-taskTable :: forall task. (WorkerTask task, Eq (Status task), Show (Status task), Show task) => [(task, Status task)] -> View Work ()
+taskTable :: forall task. (WorkerTask task, Eq (Status task), Show (Status task), Show task) => [Task task] -> View Work ()
 taskTable tasks = do
   table tasks ~ View.table $ do
-    tcol (View.hd "Task") $ \w -> View.cell $ text $ pack $ show $ fst w
-    tcol (View.hd "Status") $ \w -> View.cell $ status $ snd w
+    tcol (View.hd "Task") $ \w -> View.cell $ text $ pack $ show w.task
+    tcol (View.hd "Status") $ \w -> View.cell $ status w.status
  where
   status :: Status task -> View Work ()
   status s

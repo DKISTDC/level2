@@ -53,7 +53,7 @@ page
 page propId invId = do
   inv <- loadInversion invId
   ds <- loadDatasets inv.programId
-  pub <- send $ TaskLookupStatus $ PublishTask propId invId
+  pub <- send $ TaskLookup $ PublishTask propId invId
   scratch <- send RemoteScratch
   publish <- send RemotePublish
   appLayout Inversions $ do
@@ -159,11 +159,11 @@ instance (Inversions :> es, Transfer :> es, Datasets :> es, Auth :> es, Tasks Ge
       inv <- loadInversion invId
       publish <- send RemotePublish
       scratch <- send RemoteScratch
-      pub <- send $ TaskLookupStatus $ PublishTask propId invId
+      pub <- send $ TaskLookup $ PublishTask propId invId
       pure $ viewInversion publish scratch inv ds pub
 
 
-viewInversion :: Remote Publish -> Remote Scratch -> Inversion -> NonEmpty Dataset -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion :: Remote Publish -> Remote Scratch -> Inversion -> NonEmpty Dataset -> Maybe (Task PublishTask) -> View InversionStatus ()
 viewInversion publish scratch inv ds pub = do
   col ~ gap 30 $ do
     if inv.deleted
@@ -379,7 +379,7 @@ instance (Transfer :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inver
 
       -- wait until it starts
       log Debug $ dump "Waiting" task
-      taskWaitStatus task
+      taskWaitWorking task
 
       -- watch status
       log Debug $ dump "Watching" task
@@ -560,15 +560,15 @@ viewPublishStep :: Inversion -> View PublishStep () -> View PublishStep ()
 viewPublishStep inv = stepPublish (publishStep inv)
 
 
-viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe PublishStatus -> View PublishStep ()
-viewPublish pub bucket inv mstatus
+viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe (Task PublishTask) -> View PublishStep ()
+viewPublish pub bucket inv mtask
   | isPublished inv = viewPublished
   | Just _ <- generated inv = viewPublishing
   | otherwise = none
  where
   viewPublishing :: View PublishStep ()
   viewPublishing =
-    case mstatus of
+    case mtask of
       Nothing -> maybe viewNeedsPublish viewPublishError inv.invError
       Just ps -> viewStartWatchPublish ps
 
@@ -584,7 +584,7 @@ viewPublish pub bucket inv mstatus
         when ("GlobusError" `T.isPrefixOf` e) $ do
           route Logout ~ Style.btnOutline Secondary $ "Reauthenticate"
 
-  viewStartWatchPublish :: PublishStatus -> View PublishStep ()
+  viewStartWatchPublish :: Task PublishTask -> View PublishStep ()
   viewStartWatchPublish _ =
     el @ onLoad WatchPublish 100 ~ height 24 $ none
 

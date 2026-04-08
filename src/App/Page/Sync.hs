@@ -19,7 +19,7 @@ import Web.Atomic.CSS
 import Web.Hyperbole
 
 
-page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => SyncId -> Page es '[SyncDetails]
+page :: (Hyperbole :> es, Datasets :> es, MetadataSync :> es, Auth :> es) => Id Sync -> Page es '[SyncDetails]
 page syncId = do
   sc <- send $ Sync.Get syncId
   appLayout (Route.Datasets Route.DatasetRoot) $ do
@@ -30,7 +30,7 @@ page syncId = do
 
 -- Scan --------------------------------------------------
 
-data SyncDetails = SyncDetails SyncId
+data SyncDetails = SyncDetails (Id Sync)
   deriving (Generic, ViewId)
 
 
@@ -81,7 +81,7 @@ viewSyncProposal scan = do
 viewSyncDataset :: SyncDataset -> View SyncDetails ()
 viewSyncDataset s = do
   row ~ gap 10 . pad (XY 5 0) $ do
-    appRoute (Route.Datasets $ Route.Dataset s.dataset.datasetId) ~ Style.link $ text s.dataset.datasetId.fromId
+    appRoute (Route.Datasets $ Route.Dataset s.item.datasetId) ~ Style.link $ text s.item.datasetId.fromId
     case s.sync of
       New -> el "New"
       Update -> el "Update"

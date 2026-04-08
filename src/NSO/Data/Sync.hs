@@ -15,6 +15,7 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
+import Effectful.GenRandom
 import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets (Datasets)
@@ -28,11 +29,9 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
 
-type SyncId = UTCTime
-
-
 data SyncState = SyncState
-  { started :: UTCTime
+  { syncId :: Id Sync
+  , started :: UTCTime
   , -- , error :: Maybe String
     proposals :: Maybe [Id Proposal]
   , scans :: Map (Id Proposal) ScanProposal
@@ -40,11 +39,11 @@ data SyncState = SyncState
 
 
 data MetadataSync :: Effect where
-  Create :: MetadataSync m SyncId
-  History :: MetadataSync m [SyncId]
-  Get :: SyncId -> MetadataSync m SyncState
-  SetProposals :: SyncId -> [Id Proposal] -> MetadataSync m ()
-  SetScan :: SyncId -> Id Proposal -> ScanProposal -> MetadataSync m ()
+  Create :: MetadataSync m (Id Sync)
+  History :: MetadataSync m [SyncState]
+  Get :: Id Sync -> MetadataSync m SyncState
+  SetProposals :: Id Sync -> [Id Proposal] -> MetadataSync m ()
+  SetScan :: Id Sync -> Id Proposal -> ScanProposal -> MetadataSync m ()
 
 
 type instance DispatchOf MetadataSync = Dynamic
@@ -53,19 +52,20 @@ type instance DispatchOf MetadataSync = Dynamic
 type History = TVar [SyncState]
 
 
-runMetadataSync :: (Concurrent :> es, IOE :> es, Time :> es) => History -> Eff (MetadataSync : es) a -> Eff es a
+runMetadataSync :: (Concurrent :> es, IOE :> es, GenRandom :> es, Time :> es) => History -> Eff (MetadataSync : es) a -> Eff es a
 runMetadataSync var = interpret $ \_ -> \case
   Create -> do
     now <- currentTime
+    s <- empty now
     atomically $ do
-      modifyTVar var (empty now :)
-    pure now
+      modifyTVar var (s :)
+    pure s.syncId
   History -> do
+    readTVarIO var
+  Get si -> do
     sts <- readTVarIO var
-    pure $ fmap (.started) sts
-  Get t -> do
-    sts <- readTVarIO var
-    pure $ fromMaybe (empty t) $ L.find (\st -> st.started == t) sts
+    now <- currentTime
+    pure $ fromMaybe (SyncState si now Nothing M.empty) $ L.find (\st -> st.syncId == si) sts
   SetProposals s propIds -> do
     modifySync s $ \st -> st{proposals = Just propIds}
   SetScan s propId scan ->
@@ -74,21 +74,23 @@ runMetadataSync var = interpret $ \_ -> \case
   -- SetError s e ->
   -- modifySync s $ \st -> st{error = Just e}
 
-  empty t = SyncState t Nothing M.empty
+  empty t = do
+    si <- randomId "sync"
+    pure $ SyncState si t Nothing M.empty
 
-  modifySync :: (Concurrent :> es) => SyncId -> (SyncState -> SyncState) -> Eff es ()
+  modifySync :: (Concurrent :> es) => Id Sync -> (SyncState -> SyncState) -> Eff es ()
   modifySync t f = do
     atomically $ do
       modifyTVar var $ fmap (modifyId t f)
 
-  modifyId :: SyncId -> (SyncState -> SyncState) -> SyncState -> SyncState
-  modifyId time f st =
-    if st.started == time
+  modifyId :: Id Sync -> (SyncState -> SyncState) -> SyncState -> SyncState
+  modifyId si f st =
+    if st.syncId == si
       then f st
       else st
 
 
-lastSync :: (MetadataSync :> es) => Eff es (Maybe UTCTime)
+lastSync :: (MetadataSync :> es) => Eff es (Maybe SyncState)
 lastSync = do
   listToMaybe <$> send History
 
@@ -161,17 +163,18 @@ scanResult now exs m res =
         }
 
 
-data SyncDataset = SyncDataset
-  { dataset :: Dataset
+type SyncDataset = SyncItem Dataset
+data SyncItem a = SyncItem
+  { item :: a
   , sync :: Sync
   }
-  deriving (Show)
+  deriving (Show, Read, Eq)
 
 
 syncDataset :: Map (Id Dataset) Dataset -> Dataset -> SyncDataset
 syncDataset m dataset =
-  SyncDataset
-    { dataset
+  SyncItem
+    { item = dataset
     , sync = sync m dataset
     }
 
@@ -189,8 +192,8 @@ sync old d = fromMaybe New $ do
 execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
 execSync sds = do
   -- replace all the datasets!
-  let new = fmap (.dataset) $ filter (\s -> s.sync == New) sds
-  let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
+  let new = fmap (.item) $ filter (\s -> s.sync == New) sds
+  let ups = fmap (.item) $ filter (\s -> s.sync == Update) sds
   logStatus $ " new: " <> show (length new) <> ", update: " <> show (length ups)
   send $ Datasets.Create new
 
@@ -203,11 +206,11 @@ data Sync
   = New
   | Skip
   | Update
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
 
 data ScanError = ScanError String Value
-  deriving (Show, Eq)
+  deriving (Show, Eq, Read)
 
 
 toDataset :: UTCTime -> Map (Id Experiment) Text -> ParsedResult DatasetInventory -> Either ScanError Dataset
