@@ -10,29 +10,21 @@ import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.NonDet
+import Effectful.Rel8
+import Effectful.Tasks.TasksRel8 as TaskDB
+import Effectful.Tasks.WorkerTask
 import NSO.Prelude
 
 
-class WorkerTask t where
-  type Status t :: Type
-  idle :: Status t
-
-
 data TaskChan t = TaskChan
-  { wait :: TVar [t]
-  , work :: TVar [(t, Status t)]
-  , saved :: TVar [(t, Status t)]
-  , queue :: TQueue t
+  { queue :: TQueue t
   }
 
 
 taskChanNew :: STM (TaskChan t)
 taskChanNew = do
-  wait <- newTVar mempty
-  work <- newTVar mempty
-  saved <- newTVar mempty
   queue <- newTQueue
-  pure $ TaskChan{wait, work, queue, saved}
+  pure $ TaskChan queue
 
 
 taskAdd :: (Tasks t :> es) => t -> Eff es ()
@@ -55,11 +47,10 @@ tasksAdd =
 -- taskSetStatus chan t s = do
 --   modifyTVar chan.work $ insert t s
 
-taskSave :: (Tasks t :> es, Eq t, WorkerTask t) => t -> Status t -> Eff es ()
-taskSave t s = do
-  send $ TaskSetStatus t s
-  send $ TaskSave t s
-
+-- taskSave :: (Tasks t :> es, Eq t, WorkerTask t) => t -> Status t -> Eff es ()
+-- taskSave t s = do
+--   send $ TaskSetStatus t s
+--   send $ TaskSave t s
 
 -- | call onStatus every time status updates, until the task disappears
 taskWatchStatus :: forall t es. (Eq (Status t), Tasks t :> es) => (Status t -> Eff es ()) -> t -> Eff es ()
@@ -68,7 +59,8 @@ taskWatchStatus onStatus t = do
  where
   checkNext :: Maybe (Status t) -> Eff es ()
   checkNext !mold = do
-    ms <- send $ TaskLookupStatus t
+    mts <- send $ TaskLookupStatus t
+    let ms = mts >>= status
     case ms of
       Nothing -> pure ()
       Just s -> do
@@ -77,6 +69,13 @@ taskWatchStatus onStatus t = do
 
         send $ TaskWatchDelay t
         checkNext ms
+
+  status :: TaskStatus t -> Maybe (Status t)
+  status = \case
+    Missing -> Nothing
+    Waiting -> Nothing
+    Working s -> Just s
+    Complete -> Nothing
 
 
 -- | Wait for a task to start, then continue
@@ -115,63 +114,60 @@ taskWaitStatus t = do
 -- taskWaitStatus = _
 
 data Tasks t :: Effect where
-  TaskGetStatus :: t -> Tasks t m (Status t)
+  TaskGetStatus :: t -> Tasks t m (TaskStatus t)
   TaskSetStatus :: t -> Status t -> Tasks t m ()
   TaskModStatus :: t -> (Status t -> Status t) -> Tasks t m ()
-  TaskLookupStatus :: t -> Tasks t m (Maybe (Status t))
+  TaskLookupStatus :: t -> Tasks t m (Maybe (TaskStatus t))
   TaskWatchDelay :: t -> Tasks t m ()
   TaskAdd :: t -> Tasks t m ()
   -- TasksAdd :: [t] -> Tasks t m ()
   TaskNext :: Tasks t m t
   TaskDone :: t -> Tasks t m ()
-  TasksWaiting :: Tasks t m [t]
-  TasksWorking :: Tasks t m [(t, Status t)]
-  TaskSave :: t -> Status t -> Tasks t m ()
+  TasksAll :: Tasks t m [Task t]
 
+
+-- TaskSave :: t -> Status t -> Tasks t m ()
 
 type instance DispatchOf (Tasks t) = 'Dynamic
 
 
 runTasks
   :: forall t a es
-   . (Concurrent :> es, Eq t, WorkerTask t)
+   . (Concurrent :> es, Eq t, Serial t, Serial (Status t), WorkerTask t, Rel8 :> es)
   => TaskChan t
   -> Eff (Tasks t : es) a
   -> Eff es a
 runTasks chan = interpret $ \_ -> \case
   TaskGetStatus t -> do
-    atomically $ readStatus t
+    TaskDB.lookupTaskStatus t
   TaskSetStatus t s -> do
-    atomically $ modifyTVar chan.work $ insert t s
+    TaskDB.updateStatus t s
   TaskLookupStatus t -> do
-    atomically $ do
-      wait <- readTVar chan.wait
-      work <- readTVar chan.work
-      pure $ L.lookup t work <|> idleStatus wait t
-  TaskModStatus t m -> atomically $ do
-    modifyTVar chan.work $ adjust t m
-  TaskNext -> atomically $ do
-    t <- readTQueue chan.queue
-    modifyTVar chan.wait $ filter (/= t)
-    modifyTVar chan.work $ insert t (idle @t)
+    s <- TaskDB.lookupTaskStatus t
+    case s of
+      Missing -> pure Nothing
+      other -> pure $ Just other
+  TaskModStatus t m -> do
+    TaskDB.modifyStatus t m
+  TaskNext -> do
+    t <- atomically $ readTQueue chan.queue
+    TaskDB.updateStatus t (idle @t)
     pure t
-  TaskDone t -> atomically $ do
-    modifyTVar chan.work $ delete t
-  TasksWaiting -> do
-    readTVarIO chan.wait
-  TasksWorking -> do
-    readTVarIO chan.work
-
-  -- Idempotent. A task that exactly matches an existing one will not be added twice
-  TaskAdd t -> atomically $ do
-    wait <- readTVar chan.wait
-    work <- readTVar chan.work
-    when (t `notElem` wait && t `notMember` work) $ do
-      writeTVar chan.wait $ t : wait
-      writeTQueue chan.queue t
-  TaskSave t s -> atomically $ do
-    modifyTVar chan.saved $ insert t s
-  -- just so users don't need Concurrent
+  TaskDone t -> do
+    TaskDB.markComplete t
+  TasksAll -> do
+    TaskDB.queryTasks
+  TaskAdd t -> do
+    ts <- TaskDB.queryTasks
+    -- Idempotent. A task that exactly matches an existing one will not be added twice
+    -- TODO: what about regenerating things? It'll have the same task if we don't activl
+    -- WARNING: currently TaskDB doesn't clean up, it won't re-queue them, because they already exist
+    unless (t `elem` fmap (.task) ts) $ do
+      atomically $ writeTQueue chan.queue t
+      TaskDB.insertTask t
+  -- TaskSave t s -> atomically $ do
+  --   modifyTVar chan.saved $ insert t s
+  -- -- just so users don't need Concurrent
   TaskWatchDelay _ -> do
     threadDelay $ 500 * 1000
  where
@@ -180,30 +176,30 @@ runTasks chan = interpret $ \_ -> \case
     | t `elem` wait = Just $ idle @t
     | otherwise = Nothing
 
-  -- \| Read status, used in both lookup and reading
-  readStatus :: (Eq t, WorkerTask t) => t -> STM (Status t)
-  readStatus t = do
-    work <- readTVar chan.work
-    pure $ fromMaybe (idle @t) $ lookup t work
 
-  delete :: (Eq t) => t -> [(t, s)] -> [(t, s)]
-  delete t = filter ((/= t) . fst)
+-- -- \| Read status, used in both lookup and reading
+-- readStatus :: (Eq t, WorkerTask t) => t -> STM (Status t)
+-- readStatus t = do
+--   work <- readTVar chan.work
+--   pure $ fromMaybe (idle @t) $ lookup t work
 
-  insert :: (Eq t) => t -> s -> [(t, s)] -> [(t, s)]
-  insert t s tss =
-    (t, s) : delete t tss
-
-  adjust :: (Eq t) => t -> (s -> s) -> [(t, s)] -> [(t, s)]
-  adjust t f = fmap mapKey
-   where
-    mapKey ts =
-      if fst ts == t
-        then second f ts
-        else ts
-
-  notMember :: (Eq t) => t -> [(t, s)] -> Bool
-  notMember t ts = notElem t $ map fst ts
-
+-- delete :: (Eq t) => t -> [(t, s)] -> [(t, s)]
+-- delete t = filter ((/= t) . fst)
+--
+-- insert :: (Eq t) => t -> s -> [(t, s)] -> [(t, s)]
+-- insert t s tss =
+--   (t, s) : delete t tss
+--
+-- adjust :: (Eq t) => t -> (s -> s) -> [(t, s)] -> [(t, s)]
+-- adjust t f = fmap mapKey
+--  where
+--   mapKey ts =
+--     if fst ts == t
+--       then second f ts
+--       else ts
+--
+-- notMember :: (Eq t) => t -> [(t, s)] -> Bool
+-- notMember t ts = notElem t $ map fst ts
 
 startWorker :: forall t es. (Concurrent :> es, WorkerTask t, Tasks t :> es) => (t -> Eff es ()) -> Eff es ()
 startWorker work = do
