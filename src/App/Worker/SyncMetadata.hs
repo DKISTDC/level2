@@ -18,12 +18,10 @@ import NSO.Types.InstrumentProgram
 -- SYNC METADATA -----------------------------------------------
 
 data SyncMetadataTask = SyncMetadataTask {syncId :: SyncId}
-  deriving (Show, Eq)
+  deriving (Generic, Show, Read, Eq)
 
 
-instance WorkerTask SyncMetadataTask where
-  type Status SyncMetadataTask = Bool
-  idle = False
+instance WorkerTask SyncMetadataTask
 
 
 needsMetadataSync :: (MetadataSync :> es, Time :> es) => Eff es Bool
@@ -65,7 +63,7 @@ data SyncProposalTask = SyncProposalTask
   { syncId :: SyncId
   , proposalId :: Id Proposal
   }
-  deriving (Eq, Show)
+  deriving (Generic, Eq, Show, Read)
 
 
 instance WorkerTask SyncProposalTask where
@@ -76,7 +74,8 @@ instance WorkerTask SyncProposalTask where
 data SyncProgress
   = Wait
   | Scan
-  | Exec [ScanError] [SyncDataset]
+  | Exec [ScanError] [SyncItem (Id Dataset)]
+  deriving (Eq, Show, Read)
 
 
 syncProposalTask :: (Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
@@ -92,6 +91,7 @@ syncProposalTask task = do
       logStatus "ERROR"
       log Err $ dump "ScanError" err
 
-    send $ TaskSetStatus task $ Exec scan.errors scan.datasets
+    let syncDatasetIds = fmap (\sd -> SyncItem sd.item.datasetId sd.sync) scan.datasets
+    send $ TaskSetStatus task $ Exec scan.errors syncDatasetIds
 
     Sync.execSync scan.datasets

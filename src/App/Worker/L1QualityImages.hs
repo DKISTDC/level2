@@ -21,6 +21,7 @@ import NSO.Types.Wavelength
 
 
 data L1QualityImageTask = L1QualityImageTask {proposalId :: Id Proposal, programId :: Id InstrumentProgram}
+  deriving (Generic)
 
 
 instance WorkerTask L1QualityImageTask where
@@ -42,8 +43,7 @@ l1QualityImageTask :: forall es. (Log :> es, Scratch :> es, Tasks L1QualityImage
 l1QualityImageTask task = do
   res <- runErrorNoCallStack l1QualityImageWork
   case res of
-    Left e -> do
-      send $ TaskSave task (ImageError e)
+    Left _err -> pure () -- send $ TaskSave task (ImageError e)
     Right _ -> pure ()
  where
   l1QualityImageWork :: Eff (Error QualityImageError : es) ()

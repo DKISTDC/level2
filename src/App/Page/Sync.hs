@@ -81,7 +81,7 @@ viewSyncProposal scan = do
 viewSyncDataset :: SyncDataset -> View SyncDetails ()
 viewSyncDataset s = do
   row ~ gap 10 . pad (XY 5 0) $ do
-    appRoute (Route.Datasets $ Route.Dataset s.dataset.datasetId) ~ Style.link $ text s.dataset.datasetId.fromId
+    appRoute (Route.Datasets $ Route.Dataset s.item.datasetId) ~ Style.link $ text s.item.datasetId.fromId
     case s.sync of
       New -> el "New"
       Update -> el "Update"

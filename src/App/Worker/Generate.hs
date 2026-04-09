@@ -20,7 +20,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Exception (catch)
 import Effectful.GenRandom
-import Effectful.Globus (GlobusError (..), Task)
+import Effectful.Globus as Globus (GlobusError (..), Task)
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Tasks
@@ -39,11 +39,7 @@ import NSO.Types.InstrumentProgram (Proposal)
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Eq)
-
-
-instance Show GenTask where
-  show g = "GenTask " <> show g.proposalId <> " " <> show g.inversionId
+  deriving (Generic, Eq, Read, Show)
 
 
 instance WorkerTask GenTask where
@@ -54,21 +50,20 @@ instance WorkerTask GenTask where
 data GenStatus
   = GenWaiting
   | GenStarted
-  | GenTransferring (Id Task)
+  | GenTransferring (Id Globus.Task)
   | GenTransferComplete
   | GenFrames {started :: UTCTime, skipped :: Int, complete :: Int, total :: Int, throughput :: Float}
   | GenAsdf
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show, Read)
 
 
-instance Show GenStatus where
-  show GenWaiting = "GenFits Waiting"
-  show GenStarted = "GenFits Started"
-  show (GenTransferring _) = "GenFits Transferring"
-  show GenTransferComplete = "GenFits Transfer Complete"
-  show GenFrames{complete, skipped, total} = "GenFits Creating " <> show (complete + skipped) <> " " <> show total
-  show GenAsdf = "GenAsdf"
-
+-- instance Show GenStatus where
+--   show GenWaiting = "GenFits Waiting"
+--   show GenStarted = "GenFits Started"
+--   show (GenTransferring _) = "GenFits Transferring"
+--   show GenTransferComplete = "GenFits Transfer Complete"
+--   show GenFrames{complete, skipped, total} = "GenFits Creating " <> show (complete + skipped) <> " " <> show total
+--   show GenAsdf = "GenAsdf"
 
 generateTask
   :: forall es

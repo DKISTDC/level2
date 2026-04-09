@@ -161,17 +161,18 @@ scanResult now exs m res =
         }
 
 
-data SyncDataset = SyncDataset
-  { dataset :: Dataset
+type SyncDataset = SyncItem Dataset
+data SyncItem a = SyncItem
+  { item :: a
   , sync :: Sync
   }
-  deriving (Show)
+  deriving (Show, Read, Eq)
 
 
 syncDataset :: Map (Id Dataset) Dataset -> Dataset -> SyncDataset
 syncDataset m dataset =
-  SyncDataset
-    { dataset
+  SyncItem
+    { item = dataset
     , sync = sync m dataset
     }
 
@@ -189,8 +190,8 @@ sync old d = fromMaybe New $ do
 execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
 execSync sds = do
   -- replace all the datasets!
-  let new = fmap (.dataset) $ filter (\s -> s.sync == New) sds
-  let ups = fmap (.dataset) $ filter (\s -> s.sync == Update) sds
+  let new = fmap (.item) $ filter (\s -> s.sync == New) sds
+  let ups = fmap (.item) $ filter (\s -> s.sync == Update) sds
   logStatus $ " new: " <> show (length new) <> ", update: " <> show (length ups)
   send $ Datasets.Create new
 
@@ -203,11 +204,11 @@ data Sync
   = New
   | Skip
   | Update
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
 
 data ScanError = ScanError String Value
-  deriving (Show, Eq)
+  deriving (Show, Eq, Read)
 
 
 toDataset :: UTCTime -> Map (Id Experiment) Text -> ParsedResult DatasetInventory -> Either ScanError Dataset

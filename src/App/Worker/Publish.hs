@@ -29,7 +29,7 @@ import Network.Globus qualified as Globus
 
 
 data PublishTask = PublishTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Eq, Show)
+  deriving (Generic, Eq, Show, Read)
 
 
 instance WorkerTask PublishTask where
@@ -40,10 +40,10 @@ instance WorkerTask PublishTask where
 data PublishStatus
   = PublishWaiting
   | PublishStarted
-  | PublishTransferring (Id Task)
+  | PublishTransferring (Id Globus.Task)
   | PublishMessages
   | PublishSave
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read)
 
 
 startPublish :: (Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
@@ -127,7 +127,7 @@ publishTask task = do
 
 
 data PublishError
-  = TransferFailed (Id Task)
+  = TransferFailed (Id Globus.Task)
   | MissingProposalDatasets (Id Proposal)
   | MixedProposalBuckets (Id Proposal)
   | GlobusError GlobusError
@@ -138,7 +138,7 @@ data PublishError
   deriving (Show, Exception)
 
 
-isTransferComplete :: (Log :> es, Transfer :> es, Error PublishError :> es) => Id Task -> Eff es Bool
+isTransferComplete :: (Log :> es, Transfer :> es, Error PublishError :> es) => Id Globus.Task -> Eff es Bool
 isTransferComplete it = do
   task <- Transfer.transferStatus it
   case task.status of

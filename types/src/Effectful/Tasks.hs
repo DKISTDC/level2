@@ -1,10 +1,23 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Effectful.Tasks where
+module Effectful.Tasks
+  ( taskChanNew
+  , taskAdd
+  , tasksAdd
+  , TaskChan (..)
+  , taskWatchStatus
+  , taskWaitWorking
+  , Tasks (..)
+  , runTasks
+  , startWorker
+  , Task (..)
+  , WorkerTask (..)
+  ) where
 
 import Control.Monad (forever)
 import Data.Bifunctor (second)
 import Data.List qualified as L
+import Data.Maybe (isNothing)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
@@ -59,38 +72,34 @@ taskWatchStatus onStatus t = do
  where
   checkNext :: Maybe (Status t) -> Eff es ()
   checkNext !mold = do
-    mts <- send $ TaskLookupStatus t
-    let ms = mts >>= status
-    case ms of
+    mt <- send $ TaskLookup t
+    case mt of
       Nothing -> pure ()
-      Just s -> do
-        when (Just s /= mold) $ do
-          onStatus s
+      Just tsk -> do
+        when (Just tsk.status /= mold) $ do
+          onStatus tsk.status
 
         send $ TaskWatchDelay t
-        checkNext ms
-
-  status :: TaskStatus t -> Maybe (Status t)
-  status = \case
-    Missing -> Nothing
-    Waiting -> Nothing
-    Working s -> Just s
-    Complete -> Nothing
+        checkNext $ (.status) <$> mt
 
 
 -- | Wait for a task to start, then continue
-taskWaitStatus :: forall t es. (Eq (Status t), Tasks t :> es) => t -> Eff es ()
-taskWaitStatus t = do
+taskWaitWorking :: forall t es. (Tasks t :> es) => t -> Eff es ()
+taskWaitWorking t = do
   checkNext
  where
   checkNext :: Eff es ()
   checkNext = do
-    ms <- send $ TaskLookupStatus t
-    case ms of
-      Just _ -> pure ()
-      Nothing -> do
+    ms <- send $ TaskLookup t
+    if isWorking ms
+      then pure ()
+      else do
         send $ TaskWatchDelay t
         checkNext
+
+  isWorking :: Maybe (Task t) -> Bool
+  isWorking Nothing = False
+  isWorking (Just t) = t.working == TaskWorking
 
 
 -- taskModStatus :: (Eq t, WorkerTask t) => TaskChan t -> t -> (Status t -> Status t) -> STM ()
@@ -114,13 +123,12 @@ taskWaitStatus t = do
 -- taskWaitStatus = _
 
 data Tasks t :: Effect where
-  TaskGetStatus :: t -> Tasks t m (TaskStatus t)
+  TaskGetStatus :: t -> Tasks t m (Status t)
   TaskSetStatus :: t -> Status t -> Tasks t m ()
   TaskModStatus :: t -> (Status t -> Status t) -> Tasks t m ()
-  TaskLookupStatus :: t -> Tasks t m (Maybe (TaskStatus t))
+  TaskLookup :: t -> Tasks t m (Maybe (Task t))
   TaskWatchDelay :: t -> Tasks t m ()
   TaskAdd :: t -> Tasks t m ()
-  -- TasksAdd :: [t] -> Tasks t m ()
   TaskNext :: Tasks t m t
   TaskDone :: t -> Tasks t m ()
   TasksAll :: Tasks t m [Task t]
@@ -139,14 +147,14 @@ runTasks
   -> Eff es a
 runTasks chan = interpret $ \_ -> \case
   TaskGetStatus t -> do
-    TaskDB.lookupTaskStatus t
+    mt <- fmap task <$> TaskDB.lookupTask' t
+    pure $ case mt of
+      Nothing -> idle @t
+      Just tsk -> tsk.status
   TaskSetStatus t s -> do
     TaskDB.updateStatus t s
-  TaskLookupStatus t -> do
-    s <- TaskDB.lookupTaskStatus t
-    case s of
-      Missing -> pure Nothing
-      other -> pure $ Just other
+  TaskLookup t -> do
+    fmap task <$> TaskDB.lookupTask' t
   TaskModStatus t m -> do
     TaskDB.modifyStatus t m
   TaskNext -> do
@@ -154,27 +162,25 @@ runTasks chan = interpret $ \_ -> \case
     TaskDB.updateStatus t (idle @t)
     pure t
   TaskDone t -> do
+    -- don't delete, just mark it complete. We have a history
+    -- admin could manually delete by interacting directly with TaskDB
     TaskDB.markComplete t
   TasksAll -> do
     TaskDB.queryTasks
   TaskAdd t -> do
-    ts <- TaskDB.queryTasks
-    -- Idempotent. A task that exactly matches an existing one will not be added twice
-    -- TODO: what about regenerating things? It'll have the same task if we don't activl
-    -- WARNING: currently TaskDB doesn't clean up, it won't re-queue them, because they already exist
-    unless (t `elem` fmap (.task) ts) $ do
-      atomically $ writeTQueue chan.queue t
-      TaskDB.insertTask t
-  -- TaskSave t s -> atomically $ do
-  --   modifyTVar chan.saved $ insert t s
-  -- -- just so users don't need Concurrent
+    -- Add a task unless one exists Waiting or Working
+    mt <- TaskDB.lookupTask' t
+    case mt of
+      Nothing -> addTask t
+      Just tsk -> when (tsk.taskWorking == TaskComplete) $ addTask t
   TaskWatchDelay _ -> do
+    -- just so users don't need Concurrent
     threadDelay $ 500 * 1000
  where
-  idleStatus :: [t] -> t -> Maybe (Status t)
-  idleStatus wait t
-    | t `elem` wait = Just $ idle @t
-    | otherwise = Nothing
+  addTask :: t -> Eff es ()
+  addTask t = do
+    atomically $ writeTQueue chan.queue t
+    TaskDB.insertTask t
 
 
 -- -- \| Read status, used in both lookup and reading
@@ -204,6 +210,6 @@ runTasks chan = interpret $ \_ -> \case
 startWorker :: forall t es. (Concurrent :> es, WorkerTask t, Tasks t :> es) => (t -> Eff es ()) -> Eff es ()
 startWorker work = do
   forever $ do
-    task <- send TaskNext
-    work task
-    send $ TaskDone task
+    t <- send TaskNext
+    work t
+    send $ TaskDone t

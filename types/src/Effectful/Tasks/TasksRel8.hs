@@ -8,12 +8,13 @@ import Effectful
 import Effectful.Rel8 as Rel8
 import Effectful.Tasks.WorkerTask
 import NSO.Prelude
-import Rel8 (Column, DBEq, DBType (..), ReadShow (..))
+import Rel8 (Column, DBEq, DBType (..), ReadShow (..), not_)
 
 
 data Task t = Task
   { task :: t
-  , status :: TaskStatus t
+  , status :: Status t
+  , working :: TaskWorking
   }
 
 
@@ -104,19 +105,31 @@ removeTask t = do
 
 
 queryTasks :: forall t es. (WorkerTask t, Rel8able (Task' t), Rel8 :> es) => Eff es [Task t]
-queryTasks = do
+queryTasks = filterTasks (const $ lit True)
+
+
+taskNotComplete :: Task' t Expr -> Expr Bool
+taskNotComplete row = not_ (row.taskWorking ==. lit TaskComplete)
+
+
+taskAll :: Task' t Expr -> Expr Bool
+taskAll = const $ lit True
+
+
+filterTasks :: forall t es. (WorkerTask t, Rel8able (Task' t), Rel8 :> es) => (Task' t Expr -> Expr Bool) -> Eff es [Task t]
+filterTasks f = do
   let typ = taskType @t
   ts <- run $ select $ do
-    row <- each table
-    where_ (row.taskType ==. lit typ)
+    row :: Task' t Expr <- each table
+    where_ (f row &&. row.taskType ==. lit typ)
     return row
   pure $ fmap task ts
 
 
-lookupTaskStatus :: forall t es. (Serial t, Rel8able (Task' t), Rel8 :> es) => t -> Eff es (TaskStatus t)
-lookupTaskStatus t = do
-  taskStatus <$> lookupTask' t
-
+-- lookupTaskStatus :: forall t es. (Serial t, Rel8able (Task' t), Rel8 :> es) => t -> Eff es (TaskStatus t)
+-- lookupTaskStatus t = do
+--   ms <- lookupTask' t
+--   maybe (pure $ idle @t) pure ms
 
 lookupTask' :: forall t es. (Serial t, Rel8able (Task' t), Rel8 :> es) => t -> Eff es (Maybe (Task' t Identity))
 lookupTask' t = do
@@ -129,18 +142,17 @@ lookupTask' t = do
 
 task :: forall t. Task' t Identity -> Task t
 task t =
-  Task t.taskData.unSerialzed (taskStatus $ Just t)
+  Task t.taskData.unSerialzed t.taskStatus.unSerialzed t.taskWorking
 
 
-taskStatus :: forall t. Maybe (Task' t Identity) -> TaskStatus t
-taskStatus = \case
-  Nothing -> Missing
-  Just t ->
-    case t.taskWorking of
-      TaskWaiting -> Waiting
-      TaskComplete -> Complete
-      TaskWorking -> Working @t t.taskStatus.unSerialzed
-
+-- taskStatus :: forall t. Maybe (Task' t Identity) -> TaskStatus t
+-- taskStatus = \case
+--   Nothing -> Missing
+--   Just t ->
+--     case t.taskWorking of
+--       TaskWaiting -> Waiting
+--       TaskComplete -> Complete
+--       TaskWorking -> Working @t t.taskStatus.unSerialzed
 
 table :: TableSchema (Task' t Name)
 table =
