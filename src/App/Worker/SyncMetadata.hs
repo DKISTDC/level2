@@ -4,6 +4,8 @@ import Data.Grouped
 import Data.Time.Clock (NominalDiffTime, diffUTCTime)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Dynamic
+import Effectful.Exception
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time
@@ -78,7 +80,7 @@ data SyncProgress
   deriving (Eq, Show, Read)
 
 
-syncProposalTask :: (Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
+syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
   logContext ("Sync " <> cs task.proposalId.fromId) $ do
     logStatus $ "started " <> show task.syncId
@@ -87,9 +89,14 @@ syncProposalTask task = do
 
     send $ Sync.SetScan task.syncId task.proposalId scan
 
+    -- TODO: did the task *fail*, or are these acceptable errors? Should we stop?
+    -- oh, we can have *multiple* errors. erm...
+    -- well, let's throw the first one eh?
+    -- should we capture errors in worker and save them?
     forM_ scan.errors $ \err -> do
       logStatus "ERROR"
       log Err $ dump "ScanError" err
+      throwError $ TaskFail (show err)
 
     let syncDatasetIds = fmap (\sd -> SyncItem sd.item.datasetId sd.sync) scan.datasets
     send $ TaskSetStatus task $ Exec scan.errors syncDatasetIds

@@ -12,17 +12,17 @@ module Effectful.Tasks
   , startWorker
   , Task (..)
   , WorkerTask (..)
+  , TaskFail (..)
   ) where
 
 import Control.Monad (forever)
-import Data.Bifunctor (second)
-import Data.List qualified as L
-import Data.Maybe (isNothing)
+import Data.Typeable (Typeable)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import Effectful.NonDet
+import Effectful.Error.Dynamic
+import Effectful.Exception
 import Effectful.Rel8
 import Effectful.Tasks.TasksRel8 as TaskDB
 import Effectful.Tasks.WorkerTask
@@ -36,8 +36,8 @@ data TaskChan t = TaskChan
 
 taskChanNew :: STM (TaskChan t)
 taskChanNew = do
-  queue <- newTQueue
-  pure $ TaskChan queue
+  q <- newTQueue
+  pure $ TaskChan q
 
 
 taskAdd :: (Tasks t :> es) => t -> Eff es ()
@@ -99,7 +99,7 @@ taskWaitWorking t = do
 
   isWorking :: Maybe (Task t) -> Bool
   isWorking Nothing = False
-  isWorking (Just t) = t.working == TaskWorking
+  isWorking (Just tsk) = tsk.working == TaskWorking
 
 
 -- taskModStatus :: (Eq t, WorkerTask t) => TaskChan t -> t -> (Status t -> Status t) -> STM ()
@@ -141,7 +141,7 @@ type instance DispatchOf (Tasks t) = 'Dynamic
 
 runTasks
   :: forall t a es
-   . (Concurrent :> es, Eq t, Serial t, Serial (Status t), WorkerTask t, Rel8 :> es)
+   . (IOE :> es, Concurrent :> es, Eq t, Serial t, Serial (Status t), WorkerTask t, Rel8 :> es)
   => TaskChan t
   -> Eff (Tasks t : es) a
   -> Eff es a
@@ -162,25 +162,22 @@ runTasks chan = interpret $ \_ -> \case
     TaskDB.updateStatus t (idle @t)
     pure t
   TaskDone t -> do
-    -- don't delete, just mark it complete. We have a history
-    -- admin could manually delete by interacting directly with TaskDB
-    TaskDB.markComplete t
+    TaskDB.removeTask t
   TasksAll -> do
     TaskDB.queryTasks
   TaskAdd t -> do
     -- Add a task unless one exists Waiting or Working
-    mt <- TaskDB.lookupTask' t
-    case mt of
-      Nothing -> addTask t
-      Just tsk -> when (tsk.taskWorking == TaskComplete) $ addTask t
+    ts <- TaskDB.filterTasks (tasksById t)
+    unless (any isActive ts) $ do
+      atomically $ writeTQueue chan.queue t
+      TaskDB.insertTask t
   TaskWatchDelay _ -> do
     -- just so users don't need Concurrent
     threadDelay $ 500 * 1000
  where
-  addTask :: t -> Eff es ()
-  addTask t = do
-    atomically $ writeTQueue chan.queue t
-    TaskDB.insertTask t
+  isActive :: Task t -> Bool
+  isActive t =
+    t.working == TaskWorking || t.working == TaskWaiting
 
 
 -- -- \| Read status, used in both lookup and reading
@@ -207,9 +204,16 @@ runTasks chan = interpret $ \_ -> \case
 -- notMember :: (Eq t) => t -> [(t, s)] -> Bool
 -- notMember t ts = notElem t $ map fst ts
 
-startWorker :: forall t es. (Concurrent :> es, WorkerTask t, Tasks t :> es) => (t -> Eff es ()) -> Eff es ()
+startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Tasks t :> es, Rel8 :> es) => (t -> Eff (Error TaskFail : es) ()) -> Eff es ()
 startWorker work = do
   forever $ do
     t <- send TaskNext
-    work t
-    send $ TaskDone t
+    res <- runErrorNoCallStack @TaskFail $ work t
+    case res of
+      Left (TaskFail e) -> TaskDB.saveError t e
+      Right _ -> send $ TaskDone t -- will not run if TaskFail is called
+
+
+data TaskFail
+  = TaskFail String
+  deriving (Show, Eq)

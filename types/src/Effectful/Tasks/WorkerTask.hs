@@ -20,15 +20,15 @@ class WorkerTask t where
   idle = False
 
 
-  taskType :: Text
-  default taskType :: (Generic t, GDatatypeName (Rep t)) => Text
-  taskType = gDatatypeName $ from (undefined :: t)
+  queue :: Text
+  default queue :: (Generic t, GDatatypeName (Rep t)) => Text
+  queue = gDatatypeName $ from (undefined :: t)
 
 
 data TaskWorking
   = TaskWaiting
   | TaskWorking
-  | TaskComplete
+  | TaskError String
   deriving (Generic, Eq, Read, Show, DBEq)
   deriving (DBType) via ReadShow TaskWorking
 

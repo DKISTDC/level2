@@ -8,7 +8,7 @@ import Effectful
 import Effectful.Rel8 as Rel8
 import Effectful.Tasks.WorkerTask
 import NSO.Prelude
-import Rel8 (Column, DBEq, DBType (..), ReadShow (..), not_)
+import Rel8 (Column, DBEq, DBType (..), ReadShow (..), not_, (||.))
 
 
 data Task t = Task
@@ -19,9 +19,9 @@ data Task t = Task
 
 
 data Task' t f = Task'
-  { taskType :: Column f Text
+  { taskQueue :: Column f Text
   , taskWorking :: Column f TaskWorking
-  , taskData :: Column f (Serialized t)
+  , taskId :: Column f (Serialized t)
   , taskStatus :: Column f (Serialized (Status t))
   }
   deriving (Generic)
@@ -42,7 +42,7 @@ insertTask t =
     insert $
       Insert
         { into = table
-        , rows = values [lit $ Task' @t (taskType @t) TaskWaiting (Serialized t) (Serialized $ idle @t)]
+        , rows = values [lit $ Task' @t (queue @t) TaskWaiting (Serialized t) (Serialized $ idle @t)]
         , onConflict = DoNothing
         , returning = NoReturning
         }
@@ -56,6 +56,19 @@ updateStatus t s = do
         { target = table
         , updateWhere = \_ row -> isTask t row
         , set = \_ row -> setStatus s row
+        , from = each (table @t)
+        , returning = NoReturning
+        }
+
+
+saveError :: forall t es. (Serial t, WorkerTask t, Rel8able (Task' t), Rel8 :> es) => t -> String -> Eff es ()
+saveError t s =
+  run_ $
+    update $
+      Update
+        { target = table
+        , updateWhere = \_ row -> isTask t row
+        , set = \_ row -> setError s row
         , from = each (table @t)
         , returning = NoReturning
         }
@@ -79,26 +92,13 @@ modifyStatus t f = do
             }
 
 
-markComplete :: forall t es. (Serial t, Serial (Status t), WorkerTask t, Rel8able (Task' t), Rel8 :> es) => t -> Eff es ()
-markComplete t = do
-  run_ $
-    update $
-      Update
-        { target = table
-        , updateWhere = \_ row -> isTask t row
-        , set = \_ row -> setWorking TaskComplete row
-        , from = each (table @t)
-        , returning = NoReturning
-        }
-
-
 removeTask :: forall t es. (Serial t, Rel8able (Task' t), Rel8 :> es) => t -> Eff es ()
 removeTask t = do
   run_ $
     delete $
       Delete
         { from = table @t
-        , deleteWhere = \_ row -> isTask t row
+        , deleteWhere = \_ row -> isTask t row -- &&. not_ (isActive row)
         , using = pure ()
         , returning = NoReturning
         }
@@ -108,20 +108,12 @@ queryTasks :: forall t es. (WorkerTask t, Rel8able (Task' t), Rel8 :> es) => Eff
 queryTasks = filterTasks (const $ lit True)
 
 
-taskNotComplete :: Task' t Expr -> Expr Bool
-taskNotComplete row = not_ (row.taskWorking ==. lit TaskComplete)
-
-
-taskAll :: Task' t Expr -> Expr Bool
-taskAll = const $ lit True
-
-
 filterTasks :: forall t es. (WorkerTask t, Rel8able (Task' t), Rel8 :> es) => (Task' t Expr -> Expr Bool) -> Eff es [Task t]
 filterTasks f = do
-  let typ = taskType @t
+  let q = queue @t
   ts <- run $ select $ do
     row :: Task' t Expr <- each table
-    where_ (f row &&. row.taskType ==. lit typ)
+    where_ (f row &&. row.taskQueue ==. lit q)
     return row
   pure $ fmap task ts
 
@@ -142,7 +134,7 @@ lookupTask' t = do
 
 task :: forall t. Task' t Identity -> Task t
 task t =
-  Task t.taskData.unSerialzed t.taskStatus.unSerialzed t.taskWorking
+  Task t.taskId.unSerialzed t.taskStatus.unSerialzed t.taskWorking
 
 
 -- taskStatus :: forall t. Maybe (Task' t Identity) -> TaskStatus t
@@ -161,34 +153,67 @@ table =
     { name = "tasks"
     , columns =
         Task'
-          { taskType = "task_type"
-          , taskData = "task_data"
-          , taskStatus = "task_status"
-          , taskWorking = "task_working"
+          { taskQueue = "queue"
+          , taskId = "task_id"
+          , taskStatus = "status"
+          , taskWorking = "working"
           }
+    }
+
+
+-- Query Helpers --------------
+
+setError :: (Serial t) => String -> Task' t Expr -> Task' t Expr
+setError e row =
+  Task'
+    { taskQueue = row.taskQueue
+    , taskWorking = lit $ TaskError e
+    , taskId = row.taskId
+    , taskStatus = row.taskStatus
     }
 
 
 setStatus :: (Serial t, Serial (Status t)) => Status t -> Task' t Expr -> Task' t Expr
 setStatus s' row =
   Task'
-    { taskType = row.taskType
+    { taskQueue = row.taskQueue
     , taskWorking = lit TaskWorking
-    , taskData = row.taskData
+    , taskId = row.taskId
     , taskStatus = lit $ Serialized s'
     }
 
 
-setWorking :: (Serial t, Serial (Status t)) => TaskWorking -> Task' t Expr -> Task' t Expr
+setWorking :: (Serial t) => TaskWorking -> Task' t Expr -> Task' t Expr
 setWorking w row =
   Task'
-    { taskType = row.taskType
+    { taskQueue = row.taskQueue
     , taskWorking = lit w
-    , taskData = row.taskData
+    , taskId = row.taskId
     , taskStatus = row.taskStatus
     }
 
 
 isTask :: (Serial t) => t -> Task' t Expr -> Expr Bool
 isTask t row = do
-  row.taskData ==. lit (Serialized t)
+  row.taskId ==. lit (Serialized t)
+
+
+-- taskNotComplete :: Task' t Expr -> Expr Bool
+-- taskNotComplete row = not_ (row.taskWorking ==. lit TaskComplete)
+
+taskAll :: Task' t Expr -> Expr Bool
+taskAll = const $ lit True
+
+
+tasksById :: (Serial t) => t -> Task' t Expr -> Expr Bool
+tasksById t row = row.taskId ==. lit (Serialized t)
+
+-- isWorking :: (Serial t) => Task' t Expr -> Expr Bool
+-- isWorking row = row.taskWorking ==. lit TaskWorking
+--
+--
+-- isWaiting :: (Serial t) => Task' t Expr -> Expr Bool
+-- isWaiting row = row.taskWorking ==. lit TaskWaiting
+
+-- isActive :: (Serial t) => Task' t Expr -> Expr Bool
+-- isActive row = isWorking row ||. isWaiting row

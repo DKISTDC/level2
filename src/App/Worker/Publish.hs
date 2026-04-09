@@ -9,7 +9,7 @@ import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.GenRandom
-import Effectful.Globus (GlobusError, Task)
+import Effectful.Globus (GlobusError)
 import Effectful.GraphQL (GraphQLError)
 import Effectful.Log
 import Effectful.Tasks
