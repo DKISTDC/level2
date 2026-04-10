@@ -23,8 +23,8 @@ manageMinions
      , Datasets :> es
      , MetadataSync :> es
      , Log :> es
-     , Tasks GenTask :> es
-     , Tasks SyncMetadataTask :> es
+     , Queue GenTask :> es
+     , Queue SyncMetadataTask :> es
      )
   => Eff es ()
 manageMinions = do
@@ -32,18 +32,18 @@ manageMinions = do
   threadDelay (5 * 1000 * 1000)
 
   AllInversions ivs <- send Inversions.All
-  tasksAdd $ generateFits ivs
+  queueAddAll $ generateFits ivs
 
   checkMetadataSync
 
 
-checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Tasks SyncMetadataTask :> es) => Eff es ()
+checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Queue SyncMetadataTask :> es) => Eff es ()
 checkMetadataSync = do
   b <- needsMetadataSync
   when b $ do
     log Debug "Metadata Sync"
     s <- send Sync.Create
-    send $ TaskAdd $ SyncMetadataTask s
+    send $ QueueAdd $ SyncMetadataTask s
 
 
 generateFits :: [Inversion] -> [GenTask]

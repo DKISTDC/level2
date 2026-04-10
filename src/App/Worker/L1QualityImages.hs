@@ -48,16 +48,15 @@ l1QualityImageTask task = do
  where
   l1QualityImageWork :: Eff (Error QualityImageError : es) ()
   l1QualityImageWork = do
-    logContext ("L1Quality " <> cs task.programId.fromId) $ do
-      send $ TaskSetStatus task ImageStarted
-      fe630 <- findIronLine
-      logStatus "downloading"
-      downloadTaskId <- Transfer.scratchDownloadDatasets [fe630]
-      send $ TaskSetStatus task (ImageDownloading downloadTaskId)
-      untilM_ delay (taskComplete downloadTaskId)
-      logStatus "generating"
-      send $ TaskSetStatus task ImageGenerating
-      logStatus "done"
+    send $ TaskSetStatus task ImageStarted
+    fe630 <- findIronLine
+    logStatus "downloading"
+    downloadTaskId <- Transfer.scratchDownloadDatasets [fe630]
+    send $ TaskSetStatus task (ImageDownloading downloadTaskId)
+    untilM_ delay (taskComplete downloadTaskId)
+    logStatus "generating"
+    send $ TaskSetStatus task ImageGenerating
+    logStatus "done"
 
   findIronLine = do
     ds <- Datasets.find (ByProgram task.programId)

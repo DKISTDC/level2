@@ -506,7 +506,7 @@ data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id I
 
 
 -- it can't turn green when it succeeds, because  it is outside of this view
-instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Transfer :> es) => HyperView PublishStep es where
+instance (Inversions :> es, Scratch :> es, Time :> es, Queue PublishTask :> es, Tasks PublishTask :> es, Log :> es, Transfer :> es) => HyperView PublishStep es where
   data Action PublishStep
     = StartPublish
     | WatchPublish
@@ -520,7 +520,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Tasks PublishTask :> es, 
       StartPublish -> do
         Inversions.resetPublished invId
         Inversions.clearError invId
-        send $ TaskAdd task
+        send $ QueueAdd task
         taskWatchStatus onPublishStatus task
         loadPublish
       WatchPublish -> do

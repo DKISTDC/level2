@@ -46,9 +46,9 @@ data PublishStatus
   deriving (Eq, Ord, Show, Read)
 
 
-startPublish :: (Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
+startPublish :: (Queue PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
 startPublish propId invId = do
-  send $ TaskAdd $ PublishTask propId invId
+  send $ QueueAdd $ PublishTask propId invId
 
 
 publishTask
@@ -83,34 +83,33 @@ publishTask task = do
  where
   workWithError :: Eff (Error PublishError : es) ()
   workWithError = do
-    logContext ("Publish " <> cs task.inversionId.fromId) $ do
-      logStatus "starting"
-      send $ TaskSetStatus task PublishStarted
+    logStatus "starting"
+    send $ TaskSetStatus task PublishStarted
 
-      bucket <- proposalBucket task.proposalId
-      taskId <- transferPublish bucket task.proposalId task.inversionId
-      send $ TaskSetStatus task $ PublishTransferring taskId
+    bucket <- proposalBucket task.proposalId
+    taskId <- transferPublish bucket task.proposalId task.inversionId
+    send $ TaskSetStatus task $ PublishTransferring taskId
 
-      logStatus "transferring"
-      untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
+    logStatus "transferring"
+    untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
 
-      send $ TaskSetStatus task PublishMessages
-      logStatus "sending frame messages"
+    send $ TaskSetStatus task PublishMessages
+    logStatus "sending frame messages"
 
-      conversationId <- randomId "l2pub"
-      runScratchError $ do
-        InterserviceBus.catalogFitsFrames conversationId bucket task.proposalId task.inversionId
-        InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
+    conversationId <- randomId "l2pub"
+    runScratchError $ do
+      InterserviceBus.catalogFitsFrames conversationId bucket task.proposalId task.inversionId
+      InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
 
-      logStatus "creating inversion metadata"
-      send $ TaskSetStatus task PublishSave
-      inv <- loadInversion task.inversionId
-      datasets <- Datasets.find $ Datasets.ByIds inv.datasets
+    logStatus "creating inversion metadata"
+    send $ TaskSetStatus task PublishSave
+    inv <- loadInversion task.inversionId
+    datasets <- Datasets.find $ Datasets.ByIds inv.datasets
 
-      _ <- send $ Metadata.CreateInversion bucket inv datasets
-      logStatus "created"
+    _ <- send $ Metadata.CreateInversion bucket inv datasets
+    logStatus "created"
 
-      Inversions.setPublished task.inversionId
+    Inversions.setPublished task.inversionId
 
   runScratchError = runErrorNoCallStackWith (throwError . ScratchError)
 

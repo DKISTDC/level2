@@ -21,15 +21,11 @@ import NSO.Types.Inversion
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, ExchangeName)
+import Effectful.Tasks.AMQPConfig
 import Network.Endpoint as Endpoint (Endpoint (..), toURI)
 import Network.URI (uriToString)
 
 
-data InterserviceBusConfig = InterserviceBusConfig
-  { options :: ConnectionOpts
-  , exchangeName :: ExchangeName
-  }
-  deriving (Show)
 
 
 data InterserviceBus :: Effect where
@@ -86,23 +82,16 @@ data BusConnection = BusConnection
   }
 
 
-initBusConnection :: (IOE :> es) => InterserviceBusConfig -> Eff es BusConnection
-initBusConnection cfg = do
+initBus :: (IOE :> es) => Connection -> Eff es BusConnection
+initBus cnn = do
   let catalogFrame = key "catalog" & word "frame" & word "m"
   let catalogObject = key "catalog" & word "object" & word "m"
-  cnn <- setExchange cfg.exchangeName <$> Worker.connect cfg.options
   _ <- Worker.queueNamed cnn "catalog.frame.q" catalogFrame
   _ <- Worker.queueNamed cnn "catalog.object.q" catalogObject
   pure $
     BusConnection{connection = cnn, catalogFrame, catalogObject}
- where
-  setExchange exg cnn = cnn{exchange = exg}
 
 
-initBusConfig :: Endpoint -> String -> Eff es InterserviceBusConfig
-initBusConfig endpoint exg = do
-  options <- Worker.parseURI $ uriToString id (Endpoint.toURI endpoint) ""
-  pure $ InterserviceBusConfig{options, exchangeName = cs exg}
 
 
 data Conversation

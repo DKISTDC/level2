@@ -8,6 +8,7 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Dynamic
 import Effectful.Log
+import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
@@ -47,19 +48,20 @@ syncMetadataTask
   :: ( Log :> es
      , MetadataSync :> es
      , Metadata es
-     , Tasks SyncProposalTask :> es
+     , Queue SyncProposalTask :> es
      , Tasks SyncMetadataTask :> es
+     , Reader SyncMetadataTask :> es
      )
   => SyncMetadataTask
   -> Eff es ()
 syncMetadataTask task = do
   log Info "Scan Metadata for Proposals"
-  send $ TaskSetStatus task True
+  taskSetStatus @SyncMetadataTask True
   gs <- Sync.runScanAvailable
   let propIds = fmap (\g -> Id (sample g).primaryProposalId) gs
   send $ Sync.SetProposals task.syncId propIds
   let tasks = fmap (\g -> SyncProposalTask task.syncId $ Id (sample g).primaryProposalId) gs
-  tasksAdd tasks
+  queueAddAll tasks
 
 
 -- SYNC PROPOSAL -------------------------------------------------------------------------------------------------------------------
@@ -81,10 +83,10 @@ data SyncProgress
   deriving (Eq, Show, Read)
 
 
-syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
+syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es, Reader SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
   logStatus $ "started " <> show task.syncId
-  send $ TaskSetStatus task Scan
+  taskSetStatus @SyncProposalTask Scan
   scan <- Sync.runScanProposal task.proposalId
 
   send $ Sync.SetScan task.syncId task.proposalId scan
@@ -99,6 +101,6 @@ syncProposalTask task = do
     throwError $ TaskFail (show err)
 
   let syncDatasetIds = fmap (\sd -> SyncItem sd.item.datasetId sd.sync) scan.datasets
-  send $ TaskSetStatus task $ Exec scan.errors syncDatasetIds
+  taskSetStatus @SyncProposalTask $ Exec scan.errors syncDatasetIds
 
   Sync.execSync scan.datasets

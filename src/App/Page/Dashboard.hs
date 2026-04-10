@@ -70,7 +70,7 @@ instance (Concurrent :> es, Tasks GenTask :> es) => HyperView Work es where
 
 
   update Refresh = do
-    gens <- send TasksAll
+    gens <- send TaskAll
     pure $ workView gens
 
 
