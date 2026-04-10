@@ -29,6 +29,8 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
 
+-- WARNING: The history will probably grow too far in memory. Loads all datasets once a day
+
 data SyncState = SyncState
   { syncId :: Id Sync
   , started :: UTCTime

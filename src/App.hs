@@ -15,6 +15,7 @@ import App.Page.Program qualified as Program
 import App.Page.Proposal qualified as Proposal
 import App.Page.Proposals qualified as Proposals
 import App.Page.Sync qualified as Sync
+import App.Page.Tasks qualified as Tasks
 import App.Route
 import App.Version
 import App.View.Error
@@ -208,6 +209,7 @@ webServer config admin fits pubs sync rows =
     redirect (pathUri $ routePath Proposals)
   router Logout = runPage Auth.logout
   router Login = runPage Auth.login
+  router Tasks = runPage Tasks.page
 
   respond :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff es Response
   respond = do

@@ -2,7 +2,6 @@
 
 module App.Route where
 
-import Data.Time.Format.ISO8601 (iso8601ParseM, iso8601Show)
 import NSO.Data.Sync as Sync (Sync)
 import NSO.Prelude
 import NSO.Types.Common
@@ -19,6 +18,7 @@ data AppRoute
   | Proposals
   | Experiments
   | Inversions
+  | Tasks
   | Proposal (Id Proposal) ProposalRoute
   | Datasets DatasetRoute
   | Login
