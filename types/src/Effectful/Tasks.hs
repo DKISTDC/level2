@@ -23,6 +23,7 @@ import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Dynamic
 import Effectful.Exception
+import Effectful.Log
 import Effectful.Rel8
 import Effectful.Tasks.TasksRel8 as TaskDB
 import Effectful.Tasks.WorkerTask
@@ -204,11 +205,14 @@ runTasks chan = interpret $ \_ -> \case
 -- notMember :: (Eq t) => t -> [(t, s)] -> Bool
 -- notMember t ts = notElem t $ map fst ts
 
-startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Tasks t :> es, Rel8 :> es) => (t -> Eff (Error TaskFail : es) ()) -> Eff es ()
+-- TODO: separate worker / tasks runner. Keep runner in context
+-- BUG: log context doesn't go away! It exits, maybe catch and rethrow? Maybe I should ditch logContext and active tasks... sad...
+-- either that or don't use inside the workers. give it a log context of the task
+startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Tasks t :> es, Log :> es, Rel8 :> es) => (t -> Eff (Error TaskFail : es) ()) -> Eff es ()
 startWorker work = do
   forever $ do
     t <- send TaskNext
-    res <- runErrorNoCallStack @TaskFail $ work t
+    res <- logContext (show t) $ runErrorNoCallStack @TaskFail $ work t
     case res of
       Left (TaskFail e) -> TaskDB.saveError t e
       Right _ -> send $ TaskDone t -- will not run if TaskFail is called

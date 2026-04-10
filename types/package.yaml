@@ -34,6 +34,7 @@ dependencies:
   - aeson
   - ansi-terminal
   - bytestring
+  - generic-data
   - casing
   - containers
   - data-diverse

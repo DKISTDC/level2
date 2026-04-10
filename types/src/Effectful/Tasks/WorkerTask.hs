@@ -28,7 +28,7 @@ class WorkerTask t where
 data TaskWorking
   = TaskWaiting
   | TaskWorking
-  | TaskError String
+  | TaskFailed
   deriving (Generic, Eq, Read, Show, DBEq)
   deriving (DBType) via ReadShow TaskWorking
 

@@ -48,6 +48,7 @@ dependencies:
   - containers
   - data-default
   - data-diverse >= 4.7
+  - generic-data
   - directory
   - effectful >= 2.3 && <3
   - exceptions

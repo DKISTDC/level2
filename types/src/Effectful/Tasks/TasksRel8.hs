@@ -23,6 +23,7 @@ data Task' t f = Task'
   , taskWorking :: Column f TaskWorking
   , taskId :: Column f (Serialized t)
   , taskStatus :: Column f (Serialized (Status t))
+  , taskError :: Column f (Maybe Text)
   }
   deriving (Generic)
 
@@ -42,7 +43,7 @@ insertTask t =
     insert $
       Insert
         { into = table
-        , rows = values [lit $ Task' @t (queue @t) TaskWaiting (Serialized t) (Serialized $ idle @t)]
+        , rows = values [lit $ Task' @t (queue @t) TaskWaiting (Serialized t) (Serialized $ idle @t) Nothing]
         , onConflict = DoNothing
         , returning = NoReturning
         }
@@ -157,6 +158,7 @@ table =
           , taskId = "task_id"
           , taskStatus = "status"
           , taskWorking = "working"
+          , taskError = "error"
           }
     }
 
@@ -167,9 +169,10 @@ setError :: (Serial t) => String -> Task' t Expr -> Task' t Expr
 setError e row =
   Task'
     { taskQueue = row.taskQueue
-    , taskWorking = lit $ TaskError e
+    , taskWorking = lit $ TaskFailed
     , taskId = row.taskId
     , taskStatus = row.taskStatus
+    , taskError = lit $ Just (cs e)
     }
 
 
@@ -180,6 +183,7 @@ setStatus s' row =
     , taskWorking = lit TaskWorking
     , taskId = row.taskId
     , taskStatus = lit $ Serialized s'
+    , taskError = lit Nothing
     }
 
 
@@ -190,6 +194,7 @@ setWorking w row =
     , taskWorking = lit w
     , taskId = row.taskId
     , taskStatus = row.taskStatus
+    , taskError = lit Nothing
     }
 
 
