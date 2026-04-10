@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE PatternSynonyms #-}
 
 module App.Worker.SyncMetadata where
 
@@ -8,7 +7,6 @@ import Data.Time.Clock (NominalDiffTime, diffUTCTime)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Dynamic
-import Effectful.Exception
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time

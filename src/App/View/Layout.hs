@@ -25,6 +25,7 @@ layout rc content = do
       item Proposals "Proposals"
       item Inversions "Inversions"
       item (Datasets DatasetRoot) "Datasets"
+      item Tasks "Tasks"
       space
       route Logout ~ center $ "Log Out"
 
