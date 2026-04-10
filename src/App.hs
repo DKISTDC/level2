@@ -76,10 +76,10 @@ main = do
       log Info "NSO Level 2a"
       config <- initConfig
 
-      fits <- atomically taskChanNew
-      pubs <- atomically taskChanNew
-      metas <- atomically taskChanNew
-      props <- atomically taskChanNew
+      fits <- atomically queueChanNew
+      pubs <- atomically queueChanNew
+      metas <- atomically queueChanNew
+      props <- atomically queueChanNew
       sync <- initMetadataSync
       admin <- initAdmin config.auth.admins config.auth.adminToken
       bus <- initBusConnection config.services.interserviceBus
@@ -93,7 +93,7 @@ main = do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> Eff es ()
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> AdminState -> QueueChan GenTask -> QueueChan PublishTask -> Sync.History -> Eff es ()
   startWebServer config auth fits pubs sync =
     runLogger "Server" $ do
       rows <- ask
@@ -179,14 +179,14 @@ main = do
       . runTime
       . runDataInversions
       . runDataDatasets
-      . runTasks @GenTask fits
-      . runTasks @PublishTask pubs
-      . runTasks @SyncMetadataTask metas
-      . runTasks @SyncProposalTask props
+      . runTaskQueueIO @GenTask fits
+      . runTaskQueueIO @PublishTask pubs
+      . runTaskQueueIO @SyncMetadataTask metas
+      . runTaskQueueIO @SyncProposalTask props
       . runMetadataSync sync
 
 
-webServer :: Config -> AdminState -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> TMVar LogState -> Application
+webServer :: Config -> AdminState -> QueueChan GenTask -> QueueChan PublishTask -> Sync.History -> TMVar LogState -> Application
 webServer config admin fits pubs sync rows =
   liveApp
     (document documentHead)
@@ -237,7 +237,7 @@ webServer config admin fits pubs sync rows =
       . runAuth config.app.domain Login admin
       . runReader config.app
 
-  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Scratch :> es, Globus :> es, Reader (TMVar LogState) :> es) => Eff (Transfer : Debug : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
+  runApp :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Auth :> es, Scratch :> es, Globus :> es, Reader (TMVar LogState) :> es) => Eff (Transfer : Debug : MetadataSync : Queue PublishTask : Tasks PublishTask : Queue GenTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : Time : es) Response -> Eff es Response
   runApp =
     runTime
       . runLogger "App"
@@ -250,8 +250,8 @@ webServer config admin fits pubs sync rows =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
-      . runTasks fits
-      . runTasks pubs
+      . runTaskQueueIO fits
+      . runTaskQueueIO pubs
       . runMetadataSync sync
       . runDebugIO
       . runTransfer config.level1 config.publish config.scratch.remote

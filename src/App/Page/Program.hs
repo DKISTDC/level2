@@ -23,7 +23,6 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Globus (Globus)
 import Effectful.Log hiding (Info)
-import Effectful.Reader.Dynamic (Reader)
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets

@@ -1,21 +1,24 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Effectful.Tasks where
-
--- ( taskChanNew
--- , taskAdd
--- , tasksAdd
--- , TaskChan (..)
--- , taskWatchStatus
--- , taskWaitWorking
--- , Tasks (..)
--- , Queue (..)
--- , runTasks
--- , startWorker
--- , Task (..)
--- , WorkerTask (..)
--- , TaskFail (..)
--- ) where
+module Effectful.Tasks
+  ( Queue (..)
+  , queueChanNew
+  , queueAdd
+  , queueAddAll
+  , runQueueIO
+  , QueueChan (..)
+  , Tasks (..)
+  , taskWatchStatus
+  , taskWaitWorking
+  , runTasksDB
+  , startWorker
+  , taskSetStatus
+  , TaskFail (..)
+  , WorkerTask (..)
+  , Task (..)
+  , Reader
+  , runTaskQueueIO
+  ) where
 
 import Control.Monad (forever)
 import Data.Typeable (Typeable)
@@ -26,6 +29,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Error.Dynamic
 import Effectful.Exception
 import Effectful.Log
+import Effectful.Reader.Dynamic
 import Effectful.Rel8
 import Effectful.Tasks.TasksRel8 as TaskDB
 import Effectful.Tasks.WorkerTask
@@ -41,6 +45,15 @@ data Queue t :: Effect where
 
 
 type instance DispatchOf (Queue t) = 'Dynamic
+
+
+runTaskQueueIO
+  :: forall t a es
+   . (IOE :> es, Concurrent :> es, WorkerTask t, Serial t, Serial (Status t), Rel8 :> es)
+  => QueueChan t
+  -> Eff (Queue t : Tasks t : es) a
+  -> Eff es a
+runTaskQueueIO chan = runTasksDB . runQueueIO chan
 
 
 runQueueIO
@@ -129,13 +142,20 @@ queueChanNew = do
   pure $ QueueChan q
 
 
--- taskAdd :: (Tasks t :> es) => t -> Eff es ()
--- taskAdd = send . TaskAdd
---
---
--- tasksAdd :: (Tasks t :> es) => [t] -> Eff es ()
--- tasksAdd =
---   mapM_ (send . TaskAdd)
+taskSetStatus :: forall t es. (Tasks t :> es, Reader t :> es) => Status t -> Eff es ()
+taskSetStatus s = do
+  t <- ask @t
+  send $ TaskSetStatus t s
+
+
+queueAdd :: (Queue t :> es) => t -> Eff es ()
+queueAdd = send . QueueAdd
+
+
+queueAddAll :: (Queue t :> es) => [t] -> Eff es ()
+queueAddAll =
+  mapM_ (send . QueueAdd)
+
 
 -- | call onStatus every time status updates, until the task disappears
 taskWatchStatus :: forall t es. (Eq (Status t), Tasks t :> es) => (Status t -> Eff es ()) -> t -> Eff es ()
@@ -174,38 +194,12 @@ taskWaitWorking t = do
   isWorking (Just tsk) = tsk.working == TaskWorking
 
 
--- -- \| Read status, used in both lookup and reading
--- readStatus :: (Eq t, WorkerTask t) => t -> STM (Status t)
--- readStatus t = do
---   work <- readTVar chan.work
---   pure $ fromMaybe (idle @t) $ lookup t work
-
--- delete :: (Eq t) => t -> [(t, s)] -> [(t, s)]
--- delete t = filter ((/= t) . fst)
---
--- insert :: (Eq t) => t -> s -> [(t, s)] -> [(t, s)]
--- insert t s tss =
---   (t, s) : delete t tss
---
--- adjust :: (Eq t) => t -> (s -> s) -> [(t, s)] -> [(t, s)]
--- adjust t f = fmap mapKey
---  where
---   mapKey ts =
---     if fst ts == t
---       then second f ts
---       else ts
---
--- notMember :: (Eq t) => t -> [(t, s)] -> Bool
--- notMember t ts = notElem t $ map fst ts
-
--- TODO: separate worker / tasks runner. Keep runner in context
--- BUG: log context doesn't go away! It exits, maybe catch and rethrow? Maybe I should ditch logContext and active tasks... sad...
--- either that or don't use inside the workers. give it a log context of the task
-startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Queue t :> es, Tasks t :> es, Log :> es) => (t -> Eff (Error TaskFail : es) ()) -> Eff es ()
+-- DONE: move log context here so failures can still end it. Do not use in workers
+startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Queue t :> es, Tasks t :> es, Log :> es) => (t -> Eff (Error TaskFail : Reader t : es) ()) -> Eff es ()
 startWorker work = do
   forever $ do
     t <- send QueueNext
-    res <- logContext (show t) $ runErrorNoCallStack @TaskFail $ work t
+    res <- logContext (show t) $ runReader t $ runErrorNoCallStack @TaskFail $ work t
     case res of
       Left (TaskFail e) -> send $ TaskSaveError t e
       Right _ -> send $ QueueDone t -- will not run if TaskFail is called
