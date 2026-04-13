@@ -32,10 +32,11 @@ import Effectful.Rel8 as Rel8
 import NSO.Files.DKIST (Level1, Publish)
 import NSO.Files.RemoteFolder
 import NSO.Files.Scratch qualified as Scratch
-import NSO.InterserviceBus as ISB (InterserviceBusConfig (..), initBusConfig)
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
+import Network.AMQP.Config (AMQPConfig (..), initAMQPConfig, initAMQPConnection)
+import Network.AMQP.Worker.Connection qualified as AMQP
 import Network.Endpoint (Endpoint (..), EndpointAuth (..), toURI)
 import Network.Globus (Token, Token' (..), UserEmail (..))
 import Network.HTTP.Client qualified as Http
@@ -55,6 +56,7 @@ data Config = Config
   , manager :: Http.Manager
   , level1 :: Remote Level1
   , publish :: Remote Publish
+  , amqp :: AMQP.Connection
   }
 
 
@@ -66,7 +68,7 @@ data AuthInfo = AuthInfo
 
 data Services = Services
   { metadata :: MetadataService
-  , interserviceBus :: InterserviceBusConfig
+  , interserviceBus :: AMQPConfig
   }
 
 
@@ -90,11 +92,14 @@ initConfig = do
   mesh <- initMesh
   services <- initServices mesh
 
+  -- InterserviceBus
+  amqp <- initAMQPConnection services.interserviceBus
+
   log Debug $ dump "AppVersion" appVersion.value
   log Debug $ dump "GitVersion" gitVersion.value
   log Debug $ dump "MESH internalApiGateway " mesh.internalApiGateway
   log Debug $ dump "MESH interserviceBus " mesh.interserviceBus
-  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
+  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, amqp}
 
 
 initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
@@ -152,10 +157,10 @@ initServices mesh = do
         , inversions = gateway
         }
 
-  isbService :: (Environment :> es) => Endpoint -> Eff es InterserviceBusConfig
+  isbService :: (Environment :> es) => Endpoint -> Eff es AMQPConfig
   isbService endpoint = do
     exg <- requireEnv "ISB_EXCHANGE"
-    ISB.initBusConfig endpoint exg
+    initAMQPConfig endpoint exg
 
   parseService :: (MonadFail m) => Endpoint -> m Service
   parseService e =

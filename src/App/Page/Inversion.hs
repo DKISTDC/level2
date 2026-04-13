@@ -520,7 +520,7 @@ instance (Inversions :> es, Scratch :> es, Time :> es, Queue PublishTask :> es, 
       StartPublish -> do
         Inversions.resetPublished invId
         Inversions.clearError invId
-        send $ QueueAdd task
+        queueAdd task
         taskWatchStatus onPublishStatus task
         loadPublish
       WatchPublish -> do

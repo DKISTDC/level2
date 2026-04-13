@@ -1,45 +1,59 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Effectful.Tasks
-  ( Queue (..)
-  , queueChanNew
+  ( -- * Queue
+    Queue (..)
   , queueAdd
   , queueAddAll
+  , queueNext
+
+    -- ** TChan/IO Task Queues
+  , QueueChan
+  , runTaskQueueIO
   , runQueueIO
-  , QueueChan (..)
+  , initQueueIO
+  , queueChanNew
+
+    -- ** AMQP Task Queues
+  , QueueAMQP
+  , runTaskQueueAMQP
+  , runQueueAMQP
+  , initQueueAMQP
+
+    -- * Tasks
   , Tasks (..)
+  , Task (..)
+  , WorkerTask (..)
   , taskWatchStatus
   , taskWaitWorking
-  , runTasksDB
-  , startWorker
   , taskSetStatus
-  , TaskFail (..)
-  , WorkerTask (..)
-  , Task (..)
+  , taskDone
+  , runTasksDB
+
+    -- * Worker
+  , startWorker
   , Reader
-  , runTaskQueueIO
-  , runQueueAMQP
+  , TaskFail (..)
   ) where
 
 import Control.Monad (forever)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Typeable (Typeable)
+import Data.Text qualified as T
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Dynamic
-import Effectful.Exception
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8
 import Effectful.Tasks.TasksRel8 as TaskDB
 import Effectful.Tasks.WorkerTask
 import NSO.Prelude
-import Network.AMQP.Config (AMQPConfig (..))
-import Network.AMQP.Worker (Key, Message (..), QueueName, Route, key, word)
+import Network.AMQP.Worker (Key, Message (..), Route)
 import Network.AMQP.Worker qualified as AMQP
-import Network.AMQP.Worker.Connection as AMQP (Connection (..), ConnectionOpts, ExchangeName)
+import Network.AMQP.Worker.Connection as AMQP (Connection (..))
+import Network.AMQP.Worker.Key (keyText)
 
 
 -- this should be centered around how to get the next task, etc
@@ -61,6 +75,15 @@ runTaskQueueIO
 runTaskQueueIO chan = runTasksDB . runQueueIO chan
 
 
+runTaskQueueAMQP
+  :: forall t a es
+   . (IOE :> es, Concurrent :> es, WorkerTask t, Serial t, Serial (Status t), FromJSON t, ToJSON t, Rel8 :> es)
+  => QueueAMQP t
+  -> Eff (Queue t : Tasks t : es) a
+  -> Eff es a
+runTaskQueueAMQP q = runTasksDB . runQueueAMQP q
+
+
 runQueueIO
   :: forall t a es
    . (IOE :> es, Concurrent :> es, WorkerTask t, Tasks t :> es)
@@ -69,51 +92,35 @@ runQueueIO
   -> Eff es a
 runQueueIO chan = interpret $ \_ -> \case
   QueueGetNext -> do
-    -- send $ TaskSetStatus t (idle @t)
     atomically $ readTQueue chan.queue
-  -- QueueDone t -> do
-  --   send $ TaskRemove t
   QueueInsert t -> do
-    -- -- Add a task unless one is active
-    -- act <- send $ TaskIsActive t
-    -- unless act $ do
-    --   atomically $ writeTQueue chan.queue t
-    --   send $ TaskInsert t
     atomically $ writeTQueue chan.queue t
 
 
 runQueueAMQP
   :: forall t a es
    . (IOE :> es, Concurrent :> es, WorkerTask t, Tasks t :> es, FromJSON t, ToJSON t)
-  => AMQP.Connection
-  -> AMQP.Queue t
-  -> AMQP.Key Route t
+  => QueueAMQP t
   -> Eff (Queue t : es) a
   -> Eff es a
-runQueueAMQP cnn q k = interpret $ \_ -> \case
+runQueueAMQP q = interpret $ \_ -> \case
   QueueGetNext -> do
-    Message body t <- AMQP.takeMessage cnn q
+    Message _body t <- AMQP.takeMessage q.connection q.queue
     pure t
   QueueInsert t -> do
-    AMQP.publish cnn k t
+    AMQP.publish q.connection q.key t
 
 
--- Add a task unless one is active
-
-nextTask :: forall t es. (Queue t :> es, Tasks t :> es, WorkerTask t) => Eff es t
-nextTask = do
+queueNext :: forall t es. (Queue t :> es, Tasks t :> es, WorkerTask t) => Eff es t
+queueNext = do
   t <- send QueueGetNext
   send $ TaskSetStatus t (idle @t)
   pure t
 
 
-taskDone :: forall t es. (Tasks t :> es) => t -> Eff es ()
-taskDone t = do
-  send $ TaskRemove t
-
-
 queueAdd :: (Queue t :> es, Tasks t :> es) => t -> Eff es ()
 queueAdd t = do
+  -- Add a task unless one is active
   act <- send $ TaskIsActive t
   unless act $ do
     send $ QueueInsert t
@@ -125,8 +132,10 @@ queueAddAll =
   mapM_ queueAdd
 
 
--- queueName :: QueuePrefix -> Key a msg -> QueueName
--- queueName (QueuePrefix pre) key = pre <> " " <> keyText key
+taskDone :: forall t es. (Tasks t :> es) => t -> Eff es ()
+taskDone t = do
+  send $ TaskRemove t
+
 
 data Tasks t :: Effect where
   TaskGetStatus :: t -> Tasks t m (Status t)
@@ -193,6 +202,25 @@ queueChanNew = do
   pure $ QueueChan q
 
 
+initQueueIO :: (Concurrent :> es) => Eff es (QueueChan t)
+initQueueIO = atomically queueChanNew
+
+
+data QueueAMQP t = QueueAMQP
+  { connection :: AMQP.Connection
+  , queue :: AMQP.Queue t
+  , key :: Key Route t
+  }
+
+
+initQueueAMQP :: (IOE :> es) => Key Route t -> AMQP.Connection -> Eff es (QueueAMQP t)
+initQueueAMQP k c = do
+  q <- AMQP.queueNamed c taskQueueName k
+  pure $ QueueAMQP{connection = c, queue = q, key = k}
+ where
+  taskQueueName = T.replace ".m" ".q" $ keyText k
+
+
 taskSetStatus :: forall t es. (Tasks t :> es, Reader t :> es) => Status t -> Eff es ()
 taskSetStatus s = do
   t <- ask @t
@@ -236,7 +264,6 @@ taskWaitWorking t = do
   isWorking (Just tsk) = tsk.working == TaskWorking
 
 
--- DONE: move log context here so failures can still end it. Do not use in workers
 startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Queue t :> es, Tasks t :> es, Log :> es) => (t -> Eff (Error TaskFail : Reader t : es) ()) -> Eff es ()
 startWorker work = do
   forever $ do

@@ -8,10 +8,6 @@ import Network.Endpoint as Endpoint (Endpoint (..), toURI)
 import Network.URI (uriToString)
 
 
--- 0. Config: Options + ExchangeName
--- 1. Connection w/ ExchangeName
--- 3. Bound queues and keys
-
 data AMQPConfig = AMQPConfig
   { options :: ConnectionOpts
   , exchangeName :: ExchangeName

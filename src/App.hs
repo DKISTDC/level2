@@ -77,12 +77,12 @@ main = do
       config <- initConfig
 
       fits <- atomically queueChanNew
-      pubs <- atomically queueChanNew
+      pubs <- initQueueAMQP publishKey config.amqp
       metas <- atomically queueChanNew
       props <- atomically queueChanNew
       sync <- initMetadataSync
       admin <- initAdmin config.auth.admins config.auth.adminToken
-      bus <- initBusConnection config.services.interserviceBus
+      bus <- initBus config.amqp
 
       concurrently_
         (startWebServer config admin fits pubs sync)
@@ -93,7 +93,7 @@ main = do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> AdminState -> QueueChan GenTask -> QueueChan PublishTask -> Sync.History -> Eff es ()
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> AdminState -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> Eff es ()
   startWebServer config auth fits pubs sync =
     runLogger "Server" $ do
       rows <- ask
@@ -180,13 +180,13 @@ main = do
       . runDataInversions
       . runDataDatasets
       . runTaskQueueIO @GenTask fits
-      . runTaskQueueIO @PublishTask pubs
+      . runTaskQueueAMQP @PublishTask pubs
       . runTaskQueueIO @SyncMetadataTask metas
       . runTaskQueueIO @SyncProposalTask props
       . runMetadataSync sync
 
 
-webServer :: Config -> AdminState -> QueueChan GenTask -> QueueChan PublishTask -> Sync.History -> TMVar LogState -> Application
+webServer :: Config -> AdminState -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> Application
 webServer config admin fits pubs sync rows =
   liveApp
     (document documentHead)
@@ -251,7 +251,7 @@ webServer config admin fits pubs sync rows =
       . runDataDatasets
       . runDataInversions
       . runTaskQueueIO fits
-      . runTaskQueueIO pubs
+      . runTaskQueueAMQP pubs
       . runMetadataSync sync
       . runDebugIO
       . runTransfer config.level1 config.publish config.scratch.remote

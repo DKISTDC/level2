@@ -24,7 +24,9 @@ manageMinions
      , MetadataSync :> es
      , Log :> es
      , Queue GenTask :> es
+     , Tasks GenTask :> es
      , Queue SyncMetadataTask :> es
+     , Tasks SyncMetadataTask :> es
      )
   => Eff es ()
 manageMinions = do
@@ -37,13 +39,13 @@ manageMinions = do
   checkMetadataSync
 
 
-checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Queue SyncMetadataTask :> es) => Eff es ()
+checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Queue SyncMetadataTask :> es, Tasks SyncMetadataTask :> es) => Eff es ()
 checkMetadataSync = do
   b <- needsMetadataSync
   when b $ do
     log Debug "Metadata Sync"
     s <- send Sync.Create
-    send $ QueueAdd $ SyncMetadataTask s
+    queueAdd $ SyncMetadataTask s
 
 
 generateFits :: [Inversion] -> [GenTask]

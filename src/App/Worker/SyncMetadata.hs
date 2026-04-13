@@ -49,6 +49,7 @@ syncMetadataTask
      , MetadataSync :> es
      , Metadata es
      , Queue SyncProposalTask :> es
+     , Tasks SyncProposalTask :> es
      , Tasks SyncMetadataTask :> es
      , Reader SyncMetadataTask :> es
      )

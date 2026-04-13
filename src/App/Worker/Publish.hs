@@ -4,6 +4,7 @@ import App.Effect.Transfer (Transfer, transferPublish)
 import App.Effect.Transfer qualified as Transfer
 import Control.Monad.Catch (Exception, Handler (..), catches)
 import Control.Monad.Loops
+import Data.Aeson (FromJSON, ToJSON)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
@@ -24,12 +25,17 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Bucket)
 import NSO.Types.InstrumentProgram
+import Network.AMQP.Worker (Key, Route, key, word)
 import Network.Globus (taskPercentComplete)
 import Network.Globus qualified as Globus
 
 
 data PublishTask = PublishTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Generic, Eq, Show, Read)
+  deriving (Generic, Eq, Show, Read, ToJSON, FromJSON)
+
+
+publishKey :: Key Route PublishTask
+publishKey = key "publish" & word "level2" & word "m"
 
 
 instance WorkerTask PublishTask where
@@ -46,9 +52,9 @@ data PublishStatus
   deriving (Eq, Ord, Show, Read)
 
 
-startPublish :: (Queue PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
+startPublish :: (Queue PublishTask :> es, Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
 startPublish propId invId = do
-  send $ QueueAdd $ PublishTask propId invId
+  queueAdd $ PublishTask propId invId
 
 
 publishTask

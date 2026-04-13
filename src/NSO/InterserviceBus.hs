@@ -18,14 +18,12 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import Network.AMQP.Config
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..), ConnectionOpts, ExchangeName)
-import Effectful.Tasks.AMQPConfig
 import Network.Endpoint as Endpoint (Endpoint (..), toURI)
 import Network.URI (uriToString)
-
-
 
 
 data InterserviceBus :: Effect where
@@ -90,8 +88,6 @@ initBus cnn = do
   _ <- Worker.queueNamed cnn "catalog.object.q" catalogObject
   pure $
     BusConnection{connection = cnn, catalogFrame, catalogObject}
-
-
 
 
 data Conversation
