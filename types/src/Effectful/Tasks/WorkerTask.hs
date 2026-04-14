@@ -25,6 +25,13 @@ class WorkerTask t where
   queue = gDatatypeName $ from (undefined :: t)
 
 
+-- For Generic Read/Show Tasks
+instance WorkerTask Text where
+  type Status Text = Text
+  idle = ""
+  queue = ""
+
+
 data TaskWorking
   = TaskWaiting
   | TaskWorking

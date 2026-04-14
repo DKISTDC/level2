@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingVia #-}
+
 module App.Worker.Generate where
 
 import App.Effect.GlobusAccess (GlobusAccess, waitForTransfer)
@@ -29,6 +31,7 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files (Ingest, Level1, Output, Scratch)
+import NSO.Generic
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError)
 import NSO.Image.Headers.Types (SliceXY (..))
@@ -40,7 +43,9 @@ import NSO.Types.InstrumentProgram (Proposal)
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Generic, Eq, Read, Show)
+  deriving (Generic, Eq, DBEq)
+  deriving (Show, Read) via (NoFields GenTask)
+  deriving (DBType) via ReadShow GenTask
 
 
 instance WorkerTask GenTask where
@@ -55,7 +60,8 @@ data GenStatus
   | GenTransferComplete
   | GenFrames {started :: UTCTime, skipped :: Int, complete :: Int, total :: Int, throughput :: Float}
   | GenAsdf
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, DBEq)
+  deriving (DBType) via ReadShow GenStatus
 
 
 -- instance Show GenStatus where

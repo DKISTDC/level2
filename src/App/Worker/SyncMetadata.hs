@@ -23,8 +23,9 @@ import NSO.Types.InstrumentProgram
 -- SYNC METADATA -----------------------------------------------
 
 data SyncMetadataTask = SyncMetadataTask {syncId :: Id Sync}
-  deriving (Generic, Eq)
+  deriving (Generic, Eq, DBEq)
   deriving (Show, Read) via (NoFields SyncMetadataTask)
+  deriving (DBType) via ReadShow SyncMetadataTask
 
 
 instance WorkerTask SyncMetadataTask
@@ -68,8 +69,9 @@ syncMetadataTask task = do
 -- SYNC PROPOSAL -------------------------------------------------------------------------------------------------------------------
 
 data SyncProposalTask = SyncProposalTask {syncId :: Id Sync, proposalId :: Id Proposal}
-  deriving (Generic, Eq)
+  deriving (Generic, Eq, DBEq)
   deriving (Show, Read) via (NoFields SyncProposalTask)
+  deriving (DBType) via ReadShow SyncProposalTask
 
 
 instance WorkerTask SyncProposalTask where
@@ -81,7 +83,8 @@ data SyncProgress
   = Wait
   | Scan
   | Exec [ScanError] [SyncItem (Id Dataset)]
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, DBEq)
+  deriving (DBType) via ReadShow SyncProgress
 
 
 syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es, Reader SyncProposalTask :> es) => SyncProposalTask -> Eff es ()

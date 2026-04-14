@@ -90,7 +90,7 @@ start = do
 
       concurrently_
         (startWebServer config fits pubs sync globusAccess)
-        (runWorkers config fits pubs sync metas props bus globusAccess startWorkers)
+        (runWorkers config fits sync metas props bus globusAccess startWorkers)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
@@ -137,7 +137,7 @@ start = do
       , startGen
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
-      , -- , startPublishWorker
+      , -- , startPublishWorker, see Publisher.hs
         Log.startUpdater
       ]
 
@@ -150,7 +150,7 @@ start = do
       . runEnvironment
       . runTime
 
-  runWorkers config fits pubs sync metas props bus globusAccess =
+  runWorkers config fits sync metas props bus globusAccess =
     runFileSystem
       . runDebugIO
       . runReader config.scratch
@@ -171,7 +171,6 @@ start = do
       . runDataInversions
       . runDataDatasets
       . runTaskQueueIO @GenTask fits
-      . runTaskQueueAMQP @PublishTask pubs
       . runTaskQueueIO @SyncMetadataTask metas
       . runTaskQueueIO @SyncProposalTask props
       . runMetadataSync sync

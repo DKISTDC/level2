@@ -34,6 +34,9 @@ module Effectful.Tasks
   , startWorker
   , Reader
   , TaskFail (..)
+  , DBType
+  , DBEq
+  , ReadShow (..)
   ) where
 
 import Control.Monad (forever)
@@ -54,6 +57,7 @@ import Network.AMQP.Worker (Key, Message (..), Route)
 import Network.AMQP.Worker qualified as AMQP
 import Network.AMQP.Worker.Connection as AMQP (Connection (..))
 import Network.AMQP.Worker.Key (keyText)
+import Rel8 (DBEq, DBType, ReadShow (..))
 
 
 -- this should be centered around how to get the next task, etc
@@ -264,7 +268,7 @@ taskWaitWorking t = do
   isWorking (Just tsk) = tsk.working == TaskWorking
 
 
-startWorker :: forall t es. (Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Queue t :> es, Tasks t :> es, Log :> es) => (t -> Eff (Error TaskFail : Reader t : es) ()) -> Eff es ()
+startWorker :: forall t es. (Show t, Serial t, Serial (Status t), Concurrent :> es, WorkerTask t, Queue t :> es, Tasks t :> es, Log :> es) => (t -> Eff (Error TaskFail : Reader t : es) ()) -> Eff es ()
 startWorker work = do
   forever $ do
     t <- send QueueGetNext

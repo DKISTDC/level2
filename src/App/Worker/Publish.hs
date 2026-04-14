@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingVia #-}
+
 module App.Worker.Publish where
 
 import App.Effect.GlobusAccess (GlobusAccess, transferStatus)
@@ -20,6 +22,7 @@ import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files (Output, Publish)
 import NSO.Files.Scratch as Scratch
+import NSO.Generic
 import NSO.InterserviceBus as InterserviceBus
 import NSO.Metadata as Metadata
 import NSO.Prelude
@@ -32,11 +35,9 @@ import Network.Globus qualified as Globus
 
 
 data PublishTask = PublishTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Generic, Eq, Show, Read, ToJSON, FromJSON)
-
-
-publishKey :: Key Route PublishTask
-publishKey = key "publish" & word "level2" & word "m"
+  deriving (Generic, Eq, ToJSON, FromJSON, DBEq)
+  deriving (Show, Read) via (NoFields PublishTask)
+  deriving (DBType) via ReadShow PublishTask
 
 
 instance WorkerTask PublishTask where
@@ -50,7 +51,12 @@ data PublishStatus
   | PublishTransferring (Id Globus.Task)
   | PublishMessages
   | PublishSave
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, DBEq)
+  deriving (DBType) via ReadShow PublishStatus
+
+
+publishKey :: Key Route PublishTask
+publishKey = key "publish" & word "level2" & word "m"
 
 
 startPublish :: (Queue PublishTask :> es, Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()

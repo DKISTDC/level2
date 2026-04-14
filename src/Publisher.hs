@@ -4,7 +4,6 @@ import App.Config qualified as Config
 import App.Effect.GlobusAccess as GlobusAccess
 import App.Effect.Transfer (runTransfer)
 import App.Worker.Publish as Publish
-import Control.Monad (forever)
 import Control.Monad.Catch (Exception, throwM)
 import Effectful
 import Effectful.Concurrent
@@ -50,12 +49,8 @@ start :: (IOE :> es, Reader Logs :> es, Concurrent :> es) => Eff es ()
 start = do
   runLogger "Publisher" . runCore . runInit $ do
     runWorker $ do
-      liftIO $ putStrLn "HELLO3"
       log Info "NSO L2 Publish Worker"
-      liftIO $ putStrLn "HELLO4"
-      forever $ do
-        log Debug "NSO L2 Publish Worker"
-        threadDelay 1000000
+      startWorker publishTask
  where
   runInit =
     runErrorWith @Rel8Error crashWithError
