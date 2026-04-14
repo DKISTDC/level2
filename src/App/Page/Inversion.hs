@@ -54,7 +54,7 @@ page
 page propId invId = do
   inv <- loadInversion invId
   ds <- loadDatasets inv.programId
-  pub <- send $ TaskLookupStatus $ PublishTask propId invId
+  pub <- send $ TaskLookup $ PublishTask propId invId
   scratch :: Remote Output <- send (RemoteSource @Output @Publish)
   publish :: Remote Publish <- send (RemoteDest @Output @Publish)
   appLayout Inversions $ do
@@ -160,11 +160,11 @@ instance (Inversions :> es, Transfer Output Publish :> es, GlobusAccess Output :
       inv <- loadInversion invId
       publish <- send (RemoteDest @Output @Publish)
       scratch <- send (RemoteSource @Output @Publish)
-      pub <- send $ TaskLookupStatus $ PublishTask propId invId
+      pub <- send $ TaskLookup $ PublishTask propId invId
       pure $ viewInversion publish scratch inv ds pub
 
 
-viewInversion :: Remote Publish -> Remote Output -> Inversion -> NonEmpty Dataset -> Maybe PublishStatus -> View InversionStatus ()
+viewInversion :: Remote Publish -> Remote Output -> Inversion -> NonEmpty Dataset -> Maybe (Task PublishTask) -> View InversionStatus ()
 viewInversion publish scratch inv ds pub = do
   col ~ gap 30 $ do
     if inv.deleted
@@ -506,7 +506,7 @@ data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id I
 
 
 -- it can't turn green when it succeeds, because  it is outside of this view
-instance (Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Tasks PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
+instance (Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Queue PublishTask :> es, Tasks PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
   data Action PublishStep
     = StartPublish
     | WatchPublish

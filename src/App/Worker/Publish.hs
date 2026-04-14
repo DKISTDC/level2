@@ -145,7 +145,7 @@ data PublishError
   deriving (Show, Exception)
 
 
-isTransferComplete :: (Log :> es, GlobusAccess Output :> es, Error PublishError :> es) => Id Task -> Eff es Bool
+isTransferComplete :: (Log :> es, GlobusAccess Output :> es, Error PublishError :> es) => Id Globus.Task -> Eff es Bool
 isTransferComplete it = do
   task <- transferStatus @Output it
   case task.status of

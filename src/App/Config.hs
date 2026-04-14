@@ -8,6 +8,7 @@ module App.Config
   , initGlobus
   , initApp
   , initRemotes
+  , initMesh
   , App (..)
   , AuthInfo (..)
   , Tagged (..)
@@ -51,7 +52,6 @@ data Config = Config
   , app :: App
   , globus :: GlobusClient
   , scratch :: Scratch.Scratches
-  , auth :: AuthInfo
   , db :: Rel8.Connection
   , cpuWorkers :: CPUWorkers
   , manager :: Http.Manager
@@ -80,7 +80,6 @@ initConfig = do
   db <- initDb
   globus <- initGlobus
   scratch <- initScratch
-  auth <- initAuth globus
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   cpus <- initCPUWorkers
   (level1, publish) <- initRemotes
@@ -95,28 +94,7 @@ initConfig = do
   log Debug $ dump "AppVersion" appVersion.value
   log Debug $ dump "GitVersion" gitVersion.value
 
-  -- DKIST Services
-  services <- initServices
-
-  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish}
-
-
-initAuth :: (Environment :> es) => GlobusClient -> Eff es AuthInfo
-initAuth _ = do
-  adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
-  pure $ AuthInfo{admins, adminToken}
- where
-  admins = [UserEmail "shess@nso.edu"]
-
-
-initServices :: forall es. (Environment :> es, Fail :> es, Log :> es) => Eff es Services
-initServices = do
-  mesh <- initMesh
-  bus <- isbService mesh.interserviceBus
-
-  log Debug $ dump "MESH internalApiGateway " mesh.internalApiGateway
-  log Debug $ dump "MESH interserviceBus " mesh.interserviceBus
-  pure $ Config{services, globus, app, db, scratch, auth, cpuWorkers = cpus, manager, level1, publish, amqp}
+  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp}
 
 
 initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
@@ -144,15 +122,6 @@ initMesh = do
         { interserviceBus = AuthUser userISB passISB
         , internalApiGateway = AuthToken tokGQL
         }
-
-
-initAuth :: (Environment :> es) => GlobusConfig -> Eff es AuthInfo
-initAuth = \case
-  GlobusLive _ -> do
-    adminToken <- fmap (Tagged . cs) <$> lookupEnv "GLOBUS_ADMIN_TOKEN"
-    pure $ AuthInfo{admins, adminToken}
- where
-  admins = [UserEmail "shess@nso.edu"]
 
 
 initServices :: forall es. (Environment :> es, Fail :> es) => MeshConfig Endpoint -> Eff es Services

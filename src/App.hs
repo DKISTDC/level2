@@ -80,12 +80,12 @@ start = do
     config <- initConfig
 
     runGlobus config.globus config.manager $ do
-      fits <- atomically taskChanNew
-      pubs <- atomically taskChanNew
-      metas <- atomically taskChanNew
-      props <- atomically taskChanNew
+      fits <- initQueueIO
+      pubs <- initQueueAMQP publishKey config.amqp
+      metas <- initQueueIO
+      props <- initQueueIO
       sync <- initMetadataSync
-      bus <- initBusConnection config.services.interserviceBus
+      bus <- initBus config.amqp
       globusAccess <- initGlobusClientAccess
 
       concurrently_
@@ -97,7 +97,7 @@ start = do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> ClientAccess -> Eff es ()
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> Eff es ()
   startWebServer config fits pubs sync globusAccess =
     runLogger "Server" $ do
       rows <- ask
@@ -177,7 +177,7 @@ start = do
       . runMetadataSync sync
 
 
-webServer :: Config -> TaskChan GenTask -> TaskChan PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
+webServer :: Config -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
 webServer config fits pubs sync rows globusAccess =
   liveApp
     (document documentHead)
@@ -231,7 +231,7 @@ webServer config fits pubs sync rows globusAccess =
   runApp
     :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Ingest :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
     => User
-    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Tasks PublishTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
+    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Tasks PublishTask : Queue GenTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
     -> Eff es Response
   runApp u =
     runLogger "App"

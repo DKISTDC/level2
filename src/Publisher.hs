@@ -9,7 +9,6 @@ import Control.Monad.Catch (Exception, throwM)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.Async
-import Effectful.Concurrent.STM
 import Effectful.Environment
 import Effectful.Error.Static
 import Effectful.Fail
@@ -31,12 +30,13 @@ import NSO.InterserviceBus
 import NSO.InterserviceBus qualified as ISB
 import NSO.Metadata as Metadata
 import NSO.Prelude
+import Network.AMQP.Config (initAMQPConnection)
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
 
 
 -- DONE: How do we get admin auth in here for globus?
--- TODO: run the same Tasks interface with AMQP instead of in-process workers!
+-- DONE: run the same Tasks interface with AMQP instead of in-process workers!
 
 main :: IO ()
 main = do
@@ -71,15 +71,18 @@ start = do
       $ action
 
   runWorker action = do
-    pubs <- atomically taskChanNew
-
     mgr <- liftIO $ Http.newManager Http.tlsManagerSettings
     db <- Config.initDb
     scratch <- Config.initScratch
     (_, publish) <- Config.initRemotes
     globus <- Config.initGlobus
-    services <- Config.initServices
-    bus <- ISB.initBusConnection services.interserviceBus
+
+    -- DKIST
+    mesh <- Config.initMesh
+    services <- Config.initServices mesh
+    amqp <- initAMQPConnection services.interserviceBus
+    pubs <- initQueueAMQP publishKey amqp
+    bus <- ISB.initBus amqp
 
     runGlobus globus mgr $ do
       access <- initGlobusClientAccess
@@ -96,7 +99,7 @@ start = do
         . runInterserviceBus bus
         . runDataInversions
         . runDataDatasets
-        . runTasks @PublishTask pubs
+        . runTaskQueueAMQP @PublishTask pubs
         $ action
 
 
