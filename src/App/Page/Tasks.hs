@@ -1,13 +1,15 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Tasks where
 
 -- import App.Worker.SyncMetadata
 import App.Colors
 import App.Route
 import App.Style qualified as Style
-import App.View.DataRow (cell, hd)
-import App.View.DataRow qualified as View
-import App.View.Icons as Icons
+import App.View.Icons qualified as Icons
 import App.View.Layout
+import Data.List qualified as L
+import Data.Text qualified as T
 import Effectful.Tasks
 import NSO.Prelude
 import Web.Atomic.CSS
@@ -17,58 +19,92 @@ import Web.Hyperbole
 -- we need to be able to query all the tasks here!
 page
   :: (Hyperbole :> es, Tasks :> es)
-  => Page es '[TasksTable]
+  => Page es '[TasksTable, TaskMonitor]
 page = do
   -- login <- loginUrl
-  ts :: [Task'] <- send TaskAll
+  ts :: [Task'] <- L.sort <$> send TaskAll
   appLayout Dashboard $ do
     col ~ pad 20 . gap 20 $ do
-      col ~ Style.card . gap 15 $ do
+      col ~ gap 10 $ do
         -- el ~ Style.cardHeader Primary $ "Active Tasks"
         hyper TasksTable $ tasksTable ts
+
+
+spinner :: View c ()
+spinner = do
+  el ~ width 24 . height 24 . cls "loader" $ none
 
 
 data TasksTable = TasksTable
   deriving (Generic, ViewId)
 
 
-instance HyperView TasksTable es where
+-- refresh it periodically?
+-- how to get NEW tasks added?
+-- let's start by updating each row
+instance (Tasks :> es) => HyperView TasksTable es where
   data Action TasksTable = Refresh
     deriving (Generic, ViewAction)
 
 
+  type Require TasksTable = '[TaskMonitor]
+
+
   update Refresh = do
-    pure "WOOT"
+    ts :: [Task'] <- L.sort <$> send TaskAll
+    pure $ tasksTable ts
 
-
--- should i just display them all in a table, and update each one?
--- if it has errored, I don't need to
--- I would LIKE to display them in two tables: Active, and Error. If it errors, move it to errors
--- but... how? Refresh it! Send a message, push an update. What does that do?
---
--- well, ultimately, I don't want them to be durable... Just - interprocess
--- I'd rather have the guarantee that everything is cleaned up when the process exits. But I can't know that of course
---
--- What about errors? How are they reported? Only to the admin tool? We can have a worker listening for failures. Listening for status changes
---
-
--- TODO: what about interrupted tasks? They aren't in the queue at all! Should we add them on startup? Probably not.  Should we remove them on close, .... hmm....
 
 tasksTable :: [Task'] -> View TasksTable ()
 tasksTable ts = do
-  table ts ~ View.table $ do
-    -- redundant, the task queue is in the id
-    -- tcol (hd "Queue") $ \t -> cell $ text . cs $ t.taskQueue
-    tcol (hd "Id") $ \t -> cell $ text $ cs $ show t.task
-    tcol (hd "") $ \t -> cell $ do
-      row $ do
-        space
-        working t.working
-        space
-    -- tcol (hd "Error") $ \t -> cell $ text . cs $ t.taskStatus
-    tcol (hd "Status") $ \t -> cell $ text . cs . show $ t.status
+  col ~ gap 0 @ onLoad Refresh 5000 $ do
+    forM_ ts $ \t -> do
+      hyper (TaskMonitor t.task) (taskMonitor t)
+
+
+data TaskMonitor = TaskMonitor TaskId
+  deriving (Generic, ViewId)
+
+
+instance (Tasks :> es) => HyperView TaskMonitor es where
+  data Action TaskMonitor = Stream
+    deriving (Generic, ViewAction)
+
+
+  update _ = do
+    TaskMonitor t <- viewId
+    mt <- taskWatch t $ \tsk -> do
+      pushUpdate $ taskRow tsk
+
+    -- BUG: the spinnerCircle doesn't like getting updated. Errors
+    pure $ maybe none taskRow mt
+
+
+taskMonitor :: Task' -> View TaskMonitor ()
+taskMonitor t = do
+  taskRow t @ onLoad Stream 100
+
+
+taskRow :: Task' -> View TaskMonitor ()
+taskRow t = do
+  el ~ pad (T 10) $ do
+    col ~ gap 10 . pad 10 . Style.card $ do
+      el ~ Style.cardHeader (workClr t.working) $ do
+        row ~ gap 10 $ do
+          el ~ bold $ text t.task.value
+          space
+          working t.working
+      col ~ gap 10 $ do
+        el $ text $ T.take 100 t.status.value
+        el $ do
+          maybe none (text . cs) t.error
  where
   working = \case
     TaskWaiting -> el "..."
     TaskFailed -> el ~ color Danger . width 20 $ Icons.xMark
-    TaskWorking -> el ~ width 20 $ Icons.spinnerCircle
+    TaskWorking -> spinner
+
+  workClr = \case
+    TaskWaiting -> Secondary
+    TaskFailed -> Danger
+    TaskWorking -> Primary

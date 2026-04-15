@@ -383,7 +383,7 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
 
       -- watch status
       log Debug $ dump "Watching" task
-      taskWatchStatus onStatus task
+      taskWatchStatus task onStatus
 
       log Debug "done"
 
@@ -521,10 +521,10 @@ instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess
         Inversions.resetPublished invId
         Inversions.clearError invId
         queueAdd task
-        taskWatchStatus onPublishStatus task
+        taskWatchStatus task onPublishStatus
         loadPublish
       WatchPublish -> do
-        taskWatchStatus onPublishStatus task
+        taskWatchStatus task onPublishStatus
         loadPublish
    where
     loadPublish = do

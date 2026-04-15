@@ -22,9 +22,12 @@ module Effectful.Tasks
   , Tasks (..)
   , Task (..)
   , Task' (..)
+  , TaskId (..)
+  , TaskStatus (..)
   , WorkerTask (..)
   , TaskWorking (..)
   , taskWatchStatus
+  , taskWatch
   , taskWaitWorking
   , taskSetStatus
   , taskModStatus
@@ -139,6 +142,12 @@ newTask t =
   Task' (queue @t) (taskId t) (taskStatus $ idle @t) TaskWaiting Nothing
 
 
+taskFailed :: forall t es. (WorkerTask t, Tasks :> es, Log :> es) => t -> String -> Eff es ()
+taskFailed t e = do
+  log Err $ "Task Failed: " <> show t
+  send $ TaskSaveError (taskId t) e
+
+
 data Tasks :: Effect where
   TaskSetStatus :: TaskId -> TaskStatus -> Tasks m ()
   TaskSaveError :: TaskId -> String -> Tasks m ()
@@ -227,22 +236,35 @@ taskModStatus t f = do
 
 
 -- | call onStatus every time status updates, until the task disappears
-taskWatchStatus :: forall t es. (Tasks :> es, WorkerTask t) => (Status t -> Eff es ()) -> t -> Eff es ()
-taskWatchStatus onStatus t = do
+taskWatchStatus :: forall t es. (Tasks :> es, WorkerTask t) => t -> (Status t -> Eff es ()) -> Eff es ()
+taskWatchStatus t onStatus = do
+  let tid = taskId t
+  _ <- taskWatch tid $ \tsk -> do
+    s <- parseStatus @t tid tsk.status
+    onStatus s
+  pure ()
+
+
+-- can it return the *last* task
+taskWatch :: forall es. (Tasks :> es) => TaskId -> (Task' -> Eff es ()) -> Eff es (Maybe Task')
+taskWatch t onStatus = do
   checkNext Nothing
  where
-  checkNext :: Maybe TaskStatus -> Eff es ()
+  checkNext :: Maybe Task' -> Eff es (Maybe Task')
   checkNext !mold = do
-    mt <- send $ TaskLookup (taskId t)
+    mt <- send $ TaskLookup t
     case mt of
-      Nothing -> pure ()
+      Nothing -> pure Nothing
       Just tsk -> do
-        when (Just tsk.status /= mold) $ do
-          s <- parseStatus @t (taskId t) tsk.status
-          onStatus s
+        when (Just tsk /= mold) $ do
+          onStatus tsk
 
-        send TaskWatchDelay
-        checkNext $ (.status) <$> mt
+        -- stop if failed
+        if tsk.working == TaskFailed
+          then pure $ Just tsk
+          else do
+            send TaskWatchDelay
+            checkNext mt
 
 
 -- | Wait for a task to start, then continue
@@ -270,7 +292,8 @@ startWorker work = do
     t <- send QueueGetNext
     res <- logContext (show t) $ runReader t $ runErrorNoCallStack @TaskFail $ work t
     case res of
-      Left (TaskFail e) -> send $ TaskSaveError (taskId t) e
+      Left (TaskFail e) -> do
+        taskFailed t e
       Right _ -> taskDone t -- will not run if TaskFail is called
 
 

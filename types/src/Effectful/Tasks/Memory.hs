@@ -2,6 +2,7 @@
 
 module Effectful.Tasks.Memory where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Map.Strict qualified as M
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
@@ -10,14 +11,15 @@ import Effectful.Reader.Dynamic
 import Effectful.Tasks.WorkerTask
 import NSO.Prelude
 import Text.Read (readMaybe)
+import Web.Hyperbole.Data.Param
 
 
 newtype TaskId = TaskId {value :: Text}
-  deriving newtype (Eq, Ord, Show)
+  deriving newtype (Eq, Ord, Show, ToJSON, FromJSON, FromParam, ToParam)
 
 
 newtype TaskStatus = TaskStatus {value :: Text}
-  deriving newtype (Eq, Ord, Show)
+  deriving newtype (Eq, Ord, Show, ToJSON, FromJSON)
 
 
 data Task' = Task'
@@ -27,6 +29,10 @@ data Task' = Task'
   , working :: TaskWorking
   , error :: Maybe String
   }
+  deriving (Generic, Eq, ToJSON, FromJSON)
+instance Ord Task' where
+  t1 <= t2 =
+    (t1.working, t1.task) <= (t2.working, t2.task)
 
 
 newtype TaskStore = TaskStore (TVar (Map TaskId Task'))
@@ -58,13 +64,13 @@ updateStatus t s = do
  where
   setStatus :: Task' -> Task'
   setStatus ts =
-    Task'{queue = ts.queue, task = ts.task, status = s, working = ts.working, error = ts.error}
+    Task'{queue = ts.queue, task = ts.task, status = s, working = TaskWorking, error = Nothing}
 
 
 saveError :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> String -> Eff es ()
 saveError t e = do
   TaskStore var <- ask
-  atomically $ modifyTVar var (M.update (\ts -> Just ts{error = Just e}) t)
+  atomically $ modifyTVar var (M.update (\ts -> Just ts{error = Just e, working = TaskFailed}) t)
 
 
 removeTask :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> Eff es ()

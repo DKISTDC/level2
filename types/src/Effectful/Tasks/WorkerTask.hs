@@ -5,6 +5,7 @@
 
 module Effectful.Tasks.WorkerTask where
 
+import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics
 import NSO.Prelude
 
@@ -32,7 +33,7 @@ class (Show t, Read t, Show (Status t), Read (Status t)) => WorkerTask t where
 
 
 newtype TaskQueue = TaskQueue Text
-  deriving newtype (IsString)
+  deriving newtype (IsString, ToJSON, FromJSON, Eq)
 
 
 -- For Generic Read/Show Tasks
@@ -43,10 +44,10 @@ instance WorkerTask Text where
 
 
 data TaskWorking
-  = TaskWaiting
-  | TaskWorking
+  = TaskWorking
+  | TaskWaiting
   | TaskFailed
-  deriving (Generic, Eq, Read, Show)
+  deriving (Generic, Eq, Read, Show, Ord, ToJSON, FromJSON)
 
 
 class GDatatypeName f where
