@@ -16,21 +16,20 @@ newtype TaskId = TaskId {value :: Text}
   deriving newtype (Eq, Ord, Show)
 
 
-data TaskStatus = TaskStatus
+newtype TaskStatus = TaskStatus {value :: Text}
+  deriving newtype (Eq, Ord, Show)
+
+
+data Task' = Task'
   { queue :: TaskQueue
   , task :: TaskId
-  , status :: Text
+  , status :: TaskStatus
   , working :: TaskWorking
   , error :: Maybe String
   }
 
 
-data TaskStatusError
-  = Todo
-  deriving (Show, Eq, Exception)
-
-
-newtype TaskStore = TaskStore (TVar (Map TaskId TaskStatus))
+newtype TaskStore = TaskStore (TVar (Map TaskId Task'))
 
 
 initTaskStore :: (Concurrent :> es) => Eff es TaskStore
@@ -41,79 +40,58 @@ taskId :: (Show t) => t -> TaskId
 taskId t = TaskId $ cs $ show t
 
 
-saveStatus :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskStatus -> Eff es ()
-saveStatus ts = do
+taskStatus :: (Show s) => s -> TaskStatus
+taskStatus t = TaskStatus $ cs $ show t
+
+
+saveTask :: forall es. (Concurrent :> es, Reader TaskStore :> es) => Task' -> Eff es ()
+saveTask t = do
   TaskStore var <- ask
-  atomically $ modifyTVar var (M.insert ts.task ts)
+  atomically $ modifyTVar var (M.insert t.task t)
 
 
-insertTask :: forall t es. (Show t, Show (Status t), WorkerTask t, Concurrent :> es, Reader TaskStore :> es) => t -> Eff es ()
-insertTask t = do
-  let ts = TaskStatus (queue @t) (taskId t) (cs $ show $ idle @t) TaskWaiting Nothing
-  saveStatus ts
-
-
-updateStatus :: forall t es. (Show t, Show (Status t), WorkerTask t, Concurrent :> es, Reader TaskStore :> es) => t -> Status t -> Eff es ()
+updateStatus :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> TaskStatus -> Eff es ()
 updateStatus t s = do
-  let ts = TaskStatus (queue @t) (taskId t) (cs $ show s) TaskWorking Nothing
-  saveStatus ts
+  TaskStore var <- ask
+  atomically $ do
+    modifyTVar var (M.update (Just . setStatus) t)
+ where
+  setStatus :: Task' -> Task'
+  setStatus ts =
+    Task'{queue = ts.queue, task = ts.task, status = s, working = ts.working, error = ts.error}
 
 
-saveError :: forall t es. (Show t, Concurrent :> es, Reader TaskStore :> es) => t -> String -> Eff es ()
+saveError :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> String -> Eff es ()
 saveError t e = do
   TaskStore var <- ask
-  let tid :: TaskId = taskId t
-  atomically $ modifyTVar var (M.update (\ts -> Just ts{error = Just e}) tid)
+  atomically $ modifyTVar var (M.update (\ts -> Just ts{error = Just e}) t)
 
 
-modifyStatus :: forall t es. (Show t, Read t, Read (Status t), Show (Status t), Concurrent :> es, Reader TaskStore :> es) => t -> (Status t -> Status t) -> Eff es ()
-modifyStatus t f = do
+removeTask :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> Eff es ()
+removeTask t = do
   TaskStore var <- ask
-  let tid = taskId t
-  mtsk <- lookupTask t
-  tsk :: Task t <- maybe (throwIO $ MissingStatus tid) pure mtsk
-
-  atomically $ do
-    modifyTVar var (M.update (Just . setStatus (cs . show . f $ tsk.status)) tid)
- where
-  setStatus :: Text -> TaskStatus -> TaskStatus
-  setStatus s ts =
-    TaskStatus{queue = ts.queue, task = ts.task, status = s, working = ts.working, error = ts.error}
+  atomically $ modifyTVar var (M.delete t)
 
 
-removeStatus :: forall t es. (Show t, Concurrent :> es, Reader TaskStore :> es) => t -> Eff es ()
-removeStatus t = do
-  TaskStore var <- ask
-  atomically $ modifyTVar var (M.delete (taskId t))
-
-
-lookupStatus :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> Eff es (Maybe TaskStatus)
-lookupStatus t = do
+lookupTask :: forall es. (Concurrent :> es, Reader TaskStore :> es) => TaskId -> Eff es (Maybe Task')
+lookupTask t = do
   TaskStore var <- ask
   atomically $ do
     m <- readTVar var
     pure $ M.lookup t m
 
 
-allTasks :: forall t es. (Read t, Read (Status t), Concurrent :> es, Reader TaskStore :> es) => Eff es [Task t]
+allTasks :: forall es. (Concurrent :> es, Reader TaskStore :> es) => Eff es [Task']
 allTasks = do
   TaskStore var <- ask
-  tss <- M.elems <$> readTVarIO var
-  mapM parseTask tss
-
-
-lookupTask :: forall t es. (Show t, Read t, Read (Status t), Concurrent :> es, Reader TaskStore :> es) => t -> Eff es (Maybe (Task t))
-lookupTask t = do
-  let tid = taskId t
-  ms <- lookupStatus tid
-  maybe (pure Nothing) (fmap Just . parseTask) ms
+  M.elems <$> readTVarIO var
 
 
 -- Parsing --------------------------------------
 
-parseStatus :: (Read (Status t)) => TaskId -> Text -> Eff es (Status t)
+parseStatus :: (Read (Status t)) => TaskId -> TaskStatus -> Eff es (Status t)
 parseStatus tid ss = do
-  case readMaybe (cs ss) of
+  case readMaybe (cs ss.value) of
     Nothing -> throwIO $ BadStatus tid ss
     Just a -> pure a
 
@@ -125,12 +103,12 @@ parseTaskId tid = do
     Just a -> pure a
 
 
-parseTask :: forall t es. (Read t, Read (Status t)) => TaskStatus -> Eff es (Task t)
+parseTask :: forall t es. (Read t, Read (Status t)) => Task' -> Eff es (Task t)
 parseTask ts = do
   parseTask' ts.task ts.status ts.working
 
 
-parseTask' :: forall t es. (Read t, Read (Status t)) => TaskId -> Text -> TaskWorking -> Eff es (Task t)
+parseTask' :: forall t es. (Read t, Read (Status t)) => TaskId -> TaskStatus -> TaskWorking -> Eff es (Task t)
 parseTask' tid ss w = do
   t <- parseTaskId @t tid
   s <- parseStatus @t tid ss
@@ -138,7 +116,7 @@ parseTask' tid ss w = do
 
 
 data TaskStoreError
-  = BadStatus TaskId Text
+  = BadStatus TaskId TaskStatus
   | BadTaskId TaskId
-  | MissingStatus TaskId
+  | MissingTask TaskId
   deriving (Eq, Show, Exception)

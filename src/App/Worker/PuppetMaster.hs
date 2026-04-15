@@ -23,10 +23,9 @@ manageMinions
      , Datasets :> es
      , MetadataSync :> es
      , Log :> es
+     , Tasks :> es
      , Queue GenTask :> es
-     , Tasks GenTask :> es
      , Queue SyncMetadataTask :> es
-     , Tasks SyncMetadataTask :> es
      )
   => Eff es ()
 manageMinions = do
@@ -39,7 +38,7 @@ manageMinions = do
   checkMetadataSync
 
 
-checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Queue SyncMetadataTask :> es, Tasks SyncMetadataTask :> es) => Eff es ()
+checkMetadataSync :: (Log :> es, MetadataSync :> es, Time :> es, Queue SyncMetadataTask :> es, Tasks :> es) => Eff es ()
 checkMetadataSync = do
   b <- needsMetadataSync
   when b $ do

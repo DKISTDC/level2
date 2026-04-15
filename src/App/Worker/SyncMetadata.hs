@@ -8,7 +8,6 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Dynamic
 import Effectful.Log
-import Effectful.Reader.Dynamic
 import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
@@ -23,9 +22,8 @@ import NSO.Types.InstrumentProgram
 -- SYNC METADATA -----------------------------------------------
 
 data SyncMetadataTask = SyncMetadataTask {syncId :: Id Sync}
-  deriving (Generic, Eq, DBEq)
+  deriving (Generic, Eq)
   deriving (Show, Read) via (NoFields SyncMetadataTask)
-  deriving (DBType) via ReadShow SyncMetadataTask
 
 
 instance WorkerTask SyncMetadataTask
@@ -49,16 +47,14 @@ syncMetadataTask
   :: ( Log :> es
      , MetadataSync :> es
      , Metadata es
+     , Tasks :> es
      , Queue SyncProposalTask :> es
-     , Tasks SyncProposalTask :> es
-     , Tasks SyncMetadataTask :> es
-     , Reader SyncMetadataTask :> es
      )
   => SyncMetadataTask
   -> Eff es ()
 syncMetadataTask task = do
   log Info "Scan Metadata for Proposals"
-  taskSetStatus @SyncMetadataTask True
+  taskSetStatus task True
   gs <- Sync.runScanAvailable
   let propIds = fmap (\g -> Id (sample g).primaryProposalId) gs
   send $ Sync.SetProposals task.syncId propIds
@@ -69,9 +65,8 @@ syncMetadataTask task = do
 -- SYNC PROPOSAL -------------------------------------------------------------------------------------------------------------------
 
 data SyncProposalTask = SyncProposalTask {syncId :: Id Sync, proposalId :: Id Proposal}
-  deriving (Generic, Eq, DBEq)
+  deriving (Generic, Eq)
   deriving (Show, Read) via (NoFields SyncProposalTask)
-  deriving (DBType) via ReadShow SyncProposalTask
 
 
 instance WorkerTask SyncProposalTask where
@@ -83,14 +78,13 @@ data SyncProgress
   = Wait
   | Scan
   | Exec [ScanError] [SyncItem (Id Dataset)]
-  deriving (Eq, Show, Read, DBEq)
-  deriving (DBType) via ReadShow SyncProgress
+  deriving (Eq, Show, Read)
 
 
-syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks SyncProposalTask :> es, Reader SyncProposalTask :> es) => SyncProposalTask -> Eff es ()
+syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Metadata es, MetadataSync :> es, Tasks :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
   logStatus $ "started " <> show task.syncId
-  taskSetStatus @SyncProposalTask Scan
+  taskSetStatus task Scan
   scan <- Sync.runScanProposal task.proposalId
 
   send $ Sync.SetScan task.syncId task.proposalId scan
@@ -105,6 +99,6 @@ syncProposalTask task = do
     throwError $ TaskFail (show err)
 
   let syncDatasetIds = fmap (\sd -> SyncItem sd.item.datasetId sd.sync) scan.datasets
-  taskSetStatus @SyncProposalTask $ Exec scan.errors syncDatasetIds
+  taskSetStatus task $ Exec scan.errors syncDatasetIds
 
   Sync.execSync scan.datasets

@@ -2,16 +2,16 @@
 
 module App.Page.Dashboard where
 
-import App.Colors as Colors
+-- import App.Colors as Colors
+-- import App.View.DataRow qualified as View
+-- import App.View.Icons qualified as Icons
+-- import App.Worker.Generate
+-- import Data.Text (pack)
 import App.Effect.Auth
 import App.Route
 import App.Style qualified as Style
 import App.Version
-import App.View.DataRow qualified as View
-import App.View.Icons qualified as Icons
 import App.View.Layout
-import App.Worker.Generate
-import Data.Text (pack)
 import Effectful
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
@@ -26,7 +26,7 @@ import Web.Hyperbole
 
 
 page
-  :: (Concurrent :> es, IOE :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Tasks GenTask :> es)
+  :: (Concurrent :> es, IOE :> es, Log :> es, FileSystem :> es, Hyperbole :> es, Auth :> es, Datasets :> es, Tasks :> es)
   => Page es '[Work]
 page = do
   -- login <- loginUrl
@@ -44,7 +44,7 @@ page = do
         el ~ bold . fontSize 18 $ "Admin"
 
       -- hyper Test testView
-      hyper Work $ workView []
+      hyper Work $ el "TODO"
 
 
 -- row $ do
@@ -63,35 +63,35 @@ data Work = Work
   deriving (Generic, ViewId)
 
 
-instance (Concurrent :> es, Tasks GenTask :> es) => HyperView Work es where
+instance (Concurrent :> es, Tasks :> es) => HyperView Work es where
   data Action Work = Refresh
     deriving (Generic, ViewAction)
 
 
   update Refresh = do
-    gens <- send TaskAll
-    pure $ workView gens
+    _gens <- send TaskAll
+    -- pure $ workView gens
+    pure "TODO"
 
-
-workView :: [Task GenTask] -> View Work ()
-workView gens = do
-  col ~ gap 20 @ onLoad Refresh 1000 $ do
-    col ~ Style.card $ do
-      el ~ Style.cardHeader Colors.Info $ do
-        el ~ bold . fontSize 18 $ "Inversion Generation"
-      taskTable gens
-
-
-taskTable :: forall task. (WorkerTask task, Eq (Status task), Show (Status task), Show task) => [Task task] -> View Work ()
-taskTable tasks = do
-  table tasks ~ View.table $ do
-    tcol (View.hd "Task") $ \w -> View.cell $ text $ pack $ show w.task
-    tcol (View.hd "Status") $ \w -> View.cell $ status w.status
- where
-  status :: Status task -> View Work ()
-  status s
-    | s == idle @task = el "Idle"
-    | otherwise =
-        row ~ gap 5 $ do
-          el ~ width 20 $ Icons.spinnerCircle
-          el ~ color Colors.Info . italic $ text $ pack $ show s
+-- workView :: [Task'] -> View Work ()
+-- workView gens = do
+--   col ~ gap 20 @ onLoad Refresh 1000 $ do
+--     col ~ Style.card $ do
+--       el ~ Style.cardHeader Colors.Info $ do
+--         el ~ bold . fontSize 18 $ "Inversion Generation"
+--       taskTable gens
+--
+--
+-- taskTable :: forall task. (WorkerTask task, Eq (Status task), Show (Status task), Show task) => [Task task] -> View Work ()
+-- taskTable tasks = do
+--   table tasks ~ View.table $ do
+--     tcol (View.hd "Task") $ \w -> View.cell $ text $ pack $ show w.task
+--     tcol (View.hd "Status") $ \w -> View.cell $ status w.status
+--  where
+--   status :: Status task -> View Work ()
+--   status s
+--     | s == idle @task = el "Idle"
+--     | otherwise =
+--         row ~ gap 5 $ do
+--           el ~ width 20 $ Icons.spinnerCircle
+--           el ~ color Colors.Info . italic $ text $ pack $ show s

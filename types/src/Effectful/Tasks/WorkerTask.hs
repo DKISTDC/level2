@@ -7,7 +7,6 @@ module Effectful.Tasks.WorkerTask where
 
 import GHC.Generics
 import NSO.Prelude
-import Rel8 (DBEq, DBType, ReadShow (..))
 
 
 data Task t = Task
@@ -17,7 +16,7 @@ data Task t = Task
   }
 
 
-class WorkerTask t where
+class (Show t, Read t, Show (Status t), Read (Status t)) => WorkerTask t where
   type Status t :: Type
   type Status t = Bool
 
@@ -33,7 +32,7 @@ class WorkerTask t where
 
 
 newtype TaskQueue = TaskQueue Text
-  deriving newtype (IsString, DBEq, DBType)
+  deriving newtype (IsString)
 
 
 -- For Generic Read/Show Tasks
@@ -47,8 +46,7 @@ data TaskWorking
   = TaskWaiting
   | TaskWorking
   | TaskFailed
-  deriving (Generic, Eq, Read, Show, DBEq)
-  deriving (DBType) via ReadShow TaskWorking
+  deriving (Generic, Eq, Read, Show)
 
 
 class GDatatypeName f where
@@ -58,15 +56,3 @@ class GDatatypeName f where
 instance (Datatype d) => GDatatypeName (M1 D d f) where
   gDatatypeName _ =
     cs $ datatypeName (undefined :: M1 D d f p)
-
--- data TaskStatus t
---   = Missing
---   | Waiting
---   | Working (Status t)
---   | Complete
--- instance (Eq (Status t)) => Eq (TaskStatus t) where
---   Missing == Missing = True
---   Waiting == Waiting = True
---   Complete == Complete = True
---   Working s1 == Working s2 = s1 == s2
---   _ == _ = False

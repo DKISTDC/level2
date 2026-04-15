@@ -47,14 +47,14 @@ import Web.Hyperbole.Data.URI as URI (pathUri)
 
 
 page
-  :: (Hyperbole :> es, Transfer Output Publish :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es)
+  :: (Hyperbole :> es, Tasks :> es, Transfer Output Publish :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Auth :> es, Log :> es, Inversions :> es, Datasets :> es, Auth :> es, Time :> es)
   => Id Proposal
   -> Id Inversion
   -> Page es (InversionStatus : MoreInversions : InversionViews)
 page propId invId = do
   inv <- loadInversion invId
   ds <- loadDatasets inv.programId
-  pub <- send $ TaskLookup $ PublishTask propId invId
+  pub <- taskLookup $ PublishTask propId invId
   scratch :: Remote Output <- send (RemoteSource @Output @Publish)
   publish :: Remote Publish <- send (RemoteDest @Output @Publish)
   appLayout Inversions $ do
@@ -102,7 +102,7 @@ data MoreInversions = MoreInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Tasks GenTask :> es) => HyperView MoreInversions es where
+instance (Inversions :> es, Auth :> es) => HyperView MoreInversions es where
   data Action MoreInversions
     = CreateInversion
     deriving (Generic, ViewAction)
@@ -130,7 +130,7 @@ data InversionStatus = InversionStatus (Id Proposal) (Id InstrumentProgram) (Id 
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Transfer Output Publish :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Datasets :> es, Auth :> es, Tasks GenTask :> es, Time :> es, Tasks PublishTask :> es) => HyperView InversionStatus es where
+instance (Tasks :> es, Inversions :> es, Transfer Output Publish :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Datasets :> es, Auth :> es, Time :> es) => HyperView InversionStatus es where
   data Action InversionStatus
     = Reload
     | SetDataset (Id Dataset) Bool
@@ -160,7 +160,7 @@ instance (Inversions :> es, Transfer Output Publish :> es, GlobusAccess Output :
       inv <- loadInversion invId
       publish <- send (RemoteDest @Output @Publish)
       scratch <- send (RemoteSource @Output @Publish)
-      pub <- send $ TaskLookup $ PublishTask propId invId
+      pub <- taskLookup $ PublishTask propId invId
       pure $ viewInversion publish scratch inv ds pub
 
 
@@ -343,7 +343,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Tasks GenTask :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView GenerateStep es where
+instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = RegenError
     | RegenFits
@@ -506,7 +506,7 @@ data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id I
 
 
 -- it can't turn green when it succeeds, because  it is outside of this view
-instance (Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Queue PublishTask :> es, Tasks PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
+instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Queue PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
   data Action PublishStep
     = StartPublish
     | WatchPublish

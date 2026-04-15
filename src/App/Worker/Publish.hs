@@ -35,9 +35,8 @@ import Network.Globus qualified as Globus
 
 
 data PublishTask = PublishTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Generic, Eq, ToJSON, FromJSON, DBEq)
+  deriving (Generic, Eq, ToJSON, FromJSON)
   deriving (Show, Read) via (NoFields PublishTask)
-  deriving (DBType) via ReadShow PublishTask
 
 
 instance WorkerTask PublishTask where
@@ -51,15 +50,14 @@ data PublishStatus
   | PublishTransferring (Id Globus.Task)
   | PublishMessages
   | PublishSave
-  deriving (Eq, Ord, Show, Read, DBEq)
-  deriving (DBType) via ReadShow PublishStatus
+  deriving (Eq, Ord, Show, Read)
 
 
 publishKey :: Key Route PublishTask
 publishKey = key "publish" & word "level2" & word "m"
 
 
-startPublish :: (Queue PublishTask :> es, Tasks PublishTask :> es) => Id Proposal -> Id Inversion -> Eff es ()
+startPublish :: (Queue PublishTask :> es, Tasks :> es) => Id Proposal -> Id Inversion -> Eff es ()
 startPublish propId invId = do
   queueAdd $ PublishTask propId invId
 
@@ -72,7 +70,8 @@ publishTask
      , Log :> es
      , Concurrent :> es
      , Scratch Output :> es
-     , Tasks PublishTask :> es
+     , Tasks :> es
+     , Reader PublishTask :> es
      , Transfer Output Publish :> es
      , GlobusAccess Output :> es
      , Error GlobusError :> es
@@ -98,16 +97,16 @@ publishTask task = do
   workWithError :: Eff (Error PublishError : es) ()
   workWithError = do
     logStatus "starting"
-    send $ TaskSetStatus task PublishStarted
+    taskSetStatus task PublishStarted
 
     bucket <- proposalBucket task.proposalId
     taskId <- transferPublish bucket task.proposalId task.inversionId
-    send $ TaskSetStatus task $ PublishTransferring taskId
+    taskSetStatus task $ PublishTransferring taskId
 
     logStatus "transferring"
     untilM_ (threadDelay (2 * 1000 * 1000)) (isTransferComplete taskId)
 
-    send $ TaskSetStatus task PublishMessages
+    taskSetStatus task PublishMessages
     logStatus "sending frame messages"
 
     conversationId <- randomId "l2pub"
@@ -116,7 +115,7 @@ publishTask task = do
       InterserviceBus.catalogAsdf conversationId bucket task.proposalId task.inversionId
 
     logStatus "creating inversion metadata"
-    send $ TaskSetStatus task PublishSave
+    taskSetStatus task PublishSave
     inv <- loadInversion task.inversionId
     datasets <- Datasets.find $ Datasets.ByIds inv.datasets
 

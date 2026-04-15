@@ -19,7 +19,6 @@ import Data.List.NonEmpty qualified as NE
 import Data.Time.Clock (diffUTCTime)
 import Effectful
 import Effectful.Concurrent
-import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.Exception (catch)
 import Effectful.GenRandom
@@ -43,9 +42,8 @@ import NSO.Types.InstrumentProgram (Proposal)
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}
-  deriving (Generic, Eq, DBEq)
+  deriving (Generic, Eq)
   deriving (Show, Read) via (NoFields GenTask)
-  deriving (DBType) via ReadShow GenTask
 
 
 instance WorkerTask GenTask where
@@ -60,8 +58,7 @@ data GenStatus
   | GenTransferComplete
   | GenFrames {started :: UTCTime, skipped :: Int, complete :: Int, total :: Int, throughput :: Float}
   | GenAsdf
-  deriving (Eq, Ord, Show, Read, DBEq)
-  deriving (DBType) via ReadShow GenStatus
+  deriving (Eq, Ord, Show, Read)
 
 
 -- instance Show GenStatus where
@@ -84,7 +81,7 @@ generateTask
      , Scratch Ingest :> es
      , Scratch Output :> es
      , Concurrent :> es
-     , Tasks GenTask :> es
+     , Tasks :> es
      , GenRandom :> es
      , GlobusAccess Level1 :> es
      , Transfer Level1 Ingest :> es
@@ -99,7 +96,7 @@ generateTask task = do
   workWithError :: Eff (Error GenerateError : es) ()
   workWithError = runGenerateError $ do
     logStatus "starting"
-    send $ TaskSetStatus task GenStarted
+    taskSetStatus task GenStarted
 
     files <- Inputs.inversionFiles task.proposalId task.inversionId
     slice <- Inputs.sliceMeta files
@@ -109,7 +106,7 @@ generateTask task = do
 
     logStatus "downloading"
     down <- downloadL1Frames task inv
-    send $ TaskSetStatus task GenTransferComplete
+    taskSetStatus task GenTransferComplete
     Inversions.setGenTransferred inv.inversionId
 
     logStatus "canonical dataset"
@@ -120,7 +117,7 @@ generateTask task = do
     log Info $ dump "Fits Frames" (length frames)
 
     now <- currentTime
-    send $ TaskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length frames, throughput = 0}
+    taskSetStatus task $ GenFrames{started = now, skipped = 0, complete = 0, total = length frames, throughput = 0}
 
     -- Generate them in parallel with N = available CPUs
     logStatus "generating frames"
@@ -130,14 +127,14 @@ generateTask task = do
     Inversions.setGeneratedFits task.inversionId
 
     logStatus "generating ASDF"
-    send $ TaskSetStatus task GenAsdf
+    taskSetStatus task GenAsdf
     Asdf.generateAsdf files inv dcanon slice
     Inversions.setGeneratedAsdf inv.inversionId
 
 
 -- | Generate a single frame
 workFrame
-  :: ( Tasks GenTask :> es
+  :: ( Tasks :> es
      , Time :> es
      , GenRandom :> es
      , Log :> es
@@ -156,10 +153,10 @@ workFrame t slice frameInputs = do
   res <- Fits.genFrame t.proposalId t.inversionId slice frameInputs
   case res of
     Left _ -> do
-      send $ TaskModStatus @GenTask t addSkipped
-    _ -> do
+      taskModStatus t addSkipped
+    Right _ -> do
       now <- currentTime
-      send $ TaskModStatus @GenTask t (addComplete now)
+      taskModStatus t (addComplete now)
   pure res
  where
   addComplete :: UTCTime -> GenStatus -> GenStatus
@@ -180,7 +177,7 @@ workFrame t slice frameInputs = do
 
 
 downloadL1Frames
-  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch Ingest :> es, Transfer Level1 Ingest :> es, GlobusAccess Level1 :> es, Datasets :> es, Tasks GenTask :> es)
+  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch Ingest :> es, Transfer Level1 Ingest :> es, GlobusAccess Level1 :> es, Datasets :> es, Tasks :> es)
   => GenTask
   -> Inversion
   -> Eff es (Downloaded [Id Dataset])
@@ -197,7 +194,7 @@ downloadL1Frames task inv = do
   transfer ds = do
     downloadTaskId <- Transfer.scratchDownloadDatasets ds
     log Debug $ dump "Download" downloadTaskId
-    send $ TaskSetStatus task $ GenTransferring downloadTaskId
+    taskSetStatus task $ GenTransferring downloadTaskId
     log Debug " - waiting..."
     waitForTransfer @Level1 (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
     pure $ Downloaded $ datasetIds ds

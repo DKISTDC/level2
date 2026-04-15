@@ -16,7 +16,6 @@ import App.View.Icons qualified as Icons
 import App.View.Inversion (rowInversion)
 import App.View.Layout
 import App.View.ProposalDetails
-import App.Worker.Generate
 import Data.Grouped (Group (..), sample)
 import Data.List.NonEmpty qualified as NE
 import Effectful
@@ -41,7 +40,7 @@ import Web.Hyperbole
 -- import App.Page.Datasets.Download (ActiveDownload (..))
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Tasks GenTask :> es, Transfer Level1 Ingest :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Transfer Level1 Ingest :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es '[ProgramInversions, ProgramDatasets, ProgramDetails]
@@ -119,7 +118,7 @@ data ProgramInversions = ProgramInversions (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Tasks GenTask :> es) => HyperView ProgramInversions es where
+instance (Inversions :> es, Auth :> es) => HyperView ProgramInversions es where
   data Action ProgramInversions
     = CreateInversion
     deriving (Generic, ViewAction)

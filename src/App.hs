@@ -90,16 +90,16 @@ start = do
       globusAccess <- initGlobusClientAccess
 
       concurrently_
-        (startWebServer config fits pubs sync globusAccess)
-        (runWorkers config fits sync metas props bus globusAccess startWorkers)
+        (startWebServer config tasks fits pubs sync globusAccess)
+        (runWorkers config tasks fits sync metas props bus globusAccess startWorkers)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> Eff es ()
-  startWebServer config fits pubs sync globusAccess =
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> Eff es ()
+  startWebServer config tasks fits pubs sync globusAccess =
     runLogger "Server" $ do
       rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
@@ -114,7 +114,7 @@ start = do
           Static.staticPolicy (addBase "app") $
             javascript $
               addHeaders [("app-version", cs appVersion.value)] $
-                webServer config fits pubs sync rows globusAccess
+                webServer config tasks fits pubs sync rows globusAccess
 
   javascript :: Application -> Application
   javascript app req respond = do
@@ -127,15 +127,11 @@ start = do
     staticFile mime dat = do
       respond $ Wai.responseLBS status200 [("Content-Type", mime)] (cs dat)
 
-  startGen = do
-    runLogger "Generate" $
-      startWorker Gen.generateTask
-
   startWorkers =
     mapConcurrently_
       id
       [ startPuppetMaster
-      , startGen
+      , startWorker Gen.generateTask
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
       , -- , startPublishWorker, see Publisher.hs
@@ -151,7 +147,7 @@ start = do
       . runEnvironment
       . runTime
 
-  runWorkers config fits sync metas props bus globusAccess =
+  runWorkers config tasks fits sync metas props bus globusAccess =
     runFileSystem
       . runDebugIO
       . runReader config.scratch
@@ -171,14 +167,15 @@ start = do
       . runInterserviceBus bus
       . runDataInversions
       . runDataDatasets
-      . runTaskQueueIO @GenTask fits
-      . runTaskQueueIO @SyncMetadataTask metas
-      . runTaskQueueIO @SyncProposalTask props
+      . runTasksIO tasks
+      . runQueueIO @GenTask fits
+      . runQueueIO @SyncMetadataTask metas
+      . runQueueIO @SyncProposalTask props
       . runMetadataSync sync
 
 
-webServer :: Config -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
-webServer config fits pubs sync rows globusAccess =
+webServer :: Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
+webServer config tasks fits pubs sync rows globusAccess =
   liveApp
     (document documentHead)
     respond
@@ -231,7 +228,7 @@ webServer config fits pubs sync rows globusAccess =
   runApp
     :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Ingest :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
     => User
-    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Tasks PublishTask : Queue GenTask : Tasks GenTask : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
+    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
     -> Eff es Response
   runApp u =
     runLogger "App"
@@ -244,8 +241,9 @@ webServer config fits pubs sync rows globusAccess =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
-      . runTaskQueueIO fits
-      . runTaskQueueAMQP pubs
+      . runTasksIO tasks
+      . runQueueIO fits
+      . runQueueAMQP pubs
       . runMetadataSync sync
       . runDebugIO
       . runAuth u

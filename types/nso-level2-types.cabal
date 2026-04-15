@@ -29,7 +29,6 @@ library
       Effectful.Rel8
       Effectful.Tasks
       Effectful.Tasks.Memory
-      Effectful.Tasks.TasksRel8
       Effectful.Tasks.WorkerTask
       Effectful.Time
       Network.AMQP.Config

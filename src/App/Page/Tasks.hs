@@ -1,5 +1,6 @@
 module App.Page.Tasks where
 
+-- import App.Worker.SyncMetadata
 import App.Colors
 import App.Route
 import App.Style qualified as Style
@@ -7,12 +8,7 @@ import App.View.DataRow (cell, hd)
 import App.View.DataRow qualified as View
 import App.View.Icons as Icons
 import App.View.Layout
-import App.Worker.SyncMetadata
-import Effectful.Rel8
 import Effectful.Tasks
-import Effectful.Tasks.TasksRel8 (Task' (..))
-import Effectful.Tasks.TasksRel8 qualified as TasksDB
-import Effectful.Tasks.WorkerTask (TaskWorking (..))
 import NSO.Prelude
 import Web.Atomic.CSS
 import Web.Hyperbole
@@ -20,11 +16,11 @@ import Web.Hyperbole
 
 -- we need to be able to query all the tasks here!
 page
-  :: (Hyperbole :> es, Rel8 :> es)
+  :: (Hyperbole :> es, Tasks :> es)
   => Page es '[TasksTable]
 page = do
   -- login <- loginUrl
-  ts :: [Task' Text Identity] <- TasksDB.genericTaskList
+  ts :: [Task'] <- send TaskAll
   appLayout Dashboard $ do
     col ~ pad 20 . gap 20 $ do
       col ~ Style.card . gap 15 $ do
@@ -58,19 +54,19 @@ instance HyperView TasksTable es where
 
 -- TODO: what about interrupted tasks? They aren't in the queue at all! Should we add them on startup? Probably not.  Should we remove them on close, .... hmm....
 
-tasksTable :: [Task' Text Identity] -> View TasksTable ()
+tasksTable :: [Task'] -> View TasksTable ()
 tasksTable ts = do
   table ts ~ View.table $ do
     -- redundant, the task queue is in the id
     -- tcol (hd "Queue") $ \t -> cell $ text . cs $ t.taskQueue
-    tcol (hd "Id") $ \t -> cell $ text $ cs t.taskId
+    tcol (hd "Id") $ \t -> cell $ text $ cs $ show t.task
     tcol (hd "") $ \t -> cell $ do
       row $ do
         space
-        working t.taskWorking
+        working t.working
         space
     -- tcol (hd "Error") $ \t -> cell $ text . cs $ t.taskStatus
-    tcol (hd "Status") $ \t -> cell $ text . cs $ t.taskStatus
+    tcol (hd "Status") $ \t -> cell $ text . cs . show $ t.status
  where
   working = \case
     TaskWaiting -> el "..."

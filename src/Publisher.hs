@@ -73,6 +73,7 @@ start = do
     scratch <- Config.initScratch
     (_, publish) <- Config.initRemotes
     globus <- Config.initGlobus
+    tasks <- initTaskStore
 
     -- DKIST
     mesh <- Config.initMesh
@@ -96,7 +97,8 @@ start = do
         . runInterserviceBus bus
         . runDataInversions
         . runDataDatasets
-        . runTaskQueueAMQP @PublishTask pubs
+        . runTasksIO tasks
+        . runQueueAMQP @PublishTask pubs
         $ action
 
 
