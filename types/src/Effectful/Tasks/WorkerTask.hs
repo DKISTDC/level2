@@ -10,6 +10,13 @@ import NSO.Prelude
 import Rel8 (DBEq, DBType, ReadShow (..))
 
 
+data Task t = Task
+  { task :: t
+  , status :: Status t
+  , working :: TaskWorking
+  }
+
+
 class WorkerTask t where
   type Status t :: Type
   type Status t = Bool
@@ -20,9 +27,13 @@ class WorkerTask t where
   idle = False
 
 
-  queue :: Text
-  default queue :: (Generic t, GDatatypeName (Rep t)) => Text
-  queue = gDatatypeName $ from (undefined :: t)
+  queue :: TaskQueue
+  default queue :: (Generic t, GDatatypeName (Rep t)) => TaskQueue
+  queue = TaskQueue $ gDatatypeName $ from (undefined :: t)
+
+
+newtype TaskQueue = TaskQueue Text
+  deriving newtype (IsString, DBEq, DBType)
 
 
 -- For Generic Read/Show Tasks

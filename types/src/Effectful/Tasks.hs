@@ -29,6 +29,8 @@ module Effectful.Tasks
   , taskSetStatus
   , taskDone
   , runTasksDB
+  , runTasksIO
+  , initTaskStore
 
     -- * Worker
   , startWorker
@@ -50,7 +52,10 @@ import Effectful.Error.Dynamic
 import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Rel8
-import Effectful.Tasks.TasksRel8 as TaskDB
+import Effectful.Tasks.Memory (TaskStore, initTaskStore)
+import Effectful.Tasks.Memory qualified as TaskStore
+import Effectful.Tasks.TasksRel8 (Serial, task)
+import Effectful.Tasks.TasksRel8 qualified as TaskDB
 import Effectful.Tasks.WorkerTask
 import NSO.Prelude
 import Network.AMQP.Worker (Key, Message (..), Route)
@@ -157,6 +162,38 @@ data Tasks t :: Effect where
 type instance DispatchOf (Tasks t) = 'Dynamic
 
 
+runTasksIO
+  :: forall t a es
+   . (IOE :> es, Concurrent :> es, Show t, Read t, Show (Status t), Read (Status t), Eq t, WorkerTask t)
+  => TaskStore
+  -> Eff (Tasks t : es) a
+  -> Eff es a
+runTasksIO store = reinterpret (runReader store) $ \_ -> \case
+  TaskGetStatus t -> do
+    mt <- TaskStore.lookupTask t
+    pure $ maybe (idle @t) (.status) mt
+  TaskSetStatus t s ->
+    TaskStore.updateStatus t s
+  TaskModStatus t f ->
+    TaskStore.modifyStatus t f
+  TaskSaveError t e ->
+    TaskStore.saveError t e
+  TaskRemove t ->
+    TaskStore.removeStatus t
+  TaskInsert t ->
+    TaskStore.insertTask t
+  TaskLookup t ->
+    TaskStore.lookupTask t
+  TaskIsActive t -> do
+    mts <- TaskStore.lookupTask t
+    pure $ maybe False isActive mts
+  TaskAll ->
+    TaskStore.allTasks
+  TaskWatchDelay _ -> do
+    -- just so users don't need Concurrent
+    threadDelay $ 500 * 1000
+
+
 runTasksDB
   :: forall t a es
    . (IOE :> es, Concurrent :> es, Eq t, Serial t, Serial (Status t), WorkerTask t, Rel8 :> es)
@@ -182,17 +219,18 @@ runTasksDB = interpret $ \_ -> \case
   TaskAll -> do
     TaskDB.queryTasks
   TaskIsActive t -> do
-    ts <- TaskDB.filterTasks (tasksById t)
+    ts <- TaskDB.filterTasks (TaskDB.tasksById t)
     pure $ any isActive ts
   TaskSaveError t e -> do
     TaskDB.saveError t e
   TaskWatchDelay _ -> do
     -- just so users don't need Concurrent
     threadDelay $ 500 * 1000
- where
-  isActive :: Task t -> Bool
-  isActive t =
-    t.working == TaskWorking || t.working == TaskWaiting
+
+
+isActive :: Task t -> Bool
+isActive t =
+  t.working == TaskWorking || t.working == TaskWaiting
 
 
 data QueueChan t = QueueChan

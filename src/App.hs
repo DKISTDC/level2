@@ -80,6 +80,7 @@ start = do
     config <- initConfig
 
     runGlobus config.globus config.manager $ do
+      tasks <- initTaskStore
       fits <- initQueueIO
       pubs <- initQueueAMQP publishKey config.amqp
       metas <- initQueueIO

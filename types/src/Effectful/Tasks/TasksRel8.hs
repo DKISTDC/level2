@@ -11,15 +11,8 @@ import NSO.Prelude
 import Rel8 (Column, DBEq, DBType (..), ReadShow (..))
 
 
-data Task t = Task
-  { task :: t
-  , status :: Status t
-  , working :: TaskWorking
-  }
-
-
 data Task' t f = Task'
-  { taskQueue :: Column f Text
+  { taskQueue :: Column f TaskQueue
   , taskWorking :: Column f TaskWorking
   , taskId :: Column f t
   , taskStatus :: Column f (Status t)

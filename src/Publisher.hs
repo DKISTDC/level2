@@ -34,8 +34,10 @@ import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
 
 
--- DONE: How do we get admin auth in here for globus?
--- DONE: run the same Tasks interface with AMQP instead of in-process workers!
+-- NOTE: REQUIREMENTS
+-- ~ Queue Publish Task
+-- ~ Work on Publish Task
+-- ~ Update status -> Show in app.... how?
 
 main :: IO ()
 main = do
