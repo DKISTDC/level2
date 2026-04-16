@@ -4,6 +4,7 @@ import App.Config qualified as Config
 import App.Effect.GlobusAccess as GlobusAccess
 import App.Effect.Transfer (runTransfer)
 import App.Worker.Publish as Publish
+import App.Worker.TaskReporter (initReportQueue)
 import Control.Monad.Catch (Exception, throwM)
 import Effectful
 import Effectful.Concurrent
@@ -82,6 +83,8 @@ start = do
     pubs <- initQueueAMQP publishKey amqp
     bus <- ISB.initBus amqp
 
+    report <- initReportQueue amqp
+
     runGlobus globus mgr $ do
       access <- initGlobusClientAccess
 
@@ -97,6 +100,7 @@ start = do
         . runInterserviceBus bus
         . runDataInversions
         . runDataDatasets
+        . runReportTaskAMQP report
         . runTasksIO tasks
         . runQueueAMQP @PublishTask pubs
         $ action

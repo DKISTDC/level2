@@ -6,7 +6,7 @@ import Data.Grouped
 import Data.Time.Clock (NominalDiffTime, diffUTCTime)
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Error.Dynamic
+import Effectful.Error.Static
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time

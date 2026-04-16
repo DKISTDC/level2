@@ -29,7 +29,7 @@ data Task' = Task'
   , working :: TaskWorking
   , error :: Maybe String
   }
-  deriving (Generic, Eq, ToJSON, FromJSON)
+  deriving (Generic, Eq, ToJSON, FromJSON, Show)
 instance Ord Task' where
   t1 <= t2 =
     (t1.working, t1.task) <= (t2.working, t2.task)

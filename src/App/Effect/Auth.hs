@@ -18,12 +18,10 @@ import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI
 
 
--- NOTE: how is this going to work for user auth?
--- User: must identify via globus to access the app
-
+-- NOTE: User must identify via globus to access the app
 -- The app itself needs rights to all the collections it will be moving files to
 
--- Authentication! Presence of this effect means you ARE authenticated
+-- Presence of this effect means you ARE authenticated
 data Auth :: Effect where
   -- AdminToken :: Auth m (Maybe (Token Access))
   -- AdminTokenWait :: Auth m (Token Access)
@@ -125,6 +123,11 @@ saveUser u = do
 
 clearUser :: (Hyperbole :> es) => Eff es ()
 clearUser = deleteSession @UserSession
+
+
+data AuthConfig = AuthConfig
+  { dummy :: Maybe User
+  }
 
 
 -- waitForAdmin :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a

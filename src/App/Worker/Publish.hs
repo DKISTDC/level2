@@ -54,7 +54,7 @@ data PublishStatus
 
 
 publishKey :: Key Route PublishTask
-publishKey = key "publish" & word "level2" & word "m"
+publishKey = key "publish" & word "inversion" & word "m"
 
 
 startPublish :: (Queue PublishTask :> es, Tasks :> es) => Id Proposal -> Id Inversion -> Eff es ()
@@ -80,6 +80,7 @@ publishTask
      , GenRandom :> es
      , IOE :> es
      , MetadataInversions :> es
+     , Error TaskFail :> es
      )
   => PublishTask
   -> Eff es ()
@@ -136,6 +137,7 @@ publishTask task = do
   failed err = do
     log Err $ dump "Publish Error" err
     Inversions.setError task.inversionId (cs $ show err)
+    throwError $ TaskFail (show err)
 
 
 data PublishError

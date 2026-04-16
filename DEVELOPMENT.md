@@ -28,7 +28,6 @@ Set the following ENV via a .env file or another method:
 ```bash
 APP_DOMAIN=localhost
 DATABASE_URL=postgres://dev:dev@localhost:5432/level2
-GLOBUS_ADMIN_TOKEN=AgjbWBl8Ol24DB4MoJlqpDzOQ2YQ2D90oVEqW1zWQm6wY294PJF9C4Vz1EDe1yv9Ebkz87jvWJ85xwIO8lBjdUKV0PK
 # SERVICES=MOCK
 METADATA_STORE_API_LOCAL=../dkistdc/metadata-store-api/
 FRAME_CATALOGER_LOCAL=../dkistdc/frame-cataloger/

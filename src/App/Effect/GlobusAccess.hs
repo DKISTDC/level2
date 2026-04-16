@@ -17,6 +17,7 @@ import Effectful.Time
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.User (CurrentAccess (..), User (..))
+import Network.Globus.Auth (UserEmail (..))
 
 
 -- Transfer relies on a single implementation of (GlobusAccess remote) for each remote
@@ -116,6 +117,19 @@ initGlobusClientAccess = do
 
 getCurrentAccess :: forall remote es. (GlobusAccess remote :> es) => Eff es CurrentAccess
 getCurrentAccess = send (GetCurrentAccess @remote)
+
+
+dummyAccess :: (Time :> es) => Eff es CurrentAccess
+dummyAccess = do
+  -- 1h access with a fake token. Globus will fail
+  expires <- addUTCTime 3600 <$> currentTime
+  pure $ CurrentAccess{token = "dummy", expires}
+
+
+dummyUser :: (Time :> es) => String -> Eff es User
+dummyUser e = do
+  acc <- dummyAccess
+  pure $ User{email = UserEmail (cs e), access = acc}
 
 
 -- helpers ------------------------------------------------------

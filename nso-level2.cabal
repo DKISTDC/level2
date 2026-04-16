@@ -71,6 +71,7 @@ library
       App.Worker.Publish
       App.Worker.PuppetMaster
       App.Worker.SyncMetadata
+      App.Worker.TaskReporter
       NSO.Data.Datasets
       NSO.Data.Inversions
       NSO.Data.Inversions.Commit

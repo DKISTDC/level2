@@ -41,6 +41,13 @@ module Effectful.Tasks
   , startWorker
   , Reader
   , TaskFail (..)
+
+    -- * Reporting
+  , ReportTaskStatus (..)
+  , ReportedTask (..)
+  , runReportTaskNoop
+  , runReportTaskAMQP
+  , startReportListener
   ) where
 
 import Control.Monad (forever)
@@ -50,7 +57,7 @@ import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import Effectful.Error.Dynamic
+import Effectful.Error.Static
 import Effectful.Exception
 import Effectful.Log
 import Effectful.Reader.Dynamic
@@ -156,26 +163,29 @@ data Tasks :: Effect where
   TaskLookup :: TaskId -> Tasks m (Maybe Task')
   TaskAll :: Tasks m [Task']
   TaskWatchDelay :: Tasks m ()
-
-
 type instance DispatchOf Tasks = 'Dynamic
 
 
+-- To run Tasks, you *might* want to run a reporter. Report to the relevant AMQP queue when you run operations
 runTasksIO
   :: forall a es
-   . (IOE :> es, Concurrent :> es)
+   . (IOE :> es, Concurrent :> es, ReportTaskStatus :> es)
   => TaskStore
   -> Eff (Tasks : es) a
   -> Eff es a
 runTasksIO store = reinterpret (runReader store) $ \_ -> \case
-  TaskSetStatus t s ->
+  TaskSetStatus t s -> do
     TaskStore.updateStatus t s
-  TaskSaveError t e ->
+    send $ ReportTaskStatus $ ReportedStatus t s
+  TaskSaveError t e -> do
     TaskStore.saveError t e
-  TaskRemove t ->
+    send $ ReportTaskStatus $ ReportedError t e
+  TaskRemove t -> do
     TaskStore.removeTask t
-  TaskSave t ->
+    send $ ReportTaskStatus $ ReportedRemove t
+  TaskSave t -> do
     TaskStore.saveTask t
+    send $ ReportTaskStatus $ ReportedSave t
   TaskLookup t ->
     TaskStore.lookupTask t
   TaskAll ->
@@ -183,6 +193,39 @@ runTasksIO store = reinterpret (runReader store) $ \_ -> \case
   TaskWatchDelay -> do
     -- just so users don't need Concurrent
     threadDelay $ 500 * 1000
+
+
+data ReportTaskStatus :: Effect where
+  ReportTaskStatus :: ReportedTask -> ReportTaskStatus m ()
+type instance DispatchOf ReportTaskStatus = 'Dynamic
+
+
+runReportTaskNoop
+  :: forall a es
+   . (IOE :> es)
+  => Eff (ReportTaskStatus : es) a
+  -> Eff es a
+runReportTaskNoop = interpret $ \_ -> \case
+  ReportTaskStatus _ -> pure ()
+
+
+data ReportedTask
+  = ReportedStatus TaskId TaskStatus
+  | ReportedError TaskId String
+  | ReportedRemove TaskId
+  | ReportedSave Task'
+  deriving (Generic, Show, ToJSON, FromJSON)
+
+
+runReportTaskAMQP
+  :: forall a es
+   . (IOE :> es)
+  => QueueAMQP ReportedTask
+  -> Eff (ReportTaskStatus : es) a
+  -> Eff es a
+runReportTaskAMQP q = interpret $ \_ -> \case
+  ReportTaskStatus rt ->
+    AMQP.publish q.connection q.key rt
 
 
 isActive :: Task' -> Bool
@@ -292,9 +335,23 @@ startWorker work = do
     t <- send QueueGetNext
     res <- logContext (show t) $ runReader t $ runErrorNoCallStack @TaskFail $ work t
     case res of
-      Left (TaskFail e) -> do
-        taskFailed t e
+      Left (TaskFail e) -> taskFailed t e
       Right _ -> taskDone t -- will not run if TaskFail is called
+
+
+startReportListener :: (IOE :> es, Log :> es, Tasks :> es) => QueueAMQP ReportedTask -> Eff es ()
+startReportListener q = do
+  AMQP.worker q.connection q.queue $ \m -> do
+    log Debug $ "Report: " <> show m.value
+    case m.value of
+      ReportedStatus t s ->
+        send $ TaskSetStatus t s
+      ReportedError t e ->
+        send $ TaskSaveError t e
+      ReportedRemove t ->
+        send $ TaskRemove t
+      ReportedSave t ->
+        send $ TaskSave t
 
 
 data TaskFail

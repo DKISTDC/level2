@@ -10,13 +10,15 @@ module App.Config
   , initRemotes
   , initMesh
   , App (..)
-  , AuthInfo (..)
+  , AuthConfig (..)
   , Tagged (..)
   , AppDomain
   , documentHead
   ) where
 
 import App.Config.MeshConfig
+import App.Effect.Auth (AuthConfig (..))
+import App.Effect.GlobusAccess (dummyUser)
 import App.Types
 import App.Version
 import App.Worker.CPU
@@ -31,6 +33,7 @@ import Effectful.Globus (GlobusClient (..))
 import Effectful.GraphQL (Service (..), service)
 import Effectful.Log
 import Effectful.Rel8 as Rel8
+import Effectful.Time
 import NSO.Files.RemoteFolder (Level1, Publish, Remote (..), parseGlobusRemoteURI)
 import NSO.Files.Scratch (Scratches (..))
 import NSO.Files.Scratch qualified as Scratch
@@ -40,7 +43,6 @@ import NSO.Types.Common
 import Network.AMQP.Config (AMQPConfig (..), initAMQPConfig, initAMQPConnection)
 import Network.AMQP.Worker.Connection qualified as AMQP
 import Network.Endpoint (Endpoint (..), EndpointAuth (..), toURI)
-import Network.Globus (Token, Token' (..), UserEmail (..))
 import Network.HTTP.Client qualified as Http
 import Network.HTTP.Client.TLS qualified as Http
 import Text.Read (readMaybe)
@@ -52,6 +54,7 @@ data Config = Config
   , app :: App
   , globus :: GlobusClient
   , scratch :: Scratch.Scratches
+  , auth :: AuthConfig
   , db :: Rel8.Connection
   , cpuWorkers :: CPUWorkers
   , manager :: Http.Manager
@@ -61,19 +64,13 @@ data Config = Config
   }
 
 
-data AuthInfo = AuthInfo
-  { admins :: [UserEmail]
-  , adminToken :: Maybe (Token Access)
-  }
-
-
 data Services = Services
   { metadata :: MetadataService
   , interserviceBus :: AMQPConfig
   }
 
 
-initConfig :: (Log :> es, Environment :> es, Fail :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
+initConfig :: (Log :> es, Environment :> es, Fail :> es, Time :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
 initConfig = do
   app <- initApp
 
@@ -83,6 +80,7 @@ initConfig = do
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   cpus <- initCPUWorkers
   (level1, publish) <- initRemotes
+  auth <- initAuth
 
   -- DKIST Services
   mesh <- initMesh
@@ -94,7 +92,7 @@ initConfig = do
   log Debug $ dump "AppVersion" appVersion.value
   log Debug $ dump "GitVersion" gitVersion.value
 
-  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp}
+  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp, auth}
 
 
 initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
@@ -153,6 +151,13 @@ initServices mesh = do
     case service e of
       Nothing -> fail $ "Could not parse service: " <> show e <> " || " <> show (toURI e)
       Just s -> pure s
+
+
+initAuth :: (Environment :> es, Time :> es) => Eff es AuthConfig
+initAuth = do
+  me <- lookupEnv "AUTH_DUMMY"
+  du <- maybe (pure Nothing) (fmap Just . dummyUser) me
+  pure $ AuthConfig du
 
 
 initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es, Log :> es) => Eff es CPUWorkers

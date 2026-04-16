@@ -33,7 +33,7 @@ class (Show t, Read t, Show (Status t), Read (Status t)) => WorkerTask t where
 
 
 newtype TaskQueue = TaskQueue Text
-  deriving newtype (IsString, ToJSON, FromJSON, Eq)
+  deriving newtype (IsString, ToJSON, FromJSON, Eq, Show)
 
 
 -- For Generic Read/Show Tasks

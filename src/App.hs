@@ -24,6 +24,7 @@ import App.Worker.Generate as Gen
 import App.Worker.Publish as Publish
 import App.Worker.PuppetMaster qualified as PuppetMaster
 import App.Worker.SyncMetadata as Sync
+import App.Worker.TaskReporter (initReportQueue)
 import Control.Monad (forever)
 import Control.Monad.Catch (Exception, throwM)
 import Effectful
@@ -81,6 +82,7 @@ start = do
 
     runGlobus config.globus config.manager $ do
       tasks <- initTaskStore
+      report <- initReportQueue config.amqp
       fits <- initQueueIO
       pubs <- initQueueAMQP publishKey config.amqp
       metas <- initQueueIO
@@ -91,7 +93,7 @@ start = do
 
       concurrently_
         (startWebServer config tasks fits pubs sync globusAccess)
-        (runWorkers config tasks fits sync metas props bus globusAccess startWorkers)
+        (runWorkers config tasks fits sync metas props bus globusAccess $ startWorkers report)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
@@ -127,15 +129,15 @@ start = do
     staticFile mime dat = do
       respond $ Wai.responseLBS status200 [("Content-Type", mime)] (cs dat)
 
-  startWorkers =
+  startWorkers report =
     mapConcurrently_
       id
       [ startPuppetMaster
       , startWorker Gen.generateTask
       , startWorker Sync.syncMetadataTask
       , startWorker Sync.syncProposalTask
-      , -- , startPublishWorker, see Publisher.hs
-        Log.startUpdater
+      , startReportListener report
+      , Log.startUpdater
       ]
 
   runInit =
@@ -167,6 +169,7 @@ start = do
       . runInterserviceBus bus
       . runDataInversions
       . runDataDatasets
+      . runReportTaskNoop
       . runTasksIO tasks
       . runQueueIO @GenTask fits
       . runQueueIO @SyncMetadataTask metas
@@ -209,7 +212,7 @@ webServer config tasks fits pubs sync rows globusAccess =
         -- otherwise, check login status and redirect to the auth page
         _ -> do
           us <- Auth.lookupUser
-          case us.user of
+          case us.user <|> config.auth.dummy of
             (Just u) -> runApp u . routeRequest $ router
             _ -> runPage Auth.page
 
@@ -228,7 +231,7 @@ webServer config tasks fits pubs sync rows globusAccess =
   runApp
     :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Ingest :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
     => User
-    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
+    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : ReportTaskStatus : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
     -> Eff es Response
   runApp u =
     runLogger "App"
@@ -241,6 +244,7 @@ webServer config tasks fits pubs sync rows globusAccess =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
+      . runReportTaskNoop
       . runTasksIO tasks
       . runQueueIO fits
       . runQueueAMQP pubs
