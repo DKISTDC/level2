@@ -178,8 +178,8 @@ viewInversion publish scratch inv ds pub = do
         stepMetadata (metadataStep inv) $ do
           viewMetadata inv ds
 
-        stepGenerate (generateStep inv) $ do
-          hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
+        hyper (GenerateStep inv.proposalId inv.programId inv.inversionId) $
+          viewGenerateStep inv $ do
             viewGenerate scratch inv
 
         hyper (PublishStep (head ds).bucket inv.proposalId inv.programId inv.inversionId) $
@@ -377,7 +377,7 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
       GenerateStep propId _ invId <- viewId
       let task = GenTask propId invId
 
-      generateStatus GenWaiting >>= pushUpdate
+      goStatus invId GenWaiting
 
       -- wait until it starts
       log Debug $ dump "Waiting" task
@@ -385,17 +385,18 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
 
       -- watch status
       log Debug $ dump "Watching" task
-      taskWatchStatus task onStatus
+      taskWatchStatus task (goStatus invId)
 
       log Debug "done"
 
       inv <- loadInversion invId
       scratch <- Scratch.remote @Output
-      pure $ viewGenerate scratch inv
+      pure $ viewGenerateStep inv $ viewGenerate scratch inv
 
-    onStatus s = do
+    goStatus invId s = do
+      inv <- loadInversion invId
       vw <- generateStatus s
-      pushUpdate vw
+      pushUpdate $ viewGenerateStep inv vw
 
 
 generateStatus :: (GlobusAccess Ingest :> es) => GenStatus -> Eff es (View GenerateStep ())
@@ -441,6 +442,10 @@ generateStatus = \case
         el $ do
           text $ cs $ showFFloat (Just 2) (throughput * 60) ""
           text " frames per minute"
+
+
+viewGenerateStep :: Inversion -> View GenerateStep () -> View GenerateStep ()
+viewGenerateStep inv = stepGenerate (generateStep inv)
 
 
 generateStep :: Inversion -> Step
