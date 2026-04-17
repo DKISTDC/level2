@@ -343,7 +343,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es) => HyperView GenerateStep es where
+instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Transfer Output Publish :> es, Queue PublishTask :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = RegenError
     | RegenFits
@@ -352,11 +352,11 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
     deriving (Generic, ViewAction)
 
 
-  type Require GenerateStep = '[InversionStatus]
+  type Require GenerateStep = '[InversionStatus, PublishStep]
 
 
   update action = do
-    GenerateStep propId _ invId <- viewId
+    GenerateStep propId progId invId <- viewId
     case action of
       RegenError -> do
         Inversions.clearError invId
@@ -364,6 +364,8 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
       RegenFits -> do
         Fits.deleteL2FramesFits propId invId
         Inversions.resetGeneratingFits invId
+        bucket <- (\ds -> (head ds).bucket) <$> loadDatasets progId
+        trigger (PublishStep bucket propId progId invId) RefreshPublish
         watchGenerate
       RegenAsdf -> do
         Inversions.resetGeneratingAsdf invId
@@ -510,6 +512,7 @@ instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess
   data Action PublishStep
     = StartPublish
     | WatchPublish
+    | RefreshPublish
     deriving (Generic, ViewAction)
 
 
@@ -526,11 +529,15 @@ instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess
       WatchPublish -> do
         taskWatchStatus task onPublishStatus
         loadPublish
+      RefreshPublish -> do
+        log Debug "REFRESH PUBLISH"
+        loadPublish
    where
     loadPublish = do
       PublishStep bucket _ _ invId <- viewId
       publish <- send (RemoteDest @Output @Publish)
       inv <- loadInversion invId
+      log Debug $ dump "PUBLISH.INV" inv.generate
       pure $ viewPublishStep inv $ viewPublish publish bucket inv Nothing
 
     onPublishStatus = publishStatus >=> pushUpdate

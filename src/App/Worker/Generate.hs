@@ -85,6 +85,7 @@ generateTask
      , GenRandom :> es
      , GlobusAccess Level1 :> es
      , Transfer Level1 Ingest :> es
+     , Error TaskFail :> es
      )
   => GenTask
   -> Eff es ()

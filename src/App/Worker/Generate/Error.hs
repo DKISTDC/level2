@@ -4,6 +4,7 @@ import Control.Exception (Exception)
 import Effectful
 import Effectful.Error.Static
 import Effectful.Log
+import Effectful.Tasks (TaskFail (..))
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Image.Blanca (BlancaError (..))
@@ -30,10 +31,11 @@ onCaughtGlobus e = do
   throwError $ GlobusError e
 
 
-generateFailed :: (Log :> es, Inversions :> es) => Id Inversion -> GenerateError -> Eff es ()
+generateFailed :: (Log :> es, Inversions :> es, Error TaskFail :> es) => Id Inversion -> GenerateError -> Eff es ()
 generateFailed iid err = do
   log Err $ dump "GenerateError" err
   Inversions.setError iid (cs $ show err)
+  throwError $ TaskFail (show err)
 
 
 ----------------------------------------------------------------
