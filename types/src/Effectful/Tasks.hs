@@ -342,7 +342,7 @@ startWorker work = do
 startReportListener :: (IOE :> es, Log :> es, Tasks :> es) => QueueAMQP ReportedTask -> Eff es ()
 startReportListener q = do
   AMQP.worker q.connection q.queue $ \m -> do
-    log Debug $ "Report: " <> show m.value
+    log Debug $ show m.value
     case m.value of
       ReportedStatus t s ->
         send $ TaskSetStatus t s
