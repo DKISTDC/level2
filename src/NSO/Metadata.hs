@@ -14,6 +14,7 @@ import Effectful.Fetch (FetchResponse (..))
 import Effectful.GraphQL
 import NSO.Files (Publish)
 import NSO.Files.DKIST as DKIST (inversionDir)
+import NSO.Files.Image (L2Asdf, filenameL2Asdf)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
@@ -105,7 +106,7 @@ data InversionInventory = InversionInventory
   , primaryProposalId :: Id Proposal
   , instrumentProgramExecutionId :: Id InstrumentProgram
   , bucket :: Bucket
-  , asdfObjectKey :: Path Publish Dir Inversion
+  , asdfObjectKey :: Path Publish File L2Asdf
   , datasetIds :: [Id Dataset]
   , spectralLines :: [Text]
   }
@@ -120,7 +121,8 @@ instance Request InversionInventory where
 
 inversionInventory :: Bucket -> Inversion -> [SpectralLine] -> InversionInventory
 inversionInventory bucket inv slines =
-  let asdfObjectKey = DKIST.inversionDir inv.proposalId inv.inversionId
+  let invDir = DKIST.inversionDir inv.proposalId inv.inversionId
+      asdfObjectKey = filePath invDir (filenameL2Asdf inv.proposalId inv.inversionId)
    in InversionInventory
         { inversionId = inv.inversionId
         , primaryProposalId = inv.proposalId

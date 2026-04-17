@@ -59,11 +59,11 @@ isAsdf p = do
 
 outputL2Dir :: Id Proposal -> Id Inversion -> Path Output Dir Inversion
 outputL2Dir ip ii =
-  "generated" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
+  "generated" </> inversionDir ip ii
 
 
 inversionDir :: Id Proposal -> Id Inversion -> Path sys Dir Inversion
-inversionDir propId invId = Path (cs propId.fromId) </> Path (cs invId.fromId)
+inversionDir propId invId = Path (cs propId.fromId) </> Path (cs $ T.replace "." "_" invId.fromId)
 
 
 data L2Asdf
@@ -74,7 +74,7 @@ outputL2AsdfPath ip ii =
   filePath (outputL2Dir ip ii) $ filenameL2Asdf ip ii
 
 
-filenameL2Asdf :: Id Proposal -> Id Inversion -> Path Output Filename L2Asdf
+filenameL2Asdf :: Id Proposal -> Id Inversion -> Path s Filename L2Asdf
 filenameL2Asdf _ ii =
   Path $ cs (T.toUpper $ T.map toUnderscore ii.fromId) <> "_L2_metadata.asdf"
  where
@@ -86,7 +86,7 @@ filenameL2Asdf _ ii =
 data L2Fits
 
 
-filenameL2Fits :: Id Inversion -> LocalTime -> Path Output Filename L2Fits
+filenameL2Fits :: Id Inversion -> LocalTime -> Path s Filename L2Fits
 filenameL2Fits ii dt = Path $ cs $ fitsFrameFilename dt ii
 
 
