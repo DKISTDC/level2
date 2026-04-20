@@ -26,7 +26,8 @@ import Web.Hyperbole
 
 
 data SortField
-  = DatasetId
+  = ProductId
+  | DatasetId
   | ByLatest
   | CreateDate
   | UpdateDate
@@ -45,6 +46,7 @@ datasetsTable l1 sortBy srt ds = do
   datasetsTableUnsorted l1 sortBy sorted
  where
   sortField :: SortField -> ([Dataset] -> [Dataset])
+  sortField ProductId = sortOn (.productId)
   sortField DatasetId = sortOn (.datasetId)
   sortField ByLatest = sortOn (Down . (.scanDate))
   sortField CreateDate = sortOn (Down . (.createDate))
@@ -61,11 +63,12 @@ datasetsTableUnsorted :: forall id. (ViewAction (Action id)) => Remote Level1 ->
 datasetsTableUnsorted l1 sortBy ds = do
   -- is there a way to do alternating rows here?
   table ds ~ View.table $ do
-    tcol (hd $ sortBtn DatasetId "Id") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text . cs $ d.datasetId.fromId
+    tcol (hd $ sortBtn ProductId "Product") $ \d -> cell $ text d.productId.fromId
+    tcol (hd $ sortBtn DatasetId "Dataset") $ \d -> cell $ appRoute (Route.Datasets $ Route.Dataset d.datasetId) ~ Style.link $ text . cs $ d.datasetId.fromId
     tcol (hd "") $ \d -> cell $ el ~ width 16 $ do
       downloadDatasetLink l1 d ~ Style.link $ Icons.downTray
     tcol (hd "") $ \d -> cell $ el ~ width 16 $ link d.browseMovieUrl.uri @ Style.blank ~ Style.link $ Icons.videoCamera
-    -- tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showTimestamp $ d.createDate
+    tcol (hd $ sortBtn CreateDate "Create Date") $ \d -> cell $ text . cs . showDate $ d.createDate
     tcol (hd $ sortBtn StartTime "Start Time") $ \d -> cell $ text . cs . showTimestamp $ d.startTime
     tcol (hd "Embargo") $ \d -> cell $ text $ embargo d
     tcol (hd $ sortBtn Instrument "Instrument") $ \d -> cell $ text . cs . show $ d.instrument

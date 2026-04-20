@@ -61,7 +61,7 @@ page propId progId = do
       col ~ Style.card $ do
         el ~ Style.cardHeader Secondary $ text "Program"
         hyper (ProgramDetails propId progId) $ viewProgramDetails prog now
-        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList prog.datasets.items) ByLatest
+        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList prog.datasets.items) ProductId
 
       col ~ gap 10 $ do
         el ~ bold $ "Experiment"

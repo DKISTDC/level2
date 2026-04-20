@@ -49,6 +49,7 @@ viewDataset l1 d = do
   col ~ Style.card $ do
     el ~ Style.cardHeader Secondary . bold $ "Dataset Details"
     col ~ gap 10 . pad 10 $ do
+      dataField "Product Id" $ text d.productId.fromId
       dataField "Scan Date" $ text $ showTimestamp d.scanDate
       dataField "Embargo" $ text $ cs $ maybe "-" showDate d.embargo
       dataField "Instrument" $ text $ cs $ show d.instrument

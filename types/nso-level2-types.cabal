@@ -60,6 +60,7 @@ library
       NoImplicitPrelude
       NoFieldSelectors
       LambdaCase
+      BlockArguments
   ghc-options: -Wall
   build-depends:
       aeson

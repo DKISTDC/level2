@@ -103,6 +103,7 @@ data Filters = Filters
   , visp :: ShowVISP
   , vbi :: Bool
   , cryo :: Bool
+  , dl :: Bool
   , searchTerm :: Text
   }
   deriving (Generic, Show, ToQuery, FromQuery, ToJSON, FromJSON)
@@ -155,11 +156,12 @@ instance (Log :> es, Datasets :> es) => HyperView ProposalFilters es where
         VBI -> fs{vbi = b}
         VISP -> fs{visp = ShowVISP b}
         CRYO_NIRSP -> fs{cryo = b}
+        DL_NIRSP -> fs{dl = b}
 
-    setStatus status Filters{visp, vbi, cryo, searchTerm} =
+    setStatus status Filters{visp, vbi, cryo, dl, searchTerm} =
       Filters{..}
 
-    setTerm searchTerm Filters{visp, vbi, cryo, status} =
+    setTerm searchTerm Filters{visp, vbi, cryo, dl, status} =
       Filters{..}
 
     filterProposals fs = do
@@ -182,6 +184,7 @@ viewFilters fs = do
       View.toggleBtn (FilterInstrument VISP) fs.visp.value "VISP"
       View.toggleBtn (FilterInstrument VBI) fs.vbi "VBI"
       View.toggleBtn (FilterInstrument CRYO_NIRSP) fs.cryo "Cryo-NIRSP"
+      View.toggleBtn (FilterInstrument DL_NIRSP) fs.cryo "DL-NIRSP"
 
   col ~ gap 10 $ do
     el ~ bold $ "Status"
@@ -253,6 +256,7 @@ viewProposalDetails fs now prop progs = do
       VBI -> fs.vbi
       VISP -> fs.visp.value
       CRYO_NIRSP -> fs.cryo
+      DL_NIRSP -> fs.dl
 
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
   checkInvertible Any _ = True

@@ -125,7 +125,7 @@ instance (Datasets :> es, Time :> es, Inversions :> es, Transfer Level1 Ingest :
 
 viewProgramSummaryLoad :: View ProgramSummary ()
 viewProgramSummaryLoad = do
-  programCard @ onLoad (ProgramDetails ByLatest) 0 $ do
+  programCard @ onLoad (ProgramDetails ProductId) 0 $ do
     el ~ pad 20 . width 600 $ skeleton
 
 

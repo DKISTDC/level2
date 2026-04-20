@@ -9,6 +9,7 @@ module NSO.Data.Datasets
   )
 where
 
+import Data.Functor.Contravariant ((>$<))
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Rel8 as Rel8
@@ -16,6 +17,7 @@ import NSO.Prelude hiding (find)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import Rel8 (Order, asc, distinctOnBy)
 
 
 -- Put all the operations here?
@@ -48,8 +50,16 @@ runDataDatasets = interpret $ \_ -> \case
       each datasets :: Query (Dataset' Expr)
   Find All -> do
     run $ select $ each datasets
-  Find (ByProposal pid) -> queryProposal pid
-  Find (ByProgram pid) -> queryProgram pid
+  Find (ByProposal pid) -> do
+    run $ select $ distinctProducts do
+      row <- each datasets
+      where_ (row.primaryProposalId ==. lit pid)
+      return row
+  Find (ByProgram pid) -> do
+    run $ select $ distinctProducts do
+      row <- each datasets
+      where_ (row.instrumentProgramId ==. lit pid)
+      return row
   Find (ByIds dids) -> do
     run $ select $ do
       row <- each datasets
@@ -61,25 +71,18 @@ runDataDatasets = interpret $ \_ -> \case
       where_ (row.primaryProposalId ==. lit pid)
       return row
   Find DistinctProposals -> do
-    run $ select $ do
+    run $ select do
       let q = each datasets :: Query (Dataset' Expr)
       distinctOn (.primaryProposalId) q
   Create ds -> insertAll ds
   Save ds -> updateDataset ds
  where
-  queryProposal :: (Rel8 :> es) => Id Proposal -> Eff es [Dataset]
-  queryProposal eid = do
-    run $ select $ do
-      row <- each datasets
-      where_ (row.primaryProposalId ==. lit eid)
-      return row
+  distinctProducts :: Query (Dataset' Expr) -> Query (Dataset' Expr)
+  distinctProducts = do
+    distinctOnBy (.productId) orderByCreateDate
 
-  queryProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Dataset]
-  queryProgram ip = do
-    run $ select $ do
-      row <- each datasets
-      where_ (row.instrumentProgramId ==. lit ip)
-      return row
+  orderByCreateDate :: Order (Dataset' Expr)
+  orderByCreateDate = (.productId) >$< asc
 
   insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
   insertAll ds =

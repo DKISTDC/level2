@@ -10,7 +10,7 @@ import Data.Text qualified as T
 import Effectful.GenRandom (GenRandom, randomFromList)
 import GHC.Real (Real)
 import NSO.Prelude
-import Rel8 (DBEq, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
+import Rel8 (DBEq, DBOrd, DBType, ReadShow (..), TypeInformation, parseTypeInformation, typeInformation)
 import System.FilePath qualified as FP
 import Telescope.Asdf
 import Telescope.Asdf.GWCS (ToAxes)
@@ -21,7 +21,7 @@ import Web.Hyperbole (FromParam (..), Route, ToParam (..))
 
 
 newtype Id a = Id {fromId :: Text}
-  deriving newtype (Show, Read, Eq, DBType, FromJSON, Route, DBEq, ToAsdf, ToKeyword, FromKeyword, ToParam, FromParam, ToJSON)
+  deriving newtype (Show, Read, Eq, DBType, DBOrd, DBEq, FromJSON, Route, ToAsdf, ToKeyword, FromKeyword, ToParam, FromParam, ToJSON)
   deriving (Generic)
 
 
