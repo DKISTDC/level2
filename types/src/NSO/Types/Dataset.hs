@@ -15,14 +15,10 @@ import Web.Hyperbole (FromParam, ToParam)
 import Web.Hyperbole.Data.URI (URI, parseURIReference, uriToText)
 
 
-newtype Bucket = Bucket {bucketName :: Text}
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving newtype (DBType, ToParam, FromParam, ToJSON, FromJSON)
-
-
 type Dataset = Dataset' Identity
 data Dataset' f = Dataset'
   { datasetId :: Column f (Id Dataset)
+  , productId :: Column f (Id Product)
   , scanDate :: Column f UTCTime
   , observingProgramId :: Column f (Id ObservingProgram)
   , instrument :: Column f Instrument
@@ -56,6 +52,14 @@ data Dataset' f = Dataset'
 
 deriving stock instance (f ~ Result) => Show (Dataset' f)
 deriving stock instance (f ~ Result) => Eq (Dataset' f)
+
+
+data Product
+
+
+newtype Bucket = Bucket {bucketName :: Text}
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving newtype (DBType, ToParam, FromParam, ToJSON, FromJSON)
 
 
 newtype MovieUrl = MovieUrl {uri :: URI}

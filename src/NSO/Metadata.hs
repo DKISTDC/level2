@@ -178,6 +178,7 @@ data DatasetInventory = DatasetInventory
     -- contributingProposalIds :: [Text]
     createDate :: LocalTime
   , datasetId :: Text
+  , productId :: Text
   , -- , datasetInventoryId :: Int
     -- , datasetSize :: Int
     endTime :: LocalTime

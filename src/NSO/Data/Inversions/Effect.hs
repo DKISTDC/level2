@@ -122,11 +122,11 @@ inversions =
           , updated = "updated"
           , deleted = "deleted"
           , invError = "error"
-          , datasets = "download_datasets"
+          , datasets = "dataset_ids"
           , invSoftware = "inversion_software"
           , generateFits = "generate_fits"
           , generateAsdf = "generate_asdf"
-          , generateTransfer = "generate_task_completed"
+          , generateTransfer = "generate_transfer"
           , published = "publish"
           , notes = "notes"
           }
@@ -192,4 +192,3 @@ generate row =
     , asdf = row.generateAsdf
     , transfer = row.generateTransfer
     }
-

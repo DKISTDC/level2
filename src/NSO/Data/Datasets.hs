@@ -111,6 +111,7 @@ runDataDatasets = interpret $ \_ -> \case
       , columns =
           Dataset'
             { datasetId = "dataset_id"
+            , productId = "product_id"
             , observingProgramId = "observing_program_id"
             , bucket = "bucket"
             , instrumentProgramId = "instrument_program_id"

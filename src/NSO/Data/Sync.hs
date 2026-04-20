@@ -229,6 +229,7 @@ toDataset scanDate exs (ParsedResult val (Success d)) = do
     pure $
       Dataset'
         { datasetId = Id d.datasetId
+        , productId = Id d.productId
         , scanDate = scanDate
         , bucket = Bucket d.bucket
         , browseMovieUrl = MovieUrl movie
