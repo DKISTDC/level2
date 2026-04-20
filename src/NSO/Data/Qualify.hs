@@ -40,6 +40,7 @@ qualify g = do
     VISP -> qualifyVISP g
     VBI -> qualifyVBI g
     CRYO_NIRSP -> qualifyCryoNIRSP g
+    DL_NIRSP -> qualifyDLDIRSP g
 
 
 qualifyVISP :: Group (Id InstrumentProgram) Dataset -> Either String ()
@@ -62,7 +63,11 @@ qualifyVBI _ = Left "VBI Not supported"
 
 
 qualifyCryoNIRSP :: Group (Id InstrumentProgram) Dataset -> Either String ()
-qualifyCryoNIRSP _ = Left "CRYO_NIRSP Not supported"
+qualifyCryoNIRSP _ = Left "CRYO-NIRSP Not supported"
+
+
+qualifyDLDIRSP :: Group (Id InstrumentProgram) Dataset -> Either String ()
+qualifyDLDIRSP _ = Left "DL-NIRSP Not supported"
 
 
 qualifyStokes :: Group (Id InstrumentProgram) Dataset -> Bool

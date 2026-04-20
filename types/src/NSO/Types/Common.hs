@@ -104,12 +104,14 @@ data Instrument
   = VBI
   | VISP
   | CRYO_NIRSP
+  | DL_NIRSP
   deriving (Show, Read, Ord, Eq, Generic, ToParam, FromParam)
   deriving (DBType) via ReadShow Instrument
 
 
 instrumentFromName :: Text -> Maybe Instrument
 instrumentFromName "CRYO-NIRSP" = pure CRYO_NIRSP
+instrumentFromName "DL-NIRSP" = pure DL_NIRSP
 instrumentFromName t = readMaybe . cs $ t
 
 

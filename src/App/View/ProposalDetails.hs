@@ -161,6 +161,7 @@ viewCriteria ip gd = do
       VISP -> vispCriteria gd
       VBI -> vbiCriteria
       CRYO_NIRSP -> cryoCriteria
+      DL_NIRSP -> dlCriteria
  where
   vispCriteria :: Group (Id InstrumentProgram) Dataset -> View c ()
   vispCriteria ds = do
@@ -181,6 +182,10 @@ viewCriteria ip gd = do
 
   cryoCriteria = do
     el ~ bold $ "CRYO NIRSP Criteria"
+    vcriteria "Not Supported" False
+
+  dlCriteria = do
+    el ~ bold $ "DL NIRSP Criteria"
     vcriteria "Not Supported" False
 
   vcriteria msg b =
