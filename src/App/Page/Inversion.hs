@@ -360,21 +360,26 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
     case action of
       RegenError -> do
         Inversions.clearError invId
+        trigger (InversionStatus propId progId invId) Reload
         watchGenerate
       RegenFits -> do
         Fits.deleteL2FramesFits propId invId
         Inversions.resetGeneratingFits invId
         bucket <- (\ds -> (head ds).bucket) <$> loadDatasets progId
         trigger (PublishStep bucket propId progId invId) RefreshPublish
+        trigger (InversionStatus propId progId invId) Reload
         watchGenerate
       RegenAsdf -> do
         Inversions.resetGeneratingAsdf invId
+        bucket <- (\ds -> (head ds).bucket) <$> loadDatasets progId
+        trigger (PublishStep bucket propId progId invId) RefreshPublish
+        trigger (InversionStatus propId progId invId) Reload
         watchGenerate
       WatchGen -> do
         watchGenerate
    where
     watchGenerate = do
-      GenerateStep propId _ invId <- viewId
+      GenerateStep propId progId invId <- viewId
       let task = GenTask propId invId
 
       goStatus invId GenWaiting
@@ -391,6 +396,7 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
 
       inv <- loadInversion invId
       scratch <- Scratch.remote @Output
+      trigger (InversionStatus propId progId invId) Reload
       pure $ viewGenerateStep inv $ viewGenerate scratch inv
 
     goStatus invId s = do
