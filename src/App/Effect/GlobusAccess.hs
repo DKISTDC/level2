@@ -3,15 +3,12 @@
 module App.Effect.GlobusAccess where
 
 import App.Effect.Auth
-import Control.Monad.Loops (untilM_)
 import Data.Time.Clock (NominalDiffTime, addUTCTime, secondsToNominalDiffTime)
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import Effectful.Error.Static
 import Effectful.Globus hiding (Id)
-import Effectful.Globus qualified as Globus
 import Effectful.Log
 import Effectful.Time
 import NSO.Prelude
@@ -26,7 +23,7 @@ import Network.Globus.Auth (UserEmail (..))
 -- User Auth: If they have logged in, they have valid globus access, but not a chosen remote folder
 data GlobusAccess (remote :: Type) :: Effect where
   GetCurrentAccess :: GlobusAccess remote m CurrentAccess
-  TransferStatus :: Id Task -> GlobusAccess remote m Task
+  TaskStatus :: Id Task -> GlobusAccess remote m Task
 type instance DispatchOf (GlobusAccess remote) = 'Dynamic
 
 
@@ -34,7 +31,7 @@ type instance DispatchOf (GlobusAccess remote) = 'Dynamic
 runGlobusUserAccess
   :: (Auth :> es, Globus :> es) => Eff (GlobusAccess User : es) a -> Eff es a
 runGlobusUserAccess = interpret $ \_ -> \case
-  TransferStatus taskId -> do
+  TaskStatus taskId -> do
     u <- send GetUser
     fetchTransfer u.access taskId
   GetCurrentAccess -> do
@@ -55,8 +52,8 @@ fetchTransfer access taskId = do
 --   else do
 -- Auth.waitForAdmin $ do
 
-transferStatus :: forall remote es. (GlobusAccess remote :> es) => Id Task -> Eff es Task
-transferStatus = send . TransferStatus @remote
+taskStatus :: forall remote es. (GlobusAccess remote :> es) => Id Task -> Eff es Task
+taskStatus = send . TaskStatus @remote
 
 
 runGlobusClientAccess
@@ -66,7 +63,7 @@ runGlobusClientAccess
   -> Eff (GlobusAccess remote : es) a
   -> Eff es a
 runGlobusClientAccess (ClientAccess var) = interpret $ \_ -> \case
-  TransferStatus taskId -> do
+  TaskStatus taskId -> do
     acc <- getAccess
     fetchTransfer acc taskId
   GetCurrentAccess -> getAccess
@@ -131,24 +128,4 @@ dummyUser e = do
   acc <- dummyAccess
   pure $ User{email = UserEmail (cs e), access = acc}
 
-
 -- helpers ------------------------------------------------------
-
-waitForTransfer
-  :: forall remote err es
-   . (Concurrent :> es, GlobusAccess remote :> es, Error err :> es, Show err)
-  => (Task -> err)
-  -> Id Globus.Task
-  -> Eff es ()
-waitForTransfer toError taskId = do
-  untilM_ delay2s taskComplete
- where
-  taskComplete :: Eff es Bool
-  taskComplete = do
-    tsk <- transferStatus @remote taskId
-    case tsk.status of
-      Failed -> throwError @err $ toError tsk
-      Succeeded -> pure True
-      _ -> pure False
-
-  delay2s = threadDelay $ 2 * 1000 * 1000

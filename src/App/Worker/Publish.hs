@@ -2,8 +2,8 @@
 
 module App.Worker.Publish where
 
-import App.Effect.GlobusAccess (GlobusAccess, transferStatus)
-import App.Effect.Transfer (Transfer, transferPublish)
+import App.Effect.GlobusAccess (GlobusAccess)
+import App.Effect.Transfer (Transfer (..), transferPublish)
 import Control.Monad.Catch (Exception, Handler (..), catches)
 import Control.Monad.Loops
 import Data.Aeson (FromJSON, ToJSON)
@@ -152,9 +152,9 @@ data PublishError
   deriving (Show, Exception)
 
 
-isTransferComplete :: (Log :> es, GlobusAccess Output :> es, Error PublishError :> es) => Id Globus.Task -> Eff es Bool
+isTransferComplete :: (Log :> es, Transfer Output Publish :> es, Error PublishError :> es) => Id Globus.Task -> Eff es Bool
 isTransferComplete it = do
-  task <- transferStatus @Output it
+  task <- send $ TransferStatus @Output @Publish it
   case task.status of
     Globus.Succeeded -> do
       pure True

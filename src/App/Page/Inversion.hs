@@ -29,7 +29,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Files (Ingest, Output, Publish)
+import NSO.Files (Ingest, Level1, Output, Publish)
 import NSO.Files.DKIST qualified as DKIST
 import NSO.Files.Image qualified as Files
 import NSO.Files.RemoteFolder (Remote)
@@ -343,7 +343,7 @@ data GenerateStep = GenerateStep (Id Proposal) (Id InstrumentProgram) (Id Invers
   deriving (Generic, ViewId)
 
 
-instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Transfer Output Publish :> es, Queue PublishTask :> es) => HyperView GenerateStep es where
+instance (Tasks :> es, Transfer Level1 Ingest :> es, Scratch Output :> es, GlobusAccess Publish :> es, GlobusAccess Output :> es, Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Transfer Output Publish :> es, Queue PublishTask :> es) => HyperView GenerateStep es where
   data Action GenerateStep
     = RegenError
     | RegenFits
@@ -405,14 +405,14 @@ instance (Tasks :> es, GlobusAccess Ingest :> es, Scratch Output :> es, GlobusAc
       pushUpdate $ viewGenerateStep inv vw
 
 
-generateStatus :: (GlobusAccess Ingest :> es) => GenStatus -> Eff es (View GenerateStep ())
+generateStatus :: (Transfer Level1 Ingest :> es) => GenStatus -> Eff es (View GenerateStep ())
 generateStatus = \case
   GenWaiting -> pure $ do
     loadingMessage "Waiting for job to start"
   GenStarted -> pure $ do
     loadingMessage "Started"
   GenTransferring taskId -> do
-    trans <- transferStatus @Ingest taskId
+    trans <- send $ TransferStatus @Level1 @Ingest taskId
     pure $ do
       loadingMessage "Generating FITS - Transferring L1 Files"
       Transfer.viewTransferStatus trans
@@ -554,7 +554,7 @@ instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess
     onPublishStatus = publishStatus >=> pushUpdate
 
 
-publishStatus :: (GlobusAccess Output :> es, Hyperbole :> es, Inversions :> es, Reader PublishStep :> es) => PublishStatus -> Eff es (View PublishStep ())
+publishStatus :: (Transfer Output Publish :> es, Hyperbole :> es, Inversions :> es, Reader PublishStep :> es) => PublishStatus -> Eff es (View PublishStep ())
 publishStatus = \case
   PublishWaiting -> do
     step $ loadingMessage "Waiting to start..."
@@ -565,7 +565,7 @@ publishStatus = \case
   PublishSave -> do
     step $ loadingMessage "Saving..."
   PublishTransferring it -> do
-    trans <- transferStatus @Output it
+    trans <- send $ TransferStatus @Output @Publish it
     step $ Transfer.viewTransferStatus trans
  where
   step cnt = do

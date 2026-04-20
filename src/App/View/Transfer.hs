@@ -33,7 +33,7 @@ data TransferAction
 -- I want it to reload itself and call these when necessary
 checkTransfer :: forall remote id es. (ViewAction (Action id), Hyperbole :> es, GlobusAccess remote :> es, Log :> es) => (TransferAction -> Action id) -> Id Task -> Eff es (View id ())
 checkTransfer action it = do
-  task <- GlobusAccess.transferStatus @remote it
+  task <- GlobusAccess.taskStatus @remote it
   pure $ viewTransfer action it task
 
 

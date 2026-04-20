@@ -2,8 +2,8 @@
 
 module App.Worker.Generate where
 
-import App.Effect.GlobusAccess (GlobusAccess, waitForTransfer)
-import App.Effect.Transfer (Transfer)
+import App.Effect.GlobusAccess (GlobusAccess)
+import App.Effect.Transfer (Transfer, waitForTransfer)
 import App.Effect.Transfer qualified as Transfer
 import App.Worker.CPU (CPUWorkers (..))
 import App.Worker.CPU qualified as CPU
@@ -197,5 +197,5 @@ downloadL1Frames task inv = do
     log Debug $ dump "Download" downloadTaskId
     taskSetStatus task $ GenTransferring downloadTaskId
     log Debug " - waiting..."
-    waitForTransfer @Level1 (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
+    waitForTransfer @Level1 @Ingest (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
     pure $ Downloaded $ datasetIds ds

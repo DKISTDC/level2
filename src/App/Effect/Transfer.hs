@@ -4,10 +4,13 @@ module App.Effect.Transfer where
 
 import App.Effect.Auth (Auth)
 import App.Effect.GlobusAccess
+import Control.Monad.Loops (untilM_)
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
+import Effectful.Concurrent
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Static
 import Effectful.Exception
 import Effectful.Globus hiding (Id)
 import Effectful.Globus qualified as Globus
@@ -48,9 +51,28 @@ data Transfer src dest :: Effect where
   RemoteSource :: Transfer src dest m (Remote src)
   RemoteDest :: Transfer src dest m (Remote dest)
   TransferFiles :: Text -> [FileTransfer src dest f a] -> Transfer src dest m (Id Task)
+  TransferStatus :: Id Task -> Transfer src dest m Task
 
 
 type instance DispatchOf (Transfer src dest) = 'Dynamic
+
+
+runTransferSkip
+  :: forall src dest a es
+   . ( Globus :> es
+     , GlobusAccess src :> es
+     , GlobusAccess dest :> es
+     , Log :> es
+     )
+  => Remote src
+  -> Remote dest
+  -> Eff (Transfer src dest : es) a
+  -> Eff es a
+runTransferSkip source dest = interpret $ \_ -> \case
+  RemoteSource -> pure source
+  RemoteDest -> pure dest
+  TransferFiles _lbl _files -> pure (Id "fake")
+  TransferStatus tid -> pure $ fakeLocalTask tid
 
 
 runTransfer
@@ -68,6 +90,7 @@ runTransfer
 runTransfer source dest = interpret $ \_ -> \case
   RemoteSource -> pure source
   RemoteDest -> pure dest
+  TransferStatus tid -> send $ TaskStatus @src tid
   TransferFiles lbl files -> do
     -- source <- send GetRemote
     -- dest <- send GetRemote
@@ -155,23 +178,25 @@ runTransfer source dest = interpret $ \_ -> \case
             }
 
 
--- fakeLocalTask :: Task
--- fakeLocalTask =
---   Task
---     { status = Succeeded
---     , task_id = Tagged "local"
---     , label = "local"
---     , files = 1
---     , directories = 1
---     , files_skipped = 0
---     , files_transferred = 1
---     , bytes_transferred = 1
---     , bytes_checksummed = 1
---     , effective_bytes_per_second = 1
---     , nice_status = Nothing
---     , source_endpoint_id = Tagged "source"
---     , destination_endpoint_id = Tagged "dest"
---     }
+fakeLocalTask :: Id Task -> Task
+fakeLocalTask tid =
+  Task
+    { status = Succeeded
+    , task_id = Tagged tid.fromId
+    , label = "local"
+    , files = 1
+    , directories = 1
+    , files_skipped = 0
+    , files_transferred = 1
+    , bytes_transferred = 1
+    , bytes_checksummed = 1
+    , effective_bytes_per_second = 1
+    , nice_status = Nothing
+    , source_endpoint_id = Tagged "source"
+    , destination_endpoint_id = Tagged "dest"
+    }
+
+
 --
 
 -- remoteSource :: forall src dest es. Transfer src dest :> es => Eff es (Remote src)
@@ -270,3 +295,23 @@ data TransferException
   = LocalCopyFailed String
   | LocalCopyNoAbsolutePath (Globus.Id Collection) String
   deriving (Show, Eq, Exception)
+
+
+waitForTransfer
+  :: forall src dest err es
+   . (Concurrent :> es, Transfer src dest :> es, Error err :> es, Show err)
+  => (Task -> err)
+  -> Id Globus.Task
+  -> Eff es ()
+waitForTransfer toError taskId = do
+  untilM_ delay2s taskComplete
+ where
+  taskComplete :: Eff es Bool
+  taskComplete = do
+    tsk <- send $ TransferStatus @src @dest taskId
+    case tsk.status of
+      Failed -> throwError @err $ toError tsk
+      Succeeded -> pure True
+      _ -> pure False
+
+  delay2s = threadDelay $ 2 * 1000 * 1000
