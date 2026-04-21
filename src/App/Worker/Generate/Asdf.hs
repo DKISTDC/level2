@@ -59,7 +59,7 @@ generateAsdf files inv (Canonical dcanon) slice = do
   logContext ("ASDF " <> cs inv.inversionId.fromId) $ do
     log Debug "started"
 
-    ds :: [Dataset] <- Datasets.find $ Datasets.ByIds inv.datasets
+    ds :: [Dataset] <- Datasets.findIds inv.datasets
     fitHDUs <- Blanca.decodeProfileHDUs =<< readFile files.profileFit
     -- origHDUs <- Blanca.decodeProfileHDUs =<< readFile u.profileOrig
 

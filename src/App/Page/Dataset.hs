@@ -25,7 +25,7 @@ import Web.Hyperbole.Data.URI (uriToText)
 
 page :: (Hyperbole :> es, Datasets :> es, Auth :> es, Transfer Level1 Ingest :> es) => Id Dataset -> Page es '[]
 page di = do
-  ds <- Datasets.find (ByIds [di])
+  ds <- Datasets.findIds [di]
   l1 <- send (RemoteSource @Level1 @Ingest)
 
   let sorted = sortOn (Down . (.scanDate)) ds

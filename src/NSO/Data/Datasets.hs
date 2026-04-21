@@ -3,7 +3,11 @@
 module NSO.Data.Datasets
   ( Datasets (..)
   , Filter (..)
-  , find
+  , DistinctBy (..)
+  , findLatest
+  , findAll
+  , findIds
+  , distinct
   , module NSO.Types.Dataset
   , runDataDatasets
   )
@@ -22,7 +26,8 @@ import Rel8 (Order, asc, distinctOnBy)
 
 -- Put all the operations here?
 data Datasets :: Effect where
-  Find :: Filter -> Datasets m [Dataset]
+  Find :: Filter -> Reprocessing -> Datasets m [Dataset]
+  Distinct :: DistinctBy -> Datasets m [Dataset]
   Create :: [Dataset] -> Datasets m ()
   Save :: Dataset -> Datasets m ()
   Ids :: Datasets m [Id Dataset]
@@ -31,13 +36,22 @@ data Datasets :: Effect where
 type instance DispatchOf Datasets = 'Dynamic
 
 
+data Reprocessing
+  = Latest
+  | Complete
+
+
+data DistinctBy
+  = DistinctPrograms (Id Proposal)
+  | DistinctProposal (Id Proposal)
+  | DistinctProposals
+
+
 data Filter
   = All
   | ByProposal (Id Proposal)
   | ByProgram (Id InstrumentProgram)
   | ByIds [Id Dataset]
-  | DistinctProposals
-  | DistinctPrograms (Id Proposal)
 
 
 runDataDatasets
@@ -48,31 +62,36 @@ runDataDatasets = interpret $ \_ -> \case
   Ids -> do
     run $ select $ fmap (.datasetId) do
       each datasets
-  Find All -> do
+  Find All _ -> do
     run $ select $ each datasets
-  Find (ByProposal pid) -> do
+  Find (ByProposal pid) r -> do
     run $ select $ distinctProducts do
       row <- each datasets
       where_ (row.primaryProposalId ==. lit pid)
       return row
-  Find (ByProgram pid) -> do
+  Find (ByProgram pid) r -> do
     run $ select $ distinctProducts do
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit pid)
       return row
-  Find (ByIds dids) -> do
+  Find (ByIds dids) r -> do
     run $ select $ do
       row <- each datasets
       where_ (row.datasetId `in_` fmap lit dids)
       return row
-  Find (DistinctPrograms pid) -> do
+  Distinct (DistinctPrograms pid) -> do
     run $ select $ distinctOn (.instrumentProgramId) do
       row <- each datasets
       where_ (row.primaryProposalId ==. lit pid)
       return row
-  Find DistinctProposals -> do
+  Distinct DistinctProposals -> do
     run $ select $ distinctOn (.primaryProposalId) do
       each datasets
+  Distinct (DistinctProposal pid) -> do
+    run $ select $ distinctOn (.primaryProposalId) do
+      row <- each datasets
+      where_ (row.primaryProposalId ==. lit pid)
+      pure row
   Create ds -> insertAll ds
   Save ds -> updateDataset ds
  where
@@ -145,5 +164,17 @@ runDataDatasets = interpret $ \_ -> \case
       }
 
 
-find :: (Datasets :> es) => Filter -> Eff es [Dataset]
-find = send . Find
+findLatest :: (Datasets :> es) => Filter -> Eff es [Dataset]
+findLatest f = send $ Find f Latest
+
+
+findAll :: (Datasets :> es) => Filter -> Eff es [Dataset]
+findAll f = send $ Find f Complete
+
+
+findIds :: (Datasets :> es) => [Id Dataset] -> Eff es [Dataset]
+findIds ds = send $ Find (ByIds ds) Complete
+
+
+distinct :: (Datasets :> es) => DistinctBy -> Eff es [Dataset]
+distinct d = send $ Distinct d

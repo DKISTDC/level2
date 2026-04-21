@@ -17,7 +17,7 @@ import Effectful.GraphQL (GraphQLError)
 import Effectful.Log
 import Effectful.Tasks
 import Effectful.Time
-import NSO.Data.Datasets (Datasets)
+import NSO.Data.Datasets (Datasets, DistinctBy (..))
 import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Files (Output, Publish)
@@ -118,7 +118,7 @@ publishTask task = do
     logStatus "creating inversion metadata"
     taskSetStatus task PublishSave
     inv <- loadInversion task.inversionId
-    datasets <- Datasets.find $ Datasets.ByIds inv.datasets
+    datasets <- Datasets.findIds inv.datasets
 
     _ <- send $ Metadata.CreateInversion bucket inv datasets
     logStatus "created"
@@ -143,7 +143,6 @@ publishTask task = do
 data PublishError
   = TransferFailed (Id Globus.Task)
   | MissingProposalDatasets (Id Proposal)
-  | MixedProposalBuckets (Id Proposal)
   | GlobusError GlobusError
   | GraphQLError GraphQLError
   | PublishIOError IOError
@@ -187,10 +186,8 @@ proposalBucket
   => Id Proposal
   -> Eff es Bucket
 proposalBucket pid = do
-  datasets <- Datasets.find (Datasets.ByProposal pid)
+  datasets <- Datasets.distinct (DistinctProposal pid)
   case datasets of
     [] -> throwError (MissingProposalDatasets pid)
-    (d : rest) ->
-      if all ((== d.bucket) . (.bucket)) rest
-        then pure d.bucket
-        else throwError (MixedProposalBuckets pid)
+    (d : _) ->
+      pure d.bucket

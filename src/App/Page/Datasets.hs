@@ -195,7 +195,7 @@ instance (Time :> es, Datasets :> es, Metadata es) => HyperView Current es where
 
 
   update LoadExisting = do
-    ds <- Datasets.find Datasets.All
+    ds <- Datasets.findAll Datasets.All
     pure $ viewExistingDatasets [] (Just ds)
 
 
@@ -329,7 +329,7 @@ instance (Datasets :> es) => HyperView DatasetRow es where
 
   update Details = do
     DatasetRow did <- viewId
-    ds <- Datasets.find (ByIds [did])
+    ds <- Datasets.findIds [did]
     pure $ mapM_ datasetRowDetails ds
 
 

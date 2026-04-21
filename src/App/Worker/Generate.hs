@@ -188,7 +188,7 @@ downloadL1Frames task inv = do
     Just _ -> pure $ Downloaded $ datasetIds ds
     Nothing -> transfer ds
  where
-  datasets = Datasets.find $ Datasets.ByIds inv.datasets
+  datasets = Datasets.findIds inv.datasets
 
   datasetIds = fmap (.datasetId)
 

@@ -30,7 +30,7 @@ newtype Downloaded a = Downloaded {value :: a}
 
 canonicalDataset :: (Datasets :> es, Error FetchError :> es, Error GenerateError :> es, Scratch Ingest :> es, Log :> es) => SliceXY -> Downloaded [Id Dataset] -> Eff es (Canonical Dataset)
 canonicalDataset slice (Downloaded ids) = do
-  dss :: [Dataset] <- Datasets.find $ Datasets.ByIds ids
+  dss :: [Dataset] <- Datasets.findIds ids
   when (null dss) $ do
     throwError $ NoDatasets ids
   dc <- requireCanonicalDataset slice dss
