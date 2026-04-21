@@ -46,8 +46,8 @@ runDataDatasets
   -> Eff es a
 runDataDatasets = interpret $ \_ -> \case
   Ids -> do
-    run $ select $ fmap (.datasetId) $ distinctOn (.datasetId) $ do
-      each datasets :: Query (Dataset' Expr)
+    run $ select $ fmap (.datasetId) do
+      each datasets
   Find All -> do
     run $ select $ each datasets
   Find (ByProposal pid) -> do
@@ -66,14 +66,13 @@ runDataDatasets = interpret $ \_ -> \case
       where_ (row.datasetId `in_` fmap lit dids)
       return row
   Find (DistinctPrograms pid) -> do
-    run $ select $ distinctOn (.instrumentProgramId) $ do
-      row <- each datasets :: Query (Dataset' Expr)
+    run $ select $ distinctOn (.instrumentProgramId) do
+      row <- each datasets
       where_ (row.primaryProposalId ==. lit pid)
       return row
   Find DistinctProposals -> do
-    run $ select do
-      let q = each datasets :: Query (Dataset' Expr)
-      distinctOn (.primaryProposalId) q
+    run $ select $ distinctOn (.primaryProposalId) do
+      each datasets
   Create ds -> insertAll ds
   Save ds -> updateDataset ds
  where
@@ -82,7 +81,7 @@ runDataDatasets = interpret $ \_ -> \case
     distinctOnBy (.productId) orderByCreateDate
 
   orderByCreateDate :: Order (Dataset' Expr)
-  orderByCreateDate = (.productId) >$< asc
+  orderByCreateDate = (.createDate) >$< asc
 
   insertAll :: (Rel8 :> es) => [Dataset] -> Eff es ()
   insertAll ds =
