@@ -47,6 +47,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
+import NSO.Data.Programs as Programs
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
 import NSO.Files (Ingest, Level1, Output, Publish)
 import NSO.Files.Scratch (Scratch, runScratch)
@@ -89,10 +90,11 @@ start = do
       props <- initQueueIO
       sync <- initMetadataSync
       bus <- initBus config.amqp
+      progs <- Programs.initStore
       globusAccess <- initGlobusClientAccess
 
       concurrently_
-        (startWebServer config tasks fits pubs sync globusAccess)
+        (startWebServer config tasks fits pubs sync globusAccess progs)
         (runWorkers config tasks fits sync metas props bus globusAccess $ startWorkers report)
  where
   startPuppetMaster =
@@ -100,8 +102,8 @@ start = do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> Eff es ()
-  startWebServer config tasks fits pubs sync globusAccess =
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> ProgramStore -> Eff es ()
+  startWebServer config tasks fits pubs sync globusAccess progs =
     runLogger "Server" $ do
       rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
@@ -116,7 +118,7 @@ start = do
           Static.staticPolicy (addBase "app") $
             javascript $
               addHeaders [("app-version", cs appVersion.value)] $
-                webServer config tasks fits pubs sync rows globusAccess
+                webServer config tasks fits pubs sync rows globusAccess progs
 
   javascript :: Application -> Application
   javascript app req respond = do
@@ -177,8 +179,8 @@ start = do
       . runMetadataSync sync
 
 
-webServer :: Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
-webServer config tasks fits pubs sync rows globusAccess =
+webServer :: Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> ProgramStore -> Application
+webServer config tasks fits pubs sync rows globusAccess progs =
   liveApp
     (document documentHead)
     respond
@@ -231,7 +233,7 @@ webServer config tasks fits pubs sync rows globusAccess =
   runApp
     :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Ingest :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
     => User
-    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : ReportTaskStatus : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
+    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : ReportTaskStatus : Programs : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
     -> Eff es Response
   runApp u =
     runLogger "App"
@@ -244,6 +246,7 @@ webServer config tasks fits pubs sync rows globusAccess =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
+      . runDataPrograms progs
       . runReportTaskNoop
       . runTasksIO tasks
       . runQueueIO fits

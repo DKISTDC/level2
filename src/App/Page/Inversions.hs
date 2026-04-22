@@ -1,6 +1,9 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module App.Page.Inversions where
 
 import App.Effect.Auth
+import App.Error (expectFound)
 import App.Page.Proposals qualified as Proposals
 import App.Route as Route
 import App.Style qualified as Style
@@ -16,74 +19,84 @@ import Effectful.Log
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
+import NSO.Data.Proposals as Proposals
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
-import NSO.Types.Status
 import Web.Atomic.CSS
 import Web.Hyperbole
 
 
-page :: (Log :> es, Hyperbole :> es, Inversions :> es, Auth :> es, Datasets :> es) => Page es '[]
+page :: (Log :> es, Hyperbole :> es, Programs :> es, Inversions :> es, Auth :> es, Datasets :> es) => Page es '[ProposalInversions]
 page = do
-  AllInversions ivs <- send Inversions.All
-  let progIds = Inversions.distinctProgramIds ivs
-  progs <- mapM Programs.loadProgram progIds
-  let props = toProposals $ mconcat progs
+  props <- Inversions.loadDistinctProposalIds
+  -- let progIds = Inversions.distinctProgramIds ivs
+  -- progs :: [InstrumentProgram] <- mapM Programs.loadProgram progIds
+  -- let props = toProposals $ catMaybes progs
 
   -- let actv = groupProposals props $ filter activeInvs ivs
   -- let cmpl = groupProposals props $ filter completeInvs ivs
-  let allPropInvs = groupProposals props ivs
+  -- let allPropInvs = groupProposals props ivs
 
   -- let sorted = sortOn sortInv ivs
   appLayout Inversions $ do
     col ~ Style.page $ do
       -- el (fontSize 24 . bold) "Completed"
-      viewProposals allPropInvs
- where
-  mostRecentlyUpdated :: ProposalInversions -> Down UTCTime
-  mostRecentlyUpdated p =
-    let allInvs = mconcat $ fmap (NE.toList . (.items)) p.programInversions :: [Inversion]
-     in Down $ maximum $ fmap (.updated) allInvs
-
-  groupProposals :: [ProposalPrograms] -> [Inversion] -> [ProposalInversions]
-  groupProposals props invs =
-    sortOn mostRecentlyUpdated $ filter hasInversions $ fmap proposalInversions props
-   where
-    proposalInversions :: ProposalPrograms -> ProposalInversions
-    proposalInversions p =
-      let inversions = filter (\inv -> p.proposal.proposalId == inv.proposalId) invs :: [Inversion]
-       in ProposalInversions
-            { programInversions = groupPrograms inversions
-            , proposal = p.proposal
-            }
-
-    groupPrograms :: [Inversion] -> [Group (Id InstrumentProgram) Inversion]
-    groupPrograms = grouped (.programId)
-
-    hasInversions p =
-      case p.programInversions of
-        [] -> False
-        _ -> True
+      forM_ props $ \p -> do
+        hyper (ProposalInversions p) viewProposalLoad
 
 
-data ProposalInversions = ProposalInversions
-  { proposal :: Proposal
-  , programInversions :: [Group (Id InstrumentProgram) Inversion]
-  }
+-- mostRecentlyUpdated :: ProposalInversions -> Down UTCTime
+-- mostRecentlyUpdated p =
+--   let allInvs = mconcat $ fmap (NE.toList . (.items)) p.programInversions :: [Inversion]
+--    in Down $ maximum $ fmap (.updated) allInvs
+
+-- groupProposals :: [ProposalPrograms] -> [Inversion] -> [ProposalInversions]
+-- groupProposals props invs =
+--   sortOn mostRecentlyUpdated $ filter hasInversions $ fmap proposalInversions props
+--  where
+--   proposalInversions :: ProposalPrograms -> ProposalInversions
+--   proposalInversions p =
+--     let inversions = filter (\inv -> p.proposal.proposalId == inv.proposalId) invs :: [Inversion]
+--      in ProposalInversions
+--           { programInversions = groupPrograms inversions
+--           , proposal = p.proposal
+--           }
+--
+--   groupPrograms :: [Inversion] -> [Group (Id InstrumentProgram) Inversion]
+--   groupPrograms = grouped (.programId)
+--
+--   hasInversions p =
+--     case p.programInversions of
+--       [] -> False
+--       _ -> True
+
+data ProposalInversions = ProposalInversions (Id Proposal)
+  deriving (Generic, ViewId)
 
 
-viewProposals :: [ProposalInversions] -> View id ()
-viewProposals pis = do
-  col $ do
-    mapM_ viewProposal pis
+instance (Inversions :> es, Datasets :> es) => HyperView ProposalInversions es where
+  data Action ProposalInversions
+    = LoadDetails
+    deriving (Generic, ViewAction)
 
 
-viewProposal :: ProposalInversions -> View id ()
-viewProposal p = do
-  -- what's the instrument program id though?
-  Proposals.proposalCard p.proposal $ do
-    mapM_ viewProgram p.programInversions
+  update _ = do
+    ProposalInversions propId <- viewId
+    prop <- Proposals.lookupProposal propId >>= fmap head . expectFound
+    invs <- send $ Inversions.ByProposal propId
+    pure $ viewProposal prop invs
+
+
+viewProposalLoad :: View id ()
+viewProposalLoad = do
+  el @ onLoad LoadDetails 100 $ none
+
+
+viewProposal :: ProposalDetails -> [Inversion] -> View id ()
+viewProposal p invs = do
+  let gs = grouped (.programId) invs
+  Proposals.proposalCard p $ do
+    mapM_ viewProgram gs
 
 
 viewProgram :: Group (Id InstrumentProgram) Inversion -> View id ()
@@ -95,10 +108,6 @@ viewProgram g = do
       text inv.programId.fromId
     col $ do
       dataRows sorted rowInversion
-
--- viewByProposal :: Proposal -> [Inversion] -> View id ()
--- viewByProposal _ [] = none
--- viewByProposal p invs = none
 
 -- viewInversions :: [Inversion] -> View c ()
 -- viewInversions invs = do

@@ -30,52 +30,52 @@ boxRadius :: Coordinate Arcseconds -> Arcseconds
 boxRadius (x, y) = sqrt (x ** 2 + y ** 2) :: Arcseconds
 
 
-isQualified :: Group (Id InstrumentProgram) Dataset -> Bool
+isQualified :: NonEmpty Dataset -> Bool
 isQualified = either (const False) (const True) . qualify
 
 
-qualify :: Group (Id InstrumentProgram) Dataset -> Either String ()
-qualify g = do
-  case (sample g).instrument of
-    VISP -> qualifyVISP g
-    VBI -> qualifyVBI g
-    CRYO_NIRSP -> qualifyCryoNIRSP g
-    DL_NIRSP -> qualifyDLDIRSP g
+qualify :: NonEmpty Dataset -> Either String ()
+qualify ds = do
+  case (head ds).instrument of
+    VISP -> qualifyVISP ds
+    VBI -> qualifyVBI ds
+    CRYO_NIRSP -> qualifyCryoNIRSP ds
+    DL_NIRSP -> qualifyDLDIRSP ds
 
 
-qualifyVISP :: Group (Id InstrumentProgram) Dataset -> Either String ()
-qualifyVISP g = do
+qualifyVISP :: NonEmpty Dataset -> Either String ()
+qualifyVISP ds = do
   -- let ds = NE.toList ip.datasets
-  let sls = concatMap (.spectralLines) $ NE.toList g.items
-  check "On Disk" $ qualifyOnDisk g
+  let sls = concatMap (.spectralLines) $ NE.toList ds
+  check "On Disk" $ qualifyOnDisk ds
   check "FeI 630" $ qualifyLine FeI sls
   -- check "CaII 854" $ qualifyLine CaII sls
-  check "Stokes" $ qualifyStokes g
-  check "Health" $ qualifyHealth g
-  check "GOS" $ qualifyGOS g
-  check "AO" $ qualifyAO g
+  check "Stokes" $ qualifyStokes ds
+  check "Health" $ qualifyHealth ds
+  check "GOS" $ qualifyGOS ds
+  check "AO" $ qualifyAO ds
  where
   check e b = if b then pure () else Left e
 
 
-qualifyVBI :: Group (Id InstrumentProgram) Dataset -> Either String ()
+qualifyVBI :: NonEmpty Dataset -> Either String ()
 qualifyVBI _ = Left "VBI Not supported"
 
 
-qualifyCryoNIRSP :: Group (Id InstrumentProgram) Dataset -> Either String ()
+qualifyCryoNIRSP :: NonEmpty Dataset -> Either String ()
 qualifyCryoNIRSP _ = Left "CRYO-NIRSP Not supported"
 
 
-qualifyDLDIRSP :: Group (Id InstrumentProgram) Dataset -> Either String ()
+qualifyDLDIRSP :: NonEmpty Dataset -> Either String ()
 qualifyDLDIRSP _ = Left "DL-NIRSP Not supported"
 
 
-qualifyStokes :: Group (Id InstrumentProgram) Dataset -> Bool
-qualifyStokes g = all (\d -> d.stokesParameters == StokesParameters [I, Q, U, V]) g.items
+qualifyStokes :: NonEmpty Dataset -> Bool
+qualifyStokes = all (\d -> d.stokesParameters == StokesParameters [I, Q, U, V])
 
 
-qualifyOnDisk :: Group (Id InstrumentProgram) Dataset -> Bool
-qualifyOnDisk g = all (\d -> bbOnDisk d.startTime d.boundingBox) g.items
+qualifyOnDisk :: NonEmpty Dataset -> Bool
+qualifyOnDisk = all (\d -> bbOnDisk d.startTime d.boundingBox)
  where
   bbOnDisk _ Nothing = False
   bbOnDisk t (Just bb) = isOnDisk (dayOfYear t) bb
@@ -86,20 +86,20 @@ qualifyLine is sls = is `elem` fmap (.ion) sls
 
 
 -- Frazer: metric have to meet. Have to meet in each of the wavelength channels. As opposed to the set combined.
-qualifyHealth :: Group (Id InstrumentProgram) Dataset -> Bool
+qualifyHealth :: NonEmpty Dataset -> Bool
 qualifyHealth = all (hasPctGood 0.75)
  where
   hasPctGood :: Float -> Dataset -> Bool
   hasPctGood p d = (fromIntegral (fromMaybe 0 d.health.good) / fromIntegral d.frameCount) >= p
 
 
-qualifyGOS :: Group (Id InstrumentProgram) Dataset -> Bool
-qualifyGOS g = all allOpen g.items
+qualifyGOS :: NonEmpty Dataset -> Bool
+qualifyGOS = all allOpen
  where
   allOpen d = fromMaybe 0 d.gosStatus.open == fromIntegral d.frameCount
 
 
-qualifyAO :: Group (Id InstrumentProgram) Dataset -> Bool
+qualifyAO :: NonEmpty Dataset -> Bool
 qualifyAO = all (hasPctLocked 0.75)
  where
   hasPctLocked :: Float -> Dataset -> Bool

@@ -20,82 +20,42 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
+import NSO.Data.Proposals as Proposals
 import NSO.Files (Ingest, Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Dataset
 import Web.Atomic.CSS
 import Web.Hyperbole
 
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es)
+  :: (Hyperbole :> es, Time :> es, Programs :> es, Datasets :> es, Auth :> es)
   => Id Proposal
-  -> Page es '[Programs, ProgramSummary]
+  -> Page es '[ProgramSummary]
 page propId = do
-  ds <- Datasets.find (Datasets.ByProposal propId) >>= expectFound
-  fs <- query
+  progs <- send (Programs.ByProposal propId) >>= expectFound
+  prop <- Proposals.lookupProposal propId >>= fmap head . expectFound
   appLayout Proposals $ do
     col ~ Style.page $ do
       el ~ Style.header $ do
         text "Proposal - "
         text propId.fromId
 
-      viewExperimentDescription (head ds).experimentDescription
+      viewExperimentDescription prop.dataset.experimentDescription
 
       el ~ Style.subheader $ text "Instrument Programs"
 
-      hyper (Programs propId) $ viewPrograms fs (grouped (.instrumentProgramId) $ NE.toList ds)
+      col ~ gap 25 $ do
+        forM_ progs $ \prog -> do
+          hyper (ProgramSummary propId prog.programId) viewProgramSummaryLoad
 
 
 data Filters = Filters
   { term :: Text
   }
   deriving (Generic, ToQuery, FromQuery)
-
-
-----------------------------------------------------
--- Programs
-----------------------------------------------------
-
-data Programs = Programs (Id Proposal)
-  deriving (Generic, ViewId)
-
-
-instance (Datasets :> es, Time :> es, Inversions :> es) => HyperView Programs es where
-  data Action Programs
-    = SearchTerm Text
-    deriving (Generic, ViewAction)
-
-
-  type Require Programs = '[ProgramSummary]
-
-
-  update = \case
-    SearchTerm t -> do
-      Programs propId <- viewId
-      let fs = Filters t
-      setQuery fs
-      ds <- Datasets.find (Datasets.ByProposal propId)
-      pure $ viewPrograms fs $ grouped (.instrumentProgramId) ds
-
-
--- filterProgramDatasets [dsById] _ = [dsById]
--- filterProgramDatasets [] ds = ds
-
-viewPrograms :: Filters -> [Group (Id InstrumentProgram) Dataset] -> View Programs ()
-viewPrograms fs gds = do
-  Programs propId <- viewId
-  col ~ gap 25 $ do
-    search SearchTerm 250 ~ Style.input @ att "placeholder" "search: BEEMM"
-    forM_ (filter (isMatch fs.term) gds) $ \ds -> do
-      let d = sample ds
-      hyper (ProgramSummary propId d.instrumentProgramId) viewProgramSummaryLoad
- where
-  isMatch :: Text -> Group (Id InstrumentProgram) Dataset -> Bool
-  isMatch t g =
-    any (\d -> T.toUpper t `T.isInfixOf` d.datasetId.fromId) g.items
 
 
 ----------------------------------------------------
@@ -106,7 +66,7 @@ data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Time :> es, Inversions :> es, Transfer Level1 Ingest :> es) => HyperView ProgramSummary es where
+instance (Datasets :> es, Time :> es, Programs :> es, Transfer Level1 Ingest :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
     = ProgramDetails SortField
     | GenIronImage
@@ -117,9 +77,10 @@ instance (Datasets :> es, Time :> es, Inversions :> es, Transfer Level1 Ingest :
     ProgramDetails srt -> do
       ProgramSummary _ progId <- viewId
       now <- currentTime
-      progs <- Programs.loadProgram progId
+      prog <- fmap head . expectFound =<< send (Programs.Lookup progId)
+      ds <- Datasets.findLatest (Datasets.ByProgram progId) >>= expectFound
       l1 <- send (RemoteSource @Level1 @Ingest)
-      pure $ mapM_ (viewProgramSummary l1 srt now) progs
+      pure $ viewProgramSummary l1 srt now prog ds
     GenIronImage -> pure none
 
 
@@ -129,13 +90,12 @@ viewProgramSummaryLoad = do
     el ~ pad 20 . width 600 $ skeleton
 
 
-viewProgramSummary :: Remote Level1 -> SortField -> UTCTime -> ProgramFamily -> View ProgramSummary ()
-viewProgramSummary l1 srt now prog = do
-  let ds = prog.datasets
+viewProgramSummary :: Remote Level1 -> SortField -> UTCTime -> InstrumentProgram -> NonEmpty Dataset -> View ProgramSummary ()
+viewProgramSummary l1 srt now prog ds = do
   programCard $ do
-    viewProgramDetails prog now
+    viewProgramDetails prog ds now
     col ~ pad (TRBL 0 15 15 15) $ do
-      DatasetsTable.datasetsTable l1 ProgramDetails srt (NE.toList ds.items)
+      DatasetsTable.datasetsTable l1 ProgramDetails srt (NE.toList ds)
 
 
 programCard :: View ProgramSummary () -> View ProgramSummary ()

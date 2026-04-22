@@ -6,14 +6,14 @@ import NSO.Prelude
 data ProgramStatus
   = StatusInvalid
   | StatusQualified
-  | StatusError Text
-  | -- we have a "latest" inversion, use its status
-    StatusInversion InversionStep
+  | StatusInversion InvStatus
   deriving (Eq, Show)
 
 
-data InversionStep
-  = StepInvert
+data InvStatus
+  = InvError
+  | InvDeleted
+  | StepInvert
   | StepGenerate
   | StepPublish
   | StepComplete

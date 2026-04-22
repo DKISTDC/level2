@@ -39,6 +39,7 @@ import NSO.Image.Fits.Frame qualified as Fits
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import NSO.Types.Wavelength (SpectralLine (..))
 import Numeric (showFFloat)
 import Web.Atomic.CSS
@@ -86,7 +87,7 @@ loadInversion invId = do
 
 loadDatasets :: (Hyperbole :> es, Datasets :> es) => Id InstrumentProgram -> Eff es (NonEmpty Dataset)
 loadDatasets progId = do
-  Datasets.find (Datasets.ByProgram progId) >>= expectFound
+  Datasets.findLatest (Datasets.ByProgram progId) >>= expectFound
 
 
 redirectHome :: (Hyperbole :> es) => Eff es (View InversionStatus ())

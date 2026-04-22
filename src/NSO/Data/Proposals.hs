@@ -1,22 +1,33 @@
-module NSO.Data.Proposals where
+module NSO.Data.Proposals
+  ( Proposal
+  , ProposalDetails (..)
+  , allProposalIds
+  , loadAllProposals
+  , lookupProposal
+  ) where
 
 import Effectful
 import NSO.Data.Datasets as Datasets
+import NSO.Data.Programs as Programs
 import NSO.Prelude
+import NSO.Types.Common
 import NSO.Types.Proposal
 
 
--- Load these from datasets. Otherwise we would need to sync the proposal description to every program?
-loadAllProposals :: (Datasets :> es) => Eff es [Proposal]
+allProposalIds :: (Programs :> es) => Eff es [Id Proposal]
+allProposalIds = do
+  send Programs.ProposalIds
+
+
+loadAllProposals :: (Programs :> es, Datasets :> es) => Eff es [ProposalDetails]
 loadAllProposals = do
-  ds <- Datasets.distinct DistinctProposals
-  pure $ fmap proposalFromDataset ds
+  propIds <- send Programs.ProposalIds
+  catMaybes <$> mapM lookupProposal propIds
 
 
-proposalFromDataset :: Dataset -> Proposal
-proposalFromDataset d =
-  Proposal
-    { proposalId = d.primaryProposalId
-    , description = d.experimentDescription
-    , startTime = d.startTime
-    }
+lookupProposal :: (Datasets :> es) => Id Proposal -> Eff es (Maybe ProposalDetails)
+lookupProposal propId = do
+  ds <- Datasets.distinct (DistinctProposal propId)
+  pure $ case ds of
+    [] -> Nothing
+    (d : _) -> Just $ ProposalDetails d

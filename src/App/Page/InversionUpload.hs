@@ -25,11 +25,11 @@ import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Programs hiding (programInversions)
+import NSO.Data.Programs as Programs
 import NSO.Files
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram (Proposal)
+import NSO.Types.Proposal (Proposal)
 import Web.Atomic.CSS
 import Web.Hyperbole hiding (meta)
 import Web.Hyperbole.Data.QueryData (fromQueryData)
@@ -45,7 +45,9 @@ page
   -> Page es '[Uploads, Manage, MetadataForm]
 page propId progId invId = do
   qs <- query @QueryState
-  dall <- Datasets.find (Datasets.ByProgram progId)
+
+  -- TODO: allow the user to manually click to view all datasets, not just latest
+  dall <- Datasets.findLatest (Datasets.ByProgram progId)
 
   appLayout Route.Inversions $ do
     col ~ Style.page $ do
@@ -179,7 +181,7 @@ instance (Log :> es, Inversions :> es, Datasets :> es, GlobusAccess User :> es, 
         let u = setUploadQuery uploads $ routeUri $ Route.submitUpload propId progId invId
         openFileManager (Files 3) ("Transfer Inversion Results " <> invId.fromId) u
       UpTransfer taskId trans -> do
-        dall <- Datasets.find (Datasets.ByProgram progId)
+        dall <- Datasets.findLatest (Datasets.ByProgram progId)
         case trans of
           TaskFailed -> do
             pure $ viewUploadWithTransfer dall uploads metadata $ do
@@ -290,19 +292,19 @@ instance (Log :> es, Inversions :> es, Datasets :> es) => HyperView MetadataForm
       SetDataset dsetId set -> do
         qs <- setDatasetId dsetId set <$> query @QueryState
         setQuery qs
-        dall <- Datasets.find (Datasets.ByProgram progId)
+        dall <- Datasets.findLatest (Datasets.ByProgram progId)
         pure $ viewMetadataForm dall qs.uploads qs.metadata
       SaveCommit commit -> do
         qs <- query @QueryState
         isValid <- CommitForm.validate commit
-        dall <- Datasets.find (Datasets.ByProgram progId)
+        dall <- Datasets.findLatest (Datasets.ByProgram progId)
 
         if isValid
           then saveCommit dall qs commit
           else pure $ viewMetadataForm' dall qs.uploads qs.metadata (Metadata NotInvalid CommitForm.invalidCommit)
       Submit -> do
         qs <- query @QueryState
-        dall <- Datasets.find (Datasets.ByProgram progId)
+        dall <- Datasets.findLatest (Datasets.ByProgram progId)
 
         let val = validateMetadata qs.metadata
 

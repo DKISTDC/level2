@@ -9,41 +9,40 @@ import App.View.Icons qualified as Icons
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
+import NSO.Types.Status
 import Web.Atomic.CSS
 import Web.Hyperbole hiding (content)
 
 
-inversionStepLabel :: Inversion -> Text
-inversionStepLabel inv
-  | isError inv = "Error"
-  | inv.deleted = "Archived"
-  | otherwise = stepLabel (inversionStep inv)
- where
-  stepLabel = \case
-    StepComplete -> "Complete"
-    StepPublish -> "Publishing"
-    StepGenerate -> "Generating"
-    StepInvert -> "Inverting"
+inversionTagLabel :: InvStatus -> Text
+inversionTagLabel = \case
+  InvError -> "Error"
+  InvDeleted -> "Archived"
+  StepComplete -> "Complete"
+  StepPublish -> "Publishing"
+  StepGenerate -> "Generating"
+  StepInvert -> "Inverting"
 
 
-inversionStepColor :: Inversion -> AppColor
-inversionStepColor inv
-  | inv.deleted = Secondary
-  | isError inv = Danger
-  | isPublished inv = Success
-  | otherwise = Info
+inversionTagColor :: InvStatus -> AppColor
+inversionTagColor = \case
+  InvError -> Danger
+  InvDeleted -> Secondary
+  StepComplete -> Success
+  _ -> Info
 
 
-inversionStepTag :: Inversion -> View c ()
-inversionStepTag inv =
-  el ~ textAlign AlignCenter . stat (inversionStepColor inv) $ text $ inversionStepLabel inv
+inversionTag :: InvStatus -> View c ()
+inversionTag is =
+  el ~ textAlign AlignCenter . stat (inversionTagColor is) $ text (inversionTagLabel is)
  where
   stat c = tagCell . Style.tag c
 
 
 viewInversionContainer :: Inversion -> View c () -> View c ()
 viewInversionContainer inv =
-  viewInversionContainer' (inversionStepColor inv)
+  let status = inversionStatus inv
+   in viewInversionContainer' (inversionTagColor status)
 
 
 viewInversionContainer' :: AppColor -> View c () -> View c ()
@@ -58,7 +57,7 @@ rowInversion :: Inversion -> View id ()
 rowInversion inv = do
   appRoute (Route.inversion inv.proposalId inv.inversionId) $ do
     row ~ gap 10 $ do
-      inversionStepTag inv
+      inversionTag (inversionStatus inv)
       el ~ Style.link . width 100 $ text $ cs inv.inversionId.fromId
       -- el (width 150) $ text $ cs inv.programId.fromId
       space

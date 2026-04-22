@@ -20,17 +20,19 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
+import NSO.Data.Proposals as Proposals
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
+import NSO.Types.Status
 import Web.Atomic.CSS
 import Web.Hyperbole as H hiding (content)
 
 
 page
-  :: (Log :> es, Hyperbole :> es, Datasets :> es, Inversions :> es, Time :> es, Auth :> es)
+  :: (Log :> es, Hyperbole :> es, Datasets :> es, Time :> es, Auth :> es)
   => Page es '[ProposalList, ProposalFilters, ProposalCard, ProgramRow]
 page = do
   fs <- query
@@ -57,7 +59,7 @@ data ProposalList = ProposalList
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Log :> es) => HyperView ProposalList es where
+instance (Programs :> es, Log :> es) => HyperView ProposalList es where
   data Action ProposalList
     = LoadPropsFromFilters
     deriving (Generic, ViewAction)
@@ -68,24 +70,25 @@ instance (Datasets :> es, Log :> es) => HyperView ProposalList es where
 
   update LoadPropsFromFilters = do
     fs :: Filters <- query
-    props <- filter (isProposalShown fs.searchTerm) <$> Programs.loadAllProposals
+    -- we get all the propsoals here
+    props :: [Id Proposal] <- filter (isProposalShown fs.searchTerm) <$> Proposals.allProposalIds
     pure $ viewProposalList props
    where
     cleanPropId = T.replace " " "_"
 
     isProposalShown term p =
-      cleanPropId term `T.isInfixOf` p.proposalId.fromId
+      cleanPropId term `T.isInfixOf` p.fromId
 
 
 viewProposalListLoad :: View ProposalList ()
 viewProposalListLoad = el @ onLoad LoadPropsFromFilters 50 $ none
 
 
-viewProposalList :: [Proposal] -> View ProposalList ()
+viewProposalList :: [Id Proposal] -> View ProposalList ()
 viewProposalList props = do
-  let sorted = sortOn (\p -> Down p.proposalId) props
-  forM_ sorted $ \prop ->
-    hyper (ProposalCard prop.proposalId) viewProposalLoad
+  let sorted = sortOn Down props
+  forM_ sorted $ \p ->
+    hyper (ProposalCard p) viewProposalLoad
 
 
 -----------------------------------------------------
@@ -127,7 +130,7 @@ data ProposalFilters = ProposalFilters
   deriving (Generic, ViewId)
 
 
-instance (Log :> es, Datasets :> es) => HyperView ProposalFilters es where
+instance (Log :> es, Programs :> es) => HyperView ProposalFilters es where
   data Action ProposalFilters
     = FilterInstrument Instrument Bool
     | FilterStatus InversionFilter
@@ -208,51 +211,49 @@ data ProposalCard = ProposalCard (Id Proposal)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Inversions :> es, Time :> es, Log :> es) => HyperView ProposalCard es where
+instance (Datasets :> es, Programs :> es, Time :> es, Log :> es) => HyperView ProposalCard es where
   -- you could just re-read the filters from the query, they are global to the page
-  data Action ProposalCard = ProposalDetails
+  data Action ProposalCard = LoadProposalDetails
     deriving (Generic, ViewAction)
 
 
   type Require ProposalCard = '[ProgramRow]
 
 
-  update ProposalDetails = do
+  update LoadProposalDetails = do
     ProposalCard propId <- viewId
     filts <- query
     now <- currentTime
-    ds <- Datasets.find (Datasets.ByProposal propId)
-    invs <- send $ Inversions.ByProposal propId
-    prop <- proposalFromDataset . head <$> expectFound ds
-    let progs = programFamilies invs ds
+    progs <- send $ Programs.ByProposal propId
+    prop <- Proposals.lookupProposal propId >>= expectFound
 
-    pure $ viewProposalDetails filts now prop progs
+    pure $ viewProposalDetails filts now (head prop) progs
 
 
 viewProposalLoad :: View ProposalCard ()
 viewProposalLoad =
-  el @ onLoad ProposalDetails 100 $ none
+  el @ onLoad LoadProposalDetails 100 $ none
 
 
-viewProposalDetails :: Filters -> UTCTime -> Proposal -> [ProgramFamily] -> View ProposalCard ()
+viewProposalDetails :: Filters -> UTCTime -> ProposalDetails -> [InstrumentProgram] -> View ProposalCard ()
 viewProposalDetails fs now prop progs = do
   let shownProgs = filter applyFilters progs
   proposalCard prop $ do
-    tableInstrumentPrograms now $ fmap (\prog -> prog.program.programId) shownProgs
+    tableInstrumentPrograms now $ fmap (\prog -> prog.programId) shownProgs
 
     -- how many total programs?
     let ignored = length progs - length shownProgs
     when (ignored > 0) $ do
-      appRoute (Route.Proposal prop.proposalId PropRoot) ~ fontSize 14 . color Black . gap 5 $ do
+      appRoute (Route.Proposal prop.dataset.primaryProposalId PropRoot) ~ fontSize 14 . color Black . gap 5 $ do
         text $ cs (show ignored)
         text " Hidden Instrument Programs"
  where
-  applyFilters :: ProgramFamily -> Bool
+  applyFilters :: InstrumentProgram -> Bool
   applyFilters ip = checkInstrument ip && checkInvertible fs.status ip.status
 
-  checkInstrument :: ProgramFamily -> Bool
+  checkInstrument :: InstrumentProgram -> Bool
   checkInstrument ip =
-    case ip.program.instrument of
+    case ip.instrument of
       VBI -> fs.vbi
       VISP -> fs.visp.value
       CRYO_NIRSP -> fs.cryo
@@ -261,9 +262,9 @@ viewProposalDetails fs now prop progs = do
   checkInvertible :: InversionFilter -> ProgramStatus -> Bool
   checkInvertible Any _ = True
   checkInvertible Qualified StatusQualified = True
-  checkInvertible Active (StatusError _) = True
-  checkInvertible Active (StatusInversion inv) = not $ isPublished inv
-  checkInvertible Complete (StatusInversion inv) = isPublished inv
+  checkInvertible Active (StatusInversion InvError) = True
+  checkInvertible Active (StatusInversion StepPublish) = False
+  checkInvertible Active (StatusInversion _) = True
   checkInvertible _ _ = False
 
 
@@ -274,22 +275,22 @@ tableInstrumentPrograms _ progIds = do
       hyper (ProgramRow progId) $ rowInstrumentProgramLoad progId
 
 
-proposalCard :: Proposal -> View c () -> View c ()
+proposalCard :: ProposalDetails -> View c () -> View c ()
 proposalCard prop content = do
   col ~ Style.card . gap 15 . pad 15 $ do
     row $ do
       el ~ bold $ do
         text "Proposal "
-        appRoute (Route.Proposal prop.proposalId PropRoot) ~ Style.link $ do
-          text prop.proposalId.fromId
+        appRoute (Route.Proposal prop.dataset.primaryProposalId PropRoot) ~ Style.link $ do
+          text prop.dataset.primaryProposalId.fromId
       space
       el $ do
-        text $ showDate prop.startTime
+        text $ showDate prop.dataset.startTime
 
     View.hr ~ color Gray
 
     col ~ gap 10 $ do
-      el ~ overflow Hidden $ text $ T.take 200 prop.description
+      el ~ overflow Hidden $ text $ T.take 200 prop.dataset.experimentDescription
       content
   space ~ height 40
 
@@ -302,14 +303,14 @@ data ProgramRow = ProgramRow (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Inversions :> es, Time :> es) => HyperView ProgramRow es where
+instance (Programs :> es, Time :> es) => HyperView ProgramRow es where
   data Action ProgramRow = ProgramDetails
     deriving (Generic, ViewAction)
 
 
   update ProgramDetails = do
     ProgramRow progId <- viewId
-    ps <- Programs.loadProgram progId
+    ps <- send $ Programs.Lookup progId
     now <- currentTime
     pure $ mapM_ (rowInstrumentProgram now) ps
 
@@ -319,9 +320,8 @@ rowInstrumentProgramLoad _progId = do
   el @ onLoad ProgramDetails 150 $ skeleton
 
 
-rowInstrumentProgram :: UTCTime -> ProgramFamily -> View ProgramRow ()
-rowInstrumentProgram now psm = do
-  let p = psm.program
+rowInstrumentProgram :: UTCTime -> InstrumentProgram -> View ProgramRow ()
+rowInstrumentProgram now prog = do
   skeleton ~ display None . whenLoading (display Block)
-  appRoute (Route.Proposal p.proposalId $ Program p.programId Prog) ~ whenLoading (display None) $ do
-    viewProgramRow now psm
+  appRoute (Route.Proposal prog.proposalId $ Program prog.programId Prog) ~ whenLoading (display None) $ do
+    viewProgramRow now prog

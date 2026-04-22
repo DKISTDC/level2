@@ -1,36 +1,104 @@
-{-# LANGUAGE StrictData #-}
-
 module NSO.Data.Programs
   ( InstrumentProgram (..)
+  , Programs (..)
   , ProgramStatus (..)
-  , groupByProgram
-  , instrumentProgram
-  , loadAllPrograms
-  , loadAllProposals
-  , loadProgram
-  , loadProposalPrograms
-  , programFamilies
-  , programInversions
+  , ProgramStore (..)
+  , runDataPrograms
   , programStatus
-  , proposalFromDataset
-  , toProposal
-  , toProposals
+  , instrumentProgram
+  , instrumentProgramFrom
+  , loadProgram
+  , initStore
   ) where
 
 import Data.Grouped as G
 import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
+import Data.Map qualified as M
 import Effectful
+import Effectful.Concurrent
+import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import Effectful.Rel8
-import NSO.Data.Datasets as Datasets
-import NSO.Data.Inversions as Inversions
+import NSO.Data.Datasets (Dataset, Dataset' (..))
+import NSO.Data.Datasets qualified as Datasets
+import NSO.Data.Inversions (Inversion (..), inversionStatus)
+import NSO.Data.Inversions qualified as Inversions
 import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import NSO.Types.Status
 
+
+data Programs :: Effect where
+  Save :: InstrumentProgram -> Programs m ()
+  Lookup :: Id InstrumentProgram -> Programs m (Maybe InstrumentProgram)
+  All :: Programs m [InstrumentProgram]
+  ProposalIds :: Programs m [Id Proposal]
+  ByProposal :: Id Proposal -> Programs m [InstrumentProgram]
+type instance DispatchOf Programs = 'Dynamic
+
+
+newtype ProgramStore = ProgramStore (TVar (Map (Id InstrumentProgram) InstrumentProgram))
+
+
+runDataPrograms
+  :: (Concurrent :> es)
+  => ProgramStore
+  -> Eff (Programs : es) a
+  -> Eff es a
+runDataPrograms (ProgramStore var) = interpret $ \_ -> \case
+  Save prog -> do
+    atomically $ modifyTVar var $ M.insert prog.programId prog
+  Lookup progId -> do
+    M.lookup progId <$> readTVarIO var
+  All -> do
+    M.elems <$> readTVarIO var
+  ByProposal propId -> do
+    filter (\prog -> prog.proposalId == propId) . M.elems <$> readTVarIO var
+  ProposalIds -> do
+    L.nub . fmap (.proposalId) . M.elems <$> readTVarIO var
+
+
+initStore :: (Concurrent :> es) => Eff es ProgramStore
+initStore = ProgramStore <$> newTVarIO M.empty
+
+
+loadProgram :: (Programs :> es) => Id InstrumentProgram -> Eff es (Maybe InstrumentProgram)
+loadProgram progId = send $ Lookup progId
+
+
+programStatus :: NonEmpty Dataset -> [Inversion] -> ProgramStatus
+programStatus ds [] =
+  if isQualified ds
+    then StatusQualified
+    else StatusInvalid
+programStatus _ invs = do
+  StatusInversion $ inversionStatus $ L.maximumBy (comparing (.updated)) invs
+
+
+instrumentProgramFrom :: NonEmpty Dataset -> [Inversion] -> InstrumentProgram
+instrumentProgramFrom ds invs =
+  let d = head ds
+      ps = programStatus ds invs
+   in instrumentProgram d ps
+
+
+instrumentProgram :: Dataset -> ProgramStatus -> InstrumentProgram
+instrumentProgram d ps =
+  InstrumentProgram
+    { programId = d.instrumentProgramId
+    , proposalId = d.primaryProposalId
+    , experimentId = d.primaryExperimentId
+    , instrument = d.instrument
+    , createDate = d.createDate
+    , startTime = d.startTime
+    , stokesParameters = d.stokesParameters
+    , spectralLines = d.spectralLines
+    , embargo = d.embargo
+    , status = ps
+    }
 
 -- loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [ProgramFamily]
 -- loadProgram progId = do
@@ -63,10 +131,6 @@ import NSO.Types.Status
 --       let gprogs = grouped (\ip -> ip.program.proposalId) programs
 --       pure $ ProposalPrograms{proposal, programs = gprogs}
 
-groupByProgram :: [Dataset] -> [Group (Id InstrumentProgram) Dataset]
-groupByProgram = grouped (.instrumentProgramId)
-
-
 -- programFamilies :: [Inversion] -> [Dataset] -> [ProgramFamily]
 -- programFamilies invs ds =
 --   sortOn startTime $ fmap programFamily (groupByProgram ds)
@@ -82,13 +146,6 @@ groupByProgram = grouped (.instrumentProgramId)
 --           , datasets = gd
 --           , inversions = invs'
 --           }
-
--- | Filter inversions for the given program
-programInversions :: [Inversion] -> Id InstrumentProgram -> [Inversion]
-programInversions ivs progId =
-  let d = sample gd
-   in filter (\i -> i.programId == progId) ivs
-
 
 -- toProposals :: [ProgramFamily] -> [ProposalPrograms]
 -- toProposals pfs =
@@ -106,21 +163,6 @@ programInversions ivs progId =
 --           }
 --    in ProposalPrograms{proposal = prop, programs = g}
 
-programStatus :: Group (Id InstrumentProgram) Dataset -> [Inversion] -> ProgramStatus
-programStatus gd [] =
-  if isQualified gd
-    then StatusQualified
-    else StatusInvalid
-programStatus _ (i : is) = do
-  inversionStatus $ NE.sortWith (.updated) $ i :| is
- where
-  inversionStatus is' =
-    let i' = head is'
-     in case i'.invError of
-          Just e -> StatusError e
-          Nothing -> StatusInversion i'
-
-
 -- midWave :: Dataset -> Wavelength Nm
 -- midWave d =
 --   let Wavelength mn = d.wavelengthMin
@@ -129,22 +171,3 @@ programStatus _ (i : is) = do
 
 -- identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
 -- identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d
-
-table :: TableSchema (InstrumentProgram' Name)
-table =
-  TableSchema
-    { name = "programs"
-    , columns =
-        InstrumentProgram'
-          { programId = "program_id"
-          , proposalId = "proposal_id"
-          , experimentId = "experiment_id"
-          , instrument = "instrument"
-          , createDate = "create_date"
-          , startTime = "start_time"
-          , stokesParameters = "stokes"
-          , spectralLines = "spectral_lines"
-          , embargo = "embargo"
-          , status = "status"
-          }
-    }

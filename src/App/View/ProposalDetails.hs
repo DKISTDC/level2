@@ -17,8 +17,9 @@ import App.View.Common (showDate)
 import App.View.DataRow (dataCell, tagCell)
 import App.View.Datasets (boxPlot)
 import App.View.Icons as Icons
-import App.View.Inversion (inversionStepTag)
+import App.View.Inversion (inversionTag)
 import Data.Grouped
+import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import Effectful.Time
@@ -45,54 +46,47 @@ viewDataRow =
   row ~ gap 10 . textAlign AlignCenter . grow
 
 
-viewProgramRowLink :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramRowLink :: forall c. UTCTime -> InstrumentProgram -> View c ()
 viewProgramRowLink now prog = do
-  let p = prog.program :: InstrumentProgram
   row ~ textAlign AlignCenter . pad 10 $ do
-    appRoute (Proposal p.proposalId $ Program p.programId Prog) ~ grow $ do
+    appRoute (Proposal prog.proposalId $ Program prog.programId Prog) ~ grow $ do
       viewProgramRow now prog
 
 
-viewProgramRow :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramRow :: forall c. UTCTime -> InstrumentProgram -> View c ()
 viewProgramRow now fam = viewDataRow $ do
   statusTag fam.status
   viewProgramStats now fam
 
 
-viewProgramStats :: forall c. UTCTime -> ProgramFamily -> View c ()
+viewProgramStats :: forall c. UTCTime -> InstrumentProgram -> View c ()
 viewProgramStats now prog = viewDataRow $ do
-  let ip = prog.program
   -- el dataCell $ text $ showDate ip.startTime
   -- el dataCell $ text $ showDate ip.startTime
-  el ~ dataCell $ text $ cs $ show ip.instrument
+  el ~ dataCell $ text $ cs $ show prog.instrument
   -- not worth showing Stokes in the row. They seem to be present for all ViSP
   -- el dataCell $ text $ cs $ show ip.stokesParameters
 
-  code (cs $ showDate ip.startTime) ~ cell . noWrap . color Secondary
+  code (cs $ showDate prog.startTime) ~ cell . noWrap . color Secondary
 
   row ~ dataCell . gap 5 . fontSize 14 $ do
-    maybe none embargoTag ip.embargo
+    maybe none embargoTag prog.embargo
 
-    let dlines :: NonEmpty [SpectralLine] = fmap (.spectralLines) prog.datasets.items
-    mapM_ lineTag $ sortOn linesIon $ NE.filter isKnownIon dlines
-    mapM_ lineTag $ NE.filter (not . isKnownIon) dlines
+    let known = L.sortOn (.ion) $ filter isKnownIon prog.spectralLines
+    let unknown = filter (not . isKnownIon) prog.spectralLines
+    mapM_ lineTag known
+    mapM_ lineTag unknown
 
   space
 
-  code ip.programId.fromId ~ color (light Secondary) . minWidth 0 . fontSize 12 . pad 2
+  code prog.programId.fromId ~ color (light Secondary) . minWidth 0 . fontSize 12 . pad 2
  where
-  linesIon :: [SpectralLine] -> Ion
-  linesIon [] = UnknownIon
-  linesIon (s : _) = s.ion
-
-  isKnownIon :: [SpectralLine] -> Bool
-  isKnownIon = \case
-    (s : _) ->
-      case s.ion of
-        Ion _ -> True
-        UnknownIon -> False
-        _ -> True
-    _ -> False
+  isKnownIon :: SpectralLine -> Bool
+  isKnownIon s =
+    case s.ion of
+      Ion _ -> True
+      UnknownIon -> False
+      _ -> True
 
   cellData :: (Styleable h) => CSS h -> CSS h
   cellData = fontSize 14 . pad 2
@@ -108,9 +102,8 @@ viewProgramStats now prog = viewDataRow $ do
       else none
 
 
-lineTag :: [SpectralLine] -> View c ()
-lineTag [] = none
-lineTag (s : _) =
+lineTag :: SpectralLine -> View c ()
+lineTag s =
   case s.ion of
     Ion _ -> lineTag' s
     UnknownIon -> wavTag s.wavelength
@@ -145,8 +138,7 @@ statusTag :: ProgramStatus -> View c ()
 statusTag = \case
   StatusInvalid -> el ~ tagCell . color (light Secondary) $ text "-"
   StatusQualified -> el ~ stat Primary $ text "Qualified"
-  StatusInversion step -> inversionStepTag step
-  StatusError _ -> el ~ stat Danger $ text "Error"
+  StatusInversion status -> inversionTag status
  where
   stat c = tagCell . Style.tag c
 
@@ -154,17 +146,17 @@ statusTag = \case
 -- statusTag Queued = el (dataCell . bg Warning) $ text "Queued"
 -- statusTag Inverted = el (dataCell . bg SecondaryLight) $ text "Complete"
 
-viewCriteria :: ProgramFamily -> Group (Id InstrumentProgram) Dataset -> View c ()
-viewCriteria ip gd = do
+viewCriteria :: InstrumentProgram -> NonEmpty Dataset -> View c ()
+viewCriteria ip ds = do
   col $ do
-    case ip.program.instrument of
-      VISP -> vispCriteria gd
+    case ip.instrument of
+      VISP -> vispCriteria
       VBI -> vbiCriteria
       CRYO_NIRSP -> cryoCriteria
       DL_NIRSP -> dlCriteria
  where
-  vispCriteria :: Group (Id InstrumentProgram) Dataset -> View c ()
-  vispCriteria ds = do
+  vispCriteria :: View c ()
+  vispCriteria = do
     el ~ bold $ "ViSP Criteria"
     row ~ gap 10 . flexWrap Wrap $ do
       vcriteria "Stokes IQUV" $ qualifyStokes ds

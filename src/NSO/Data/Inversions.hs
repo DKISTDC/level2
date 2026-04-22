@@ -8,9 +8,10 @@ module NSO.Data.Inversions
   , isGenerated
   , isInverted
   , findByProgram
-  , inversionStep
+  , inversionStatus
   , distinctProgramIds
-  , InversionStep (..)
+  , loadDistinctProposalIds
+  , InvStatus (..)
   , Generated (..)
   , generated
   ) where
@@ -27,7 +28,8 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion
-import NSO.Types.Status (InversionStep (..))
+import NSO.Types.Proposal
+import NSO.Types.Status (InvStatus (..))
 
 
 isPublished :: Inversion -> Bool
@@ -55,8 +57,10 @@ isInverted inv =
         && isJust i.commit
 
 
-inversionStep :: Inversion -> InversionStep
-inversionStep inv
+inversionStatus :: Inversion -> InvStatus
+inversionStatus inv
+  | inv.deleted = InvDeleted
+  | isError inv = InvError
   | isPublished inv = StepComplete
   | isGenerated inv = StepPublish
   | isInverted inv = StepGenerate
@@ -74,6 +78,13 @@ findByProgram ip = do
 distinctProgramIds :: [Inversion] -> [Id InstrumentProgram]
 distinctProgramIds inv =
   L.nub $ fmap (.programId) inv
+
+
+loadDistinctProposalIds :: (Inversions :> es) => Eff es [Id Proposal]
+loadDistinctProposalIds = do
+  -- TODO: use a distinct query instead
+  AllInversions ivs <- send All
+  pure $ L.nub $ fmap (.proposalId) ivs
 
 
 data Generated = Generated

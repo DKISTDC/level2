@@ -26,13 +26,12 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Programs hiding (programInversions)
-import NSO.Data.Programs qualified as Programs
+import NSO.Data.Programs as Programs
 import NSO.Data.Qualify (qualify)
 import NSO.Files.RemoteFolder (Ingest, Level1, Remote)
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram (Proposal)
+import NSO.Types.Proposal (Proposal)
 import Web.Atomic.CSS
 import Web.Hyperbole
 
@@ -40,28 +39,29 @@ import Web.Hyperbole
 -- import App.Page.Datasets.Download (ActiveDownload (..))
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Auth :> es, Globus :> es, Transfer Level1 Ingest :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Programs :> es, Auth :> es, Globus :> es, Transfer Level1 Ingest :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es '[ProgramInversions, ProgramDatasets, ProgramDetails]
 page propId progId = do
-  ds <- Datasets.find (Datasets.ByProgram progId) >>= expectFound
-  progs <- Programs.loadProgram progId >>= expectFound
+  ds <- Datasets.findLatest (Datasets.ByProgram progId) >>= expectFound
+  progs <- send (Programs.Lookup progId) >>= expectFound
   let prog = head progs
   now <- currentTime
   l1 <- send (RemoteSource @Level1 @Ingest)
+  invs <- send $ Inversions.ByProgram progId
   -- ActiveDownload download <- query
 
   appLayout Route.Proposals $ do
     col ~ Style.page . gap 30 $ do
       viewPageHeader (head ds)
 
-      hyper (ProgramInversions propId progId) $ viewProgramInversions prog
+      hyper (ProgramInversions propId progId) $ viewProgramInversions prog ds invs
 
       col ~ Style.card $ do
         el ~ Style.cardHeader Secondary $ text "Program"
-        hyper (ProgramDetails propId progId) $ viewProgramDetails prog now
-        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList prog.datasets.items) ProductId
+        hyper (ProgramDetails propId progId) $ viewProgramDetails prog ds now
+        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList ds) ProductId
 
       col ~ gap 10 $ do
         el ~ bold $ "Experiment"
@@ -95,17 +95,16 @@ instance HyperView ProgramDetails es where
   update _ = pure none
 
 
-viewProgramDetails :: ProgramFamily -> UTCTime -> View c ()
-viewProgramDetails prog now = do
-  let ds = prog.datasets
+viewProgramDetails :: InstrumentProgram -> NonEmpty Dataset -> UTCTime -> View c ()
+viewProgramDetails prog ds now = do
   viewProgramRowLink now prog
 
   View.hr ~ color Gray
 
   col ~ pad 15 . gap 10 $ do
     viewCriteria prog ds
-    viewWavelengthRanges prog.program.spectralLines prog.datasets.items
-    viewFriedHistogram (sample ds).friedParameter
+    viewWavelengthRanges prog.spectralLines ds
+    viewFriedHistogram (head ds).friedParameter
 
 
 -- viewIronPlot GenIronImage ds.items
@@ -134,9 +133,9 @@ instance (Inversions :> es, Auth :> es) => HyperView ProgramInversions es where
       redirect $ routeUri $ Route.inversionUpload propId progId invId
 
 
-viewProgramInversions :: ProgramFamily -> View ProgramInversions ()
-viewProgramInversions prog =
-  case prog.inversions of
+viewProgramInversions :: InstrumentProgram -> NonEmpty Dataset -> [Inversion] -> View ProgramInversions ()
+viewProgramInversions prog ds invs =
+  case invs of
     (_ : _) -> viewInversions
     [] -> firstInversion
  where
@@ -145,11 +144,11 @@ viewProgramInversions prog =
       el ~ Style.cardHeader invHeaderColor $ text "Inversions"
       col ~ gap 10 . pad 15 $ do
         col $ do
-          dataRows prog.inversions rowInversion
+          dataRows invs rowInversion
         iconButton CreateInversion Icons.plus "Create New Inversion" ~ Style.btnOutline Primary
 
   firstInversion = do
-    let res = qualify prog.datasets
+    let res = qualify ds
     iconButton CreateInversion Icons.plus "Create Inversion" ~ Style.btn Primary . qualified res
     qualifyMessage res
 
@@ -162,7 +161,7 @@ viewProgramInversions prog =
     Right _ -> id
 
   invHeaderColor
-    | any isPublished prog.inversions = Success
+    | any isPublished invs = Success
     | otherwise = Info
 
 
@@ -225,11 +224,9 @@ instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :
 
   update (SortDatasets srt) = do
     ProgramDatasets _ progId <- viewId
-    progs <- Programs.loadProgram progId
+    ds <- Datasets.findLatest (Datasets.ByProgram progId)
     l1 <- send (RemoteSource @Level1 @Ingest)
-    pure $ do
-      forM_ progs $ \prog -> do
-        viewDatasets l1 (NE.toList prog.datasets.items) srt
+    pure $ viewDatasets l1 ds srt
 
 
 viewDatasets :: Remote Level1 -> [Dataset] -> SortField -> View ProgramDatasets ()

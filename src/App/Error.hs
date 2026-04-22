@@ -1,6 +1,7 @@
 module App.Error where
 
 import Control.Exception
+import Data.Foldable
 import Effectful
 import NSO.Prelude
 import Web.Hyperbole
@@ -11,6 +12,8 @@ data AppError
   deriving (Show, Exception)
 
 
-expectFound :: (Hyperbole :> es) => [a] -> Eff es (NonEmpty a)
-expectFound [] = notFound
-expectFound (a : as) = pure $ a :| as
+expectFound :: (Hyperbole :> es, Foldable t) => t a -> Eff es (NonEmpty a)
+expectFound as =
+  case toList as of
+    [] -> notFound
+    (h : rest) -> pure $ h :| rest

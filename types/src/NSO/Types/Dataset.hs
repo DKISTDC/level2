@@ -16,6 +16,10 @@ import Web.Hyperbole (FromParam, ToParam)
 import Web.Hyperbole.Data.URI (URI, parseURIReference, uriToText)
 
 
+newtype ProposalDetails = ProposalDetails {dataset :: Dataset}
+  deriving (Eq, Show)
+
+
 type Dataset = Dataset' Identity
 data Dataset' f = Dataset'
   { datasetId :: Column f (Id Dataset)
