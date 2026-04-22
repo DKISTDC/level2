@@ -8,6 +8,7 @@ import Data.Int (Int16)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import NSO.Types.Wavelength
 import Rel8
 import Text.Read (readEither)
@@ -75,10 +76,6 @@ decodeURI t = maybe (Left $ "Invalid URI: " <> cs t) pure $ parseURIReference (c
 
 
 data ObserveFrames
-
-
-data ObservingProgram
-data Experiment
 
 
 data BoundingBox = BoundingBox

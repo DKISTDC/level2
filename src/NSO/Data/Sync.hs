@@ -25,7 +25,7 @@ import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import NSO.Types.Wavelength
 
 
@@ -141,7 +141,7 @@ runScanProposal' :: (Metadata es, Datasets :> es, Time :> es, Log :> es) => Map 
 runScanProposal' exs propId = do
   now <- currentTime
   pds <- send $ DatasetsByProposal propId
-  ds <- indexed <$> Datasets.find (Datasets.ByProposal propId)
+  ds <- indexed <$> Datasets.findAll (Datasets.ByProposal propId)
   logStatus $ dump " Datasets:" $ length ds
   pure $ scanProposal $ scanResult now exs ds pds
  where

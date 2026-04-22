@@ -8,6 +8,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import Rel8 (Column, DBType, Rel8able, Result)
 import Web.Hyperbole (FromParam, ToParam)
 

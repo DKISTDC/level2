@@ -17,8 +17,8 @@ import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
-import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import NSO.Types.Proposal
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..))

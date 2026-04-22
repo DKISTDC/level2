@@ -8,6 +8,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import NSO.Types.Proposal
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI (Path (..))
 import Web.Hyperbole.Route (genMatchRoute, genRoutePath)

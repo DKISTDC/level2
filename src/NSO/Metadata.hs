@@ -20,6 +20,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import NSO.Types.Proposal
 import NSO.Types.Wavelength
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types

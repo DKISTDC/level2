@@ -21,7 +21,7 @@ import NSO.Data.Sync as Sync
 import NSO.Metadata (Metadata)
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal (Proposal)
 import Numeric (showFFloat)
 import Web.Atomic.CSS
 import Web.Hyperbole hiding (content)

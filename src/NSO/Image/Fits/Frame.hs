@@ -22,8 +22,8 @@ import NSO.Image.Types.Profile
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
+import NSO.Types.Proposal (Proposal)
 import Telescope.Asdf as Asdf
 import Telescope.Fits as Fits
 import Telescope.Fits.Encoding (replaceKeywordLine)

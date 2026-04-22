@@ -22,7 +22,7 @@ import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Types.Frame (Arms (..))
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import System.FilePath (takeFileName)
 import Telescope.Data.Parser (ParseError)
 

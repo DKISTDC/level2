@@ -38,7 +38,7 @@ import NSO.Image.Primary (PrimaryError)
 import NSO.Image.Types.Frame (Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram (Proposal)
+import NSO.Types.Proposal (Proposal)
 
 
 data GenTask = GenTask {proposalId :: Id Proposal, inversionId :: Id Inversion}

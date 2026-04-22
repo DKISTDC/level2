@@ -25,8 +25,8 @@ import NSO.Files.TransferForm qualified as TransferForm
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Dataset
-import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
+import NSO.Types.Proposal (Proposal)
 import NSO.Types.User (CurrentAccess (..))
 
 

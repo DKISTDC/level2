@@ -39,6 +39,7 @@ library
       NSO.Types.Dataset
       NSO.Types.InstrumentProgram
       NSO.Types.Inversion
+      NSO.Types.Proposal
       NSO.Types.Status
       NSO.Types.User
       NSO.Types.Wavelength

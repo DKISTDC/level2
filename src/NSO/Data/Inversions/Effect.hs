@@ -17,6 +17,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset (Dataset)
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
+import NSO.Types.Proposal (Proposal)
 
 
 data Inversions :: Effect where

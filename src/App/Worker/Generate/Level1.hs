@@ -17,7 +17,7 @@ import NSO.Image.Headers.Types (SliceXY (..), VISPArmId (..))
 import NSO.Image.L1Input
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import Telescope.Asdf qualified as Asdf
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Data.Parser (ParseError)

@@ -78,6 +78,7 @@ library
       NSO.Data.Inversions.Effect
       NSO.Data.Inversions.Update
       NSO.Data.Programs
+      NSO.Data.Proposals
       NSO.Data.Qualify
       NSO.Data.Spectra
       NSO.Data.Sync

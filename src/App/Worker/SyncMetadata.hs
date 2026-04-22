@@ -16,7 +16,7 @@ import NSO.Generic
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 
 
 -- SYNC METADATA -----------------------------------------------

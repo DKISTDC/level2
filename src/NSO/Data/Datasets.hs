@@ -21,6 +21,7 @@ import NSO.Prelude hiding (find)
 import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import Rel8 (Order, asc, distinctOnBy)
 
 

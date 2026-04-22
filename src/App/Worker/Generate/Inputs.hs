@@ -25,7 +25,7 @@ import NSO.Image.Types.Frame (Arms (..), Depth, Frames (..), SlitX)
 import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import Telescope.Fits (Fits (..))
 import Telescope.Fits qualified as Fits
 

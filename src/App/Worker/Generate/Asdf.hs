@@ -29,7 +29,7 @@ import NSO.Image.L1Input (L1Fits (..))
 import NSO.Image.Types.Frame (Arms (..), Frames (..))
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import System.FilePath (takeFileName)
 import Telescope.Asdf.Error (AsdfError)
 import Telescope.Fits (Fits)

@@ -6,8 +6,8 @@ import NSO.Image.Headers (fitsFrameFilename)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (..))
-import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (InvProfileFit, InvProfileOrig, InvQuantities, Inversion)
+import NSO.Types.Proposal
 import System.FilePath (takeExtension, takeExtensions)
 
 

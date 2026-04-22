@@ -36,8 +36,8 @@ import NSO.Image.Types.Quantity
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Dataset, Dataset' (datasetId, primaryProposalId, spectralLines))
-import NSO.Types.InstrumentProgram (Proposal)
 import NSO.Types.Inversion (Inversion)
+import NSO.Types.Proposal (Proposal)
 import NSO.Types.Wavelength (Nm, SpectralLine (..), Wavelength (..), ionName, spectralLineName, spectralLineShort)
 import Numeric (showFFloat)
 import Telescope.Asdf as Asdf

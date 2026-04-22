@@ -28,7 +28,7 @@ import NSO.Metadata as Metadata
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset (Bucket)
-import NSO.Types.InstrumentProgram
+import NSO.Types.Proposal
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.Globus (taskPercentComplete)
 import Network.Globus qualified as Globus

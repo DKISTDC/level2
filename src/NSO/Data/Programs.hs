@@ -2,7 +2,6 @@
 
 module NSO.Data.Programs
   ( InstrumentProgram (..)
-  , ProgramFamily (..)
   , ProgramStatus (..)
   , groupByProgram
   , instrumentProgram
@@ -23,6 +22,7 @@ import Data.List qualified as L
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Rel8
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Qualify
@@ -32,31 +32,24 @@ import NSO.Types.InstrumentProgram
 import NSO.Types.Status
 
 
-loadAllProposals :: (Datasets :> es) => Eff es [Proposal]
-loadAllProposals = do
-  ds <- Datasets.find DistinctProposals
-  pure $ fmap proposalFromDataset ds
-
-
-loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [ProgramFamily]
-loadProgram progId = do
-  ds <- send $ Datasets.Find $ Datasets.ByProgram progId
-  invs <- Inversions.findByProgram progId
-  pure $ programFamilies invs ds
-
-
-loadAllPrograms :: (Datasets :> es, Inversions :> es) => Eff es [ProgramFamily]
-loadAllPrograms = do
-  ds <- Datasets.find Datasets.All
-  AllInversions ai <- send Inversions.All
-  pure $ programFamilies ai ds
-
-
-loadProposalPrograms :: (Datasets :> es, Inversions :> es) => Eff es [ProposalPrograms]
-loadProposalPrograms = do
-  progs <- loadAllPrograms
-  pure $ toProposals progs
-
+-- loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [ProgramFamily]
+-- loadProgram progId = do
+--   ds <- send $ Datasets.Find $ Datasets.ByProgram progId
+--   invs <- Inversions.findByProgram progId
+--   pure $ programFamilies invs ds
+--
+--
+-- loadAllPrograms :: (Datasets :> es, Inversions :> es) => Eff es [ProgramFamily]
+-- loadAllPrograms = do
+--   ds <- Datasets.find Datasets.All
+--   AllInversions ai <- send Inversions.All
+--   pure $ programFamilies ai ds
+--
+--
+-- loadProposalPrograms :: (Datasets :> es, Inversions :> es) => Eff es [ProposalPrograms]
+-- loadProposalPrograms = do
+--   progs <- loadAllPrograms
+--   pure $ toProposals progs
 
 -- loadProposalProgram :: (Datasets :> es, Inversions :> es) => Id Proposal -> Eff es [ProposalPrograms]
 -- loadProposalProgram propId = do
@@ -70,59 +63,48 @@ loadProposalPrograms = do
 --       let gprogs = grouped (\ip -> ip.program.proposalId) programs
 --       pure $ ProposalPrograms{proposal, programs = gprogs}
 
-proposalFromDataset :: Dataset -> Proposal
-proposalFromDataset d =
-  Proposal
-    { proposalId = d.primaryProposalId
-    , description = d.experimentDescription
-    , startTime = d.startTime
-    }
-
-
 groupByProgram :: [Dataset] -> [Group (Id InstrumentProgram) Dataset]
 groupByProgram = grouped (.instrumentProgramId)
 
 
-programFamilies :: [Inversion] -> [Dataset] -> [ProgramFamily]
-programFamilies invs ds =
-  sortOn startTime $ fmap programFamily (groupByProgram ds)
- where
-  startTime pf = pf.program.startTime
-
-  programFamily :: Group (Id InstrumentProgram) Dataset -> ProgramFamily
-  programFamily gd =
-    let invs' = programInversions invs gd
-     in ProgramFamily
-          { program = instrumentProgram gd
-          , status = programStatus gd invs'
-          , datasets = gd
-          , inversions = invs'
-          }
-
+-- programFamilies :: [Inversion] -> [Dataset] -> [ProgramFamily]
+-- programFamilies invs ds =
+--   sortOn startTime $ fmap programFamily (groupByProgram ds)
+--  where
+--   startTime pf = pf.program.startTime
+--
+--   programFamily :: Group (Id InstrumentProgram) Dataset -> ProgramFamily
+--   programFamily gd =
+--     let invs' = programInversions invs gd
+--      in ProgramFamily
+--           { program = instrumentProgram gd
+--           , status = programStatus gd invs'
+--           , datasets = gd
+--           , inversions = invs'
+--           }
 
 -- | Filter inversions for the given program
-programInversions :: [Inversion] -> Group (Id InstrumentProgram) Dataset -> [Inversion]
-programInversions ivs gd =
+programInversions :: [Inversion] -> Id InstrumentProgram -> [Inversion]
+programInversions ivs progId =
   let d = sample gd
-   in filter (\i -> i.programId == d.instrumentProgramId) ivs
+   in filter (\i -> i.programId == progId) ivs
 
 
-toProposals :: [ProgramFamily] -> [ProposalPrograms]
-toProposals pfs =
-  map toProposal $ grouped (\ip -> ip.program.proposalId) pfs
-
-
-toProposal :: Group (Id Proposal) ProgramFamily -> ProposalPrograms
-toProposal g =
-  let ip = sample g
-      prop =
-        Proposal
-          { proposalId = ip.program.proposalId
-          , description = ip.program.experimentDescription
-          , startTime = ip.program.startTime
-          }
-   in ProposalPrograms{proposal = prop, programs = g}
-
+-- toProposals :: [ProgramFamily] -> [ProposalPrograms]
+-- toProposals pfs =
+--   map toProposal $ grouped (\ip -> ip.program.proposalId) pfs
+--
+--
+-- toProposal :: Group (Id Proposal) ProgramFamily -> ProposalPrograms
+-- toProposal g =
+--   let ip = sample g
+--       prop =
+--         Proposal
+--           { proposalId = ip.program.proposalId
+--           , description = ip.program.experimentDescription
+--           , startTime = ip.program.startTime
+--           }
+--    in ProposalPrograms{proposal = prop, programs = g}
 
 programStatus :: Group (Id InstrumentProgram) Dataset -> [Inversion] -> ProgramStatus
 programStatus gd [] =
@@ -139,23 +121,6 @@ programStatus _ (i : is) = do
           Nothing -> StatusInversion i'
 
 
-instrumentProgram :: Group (Id InstrumentProgram) Dataset -> InstrumentProgram
-instrumentProgram gd =
-  let d = sample gd
-   in InstrumentProgram
-        { programId = d.instrumentProgramId
-        , proposalId = d.primaryProposalId
-        , experimentDescription = d.experimentDescription
-        , createDate = d.createDate
-        , stokesParameters = d.stokesParameters
-        , startTime = d.startTime
-        , instrument = d.instrument
-        , onDisk = qualifyOnDisk gd
-        , spectralLines = L.nub $ concatMap (.spectralLines) gd.items
-        , embargo = d.embargo
-        , qualified = isQualified gd
-        }
-
 -- midWave :: Dataset -> Wavelength Nm
 -- midWave d =
 --   let Wavelength mn = d.wavelengthMin
@@ -164,3 +129,22 @@ instrumentProgram gd =
 
 -- identifyLine :: Dataset -> Either (Wavelength Nm) SpectralLine
 -- identifyLine d = maybe (Left $ midWave d) Right $ Spectra.identifyLine d
+
+table :: TableSchema (InstrumentProgram' Name)
+table =
+  TableSchema
+    { name = "programs"
+    , columns =
+        InstrumentProgram'
+          { programId = "program_id"
+          , proposalId = "proposal_id"
+          , experimentId = "experiment_id"
+          , instrument = "instrument"
+          , createDate = "create_date"
+          , startTime = "start_time"
+          , stokesParameters = "stokes"
+          , spectralLines = "spectral_lines"
+          , embargo = "embargo"
+          , status = "status"
+          }
+    }

@@ -27,6 +27,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram (InstrumentProgram)
 import NSO.Types.Inversion
+import NSO.Types.Status (InversionStep (..))
 
 
 isPublished :: Inversion -> Bool
@@ -52,13 +53,6 @@ isInverted inv =
   let i = inv.invert
    in not (L.null i.datasets)
         && isJust i.commit
-
-
-data InversionStep
-  = StepInvert
-  | StepGenerate
-  | StepPublish
-  | StepComplete
 
 
 inversionStep :: Inversion -> InversionStep
