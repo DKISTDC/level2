@@ -12,7 +12,6 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Data.Programs as Programs
 import NSO.Data.Sync as Sync
 import NSO.Generic
 import NSO.Metadata
@@ -83,7 +82,7 @@ data SyncProgress
   deriving (Eq, Show, Read)
 
 
-syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Programs :> es, Inversions :> es, Metadata es, MetadataSync :> es, Tasks :> es) => SyncProposalTask -> Eff es ()
+syncProposalTask :: (Error TaskFail :> es, Log :> es, Time :> es, Datasets :> es, Inversions :> es, Metadata es, MetadataSync :> es, Tasks :> es) => SyncProposalTask -> Eff es ()
 syncProposalTask task = do
   logStatus $ "started " <> show task.syncId
   taskSetStatus task Scan

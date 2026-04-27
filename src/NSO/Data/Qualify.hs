@@ -1,13 +1,11 @@
 module NSO.Data.Qualify where
 
-import Data.Grouped
 import Data.List.NonEmpty qualified as NE
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (DayOfYear, toOrdinalDate)
 import NSO.Data.Datasets
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
 import NSO.Types.Wavelength
 
 

@@ -2,6 +2,7 @@
 
 module NSO.Data.Inversions.Effect where
 
+import Data.Functor.Contravariant ((>$<))
 import Data.Maybe (isJust)
 import Effectful
 import Effectful.Concurrent.STM
@@ -18,12 +19,14 @@ import NSO.Types.Dataset (Dataset)
 import NSO.Types.InstrumentProgram
 import NSO.Types.Inversion
 import NSO.Types.Proposal (Proposal)
+import Rel8 (desc, limit, orderBy)
 
 
 data Inversions :: Effect where
   All :: Inversions m AllInversions
   ById :: Id Inversion -> Inversions m [Inversion]
   ByProgram :: Id InstrumentProgram -> Inversions m [Inversion]
+  ByProgramLatest :: Id InstrumentProgram -> Inversions m (Maybe Inversion)
   ByProposal :: Id Proposal -> Inversions m [Inversion]
   Create :: Id Proposal -> Id InstrumentProgram -> Id Inversion -> Maybe GitCommit -> [Id Dataset] -> Inversions m Inversion
   NewId :: Inversions m (Id Inversion)
@@ -44,7 +47,15 @@ runDataInversions
   -> Eff es a
 runDataInversions = interpret $ \_ -> \case
   All -> queryAll
-  ByProgram pid -> queryInstrumentProgram pid
+  ByProgram pid -> do
+    irs <- run $ select $ queryByProgram pid
+    pure $ map fromRow irs
+  ByProgramLatest pid -> do
+    irs <- run $ select $ limitLatest $ do
+      row <- queryByProgram pid
+      where_ (row.deleted ==. lit Nothing)
+      pure row
+    pure $ fromRow <$> listToMaybe irs
   ByProposal pid -> do
     irs <- run $ select $ do
       row <- each inversions
@@ -85,13 +96,11 @@ runDataInversions = interpret $ \_ -> \case
       pure row
     pure $ map fromRow irs
 
-  queryInstrumentProgram :: (Rel8 :> es) => Id InstrumentProgram -> Eff es [Inversion]
-  queryInstrumentProgram ip = do
-    irs <- run $ select $ do
-      row <- each inversions
-      where_ (row.programId ==. lit ip)
-      return row
-    pure $ map fromRow irs
+  queryByProgram :: Id InstrumentProgram -> Query (InversionRow Expr)
+  queryByProgram ip = do
+    row <- each inversions
+    where_ (row.programId ==. lit ip)
+    return row
 
   updateInversion :: (Rel8 :> es, Time :> es) => Id Inversion -> (InversionRow Expr -> InversionRow Expr) -> Eff es ()
   updateInversion iid f = do
@@ -108,6 +117,10 @@ runDataInversions = interpret $ \_ -> \case
 
   setUpdated :: UTCTime -> InversionRow Expr -> InversionRow Expr
   setUpdated now InversionRow{..} = InversionRow{updated = lit now, ..}
+
+  limitLatest :: Query (InversionRow Expr) -> Query (InversionRow Expr)
+  limitLatest q = do
+    limit 1 $ orderBy ((.updated) >$< desc) q
 
 
 inversions :: TableSchema (InversionRow Name)

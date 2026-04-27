@@ -9,7 +9,6 @@ import App.View.Icons qualified as Icons
 import NSO.Data.Inversions as Inversions
 import NSO.Prelude
 import NSO.Types.Common (Id (..))
-import NSO.Types.Status
 import Web.Atomic.CSS
 import Web.Hyperbole hiding (content)
 

@@ -11,14 +11,16 @@ module NSO.Data.Programs
   , initStore
   ) where
 
-import Data.List qualified as L
+import Data.Grouped
 import Data.Map qualified as M
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
-import NSO.Data.Datasets (Dataset, Dataset' (..))
-import NSO.Data.Inversions (Inversion (..), inversionStatus)
+import NSO.Data.Datasets as Datasets hiding (All, ByProgram, ByProposal, Save)
+import NSO.Data.Datasets qualified as Datasets
+import NSO.Data.Inversions (Inversion (..), Inversions, inversionStatus)
+import NSO.Data.Inversions qualified as Inversions
 import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.Common
@@ -28,10 +30,8 @@ import NSO.Types.Status
 
 
 data Programs :: Effect where
-  Save :: InstrumentProgram -> Programs m ()
-  Lookup :: Id InstrumentProgram -> Programs m (Maybe InstrumentProgram)
-  All :: Programs m [InstrumentProgram]
   ProposalIds :: Programs m [Id Proposal]
+  Lookup :: Id InstrumentProgram -> Programs m (Maybe InstrumentProgram)
   ByProposal :: Id Proposal -> Programs m [InstrumentProgram]
 type instance DispatchOf Programs = 'Dynamic
 
@@ -39,22 +39,29 @@ type instance DispatchOf Programs = 'Dynamic
 newtype ProgramStore = ProgramStore (TVar (Map (Id InstrumentProgram) InstrumentProgram))
 
 
+-- TODO: fall back to datasets database
 runDataPrograms
-  :: (Concurrent :> es)
-  => ProgramStore
-  -> Eff (Programs : es) a
+  :: (Datasets :> es, Inversions :> es)
+  => Eff (Programs : es) a
   -> Eff es a
-runDataPrograms (ProgramStore var) = interpret $ \_ -> \case
-  Save prog -> do
-    atomically $ modifyTVar var $ M.insert prog.programId prog
-  Lookup progId -> do
-    M.lookup progId <$> readTVarIO var
-  All -> do
-    M.elems <$> readTVarIO var
-  ByProposal propId -> do
-    filter (\prog -> prog.proposalId == propId) . M.elems <$> readTVarIO var
+runDataPrograms = interpret $ \_ -> \case
   ProposalIds -> do
-    L.nub . fmap (.proposalId) . M.elems <$> readTVarIO var
+    dsets <- send $ Datasets.Distinct Datasets.DistinctProposals
+    pure $ fmap (.primaryProposalId) dsets
+  Lookup progId -> do
+    dsets <- Datasets.findLatest (Datasets.ByProgram progId)
+    case dsets of
+      (d : ds) -> fmap Just <$> loadWithDatasets $ Group (d :| ds)
+      _ -> pure Nothing
+  ByProposal propId -> do
+    dsets <- Datasets.findLatest (Datasets.ByProposal propId)
+    mapM loadWithDatasets $ grouped (.instrumentProgramId) dsets
+ where
+  loadWithDatasets :: (Inversions :> es) => Group (Id InstrumentProgram) Dataset -> Eff es InstrumentProgram
+  loadWithDatasets dsets = do
+    let progId = (sample dsets).instrumentProgramId
+    invs <- send $ Inversions.ByProgramLatest progId
+    pure $ instrumentProgramFrom dsets.items invs
 
 
 initStore :: (Concurrent :> es) => Eff es ProgramStore
@@ -65,19 +72,19 @@ loadProgram :: (Programs :> es) => Id InstrumentProgram -> Eff es (Maybe Instrum
 loadProgram progId = send $ Lookup progId
 
 
-programStatus :: NonEmpty Dataset -> [Inversion] -> ProgramStatus
-programStatus ds [] =
+programStatus :: NonEmpty Dataset -> Maybe Inversion -> ProgramStatus
+programStatus ds Nothing =
   if isQualified ds
     then StatusQualified
     else StatusInvalid
-programStatus _ invs = do
-  StatusInversion $ inversionStatus $ L.maximumBy (comparing (.updated)) invs
+programStatus _ (Just inv) = do
+  StatusInversion $ inversionStatus inv
 
 
-instrumentProgramFrom :: NonEmpty Dataset -> [Inversion] -> InstrumentProgram
-instrumentProgramFrom ds invs =
+instrumentProgramFrom :: NonEmpty Dataset -> Maybe Inversion -> InstrumentProgram
+instrumentProgramFrom ds minv =
   let d = head ds
-      ps = programStatus ds invs
+      ps = programStatus ds minv
    in instrumentProgram d ps
 
 

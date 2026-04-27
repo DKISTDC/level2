@@ -18,9 +18,7 @@ import App.View.DataRow (dataCell, tagCell)
 import App.View.Datasets (boxPlot)
 import App.View.Icons as Icons
 import App.View.Inversion (inversionTag)
-import Data.Grouped
 import Data.List qualified as L
-import Data.List.NonEmpty qualified as NE
 import Data.Text qualified as Text
 import Effectful.Time
 import NSO.Data.Datasets

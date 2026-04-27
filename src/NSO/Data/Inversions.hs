@@ -7,7 +7,6 @@ module NSO.Data.Inversions
   , isError
   , isGenerated
   , isInverted
-  , findByProgram
   , inversionStatus
   , distinctProgramIds
   , loadDistinctProposalIds
@@ -18,7 +17,6 @@ module NSO.Data.Inversions
 
 import Data.List qualified as L
 import Data.Maybe (isJust)
-import Data.Ord (Down (..))
 import Effectful
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Inversions.Commit
@@ -67,13 +65,12 @@ inversionStatus inv
   | otherwise = StepInvert
 
 
-findByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]
-findByProgram ip = do
-  invs <- send $ ByProgram ip
-  pure $ sortOn latest $ filter (\i -> not i.deleted) invs
- where
-  latest = Down . (.updated)
-
+-- findByProgram :: (Inversions :> es) => Id InstrumentProgram -> Eff es [Inversion]
+-- findByProgram ip = do
+--   invs <- send $ ByProgram ip
+--   pure $ sortOn latest $ filter (\i -> not i.deleted) invs
+--  where
+--   latest = Down . (.updated)
 
 distinctProgramIds :: [Inversion] -> [Id InstrumentProgram]
 distinctProgramIds inv =

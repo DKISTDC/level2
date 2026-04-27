@@ -90,20 +90,19 @@ start = do
       props <- initQueueIO
       sync <- initMetadataSync
       bus <- initBus config.amqp
-      progs <- Programs.initStore
       globusAccess <- initGlobusClientAccess
 
       concurrently_
-        (startWebServer config tasks fits pubs sync globusAccess progs)
-        (runWorkers config tasks fits sync metas props bus globusAccess progs $ startWorkers report)
+        (startWebServer config tasks fits pubs sync globusAccess)
+        (runWorkers config tasks fits sync metas props bus globusAccess $ startWorkers report)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
       forever $ do
         PuppetMaster.manageMinions
 
-  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> ProgramStore -> Eff es ()
-  startWebServer config tasks fits pubs sync globusAccess progs =
+  startWebServer :: (IOE :> es, Reader (TMVar LogState) :> es, Concurrent :> es) => Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> ClientAccess -> Eff es ()
+  startWebServer config tasks fits pubs sync globusAccess =
     runLogger "Server" $ do
       rows <- ask
       -- log Debug $ "Starting on :" <> show config.app.port
@@ -118,7 +117,7 @@ start = do
           Static.staticPolicy (addBase "app") $
             javascript $
               addHeaders [("app-version", cs appVersion.value)] $
-                webServer config tasks fits pubs sync rows globusAccess progs
+                webServer config tasks fits pubs sync rows globusAccess
 
   javascript :: Application -> Application
   javascript app req respond = do
@@ -151,7 +150,7 @@ start = do
       . runEnvironment
       . runTime
 
-  runWorkers config tasks fits sync metas props bus globusAccess progs =
+  runWorkers config tasks fits sync metas props bus globusAccess =
     runFileSystem
       . runDebugIO
       . runReader config.scratch
@@ -171,7 +170,7 @@ start = do
       . runInterserviceBus bus
       . runDataDatasets
       . runDataInversions
-      . runDataPrograms progs
+      . runDataPrograms
       . runReportTaskNoop
       . runTasksIO tasks
       . runQueueIO @GenTask fits
@@ -180,8 +179,8 @@ start = do
       . runMetadataSync sync
 
 
-webServer :: Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> ProgramStore -> Application
-webServer config tasks fits pubs sync rows globusAccess progs =
+webServer :: Config -> TaskStore -> QueueChan GenTask -> QueueAMQP PublishTask -> Sync.History -> TMVar LogState -> ClientAccess -> Application
+webServer config tasks fits pubs sync rows globusAccess =
   liveApp
     (document documentHead)
     respond
@@ -247,7 +246,7 @@ webServer config tasks fits pubs sync rows globusAccess progs =
       . runMetadata config.services.metadata
       . runDataDatasets
       . runDataInversions
-      . runDataPrograms progs
+      . runDataPrograms
       . runReportTaskNoop
       . runTasksIO tasks
       . runQueueIO fits

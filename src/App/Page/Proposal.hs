@@ -14,17 +14,14 @@ import App.View.Icons (skeleton)
 import App.View.Layout
 import App.View.ProposalDetails
 import Data.List.NonEmpty qualified as NE
-import Data.Text qualified as T
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
-import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Data.Proposals as Proposals
 import NSO.Files (Ingest, Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.Dataset
 import Web.Atomic.CSS
 import Web.Hyperbole
 

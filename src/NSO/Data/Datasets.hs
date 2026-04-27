@@ -66,8 +66,8 @@ runDataDatasets = interpret $ \_ -> \case
   Ids -> do
     run $ select $ fmap (.datasetId) do
       each datasets
-  Find All _ -> do
-    run $ select $ each datasets
+  Find All r -> do
+    run $ select $ reprocessing r $ each datasets
   Find (ByProposal pid) r -> do
     run $ select $ reprocessing r do
       row <- each datasets
