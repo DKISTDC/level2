@@ -11,18 +11,14 @@ module NSO.Data.Programs
   , initStore
   ) where
 
-import Data.Grouped as G
 import Data.List qualified as L
-import Data.List.NonEmpty qualified as NE
 import Data.Map qualified as M
 import Effectful
 import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import NSO.Data.Datasets (Dataset, Dataset' (..))
-import NSO.Data.Datasets qualified as Datasets
 import NSO.Data.Inversions (Inversion (..), inversionStatus)
-import NSO.Data.Inversions qualified as Inversions
 import NSO.Data.Qualify
 import NSO.Prelude
 import NSO.Types.Common
@@ -99,8 +95,6 @@ instrumentProgram d ps =
     , embargo = d.embargo
     , status = ps
     }
-
-
 
 -- loadProgram :: (Datasets :> es, Inversions :> es) => Id InstrumentProgram -> Eff es [ProgramFamily]
 -- loadProgram progId = do

@@ -16,7 +16,6 @@ import App.View.Icons qualified as Icons
 import App.View.Inversion (rowInversion)
 import App.View.Layout
 import App.View.ProposalDetails
-import Data.Grouped (Group (..), sample)
 import Data.List.NonEmpty qualified as NE
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -61,7 +60,7 @@ page propId progId = do
       col ~ Style.card $ do
         el ~ Style.cardHeader Secondary $ text "Program"
         hyper (ProgramDetails propId progId) $ viewProgramDetails prog ds now
-        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList ds) Latest ProductId
+        hyper (ProgramDatasets propId progId) ~ pad 15 $ viewDatasets l1 (NE.toList ds) Latest ProductId
 
       col ~ gap 10 $ do
         el ~ bold $ "Experiment"
@@ -134,7 +133,7 @@ instance (Inversions :> es, Auth :> es) => HyperView ProgramInversions es where
 
 
 viewProgramInversions :: InstrumentProgram -> NonEmpty Dataset -> [Inversion] -> View ProgramInversions ()
-viewProgramInversions prog ds invs =
+viewProgramInversions _prog ds invs =
   case invs of
     (_ : _) -> viewInversions
     [] -> firstInversion
@@ -231,7 +230,7 @@ instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :
 
 viewDatasets :: Remote Level1 -> [Dataset] -> Reprocessing -> SortField -> View ProgramDatasets ()
 viewDatasets l1 ds r srt = do
-  col ~ gap 15 . pad 15 $ do
+  col ~ gap 15 $ do
     DatasetsTable.datasetsTable l1 (SortDatasets r) srt ds
     case r of
       Complete -> button (SortDatasets Latest srt) ~ Style.link $ "Hide Reprocessed Datasets"
