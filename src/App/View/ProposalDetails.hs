@@ -70,7 +70,7 @@ viewProgramStats now prog = viewDataRow $ do
   row ~ dataCell . gap 5 . fontSize 14 $ do
     maybe none embargoTag prog.embargo
 
-    let known = L.sortOn (.ion) $ filter isKnownIon prog.spectralLines
+    let known = L.nubBy isSameIon $ L.sortOn (.ion) $ filter isKnownIon prog.spectralLines
     let unknown = filter (not . isKnownIon) prog.spectralLines
     mapM_ lineTag known
     mapM_ lineTag unknown
@@ -85,6 +85,9 @@ viewProgramStats now prog = viewDataRow $ do
       Ion _ -> True
       UnknownIon -> False
       _ -> True
+
+  isSameIon :: SpectralLine -> SpectralLine -> Bool
+  isSameIon s1 s2 = s1.ion == s2.ion
 
   cellData :: (Styleable h) => CSS h -> CSS h
   cellData = fontSize 14 . pad 2
