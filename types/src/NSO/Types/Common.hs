@@ -105,7 +105,7 @@ data Instrument
   | VISP
   | CRYO_NIRSP
   | DL_NIRSP
-  deriving (Show, Read, Ord, Eq, Generic, ToParam, FromParam)
+  deriving (Show, Read, Ord, Eq, Generic, ToJSON, FromJSON)
   deriving (DBType) via ReadShow Instrument
 
 

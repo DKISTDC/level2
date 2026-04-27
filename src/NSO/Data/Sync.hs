@@ -20,11 +20,16 @@ import Effectful.Log
 import Effectful.Time
 import NSO.Data.Datasets (Datasets)
 import NSO.Data.Datasets qualified as Datasets
+import NSO.Data.Inversions (Inversions)
+import NSO.Data.Inversions qualified as Inversions
+import NSO.Data.Programs (Programs)
+import NSO.Data.Programs qualified as Programs
 import NSO.Image.Blanca qualified as Blanca
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Dataset
+import NSO.Types.InstrumentProgram
 import NSO.Types.Proposal
 import NSO.Types.Wavelength
 
@@ -191,15 +196,29 @@ sync old d = fromMaybe New $ do
 
 -- Perform Sync -------------------------------------------------------------------------------------------------------------------
 
-execSync :: (Log :> es, Datasets :> es) => [SyncDataset] -> Eff es ()
-execSync sds = do
+execSync :: (Log :> es, Datasets :> es, Programs :> es, Inversions :> es) => Id Proposal -> [SyncDataset] -> Eff es ()
+execSync propId sds = do
   -- replace all the datasets!
   let new = fmap (.item) $ filter (\s -> s.sync == New) sds
   let ups = fmap (.item) $ filter (\s -> s.sync == Update) sds
   logStatus $ " new: " <> show (length new) <> ", update: " <> show (length ups)
   send $ Datasets.Create new
-
   mapM_ (send . Datasets.Save) ups
+
+  latest <- Datasets.findLatest (Datasets.ByProposal propId)
+
+  let gs = grouped (.instrumentProgramId) latest
+  progs <- mapM generateInstrumentProgram gs
+  mapM_ (send . Programs.Save) progs
+
+
+-- send $ Programs.Save prog
+
+generateInstrumentProgram :: (Inversions :> es) => Group (Id InstrumentProgram) Dataset -> Eff es InstrumentProgram
+generateInstrumentProgram dsets = do
+  let progId = (sample dsets).instrumentProgramId
+  invs <- send $ Inversions.ByProgram progId
+  pure $ Programs.instrumentProgramFrom dsets.items invs
 
 
 -- Sync Dataset --------------------------------------------------------------

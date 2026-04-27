@@ -95,7 +95,7 @@ start = do
 
       concurrently_
         (startWebServer config tasks fits pubs sync globusAccess progs)
-        (runWorkers config tasks fits sync metas props bus globusAccess $ startWorkers report)
+        (runWorkers config tasks fits sync metas props bus globusAccess progs $ startWorkers report)
  where
   startPuppetMaster =
     runLogger "Puppet" $ do
@@ -151,7 +151,7 @@ start = do
       . runEnvironment
       . runTime
 
-  runWorkers config tasks fits sync metas props bus globusAccess =
+  runWorkers config tasks fits sync metas props bus globusAccess progs =
     runFileSystem
       . runDebugIO
       . runReader config.scratch
@@ -169,8 +169,9 @@ start = do
       . runMetadata config.services.metadata
       . runGenRandom
       . runInterserviceBus bus
-      . runDataInversions
       . runDataDatasets
+      . runDataInversions
+      . runDataPrograms progs
       . runReportTaskNoop
       . runTasksIO tasks
       . runQueueIO @GenTask fits

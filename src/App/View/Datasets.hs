@@ -37,7 +37,7 @@ data SortField
   | Stokes
   | WaveMin
   | WaveMax
-  deriving (Show, Read, Generic, ToParam, FromParam)
+  deriving (Show, Read, Generic, ToJSON, FromJSON)
 
 
 datasetsTable :: forall id. (ViewAction (Action id)) => Remote Level1 -> (SortField -> Action id) -> SortField -> [Dataset] -> View id ()
