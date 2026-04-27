@@ -61,7 +61,7 @@ page propId progId = do
       col ~ Style.card $ do
         el ~ Style.cardHeader Secondary $ text "Program"
         hyper (ProgramDetails propId progId) $ viewProgramDetails prog ds now
-        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList ds) ProductId
+        hyper (ProgramDatasets propId progId) $ viewDatasets l1 (NE.toList ds) Latest ProductId
 
       col ~ gap 10 $ do
         el ~ bold $ "Experiment"
@@ -218,18 +218,21 @@ data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
 
 instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es, Transfer Level1 Ingest :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
-    = SortDatasets SortField
+    = SortDatasets Reprocessing SortField
     deriving (Generic, ViewAction)
 
 
-  update (SortDatasets srt) = do
+  update (SortDatasets r srt) = do
     ProgramDatasets _ progId <- viewId
-    ds <- Datasets.findLatest (Datasets.ByProgram progId)
+    ds <- send $ Datasets.Find (Datasets.ByProgram progId) r
     l1 <- send (RemoteSource @Level1 @Ingest)
-    pure $ viewDatasets l1 ds srt
+    pure $ viewDatasets l1 ds r srt
 
 
-viewDatasets :: Remote Level1 -> [Dataset] -> SortField -> View ProgramDatasets ()
-viewDatasets l1 ds srt = do
+viewDatasets :: Remote Level1 -> [Dataset] -> Reprocessing -> SortField -> View ProgramDatasets ()
+viewDatasets l1 ds r srt = do
   col ~ gap 15 . pad 15 $ do
-    DatasetsTable.datasetsTable l1 SortDatasets srt ds
+    DatasetsTable.datasetsTable l1 (SortDatasets r) srt ds
+    case r of
+      Complete -> button (SortDatasets Latest srt) ~ Style.link $ "Hide Reprocessed Datasets"
+      Latest -> button (SortDatasets Complete ProductId) ~ Style.link $ "Show Reprocessed Datasets"

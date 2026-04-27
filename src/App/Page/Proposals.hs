@@ -19,13 +19,11 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Log
 import Effectful.Time
-import NSO.Data.Datasets as Datasets
+import NSO.Data.Datasets as Datasets hiding (Reprocessing (Complete))
 import NSO.Data.Programs as Programs
 import NSO.Data.Proposals as Proposals
 import NSO.Prelude
 import NSO.Types.Common
-import NSO.Types.InstrumentProgram
-import NSO.Types.Proposal
 import NSO.Types.Status
 import Web.Atomic.CSS
 import Web.Hyperbole as H hiding (content)

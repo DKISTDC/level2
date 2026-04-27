@@ -4,7 +4,7 @@ packages:
   ./types/
   ../globus.hs/
   -- ../telescope.hs/
-  ../hyperbole/
+  -- ../hyperbole/
   -- ../atomic-css/
   -- ../globus.hs
   -- ../amqp-worker/
@@ -28,10 +28,10 @@ source-repository-package
 
 
 
---source-repository-package
--- type: git
--- location: https://github.com/seanhess/hyperbole
--- tag: bb498f3a9911cb5642225521a8dab608e7c61f8a
+source-repository-package
+ type: git
+ location: https://github.com/seanhess/hyperbole
+ tag: d1ea5d43346fc447ae09a55eee9cc5c31d65f208
 
 -- source-repository-package
 --   type: git

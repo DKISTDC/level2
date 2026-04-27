@@ -4,6 +4,7 @@ module NSO.Data.Datasets
   ( Datasets (..)
   , Filter (..)
   , DistinctBy (..)
+  , Reprocessing (..)
   , findLatest
   , findAll
   , findIds
@@ -23,6 +24,7 @@ import NSO.Types.Dataset
 import NSO.Types.InstrumentProgram
 import NSO.Types.Proposal
 import Rel8 (Order, asc, distinctOnBy)
+import Web.Hyperbole.Data.Param (FromParam, ToParam)
 
 
 -- Put all the operations here?
@@ -40,6 +42,7 @@ type instance DispatchOf Datasets = 'Dynamic
 data Reprocessing
   = Latest
   | Complete
+  deriving (Generic, ToParam, FromParam)
 
 
 data DistinctBy
@@ -66,16 +69,16 @@ runDataDatasets = interpret $ \_ -> \case
   Find All _ -> do
     run $ select $ each datasets
   Find (ByProposal pid) r -> do
-    run $ select $ distinctProducts do
+    run $ select $ reprocessing r do
       row <- each datasets
       where_ (row.primaryProposalId ==. lit pid)
       return row
   Find (ByProgram pid) r -> do
-    run $ select $ distinctProducts do
+    run $ select $ reprocessing r do
       row <- each datasets
       where_ (row.instrumentProgramId ==. lit pid)
       return row
-  Find (ByIds dids) r -> do
+  Find (ByIds dids) _ -> do
     run $ select $ do
       row <- each datasets
       where_ (row.datasetId `in_` fmap lit dids)
@@ -96,6 +99,10 @@ runDataDatasets = interpret $ \_ -> \case
   Create ds -> insertAll ds
   Save ds -> updateDataset ds
  where
+  reprocessing :: Reprocessing -> Query (Dataset' Expr) -> Query (Dataset' Expr)
+  reprocessing Latest = distinctProducts
+  reprocessing Complete = id
+
   distinctProducts :: Query (Dataset' Expr) -> Query (Dataset' Expr)
   distinctProducts = do
     distinctOnBy (.productId) orderByCreateDate
