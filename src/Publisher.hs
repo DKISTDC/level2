@@ -80,10 +80,10 @@ start = do
     mesh <- Config.initMesh
     services <- Config.initServices mesh
     amqp <- initAMQPConnection services.interserviceBus
-    pubs <- initQueueAMQP publishKey amqp
-    bus <- ISB.initBus amqp
+    pubs <- initQueueAMQP services.interserviceBus amqp publishKey
+    bus <- ISB.initBus services.interserviceBus amqp
 
-    report <- initReportQueue amqp
+    report <- initReportQueue services.interserviceBus amqp
 
     runGlobus globus mgr $ do
       access <- initGlobusClientAccess

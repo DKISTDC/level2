@@ -41,6 +41,7 @@ import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
 import Network.AMQP.Config (AMQPConfig (..), initAMQPConfig, initAMQPConnection)
+import Network.AMQP.Config qualified as AMQP
 import Network.AMQP.Worker.Connection qualified as AMQP
 import Network.Endpoint (Endpoint (..), EndpointAuth (..), toURI)
 import Network.HTTP.Client qualified as Http
@@ -144,7 +145,8 @@ initServices mesh = do
   isbService :: (Environment :> es) => Endpoint -> Eff es AMQPConfig
   isbService endpoint = do
     exg <- requireEnv "ISB_EXCHANGE"
-    initAMQPConfig endpoint exg
+    qt <- AMQP.queueType =<< requireEnv "ISB_QUEUE_TYPE"
+    initAMQPConfig endpoint exg qt
 
   parseService :: (MonadFail m) => Endpoint -> m Service
   parseService e =

@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE OverloadedLists #-}
 
 module Effectful.Tasks
   ( -- * Queue
@@ -66,13 +65,11 @@ import Effectful.Tasks.Memory (Task' (..), TaskId (..), TaskStatus (..), TaskSto
 import Effectful.Tasks.Memory qualified as TaskStore
 import Effectful.Tasks.WorkerTask
 import NSO.Prelude
-import Network.AMQP (ExchangeOpts (..), QueueOpts (..), newExchange, newQueue)
-import Network.AMQP.Types (FieldTable (..), FieldValue (..))
+import Network.AMQP.Config (AMQPConfig (..), bindAMQPQueue)
 import Network.AMQP.Worker (Key, Message (..), Route)
 import Network.AMQP.Worker qualified as AMQP
 import Network.AMQP.Worker.Connection as AMQP (Connection (..))
-import Network.AMQP.Worker.Key (keyText, toBindKey)
-import Network.AMQP.Worker.Queue qualified as AMQP
+import Network.AMQP.Worker.Key (keyText)
 
 
 data Queue t :: Effect where
@@ -259,14 +256,10 @@ data QueueAMQP t = QueueAMQP
   }
 
 
-initQueueAMQP :: (IOE :> es) => Key Route t -> AMQP.Connection -> Eff es (QueueAMQP t)
-initQueueAMQP k c = do
-  let args = FieldTable [("x-queue-type", FVString "quorum")]
-  let qopts = newQueue{queueName = taskQueueName, queueHeaders = args}
-  let eopts = newExchange{exchangeName = exchange c, exchangeType = "topic"}
-  AMQP.bindQueue' c eopts qopts k (FieldTable mempty)
-  let q = AMQP.Queue (toBindKey k) qopts.queueName
-  pure $ QueueAMQP{connection = c, queue = q, key = k}
+initQueueAMQP :: (IOE :> es) => AMQPConfig -> AMQP.Connection -> Key Route t -> Eff es (QueueAMQP t)
+initQueueAMQP cfg conn k = do
+  q <- bindAMQPQueue conn cfg.exchangeName taskQueueName cfg.queueType k
+  pure $ QueueAMQP{connection = conn, queue = q, key = k}
  where
   -- we use a format like catalog.messages.m, name the queue the same, but with .q
   taskQueueName = T.replace ".m" ".q" $ keyText k

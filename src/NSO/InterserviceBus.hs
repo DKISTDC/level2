@@ -19,6 +19,7 @@ import NSO.Types.Common
 import NSO.Types.Dataset
 import NSO.Types.Inversion
 import NSO.Types.Proposal
+import Network.AMQP.Config (AMQPConfig (..), bindAMQPQueue)
 import Network.AMQP.Worker (Key, Route, key, word)
 import Network.AMQP.Worker qualified as Worker
 import Network.AMQP.Worker.Connection (Connection (..))
@@ -78,12 +79,12 @@ data BusConnection = BusConnection
   }
 
 
-initBus :: (IOE :> es) => Connection -> Eff es BusConnection
-initBus cnn = do
+initBus :: (IOE :> es) => AMQPConfig -> Connection -> Eff es BusConnection
+initBus cfg cnn = do
   let catalogFrame = key "catalog" & word "frame" & word "m"
   let catalogObject = key "catalog" & word "object" & word "m"
-  _ <- Worker.queueNamed cnn "catalog.frame.q" catalogFrame
-  _ <- Worker.queueNamed cnn "catalog.object.q" catalogObject
+  _ <- bindAMQPQueue cnn cfg.exchangeName "catalog.frame.q" cfg.queueType catalogFrame
+  _ <- bindAMQPQueue cnn cfg.exchangeName "catalog.object.q" cfg.queueType catalogObject
   pure $
     BusConnection{connection = cnn, catalogFrame, catalogObject}
 

@@ -80,16 +80,17 @@ start = do
   runInit $ do
     log Info "NSO Level 2a"
     config <- initConfig
+    log Debug $ dump "GOT CONFIG" config.services.interserviceBus
 
     runGlobus config.globus config.manager $ do
       tasks <- initTaskStore
-      report <- initReportQueue config.amqp
+      report <- initReportQueue config.services.interserviceBus config.amqp
       fits <- initQueueIO
-      pubs <- initQueueAMQP publishKey config.amqp
+      pubs <- initQueueAMQP config.services.interserviceBus config.amqp publishKey
       metas <- initQueueIO
       props <- initQueueIO
       sync <- initMetadataSync
-      bus <- initBus config.amqp
+      bus <- initBus config.services.interserviceBus config.amqp
       globusAccess <- initGlobusClientAccess
 
       concurrently_

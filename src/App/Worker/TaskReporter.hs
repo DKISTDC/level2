@@ -7,6 +7,7 @@ module App.Worker.TaskReporter
 import Effectful
 import Effectful.Tasks
 import NSO.Prelude
+import Network.AMQP.Config (AMQPConfig)
 import Network.AMQP.Worker (Connection, Key, Route, key, word)
 
 
@@ -14,5 +15,5 @@ reportTaskKey :: Key Route ReportedTask
 reportTaskKey = key "status" & word "level2" & word "m"
 
 
-initReportQueue :: (IOE :> es) => Connection -> Eff es (QueueAMQP ReportedTask)
-initReportQueue = initQueueAMQP reportTaskKey
+initReportQueue :: (IOE :> es) => AMQPConfig -> Connection -> Eff es (QueueAMQP ReportedTask)
+initReportQueue cfg conn = initQueueAMQP cfg conn reportTaskKey
