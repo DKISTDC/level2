@@ -185,7 +185,7 @@ viewFilters fs = do
       View.toggleBtn (FilterInstrument VISP) fs.visp.value "VISP"
       View.toggleBtn (FilterInstrument VBI) fs.vbi "VBI"
       View.toggleBtn (FilterInstrument CRYO_NIRSP) fs.cryo "Cryo-NIRSP"
-      View.toggleBtn (FilterInstrument DL_NIRSP) fs.cryo "DL-NIRSP"
+      View.toggleBtn (FilterInstrument DL_NIRSP) fs.dl "DL-NIRSP"
 
   col ~ gap 10 $ do
     el ~ bold $ "Status"

@@ -5,10 +5,10 @@ window.onload = function() {
   document.addEventListener("proposal-filters", (event) => {
     console.log("FILTER CHANGE")
     for (let view of allProposals()) {
-        loadProposalDetails(view)
+      loadProposalDetails(view)
     }
   })
-  
+
   // const observer = new IntersectionObserver(entries => {
   //   for (const entry of entries) {
   //     console.log("Interaction", entry)
@@ -38,6 +38,6 @@ function loadProposalDetails(view) {
   console.log('LOAD', view.id);
   view.dataset.loaded = true
   let hyperView = Hyperbole.hyperView(view.id)
-  let action = Hyperbole.action("ProposalDetails")
+  let action = Hyperbole.action("LoadProposalDetails")
   hyperView.runAction(action)
 }

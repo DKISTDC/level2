@@ -61,7 +61,7 @@ dependencies:
   - http-client
   - http-client-tls
   - http-types
-  - hyperbole == 0.6.0
+  - hyperbole == 0.6.1
   - lens
   - massiv
   - megaparsec

@@ -161,7 +161,7 @@ library
     , http-client
     , http-client-tls
     , http-types
-    , hyperbole ==0.6.0
+    , hyperbole ==0.6.1
     , lens
     , massiv
     , megaparsec
@@ -230,7 +230,7 @@ executable level2
     , http-client
     , http-client-tls
     , http-types
-    , hyperbole ==0.6.0
+    , hyperbole ==0.6.1
     , lens
     , massiv
     , megaparsec
@@ -312,7 +312,7 @@ test-suite spec
     , http-client
     , http-client-tls
     , http-types
-    , hyperbole ==0.6.0
+    , hyperbole ==0.6.1
     , lens
     , massiv
     , megaparsec
