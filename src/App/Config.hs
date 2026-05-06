@@ -10,15 +10,14 @@ module App.Config
   , initRemotes
   , initMesh
   , App (..)
-  , AuthConfig (..)
+  , DevConfig (..)
   , Tagged (..)
   , AppDomain
   , documentHead
   ) where
 
 import App.Config.MeshConfig
-import App.Effect.Auth (AuthConfig (..))
-import App.Effect.GlobusAccess (dummyUser)
+import App.Effect.GlobusAccess (ClientAccess (..), dummyUser)
 import App.Types
 import App.Version
 import App.Worker.CPU
@@ -40,6 +39,7 @@ import NSO.Files.Scratch qualified as Scratch
 import NSO.Metadata
 import NSO.Prelude
 import NSO.Types.Common
+import NSO.Types.User (User (..))
 import Network.AMQP.Config (AMQPConfig (..), initAMQPConfig, initAMQPConnection)
 import Network.AMQP.Config qualified as AMQP
 import Network.AMQP.Worker.Connection qualified as AMQP
@@ -55,7 +55,7 @@ data Config = Config
   , app :: App
   , globus :: GlobusClient
   , scratch :: Scratch.Scratches
-  , auth :: AuthConfig
+  , dev :: DevConfig
   , db :: Rel8.Connection
   , cpuWorkers :: CPUWorkers
   , manager :: Http.Manager
@@ -71,6 +71,12 @@ data Services = Services
   }
 
 
+data DevConfig = DevConfig
+  { dummyUser :: Maybe User
+  , dummyGlobus :: Maybe String
+  }
+
+
 initConfig :: (Log :> es, Environment :> es, Fail :> es, Time :> es, IOE :> es, Error Rel8Error :> es, Concurrent :> es) => Eff es Config
 initConfig = do
   app <- initApp
@@ -81,7 +87,7 @@ initConfig = do
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
   cpus <- initCPUWorkers
   (level1, publish) <- initRemotes
-  auth <- initAuth
+  dev <- initOfflineDev
 
   -- DKIST Services
   mesh <- initMesh
@@ -93,7 +99,7 @@ initConfig = do
   log Debug $ dump "AppVersion" appVersion.value
   log Debug $ dump "GitVersion" gitVersion.value
 
-  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp, auth}
+  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp, dev}
 
 
 initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
@@ -155,11 +161,12 @@ initServices mesh = do
       Just s -> pure s
 
 
-initAuth :: (Environment :> es, Time :> es) => Eff es AuthConfig
-initAuth = do
-  me <- lookupEnv "AUTH_DUMMY"
+initOfflineDev :: (Environment :> es, Time :> es) => Eff es DevConfig
+initOfflineDev = do
+  me <- lookupEnv "OFFLINE_DEV_AUTH"
+  mg <- lookupEnv "OFFLINE_DEV_GLOBUS_CLIENT"
   du <- maybe (pure Nothing) (fmap Just . dummyUser) me
-  pure $ AuthConfig du
+  pure $ DevConfig du mg
 
 
 initCPUWorkers :: (Concurrent :> es, Environment :> es, Fail :> es, Log :> es) => Eff es CPUWorkers

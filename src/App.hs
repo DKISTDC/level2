@@ -91,7 +91,7 @@ start = do
       props <- initQueueIO
       sync <- initMetadataSync
       bus <- initBus config.services.interserviceBus config.amqp
-      globusAccess <- initGlobusClientAccess
+      globusAccess <- maybe initGlobusClientAccess (const initDummyClientAccess) config.dev.dummyGlobus
 
       concurrently_
         (startWebServer config tasks fits pubs sync globusAccess)
@@ -215,7 +215,7 @@ webServer config tasks fits pubs sync rows globusAccess =
         -- otherwise, check login status and redirect to the auth page
         _ -> do
           us <- Auth.lookupUser
-          case us.user <|> config.auth.dummy of
+          case us.user <|> config.dev.dummyUser of
             (Just u) -> runApp u . routeRequest $ router
             _ -> runPage Auth.page
 

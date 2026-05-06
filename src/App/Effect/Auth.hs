@@ -125,11 +125,6 @@ clearUser :: (Hyperbole :> es) => Eff es ()
 clearUser = deleteSession @UserSession
 
 
-data AuthConfig = AuthConfig
-  { dummy :: Maybe User
-  }
-
-
 -- waitForAdmin :: (Auth :> es) => Eff (Reader (Token Access) : es) a -> Eff es a
 -- waitForAdmin eff = do
 --   acc <- send AdminTokenWait
