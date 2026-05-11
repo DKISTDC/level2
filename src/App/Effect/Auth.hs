@@ -3,6 +3,7 @@
 
 module App.Effect.Auth where
 
+import App.Effect.Auth.Globus (UserLoginInfo (..))
 import App.Effect.FileManager (FileLimit (..), fileManagerSelectUrl)
 import App.Types
 import Data.Aeson (FromJSON (..), withText)
@@ -14,6 +15,7 @@ import Effectful.Log as Log
 import Effectful.Reader.Dynamic
 import NSO.Prelude
 import NSO.Types.User (User (..))
+import Network.Globus (UserEmail (..))
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI
 
@@ -172,3 +174,11 @@ openFileManager files lbl submitUrl = do
   cancelUrl <- currentUrl
   app <- ask @App
   redirect $ fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl
+
+
+userFromLoginInfo :: UserLoginInfo -> Maybe User
+userFromLoginInfo ui = do
+  e <- ui.email
+  pure $ User e ui.transfer (isHardCodedAdmin e)
+ where
+  isHardCodedAdmin e = e == UserEmail "shess@nso.edu"

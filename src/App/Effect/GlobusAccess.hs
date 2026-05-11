@@ -134,6 +134,6 @@ dummyAccess = do
 dummyUser :: (Time :> es) => String -> Eff es User
 dummyUser e = do
   acc <- dummyAccess
-  pure $ User{email = UserEmail (cs e), access = acc}
+  pure $ User{email = UserEmail (cs e), access = acc, isAdmin = True}
 
 -- helpers ------------------------------------------------------

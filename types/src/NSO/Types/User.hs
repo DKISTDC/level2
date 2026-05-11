@@ -10,8 +10,9 @@ import Web.Hyperbole.Data.Param
 data User = User
   { email :: UserEmail
   , access :: CurrentAccess
+  , isAdmin :: Bool
   }
-  deriving (ToJSON, FromJSON, Generic, FromParam, ToParam)
+  deriving (ToJSON, FromJSON, Generic, FromParam, ToParam, Show)
 
 
 data CurrentAccess = CurrentAccess

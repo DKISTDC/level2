@@ -20,6 +20,7 @@ import Effectful.Log
 import Effectful.Tasks
 import NSO.Data.Datasets
 import NSO.Prelude
+import NSO.Types.User (User (..))
 import Network.Globus (Token, Token' (Access))
 import Web.Atomic.CSS
 import Web.Hyperbole
@@ -30,10 +31,11 @@ page
   => Page es '[Work]
 page = do
   -- login <- loginUrl
-  appLayout Dashboard mainView
+  u <- send GetUser
+  appLayout Dashboard $ mainView u
  where
-  mainView :: View (Root '[Work]) ()
-  mainView = do
+  mainView :: User -> View (Root '[Work]) ()
+  mainView u = do
     col ~ pad 20 . gap 20 $ do
       col $ do
         el ~ fontSize 24 . bold $ "Level 2"
@@ -41,7 +43,8 @@ page = do
         link gitVersionURI ~ Style.link $ text gitVersion.value
 
       col $ do
-        el ~ bold . fontSize 18 $ "Admin"
+        el ~ bold . fontSize 18 $ "User"
+        el $ text $ cs $ show u
 
       -- hyper Test testView
       hyper Work $ el "TODO"

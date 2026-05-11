@@ -5,7 +5,7 @@ module App.Page.Auth where
 import App.Colors
 import App.Config
 import App.Effect.Auth
-import App.Effect.Auth.Globus (UserLoginInfo (..), globusAuthWithCode, loginUrl)
+import App.Effect.Auth.Globus (globusAuthWithCode, loginUrl)
 import App.Route
 import App.Style qualified as Style
 import App.View.Icons as Icons
@@ -14,7 +14,6 @@ import Effectful.Log
 import Effectful.Reader.Dynamic
 import Effectful.Time
 import NSO.Prelude
-import NSO.Types.User (User (..))
 import Web.Atomic.CSS
 import Web.Hyperbole
 import Web.Hyperbole.Data.URI (pathUri)
@@ -90,12 +89,7 @@ instance (Log :> es, Reader App :> es, Globus :> es, Time :> es) => HyperView Au
   update (LazyAuth authCode) = do
     app <- ask @App
     u <- globusAuthWithCode app.domain Login authCode
-    us <- userSession u
+    us <- maybe (respondError "User login missing email") pure $ userFromLoginInfo u
     saveUser us
     url <- redirectTo
     redirect url
-   where
-    userSession ui =
-      case ui.email of
-        Nothing -> respondError "User login missing email"
-        Just e -> pure $ User e ui.transfer

@@ -40,6 +40,7 @@ import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.InstrumentProgram
 import NSO.Types.Proposal
+import NSO.Types.User (User (..))
 import NSO.Types.Wavelength (SpectralLine (..))
 import Numeric (showFFloat)
 import Web.Atomic.CSS
@@ -58,6 +59,7 @@ page propId invId = do
   pub <- taskLookup $ PublishTask propId invId
   scratch :: Remote Output <- send (RemoteSource @Output @Publish)
   publish :: Remote Publish <- send (RemoteDest @Output @Publish)
+  u <- send GetUser
   appLayout Inversions $ do
     col ~ Style.page $ do
       col ~ gap 5 $ do
@@ -75,7 +77,7 @@ page propId invId = do
           appRoute (Route.Proposal inv.proposalId PropRoot) ~ Style.link $ do
             text inv.proposalId.fromId
 
-      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion publish scratch inv ds pub
+      hyper (InversionStatus inv.proposalId inv.programId inv.inversionId) $ viewInversion u publish scratch inv ds pub
       hyper (MoreInversions inv.proposalId inv.programId) viewMoreInversions
 
 
@@ -157,16 +159,17 @@ instance (Tasks :> es, Inversions :> es, Transfer Output Publish :> es, GlobusAc
    where
     refresh = do
       InversionStatus propId progId invId <- viewId
+      u <- send GetUser
       ds <- loadDatasets progId
       inv <- loadInversion invId
       publish <- send (RemoteDest @Output @Publish)
       scratch <- send (RemoteSource @Output @Publish)
       pub <- taskLookup $ PublishTask propId invId
-      pure $ viewInversion publish scratch inv ds pub
+      pure $ viewInversion u publish scratch inv ds pub
 
 
-viewInversion :: Remote Publish -> Remote Output -> Inversion -> NonEmpty Dataset -> Maybe (Task PublishTask) -> View InversionStatus ()
-viewInversion publish scratch inv ds pub = do
+viewInversion :: User -> Remote Publish -> Remote Output -> Inversion -> NonEmpty Dataset -> Maybe (Task PublishTask) -> View InversionStatus ()
+viewInversion u publish scratch inv ds pub = do
   col ~ gap 30 $ do
     if inv.deleted
       then restoreButton
@@ -185,7 +188,7 @@ viewInversion publish scratch inv ds pub = do
 
         hyper (PublishStep (head ds).bucket inv.proposalId inv.programId inv.inversionId) $
           viewPublishStep inv $ do
-            viewPublish publish (head ds).bucket inv pub
+            viewPublish u publish (head ds).bucket inv pub
 
         hyper (InversionMeta inv.proposalId inv.programId inv.inversionId) $ viewInversionMeta inv
  where
@@ -520,7 +523,7 @@ data PublishStep = PublishStep Bucket (Id Proposal) (Id InstrumentProgram) (Id I
 
 
 -- it can't turn green when it succeeds, because  it is outside of this view
-instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Queue PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
+instance (Auth :> es, Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess Publish :> es, Time :> es, Queue PublishTask :> es, Log :> es, Transfer Output Publish :> es) => HyperView PublishStep es where
   data Action PublishStep
     = StartPublish
     | WatchPublish
@@ -547,10 +550,11 @@ instance (Tasks :> es, Inversions :> es, GlobusAccess Output :> es, GlobusAccess
    where
     loadPublish = do
       PublishStep bucket _ _ invId <- viewId
+      u <- send GetUser
       publish <- send (RemoteDest @Output @Publish)
       inv <- loadInversion invId
       log Debug $ dump "PUBLISH.INV" inv.generate
-      pure $ viewPublishStep inv $ viewPublish publish bucket inv Nothing
+      pure $ viewPublishStep inv $ viewPublish u publish bucket inv Nothing
 
     onPublishStatus = publishStatus >=> pushUpdate
 
@@ -579,8 +583,8 @@ viewPublishStep :: Inversion -> View PublishStep () -> View PublishStep ()
 viewPublishStep inv = stepPublish (publishStep inv)
 
 
-viewPublish :: Remote Publish -> Bucket -> Inversion -> Maybe (Task PublishTask) -> View PublishStep ()
-viewPublish pub bucket inv mtask
+viewPublish :: User -> Remote Publish -> Bucket -> Inversion -> Maybe (Task PublishTask) -> View PublishStep ()
+viewPublish u pub bucket inv mtask
   | isPublished inv = viewPublished
   | Just _ <- generated inv = viewPublishing
   | otherwise = none
@@ -592,7 +596,13 @@ viewPublish pub bucket inv mtask
       Just ps -> viewStartWatchPublish ps
 
   viewNeedsPublish =
-    button StartPublish ~ Style.btn Primary . grow $ "Publish Inversion "
+    if u.isAdmin
+      then publishButton
+      else do
+        publishButton ~ disabled
+        el ~ italic $ "Please contact an admin to publish"
+
+  publishButton = button StartPublish ~ Style.btn Primary . grow $ "Publish Inversion"
 
   viewPublishError :: Text -> View PublishStep ()
   viewPublishError e = do
