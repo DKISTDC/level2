@@ -5,6 +5,8 @@ module App.Effect.Transfer where
 import App.Effect.Auth (Auth)
 import App.Effect.GlobusAccess
 import Control.Monad.Loops (untilM_)
+import Data.Either (lefts)
+import Data.List qualified as L
 import Data.Tagged
 import Data.Text qualified as T
 import Effectful
@@ -28,6 +30,7 @@ import NSO.Types.Dataset
 import NSO.Types.Inversion (Inversion)
 import NSO.Types.Proposal (Proposal)
 import NSO.Types.User (CurrentAccess (..))
+import System.FileCopy (copyRecursive)
 
 
 -- 1. User -> Scratch Workspace (Ingest)
@@ -74,6 +77,65 @@ runTransferSkip source dest = interpret $ \_ -> \case
   TransferFiles _lbl _files -> pure (Id "fake")
   TransferStatus tid -> pure $ fakeLocalTask tid
 
+
+-- we KNOW that this transfer is local
+-- User -> Ingest
+-- Output -> Publish (behaves differently!)
+runTransferLocalDebug
+  :: forall src dest a es
+   . ( Globus :> es
+     , GlobusAccess src :> es
+     , GlobusAccess dest :> es
+     , Scratch Ingest :> es
+     , IOE :> es
+     , Log :> es
+     )
+  => Remote src
+  -> Remote dest
+  -> Eff (Transfer src dest : es) a
+  -> Eff es a
+runTransferLocalDebug source dest = interpret $ \_ -> \case
+  RemoteSource -> pure source
+  RemoteDest -> pure dest
+  TransferStatus tid -> pure $ fakeLocalTask tid
+  TransferFiles _lbl files -> transferLocalScratch $ fmap (transferItem source dest) files
+   where
+    transferLocalScratch :: (Log :> es, Scratch Ingest :> es, IOE :> es) => [TransferItem] -> Eff es (Id Task)
+    transferLocalScratch tfers = do
+      log Debug "TRANSFER LOCAL SCRATCH"
+      log Debug $ dump " source: " source
+      log Debug $ dump " dest: " dest
+      res <- forM tfers $ \t -> do
+        -- log Debug $ "  xfer1: " <> t.source_path <> " " <> t.destination_path
+        -- WARNING: this works differently for User -> Ingest and Output -> Publish
+        -- the latter needs to get a correct local path?
+        -- test it
+        -- src <- localSource source t.source_path
+        let src = t.source_path
+        dst <- localSource dest t.destination_path
+        log Debug $ "  xfer: " <> src <> " " <> dst
+        copyRecursive src dst
+      case lefts res of
+        [] -> pure ()
+        (l : _) -> throwIO $ LocalCopyFailed l
+      pure $ Id (fakeLocalTask (Id "local")).task_id.unTagged
+
+    -- no... we already have the rightr source path
+    localSource :: (Scratch Ingest :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
+    localSource remote src = do
+      let cleanPath = maybe (Path src) (Path . dropWhile (== '/')) $ L.stripPrefix remote.directory.filePath src
+      mnt <- Scratch.mountedPath @Ingest cleanPath
+      log Debug $ " local scratch " <> src <> " " <> cleanPath.filePath <> " " <> mnt.filePath
+      pure mnt.filePath
+
+
+-- if the remote IS scratch, get its mounted path
+-- \| remote.directory.filePath == scratch.directory.filePath = do
+-- if the remote isn't, assume the remote directory is absolute
+-- \| "/" `isPrefixOf` remote.directory.filePath =
+--     pure (remote.directory </> Path src).filePath
+-- \| otherwise = do
+--     throwIO $ LocalCopyNoAbsolutePath remote.collection remote.directory.filePath
 
 runTransfer
   :: forall src dest a es
@@ -122,22 +184,6 @@ runTransfer source dest = interpret $ \_ -> \case
     --     (l : _) -> throwIO $ LocalCopyFailed l
     --   pure $ Id fakeLocalTask.task_id.unTagged
     --
-    -- -- WARNING: for this to work, the remote must be set to the exact same thing as scratch
-    -- --   GLOBUS_PUBLISH=globus://03232d38-5e57-11ef-b967-17fffa478f3e/Data/level2
-    -- --   GLOBUS_SCRATCH=globus://03232d38-5e57-11ef-b967-17fffa478f3e/Data/level2
-    -- localSource :: (Scratch :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
-    -- localSource remote src
-    --   -- if the remote IS scratch, get its mounted path
-    --   | remote.directory.filePath == scratch.directory.filePath = do
-    --       let cleanPath = maybe (Path src) (Path . dropWhile (== '/')) $ stripPrefix scratch.directory.filePath src
-    --       mnt <- Scratch.mountedPath cleanPath
-    --       log Debug $ " local scratch " <> src <> " " <> cleanPath.filePath <> " " <> mnt.filePath
-    --       pure mnt.filePath
-    --   -- if the remote isn't, assume the remote directory is absolute
-    --   | "/" `isPrefixOf` remote.directory.filePath =
-    --       pure (remote.directory </> Path src).filePath
-    --   | otherwise = do
-    --       throwIO $ LocalCopyNoAbsolutePath remote.collection remote.directory.filePath
 
     transferRemote :: (Log :> es, Globus :> es) => CurrentAccess -> [TransferItem] -> Eff es (Id Task)
     transferRemote acc items = do
@@ -148,34 +194,36 @@ runTransfer source dest = interpret $ \_ -> \case
       log Debug $ dump " dest: " dest
       log Debug $ dump " files: " files
       sub <- send $ Globus.GetSubmissionId acc.token
-      let req = transferRequest source dest sub
+      let req = transferRequest source dest lbl files sub
       log Debug $ dump " items: " $ fmap (\t -> (t.source_path, t.destination_path)) items
       res <- send $ Globus.Transfer acc.token req
       pure $ Id res.task_id.unTagged
 
-    transferItem :: Remote src -> Remote dest -> FileTransfer src dest f x -> TransferItem
-    transferItem _ _ FileTransfer{sourcePath, destPath, recursive} =
-      -- this must be the relative globus path
-      TransferItem
-        { data_type = DataType
-        , source_path = (remotePath source sourcePath).filePath
-        , destination_path = (remotePath dest destPath).filePath
-        , recursive
-        }
 
-    transferRequest :: Remote src -> Remote dest -> Globus.Id Submission -> TransferRequest
-    transferRequest _ _ submission_id =
-      let items = fmap (transferItem source dest) files
-       in TransferRequest
-            { data_type = DataType
-            , submission_id
-            , label = Just lbl
-            , source_endpoint = source.collection
-            , destination_endpoint = dest.collection
-            , data_ = items
-            , sync_level = SyncTimestamp
-            , store_base_path_info = True
-            }
+transferItem :: Remote src -> Remote dest -> FileTransfer src dest f x -> TransferItem
+transferItem source dest FileTransfer{sourcePath, destPath, recursive} =
+  -- this must be the relative globus path
+  TransferItem
+    { data_type = DataType
+    , source_path = (remotePath source sourcePath).filePath
+    , destination_path = (remotePath dest destPath).filePath
+    , recursive
+    }
+
+
+transferRequest :: Remote src -> Remote dest -> Text -> [FileTransfer src dest a x] -> Globus.Id Submission -> TransferRequest
+transferRequest source dest lbl files submission_id =
+  let items = fmap (transferItem source dest) files
+   in TransferRequest
+        { data_type = DataType
+        , submission_id
+        , label = Just lbl
+        , source_endpoint = source.collection
+        , destination_endpoint = dest.collection
+        , data_ = items
+        , sync_level = SyncTimestamp
+        , store_base_path_info = True
+        }
 
 
 fakeLocalTask :: Id Task -> Task
@@ -242,7 +290,7 @@ downloadL1To lbl toDestPath ds = do
 
 -- TODO: fix me
 uploadInversionResults
-  :: (Globus :> es, Auth :> es, GlobusAccess User :> es, Scratch Ingest :> es, Log :> es, GlobusAccess Ingest :> es)
+  :: (Globus :> es, Auth :> es, GlobusAccess User :> es, Scratch Ingest :> es, Log :> es, GlobusAccess Ingest :> es, IOE :> es)
   => TransferForm
   -> InversionFiles Maybe Filename
   -> App.Id Proposal
@@ -251,7 +299,8 @@ uploadInversionResults
 uploadInversionResults tform upfiles propId invId = do
   ingest <- send GetConfig
   let source :: Remote User = TransferForm.remote tform
-  runTransfer @User @Ingest source ingest.remote $ do
+  -- runTransfer @User @Ingest source ingest.remote $ do
+  runTransferLocalDebug @User @Ingest source ingest.remote $ do
     send $ TransferFiles tform.label (fileTransfers ingest.remote)
  where
   fileTransfers :: Remote Ingest -> [FileTransfer User Ingest File Inversion]
@@ -284,8 +333,8 @@ transferPublish bucket propId invId = do
   let lbl = "Publish " <> invId.fromId
   let sourcePath = Image.outputL2Dir propId invId
   let destPath = bucketedInversionPath $ DKIST.publishDir bucket propId invId
-  let transferItem = FileTransfer{sourcePath, destPath, recursive = True}
-  send $ TransferFiles lbl [transferItem]
+  let item = FileTransfer{sourcePath, destPath, recursive = True}
+  send $ TransferFiles lbl [item]
  where
   bucketedInversionPath :: Path Publish Dir (Bucketed Inversion) -> Path Publish Dir Inversion
   bucketedInversionPath (Path f) = Path f

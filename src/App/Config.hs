@@ -17,7 +17,7 @@ module App.Config
   ) where
 
 import App.Config.MeshConfig
-import App.Effect.GlobusAccess (ClientAccess (..), dummyUser)
+import App.Effect.GlobusAccess (dummyUser)
 import App.Types
 import App.Version
 import App.Worker.CPU

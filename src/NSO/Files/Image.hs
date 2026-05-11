@@ -38,12 +38,12 @@ dataset d = dataset' d.primaryProposalId d.datasetId
 
 dataset' :: Id Proposal -> Id Dataset -> Path Ingest f Dataset
 dataset' propId dsetId =
-  "input" </> Path (cs propId.fromId) </> Path (cs dsetId.fromId)
+  Path (cs propId.fromId) </> Path (cs dsetId.fromId)
 
 
 blancaInput :: Id Proposal -> Id Inversion -> Path Ingest Dir Inversion
 blancaInput ip ii =
-  "input" </> Path (cs ip.fromId) </> Path (cs ii.fromId)
+  Path (cs ip.fromId) </> Path (cs ii.fromId)
 
 
 blancaFile :: Path Ingest Dir Inversion -> Path s Filename a -> Path Ingest File Inversion
@@ -58,8 +58,7 @@ isAsdf p = do
 -- GENRATED OUTPUTS -------------------------------------------------------------------------------------------
 
 outputL2Dir :: Id Proposal -> Id Inversion -> Path Output Dir Inversion
-outputL2Dir ip ii =
-  "generated" </> inversionDir ip ii
+outputL2Dir = inversionDir
 
 
 inversionDir :: Id Proposal -> Id Inversion -> Path sys Dir Inversion

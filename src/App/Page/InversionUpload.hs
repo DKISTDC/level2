@@ -20,6 +20,7 @@ import App.View.Inversion qualified as Inversion
 import App.View.Layout
 import App.View.Transfer (TransferAction (..))
 import App.View.Transfer qualified as Transfer
+import Effectful
 import Effectful.Globus (Globus, Task)
 import Effectful.Log hiding (Info)
 import Effectful.Reader.Dynamic (Reader)
@@ -81,7 +82,7 @@ page propId progId invId = do
 
 submitUpload
   :: forall es
-   . (Log :> es, Hyperbole :> es, GlobusAccess Ingest :> es, GlobusAccess User :> es, Auth :> es, Globus :> es, Datasets :> es, Inversions :> es, Scratch Ingest :> es)
+   . (Log :> es, Hyperbole :> es, GlobusAccess Ingest :> es, GlobusAccess User :> es, Auth :> es, Globus :> es, Datasets :> es, Inversions :> es, Scratch Ingest :> es, IOE :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion

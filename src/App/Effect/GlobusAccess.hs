@@ -104,6 +104,14 @@ fetchClientToken = do
 newtype ClientAccess = ClientAccess (TMVar CurrentAccess)
 
 
+initDummyClientAccess :: (Concurrent :> es, Time :> es, Globus :> es, Log :> es) => Eff es ClientAccess
+initDummyClientAccess = do
+  now <- currentTime -- expires immediately
+  let access = CurrentAccess (Tagged "fake-client-access") now
+  var <- newTMVarIO access
+  pure $ ClientAccess var
+
+
 initGlobusClientAccess :: (Concurrent :> es, Time :> es, Globus :> es, Log :> es) => Eff es ClientAccess
 initGlobusClientAccess = do
   -- immediately fetch a globus access token
