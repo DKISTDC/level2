@@ -40,7 +40,7 @@ dependencies:
   - base >= 4.18
   - nso-level2-types
 
-  - aeson
+  - aeson < 2.2.5
   - amqp-worker >= 2.0.1
   - atomic-css >= 0.1.0
   - binary
@@ -115,6 +115,5 @@ tests:
     dependencies:
       - nso-level2
       - atomic-css
-      - Diff >= 0.5 && <1.0
       - skeletest
 

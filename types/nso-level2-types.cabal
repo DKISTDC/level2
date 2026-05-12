@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.5.
 --
 -- see: https://github.com/sol/hpack
 
@@ -64,7 +64,7 @@ library
       BlockArguments
   ghc-options: -Wall
   build-depends:
-      aeson
+      aeson <2.2.5
     , amqp
     , amqp-worker
     , ansi-terminal

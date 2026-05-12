@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.5.
 --
 -- see: https://github.com/sol/hpack
 
@@ -139,7 +139,7 @@ library
       BlockArguments
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      aeson
+      aeson <2.2.5
     , amqp-worker >=2.0.1
     , atomic-css >=0.1.0
     , base >=4.18
@@ -208,7 +208,7 @@ executable level2
       BlockArguments
   ghc-options: -Wall -fdefer-typed-holes -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
+      aeson <2.2.5
     , amqp-worker >=2.0.1
     , atomic-css >=0.1.0
     , base >=4.18
@@ -289,8 +289,7 @@ test-suite spec
   build-tool-depends:
       skeletest:skeletest-preprocessor
   build-depends:
-      Diff >=0.5 && <1.0
-    , aeson
+      aeson <2.2.5
     , amqp-worker >=2.0.1
     , atomic-css
     , base >=4.18
