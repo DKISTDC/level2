@@ -42,8 +42,7 @@ dataset' propId dsetId =
 
 
 blancaInput :: Id Proposal -> Id Inversion -> Path Ingest Dir Inversion
-blancaInput ip ii =
-  Path (cs ip.fromId) </> Path (cs ii.fromId)
+blancaInput = inversionDir
 
 
 blancaFile :: Path Ingest Dir Inversion -> Path s Filename a -> Path Ingest File Inversion
