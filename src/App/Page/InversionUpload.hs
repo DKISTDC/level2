@@ -82,7 +82,7 @@ page propId progId invId = do
 
 submitUpload
   :: forall es
-   . (Log :> es, Hyperbole :> es, GlobusAccess Ingest :> es, GlobusAccess User :> es, Auth :> es, Globus :> es, Datasets :> es, Inversions :> es, Scratch Ingest :> es, IOE :> es)
+   . (Log :> es, Hyperbole :> es, GlobusAccess Inbox :> es, GlobusAccess User :> es, Auth :> es, Globus :> es, Datasets :> es, Inversions :> es, Scratch Inbox :> es, IOE :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Id Inversion

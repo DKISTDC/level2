@@ -1,7 +1,7 @@
 module NSO.Files.Image where
 
 import Data.Text qualified as T
-import NSO.Files.RemoteFolder (Ingest, Output)
+import NSO.Files.RemoteFolder (Inbox, Output)
 import NSO.Image.Headers (fitsFrameFilename)
 import NSO.Prelude
 import NSO.Types.Common
@@ -32,24 +32,24 @@ fileProfileOrig = Path "per_ori.fits"
 data Input
 
 
-dataset :: Dataset -> Path Ingest f Dataset
+dataset :: Dataset -> Path Inbox f Dataset
 dataset d = dataset' d.primaryProposalId d.datasetId
 
 
-dataset' :: Id Proposal -> Id Dataset -> Path Ingest f Dataset
+dataset' :: Id Proposal -> Id Dataset -> Path Inbox f Dataset
 dataset' propId dsetId =
   Path (cs propId.fromId) </> Path (cs dsetId.fromId)
 
 
-blancaInput :: Id Proposal -> Id Inversion -> Path Ingest Dir Inversion
+blancaInput :: Id Proposal -> Id Inversion -> Path Inbox Dir Inversion
 blancaInput = inversionDir
 
 
-blancaFile :: Path Ingest Dir Inversion -> Path s Filename a -> Path Ingest File Inversion
+blancaFile :: Path Inbox Dir Inversion -> Path s Filename a -> Path Inbox File Inversion
 blancaFile folder (Path filename) = folder </> Path filename
 
 
-isAsdf :: Path Ingest Filename Dataset -> Bool
+isAsdf :: Path Inbox Filename Dataset -> Bool
 isAsdf p = do
   takeExtension p.filePath == ".asdf"
 

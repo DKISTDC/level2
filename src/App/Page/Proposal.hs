@@ -18,7 +18,7 @@ import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Programs as Programs
 import NSO.Data.Proposals as Proposals
-import NSO.Files (Ingest, Level1)
+import NSO.Files (Inbox, Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
@@ -62,7 +62,7 @@ data ProgramSummary = ProgramSummary (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Datasets :> es, Time :> es, Programs :> es, Transfer Level1 Ingest :> es) => HyperView ProgramSummary es where
+instance (Datasets :> es, Time :> es, Programs :> es, Transfer Level1 Inbox :> es) => HyperView ProgramSummary es where
   data Action ProgramSummary
     = ProgramDetails SortField
     | GenIronImage
@@ -78,7 +78,7 @@ instance (Datasets :> es, Time :> es, Programs :> es, Transfer Level1 Ingest :> 
       now <- currentTime
       prog <- fmap head . expectFound =<< send (Programs.Lookup progId)
       ds <- Datasets.findLatest (Datasets.ByProgram progId) >>= expectFound
-      l1 <- send (RemoteSource @Level1 @Ingest)
+      l1 <- send (RemoteSource @Level1 @Inbox)
       pure $ viewProgramSummary l1 srt now prog ds
     GenIronImage -> pure none
 

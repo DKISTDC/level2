@@ -5,8 +5,8 @@ import Data.Time.Calendar (Day, fromGregorian)
 import Data.Time.Clock (DiffTime, UTCTime (..), picosecondsToDiffTime)
 import Data.Void (Void)
 import NSO.Data.Datasets
+import NSO.Files.RemoteFolder (Inbox)
 import NSO.Prelude
-import NSO.Files.RemoteFolder (Ingest)
 import NSO.Types.Common
 import NSO.Types.Wavelength
 import Telescope.Fits (Header)
@@ -17,7 +17,7 @@ import Text.Read (readMaybe)
 
 
 data L1Frame = L1Frame
-  { file :: Path Ingest Filename L1Frame
+  { file :: Path Inbox Filename L1Frame
   , timestamp :: UTCTime
   , wavelength :: Wavelength Nm
   , stokes :: Stokes
@@ -34,7 +34,7 @@ newtype DateBegTimestamp = DateBegTimestamp {time :: UTCTime}
 
 
 data L1Fits = L1Fits
-  { path :: Path Ingest File L1Frame
+  { path :: Path Inbox File L1Frame
   , header :: Header
   }
 
@@ -45,7 +45,7 @@ type Parser = Parsec Void FilePath
 type ParseErr = ParseErrorBundle FilePath Void
 
 
-runParseFileName :: Path Ingest Filename Dataset -> Maybe L1Frame
+runParseFileName :: Path Inbox Filename Dataset -> Maybe L1Frame
 runParseFileName (Path f) =
   case runParser parseL1FileName f f of
     Left _ -> Nothing

@@ -23,7 +23,7 @@ data Config s = Config
 
 
 data Scratches = Scratches
-  { ingest :: Config Ingest
+  { inbox :: Config Inbox
   , output :: Config Output
   }
 

@@ -3,7 +3,7 @@ module NSO.Files
   , User
   , Level1
   , Publish
-  , Ingest
+  , Inbox
   , Output
   , TransferForm (..)
   , DownloadFolder (..)
@@ -12,7 +12,7 @@ module NSO.Files
   ) where
 
 import NSO.Files.Inversion
-import NSO.Files.RemoteFolder (Ingest, Level1, Output, Publish, User)
+import NSO.Files.RemoteFolder (Inbox, Level1, Output, Publish, User)
 import NSO.Files.Scratch
 import NSO.Files.TransferForm (DownloadFolder (..), TransferForm (..))
 import NSO.Prelude ()

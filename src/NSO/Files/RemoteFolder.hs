@@ -2,7 +2,7 @@ module NSO.Files.RemoteFolder
   ( User
   , Level1
   , Publish
-  , Ingest
+  , Inbox
   , Output
   , Source
   , Dest
@@ -24,7 +24,7 @@ data Level1
 data Publish
 
 
-data Ingest
+data Inbox
 data Output
 
 

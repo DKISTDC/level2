@@ -3,7 +3,7 @@ module NSO.Files.Inversion where
 import Data.Bifunctor (first)
 import Data.List qualified as L
 import NSO.Files.Image qualified as Files
-import NSO.Files.RemoteFolder (Ingest)
+import NSO.Files.RemoteFolder (Inbox)
 import NSO.Prelude
 import NSO.Types.Common as App
 import NSO.Types.Inversion
@@ -12,9 +12,9 @@ import Web.Hyperbole
 
 
 data InversionFiles f t = InversionFiles
-  { quantities :: Field f (Path Ingest t InvQuantities)
-  , profileFit :: Field f (Path Ingest t InvProfileFit)
-  , profileOrig :: Field f (Path Ingest t InvProfileOrig)
+  { quantities :: Field f (Path Inbox t InvQuantities)
+  , profileFit :: Field f (Path Inbox t InvProfileFit)
+  , profileOrig :: Field f (Path Inbox t InvProfileOrig)
   -- , timestamps :: Path' t Timestamps
   }
   deriving (Generic)
@@ -50,7 +50,7 @@ instance FromForm (InversionFiles Maybe Filename) where
     isFile (Path fa) (Path fb) = fa == fb
 
 
-inversionFiles :: Path Ingest Dir Inversion -> InversionFiles Identity File
+inversionFiles :: Path Inbox Dir Inversion -> InversionFiles Identity File
 inversionFiles bdir =
   let quantities = bdir </> Files.fileQuantities
       profileFit = bdir </> Files.fileProfileFit

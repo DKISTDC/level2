@@ -29,7 +29,7 @@ import Effectful.Tasks
 import Effectful.Time
 import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
-import NSO.Files (Ingest, Level1, Output, Scratch)
+import NSO.Files (Inbox, Level1, Output, Scratch)
 import NSO.Generic
 import NSO.Image.Fits as Fits
 import NSO.Image.Fits.Quantity (QuantityError)
@@ -78,13 +78,13 @@ generateTask
      , Time :> es
      , Log :> es
      , IOE :> es
-     , Scratch Ingest :> es
+     , Scratch Inbox :> es
      , Scratch Output :> es
      , Concurrent :> es
      , Tasks :> es
      , GenRandom :> es
      , GlobusAccess Level1 :> es
-     , Transfer Level1 Ingest :> es
+     , Transfer Level1 Inbox :> es
      , Error TaskFail :> es
      )
   => GenTask
@@ -178,7 +178,7 @@ workFrame t slice frameInputs = do
 
 
 downloadL1Frames
-  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch Ingest :> es, Transfer Level1 Ingest :> es, GlobusAccess Level1 :> es, Datasets :> es, Tasks :> es)
+  :: (Log :> es, Concurrent :> es, Time :> es, Error GenerateError :> es, Scratch Inbox :> es, Transfer Level1 Inbox :> es, GlobusAccess Level1 :> es, Datasets :> es, Tasks :> es)
   => GenTask
   -> Inversion
   -> Eff es (Downloaded [Id Dataset])
@@ -197,5 +197,5 @@ downloadL1Frames task inv = do
     log Debug $ dump "Download" downloadTaskId
     taskSetStatus task $ GenTransferring downloadTaskId
     log Debug " - waiting..."
-    waitForTransfer @Level1 @Ingest (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
+    waitForTransfer @Level1 @Inbox (\_ -> L1TransferFailed downloadTaskId) downloadTaskId
     pure $ Downloaded $ datasetIds ds

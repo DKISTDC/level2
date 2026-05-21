@@ -177,15 +177,15 @@ initCPUWorkers = do
 
 initScratch :: (Environment :> es, Fail :> es) => Eff es Scratch.Scratches
 initScratch = do
-  ingestGlobus <- parseGlobusRemoteURI =<< requireEnv "SCRATCH_INGEST_GLOBUS"
-  ingestMount <- Path <$> requireEnv "SCRATCH_INGEST_DIR"
-  let ingest = Scratch.Config ingestMount ingestGlobus
+  inboxGlobus <- parseGlobusRemoteURI =<< requireEnv "SCRATCH_INBOX_GLOBUS"
+  inboxMount <- Path <$> requireEnv "SCRATCH_INBOX_DIR"
+  let inbox = Scratch.Config inboxMount inboxGlobus
 
   outputGlobus <- parseGlobusRemoteURI =<< requireEnv "SCRATCH_OUTPUT_GLOBUS"
   outputMount <- Path <$> requireEnv "SCRATCH_OUTPUT_DIR"
   let output = Scratch.Config outputMount outputGlobus
 
-  pure $ Scratches{ingest, output}
+  pure $ Scratches{inbox, output}
 
 
 initRemotes :: (Environment :> es, Fail :> es) => Eff es (Remote Level1, Remote Publish)

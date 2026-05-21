@@ -13,7 +13,7 @@ import Data.Aeson (encode)
 import Data.Ord (Down (..))
 import Data.Text qualified as T
 import NSO.Data.Datasets as Datasets
-import NSO.Files (Ingest, Level1)
+import NSO.Files (Inbox, Level1)
 import NSO.Files.RemoteFolder (Remote)
 import NSO.Prelude
 import NSO.Types.Common
@@ -23,10 +23,10 @@ import Web.Hyperbole
 import Web.Hyperbole.Data.URI (uriToText)
 
 
-page :: (Hyperbole :> es, Datasets :> es, Auth :> es, Transfer Level1 Ingest :> es) => Id Dataset -> Page es '[]
+page :: (Hyperbole :> es, Datasets :> es, Auth :> es, Transfer Level1 Inbox :> es) => Id Dataset -> Page es '[]
 page di = do
   ds <- Datasets.findIds [di]
-  l1 <- send (RemoteSource @Level1 @Ingest)
+  l1 <- send (RemoteSource @Level1 @Inbox)
 
   let sorted = sortOn (Down . (.scanDate)) ds
 

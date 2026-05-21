@@ -40,7 +40,7 @@ generateAsdf
    . ( Datasets :> es
      , Time :> es
      , Scratch Output :> es
-     , Scratch Ingest :> es
+     , Scratch Inbox :> es
      , Log :> es
      , IOE :> es
      , Error FetchError :> es

@@ -33,7 +33,7 @@ import NSO.Types.User (CurrentAccess (..))
 import System.FileCopy (copyRecursive)
 
 
--- 1. User -> Scratch Workspace (Ingest)
+-- 1. User -> Scratch Workspace (Inbox)
 -- 2. Level1 -> Scratch Workspace (Output)
 -- 3. Scratch Clean ->  DKIST Data (publish)
 
@@ -79,14 +79,14 @@ runTransferSkip source dest = interpret $ \_ -> \case
 
 
 -- we KNOW that this transfer is local
--- User -> Ingest
+-- User -> Inbox
 -- Output -> Publish (behaves differently!)
 runTransferLocalDebug
   :: forall src dest a es
    . ( Globus :> es
      , GlobusAccess src :> es
      , GlobusAccess dest :> es
-     , Scratch Ingest :> es
+     , Scratch Inbox :> es
      , IOE :> es
      , Log :> es
      )
@@ -100,14 +100,14 @@ runTransferLocalDebug source dest = interpret $ \_ -> \case
   TransferStatus tid -> pure $ fakeLocalTask tid
   TransferFiles _lbl files -> transferLocalScratch $ fmap (transferItem source dest) files
    where
-    transferLocalScratch :: (Log :> es, Scratch Ingest :> es, IOE :> es) => [TransferItem] -> Eff es (Id Task)
+    transferLocalScratch :: (Log :> es, Scratch Inbox :> es, IOE :> es) => [TransferItem] -> Eff es (Id Task)
     transferLocalScratch tfers = do
       log Debug "TRANSFER LOCAL SCRATCH"
       log Debug $ dump " source: " source
       log Debug $ dump " dest: " dest
       res <- forM tfers $ \t -> do
         -- log Debug $ "  xfer1: " <> t.source_path <> " " <> t.destination_path
-        -- WARNING: this works differently for User -> Ingest and Output -> Publish
+        -- WARNING: this works differently for User -> Inbox and Output -> Publish
         -- the latter needs to get a correct local path?
         -- test it
         -- src <- localSource source t.source_path
@@ -121,10 +121,10 @@ runTransferLocalDebug source dest = interpret $ \_ -> \case
       pure $ Id (fakeLocalTask (Id "local")).task_id.unTagged
 
     -- no... we already have the rightr source path
-    localSource :: (Scratch Ingest :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
+    localSource :: (Scratch Inbox :> es, Log :> es) => Remote sys -> FilePath -> Eff es FilePath
     localSource remote src = do
       let cleanPath = maybe (Path src) (Path . dropWhile (== '/')) $ L.stripPrefix remote.directory.filePath src
-      mnt <- Scratch.mountedPath @Ingest cleanPath
+      mnt <- Scratch.mountedPath @Inbox cleanPath
       log Debug $ " local scratch " <> src <> " " <> cleanPath.filePath <> " " <> mnt.filePath
       pure mnt.filePath
 
@@ -260,7 +260,7 @@ fakeLocalTask tid =
 --   let dest = TransferForm.remote tform
 --   downloadL1To tform.label (TransferForm.dataset tform df) dest ds
 
-scratchDownloadDatasets :: (Transfer Level1 Ingest :> es, Scratch Ingest :> es) => [Dataset] -> Eff es (Id Task)
+scratchDownloadDatasets :: (Transfer Level1 Inbox :> es, Scratch Inbox :> es) => [Dataset] -> Eff es (Id Task)
 scratchDownloadDatasets ds = do
   let lbl = "Sync Datasets: " <> T.intercalate "," (fmap (\d -> d.datasetId.fromId) ds)
   downloadL1To lbl Image.dataset ds
@@ -290,23 +290,23 @@ downloadL1To lbl toDestPath ds = do
 
 -- TODO: fix me
 uploadInversionResults
-  :: (Globus :> es, Auth :> es, GlobusAccess User :> es, Scratch Ingest :> es, Log :> es, GlobusAccess Ingest :> es, IOE :> es)
+  :: (Globus :> es, Auth :> es, GlobusAccess User :> es, Scratch Inbox :> es, Log :> es, GlobusAccess Inbox :> es, IOE :> es)
   => TransferForm
   -> InversionFiles Maybe Filename
   -> App.Id Proposal
   -> App.Id Inversion
   -> Eff es (Id Task)
 uploadInversionResults tform upfiles propId invId = do
-  ingest <- send GetConfig
+  inbox <- send GetConfig
   let source :: Remote User = TransferForm.remote tform
-  -- runTransfer @User @Ingest source ingest.remote $ do
-  runTransferLocalDebug @User @Ingest source ingest.remote $ do
-    send $ TransferFiles tform.label (fileTransfers ingest.remote)
+  -- runTransfer @User @Inbox source inbox.remote $ do
+  runTransferLocalDebug @User @Inbox source inbox.remote $ do
+    send $ TransferFiles tform.label (fileTransfers inbox.remote)
  where
-  fileTransfers :: Remote Ingest -> [FileTransfer User Ingest File Inversion]
-  fileTransfers ingest = catMaybes [fmap (fileTransfer ingest) upfiles.quantities, fmap (fileTransfer ingest) upfiles.profileFit, fmap (fileTransfer ingest) upfiles.profileOrig]
+  fileTransfers :: Remote Inbox -> [FileTransfer User Inbox File Inversion]
+  fileTransfers inbox = catMaybes [fmap (fileTransfer inbox) upfiles.quantities, fmap (fileTransfer inbox) upfiles.profileFit, fmap (fileTransfer inbox) upfiles.profileOrig]
    where
-    fileTransfer :: Remote Ingest -> Path Ingest Filename a -> FileTransfer User Ingest File Inversion
+    fileTransfer :: Remote Inbox -> Path Inbox Filename a -> FileTransfer User Inbox File Inversion
     fileTransfer _folder p@(Path a) =
       FileTransfer
         { sourcePath = Path a

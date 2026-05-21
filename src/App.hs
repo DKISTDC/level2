@@ -49,7 +49,7 @@ import NSO.Data.Datasets (Datasets, runDataDatasets)
 import NSO.Data.Inversions (Inversions, runDataInversions)
 import NSO.Data.Programs as Programs
 import NSO.Data.Sync as Sync (History, MetadataSync, initMetadataSync, runMetadataSync)
-import NSO.Files (Ingest, Level1, Output, Publish)
+import NSO.Files (Inbox, Level1, Output, Publish)
 import NSO.Files.Scratch (Scratch, runScratch)
 import NSO.Files.Scratch qualified as Scratch
 import NSO.InterserviceBus
@@ -157,14 +157,14 @@ start = do
       . runReader config.scratch
       . runReader config.cpuWorkers
       . runRel8 config.db
-      . runScratch @Ingest config.scratch.ingest
+      . runScratch @Inbox config.scratch.inbox
       . runScratch @Output config.scratch.output
       . runFetchHttp config.manager
       . runGlobusClientAccess @Level1 globusAccess
-      . runGlobusClientAccess @Ingest globusAccess
+      . runGlobusClientAccess @Inbox globusAccess
       . runGlobusClientAccess @Publish globusAccess
       . runTransfer @Level1 @Publish config.level1 config.publish
-      . runTransfer @Level1 @Ingest config.level1 config.scratch.ingest.remote
+      . runTransfer @Level1 @Inbox config.level1 config.scratch.inbox.remote
       . runGraphQL config.manager
       . runMetadata config.services.metadata
       . runGenRandom
@@ -219,22 +219,22 @@ webServer config tasks fits pubs sync rows globusAccess =
             (Just u) -> runApp u . routeRequest $ router
             _ -> runPage Auth.page
 
-  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Time : Reader App : Scratch Output : Scratch Ingest : FileSystem : Globus : Error GlobusError : Log : Reader (TMVar LogState) : es) a -> Eff es a
+  runBasic :: (Hyperbole :> es, Concurrent :> es, IOE :> es) => Eff (Time : Reader App : Scratch Output : Scratch Inbox : FileSystem : Globus : Error GlobusError : Log : Reader (TMVar LogState) : es) a -> Eff es a
   runBasic =
     runReader rows
       . runLogger "AppBasic"
       . runErrorWith @GlobusError onGlobus
       . runGlobus config.globus config.manager
       . runFileSystem
-      . runScratch config.scratch.ingest
+      . runScratch config.scratch.inbox
       . runScratch config.scratch.output
       . runReader config.app
       . runTime
 
   runApp
-    :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Ingest :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
+    :: (IOE :> es, Concurrent :> es, Hyperbole :> es, Scratch Output :> es, Scratch Inbox :> es, Globus :> es, Reader (TMVar LogState) :> es, Time :> es)
     => User
-    -> Eff (Transfer Level1 Ingest : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Ingest : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : ReportTaskStatus : Programs : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
+    -> Eff (Transfer Level1 Inbox : Transfer Output Publish : GlobusAccess User : GlobusAccess Level1 : GlobusAccess Publish : GlobusAccess Output : GlobusAccess Inbox : Auth : Debug : MetadataSync : Queue PublishTask : Queue GenTask : Tasks : ReportTaskStatus : Programs : Inversions : Datasets : MetadataDatasets : MetadataInversions : GraphQL : Fetch : Rel8 : GenRandom : Error GraphQLError : Error Rel8Error : Log : es) Response
     -> Eff es Response
   runApp u =
     runLogger "App"
@@ -255,13 +255,13 @@ webServer config tasks fits pubs sync rows globusAccess =
       . runMetadataSync sync
       . runDebugIO
       . runAuth u
-      . runGlobusClientAccess @Ingest globusAccess
+      . runGlobusClientAccess @Inbox globusAccess
       . runGlobusClientAccess @Output globusAccess
       . runGlobusClientAccess @Publish globusAccess
       . runGlobusClientAccess @Level1 globusAccess
       . runGlobusUserAccess
       . runTransfer @Output @Publish config.scratch.output.remote config.publish
-      . runTransfer @Level1 @Ingest config.level1 config.scratch.ingest.remote
+      . runTransfer @Level1 @Inbox config.level1 config.scratch.inbox.remote
 
 
 onGlobus :: (IOE :> es, Log :> es, Hyperbole :> es) => CallStack -> GlobusError -> Eff es a

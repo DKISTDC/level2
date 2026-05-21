@@ -27,7 +27,7 @@ import NSO.Data.Datasets as Datasets
 import NSO.Data.Inversions as Inversions
 import NSO.Data.Programs as Programs
 import NSO.Data.Qualify (qualify)
-import NSO.Files.RemoteFolder (Ingest, Level1, Remote)
+import NSO.Files.RemoteFolder (Inbox, Level1, Remote)
 import NSO.Prelude
 import NSO.Types.Common
 import NSO.Types.Proposal (Proposal)
@@ -38,7 +38,7 @@ import Web.Hyperbole
 -- import App.Page.Datasets.Download (ActiveDownload (..))
 
 page
-  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Programs :> es, Auth :> es, Globus :> es, Transfer Level1 Ingest :> es)
+  :: (Hyperbole :> es, Time :> es, Datasets :> es, Inversions :> es, Programs :> es, Auth :> es, Globus :> es, Transfer Level1 Inbox :> es)
   => Id Proposal
   -> Id InstrumentProgram
   -> Page es '[ProgramInversions, ProgramDatasets, ProgramDetails]
@@ -47,7 +47,7 @@ page propId progId = do
   progs <- send (Programs.Lookup progId) >>= expectFound
   let prog = head progs
   now <- currentTime
-  l1 <- send (RemoteSource @Level1 @Ingest)
+  l1 <- send (RemoteSource @Level1 @Inbox)
   invs <- send $ Inversions.ByProgram progId
   -- ActiveDownload download <- query
 
@@ -215,7 +215,7 @@ data ProgramDatasets = ProgramDatasets (Id Proposal) (Id InstrumentProgram)
   deriving (Generic, ViewId)
 
 
-instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es, Transfer Level1 Ingest :> es) => HyperView ProgramDatasets es where
+instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :> es, Log :> es, Transfer Level1 Inbox :> es) => HyperView ProgramDatasets es where
   data Action ProgramDatasets
     = SortDatasets Reprocessing SortField
     deriving (Generic, ViewAction)
@@ -224,7 +224,7 @@ instance (Inversions :> es, Auth :> es, Datasets :> es, Time :> es, Reader App :
   update (SortDatasets r srt) = do
     ProgramDatasets _ progId <- viewId
     ds <- send $ Datasets.Find (Datasets.ByProgram progId) r
-    l1 <- send (RemoteSource @Level1 @Ingest)
+    l1 <- send (RemoteSource @Level1 @Inbox)
     pure $ viewDatasets l1 ds r srt
 
 
