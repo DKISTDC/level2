@@ -31,13 +31,11 @@ instance Route AppRoute where
 
   matchRoute = \case
     [] -> pure Dashboard
-    ["redirect"] -> pure Login
     ss -> genMatchRoute ss.segments
 
 
   routePath = \case
     Dashboard -> []
-    Login -> ["redirect"]
     r -> URI.Path $ genRoutePath r
 
 

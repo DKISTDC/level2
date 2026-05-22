@@ -18,7 +18,6 @@ import Effectful.Concurrent
 import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Dynamic
-import Effectful.State.Static.Shared as State
 import System.Console.ANSI qualified as ANSI
 import System.IO (hPutStrLn, stderr)
 import Prelude hiding (log)
@@ -50,6 +49,16 @@ newtype ThreadName = ThreadName Text
   deriving newtype (IsString)
 
 
+runLoggerIgnore
+  :: Eff (Log : es) a
+  -> Eff es a
+runLoggerIgnore = interpret $ \env -> \case
+  Log _ _ -> pure ()
+  Context _ m -> do
+    localSeqUnlift env $ \unlift -> unlift m
+  Status _ -> pure ()
+
+
 runLogger
   :: (IOE :> es, Concurrent :> es, Reader Logs :> es)
   => ThreadName
@@ -78,16 +87,6 @@ runLogger (ThreadName tname) = reinterpret (runReader @(Maybe String) Nothing) $
       Nothing -> pure ()
       Just r -> do
         putMessage $ "● [" <> ctx <> "] " <> r
-
-  putMessage :: (Reader (TMVar LogState) :> es, Concurrent :> es) => String -> Eff es ()
-  putMessage msg = do
-    _ <- modifyState $ \st -> st{buffer = msg : st.buffer}
-    pure ()
-
-  removeRow :: (Reader (TMVar LogState) :> es, Concurrent :> es) => RowId -> Eff es ()
-  removeRow rid = do
-    _ <- modifyState $ \st -> st{rows = Map.delete rid st.rows}
-    pure ()
 
   messageContext Nothing = ""
   messageContext (Just ctx) = " [" <> ctx <> "]"

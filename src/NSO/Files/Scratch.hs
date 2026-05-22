@@ -85,7 +85,7 @@ runScratch cfg = interpret $ \_ -> \case
  where
   mounted :: Path s x b -> Path s (Mounted x) b
   mounted p =
-    cfg.mount </> p
+    cfg.mount </> cfg.remote.directory </> p
 
   absolutePath :: Path s x b -> FilePath
   absolutePath p = (mounted p).filePath

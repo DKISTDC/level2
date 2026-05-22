@@ -211,7 +211,7 @@ webServer config tasks fits pubs sync rows globusAccess =
     runBasic $ do
       case pth of
         -- allow /redirect past to process the login
-        "/redirect" -> runPage Auth.login
+        "/login" -> runPage Auth.login
         -- otherwise, check login status and redirect to the auth page
         _ -> do
           us <- Auth.lookupUser
