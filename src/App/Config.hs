@@ -17,10 +17,12 @@ module App.Config
   ) where
 
 import App.Config.MeshConfig
+import App.Effect.Auth (AuthConfig (..))
 import App.Effect.GlobusAccess (dummyUser)
 import App.Types
 import App.Version
 import App.Worker.CPU
+import Data.Aeson qualified as A
 import Data.String.Conversions (ConvertibleStrings)
 import Data.Tagged
 import Effectful
@@ -62,6 +64,7 @@ data Config = Config
   , level1 :: Remote Level1
   , publish :: Remote Publish
   , amqp :: AMQP.Connection
+  , auth :: AuthConfig
   }
 
 
@@ -88,6 +91,7 @@ initConfig = do
   cpus <- initCPUWorkers
   (level1, publish) <- initRemotes
   dev <- initOfflineDev
+  auth <- initAuth
 
   -- DKIST Services
   mesh <- initMesh
@@ -99,7 +103,13 @@ initConfig = do
   log Debug $ dump "AppVersion" appVersion.value
   log Debug $ dump "GitVersion" gitVersion.value
 
-  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp, dev}
+  pure $ Config{services, globus, app, db, scratch, cpuWorkers = cpus, manager, level1, publish, amqp, dev, auth}
+
+
+initAuth :: (Environment :> es, Fail :> es) => Eff es AuthConfig
+initAuth = do
+  emails <- jsonEnv "AUTH_ADMIN_EMAILS"
+  pure $ AuthConfig emails
 
 
 initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
@@ -213,6 +223,14 @@ initApp = do
   port <- readEnv @Int "APP_PORT" -- readEnv "APP_PORT" -- hard coded, since nginx is hard coded
   domain <- Tagged <$> requireEnv "APP_DOMAIN"
   pure $ App{port, domain}
+
+
+jsonEnv :: (FromJSON a, Environment :> es, Fail :> es) => String -> Eff es a
+jsonEnv env = do
+  val <- requireEnv env
+  case A.eitherDecode val of
+    Left err -> fail $ "JSON ENV (" <> env <> ") could not be parsed: " <> err
+    Right a -> pure a
 
 
 readEnv :: (Read a, Environment :> es, Fail :> es) => String -> Eff es a

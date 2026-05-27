@@ -208,7 +208,7 @@ webServer config tasks fits pubs sync rows globusAccess =
   respond :: (IOE :> es, Concurrent :> es, Hyperbole :> es) => Eff es Response
   respond = do
     pth <- reqPath
-    runBasic $ do
+    runBasic $ runReader config.auth $ do
       case pth of
         -- allow /redirect past to process the login
         "/login" -> runPage Auth.login

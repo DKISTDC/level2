@@ -80,7 +80,7 @@ data AuthRed = AuthRed
   deriving (Generic, ViewId)
 
 
-instance (Log :> es, Reader App :> es, Globus :> es, Time :> es) => HyperView AuthRed es where
+instance (Log :> es, Reader App :> es, Globus :> es, Time :> es, Reader AuthConfig :> es) => HyperView AuthRed es where
   data Action AuthRed
     = LazyAuth (Token Exchange)
     deriving (Generic, ViewAction)
@@ -89,7 +89,7 @@ instance (Log :> es, Reader App :> es, Globus :> es, Time :> es) => HyperView Au
   update (LazyAuth authCode) = do
     app <- ask @App
     u <- globusAuthWithCode app.domain Login authCode
-    us <- maybe (respondError "User login missing email") pure $ userFromLoginInfo u
+    us <- userFromLoginInfo u
     saveUser us
     url <- redirectTo
     redirect url

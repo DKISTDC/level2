@@ -20,6 +20,11 @@ import Web.Hyperbole
 import Web.Hyperbole.Data.URI as URI
 
 
+data AuthConfig = AuthConfig
+  { admins :: [UserEmail]
+  }
+
+
 -- NOTE: User must identify via globus to access the app
 -- The app itself needs rights to all the collections it will be moving files to
 
@@ -176,9 +181,15 @@ openFileManager files lbl submitUrl = do
   redirect $ fileManagerSelectUrl files lbl app.domain submitUrl cancelUrl
 
 
-userFromLoginInfo :: UserLoginInfo -> Maybe User
+userFromLoginInfo :: (Hyperbole :> es, Reader AuthConfig :> es) => UserLoginInfo -> Eff es User
 userFromLoginInfo ui = do
-  e <- ui.email
-  pure $ User e ui.transfer (isHardCodedAdmin e)
+  email <- maybe (respondError "User login missing email") pure ui.email
+  admins <- asks @AuthConfig (.admins)
+  pure $
+    User
+      { email
+      , access = ui.transfer
+      , isAdmin = isHardCodedAdmin admins email
+      }
  where
-  isHardCodedAdmin e = e == UserEmail "shess@nso.edu"
+  isHardCodedAdmin admins e = e `elem` admins
