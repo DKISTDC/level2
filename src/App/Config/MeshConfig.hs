@@ -15,6 +15,7 @@ import Network.Endpoint (Domain, Endpoint (..), EndpointAuth, Path, Port, Scheme
 data MeshConfig a = MeshConfig
   { interserviceBus :: a
   , internalApiGateway :: a
+  , level2InversionPostgres :: a
   }
   deriving (Generic)
 instance FromJSON (MeshConfig MeshService) where
@@ -37,12 +38,14 @@ parseMeshConfig bs = do
     Right a -> pure a
 
 
-meshEndpoints :: MeshConfig EndpointAuth -> MeshConfig MeshService -> MeshConfig Path -> MeshConfig Endpoint
-meshEndpoints auths mesh paths =
-  MeshConfig
-    { interserviceBus = meshEndpoint (Scheme "amqp") mesh.interserviceBus auths.interserviceBus paths.interserviceBus
-    , internalApiGateway = meshEndpoint (Scheme "http") mesh.internalApiGateway auths.internalApiGateway paths.internalApiGateway
-    }
+meshInterserviceBus :: MeshService -> EndpointAuth -> Endpoint
+meshInterserviceBus isb auth =
+  meshEndpoint (Scheme "amqp") isb auth ""
+
+
+meshInternalApiGateway :: MeshService -> EndpointAuth -> Endpoint
+meshInternalApiGateway gw auth =
+  meshEndpoint (Scheme "http") gw auth "/graphql"
 
 
 meshEndpoint :: Scheme -> MeshService -> EndpointAuth -> Path -> Endpoint

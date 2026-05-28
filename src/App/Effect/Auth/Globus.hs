@@ -32,6 +32,7 @@ loginUrl r = do
 authUrl :: (Globus :> es) => Uri Redirect -> Eff es URI
 authUrl red = do
   url <- send $ AuthUrl red [TransferAll [hardCodedCUBoulderBLANCACollection], Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
+
   -- url <- send $ AuthUrl red [TransferAll [], Identity Globus.Email, Identity Globus.Profile, Identity Globus.OpenId] (State "_")
   pure $ convertUrl url
  where

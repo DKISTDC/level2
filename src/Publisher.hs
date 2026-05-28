@@ -1,6 +1,7 @@
 module Publisher where
 
 import App.Config qualified as Config
+import App.Config.MeshConfig (MeshConfig (..))
 import App.Effect.GlobusAccess as GlobusAccess
 import App.Effect.Transfer (runTransfer)
 import App.Worker.Publish as Publish
@@ -70,7 +71,6 @@ start = do
 
   runWorker action = do
     mgr <- liftIO $ Http.newManager Http.tlsManagerSettings
-    db <- Config.initDb
     scratch <- Config.initScratch
     (_, publish) <- Config.initRemotes
     globus <- Config.initGlobus
@@ -82,6 +82,7 @@ start = do
     amqp <- initAMQPConnection services.interserviceBus
     pubs <- initQueueAMQP services.interserviceBus amqp publishKey
     bus <- ISB.initBus services.interserviceBus amqp
+    db <- Config.initDb mesh.level2InversionPostgres
 
     report <- initReportQueue services.interserviceBus amqp
 

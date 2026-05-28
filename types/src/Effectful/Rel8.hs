@@ -1,8 +1,14 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Effectful.Rel8
   ( Rel8 (..)
   , runRel8
   , connect
   , connectionSettingFromUrl
+  , connectionUrl
+  , DBUser (..)
+  , DBPass (..)
+  , DBName (..)
   , run
   , run_
 
@@ -35,6 +41,7 @@ module Effectful.Rel8
   ) where
 
 import Control.Exception (Exception)
+import Data.String.Interpolate (i)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -46,6 +53,7 @@ import Hasql.Session (SessionError (..))
 import Hasql.Session qualified as Session
 import Hasql.Statement as Hasql
 import NSO.Prelude
+import Network.Endpoint (Domain (..), Port (..))
 import Rel8 hiding (run, run_)
 import Rel8 qualified
 
@@ -60,9 +68,21 @@ data Rel8 :: Effect where
 type instance DispatchOf Rel8 = 'Dynamic
 
 
+newtype DBUser = DBUser Text
+newtype DBPass = DBPass Text
+newtype DBName = DBName Text
+
+
 connectionSettingFromUrl :: Text -> Setting
 connectionSettingFromUrl url = Connection.connection $ Connection.string url
 
+
+connectionUrl :: Domain -> Port -> DBUser -> DBPass -> DBName -> Text
+connectionUrl (Domain host) (Port prt) (DBUser user) (DBPass pass) (DBName db) =
+  [i|postgres://#{user}:#{pass}@#{host}:#{prt}/#{db}|]
+
+
+-- DATABASE_URL=postgres://dev:dev@localhost:5432/level2
 
 runRel8
   :: (IOE :> es, Error Rel8Error :> es)

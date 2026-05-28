@@ -19,12 +19,13 @@ import Web.Hyperbole
 import Web.Hyperbole.Data.URI (pathUri)
 
 
-page :: (Hyperbole :> es, Reader App :> es, Globus :> es) => Page es '[]
+page :: (Hyperbole :> es, Reader App :> es, Globus :> es, Log :> es) => Page es '[]
 page = do
   UserSession user _ <- lookupUser
 
   -- go to the login page below after redirecting back
   logUrl <- loginUrl Login
+  log Debug $ dump "LOGIN URL" logUrl
 
   case user of
     -- shouldn't be on this page, redirect to the app

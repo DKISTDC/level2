@@ -71,6 +71,7 @@ data Config = Config
 data Services = Services
   { metadata :: MetadataService
   , interserviceBus :: AMQPConfig
+  , postgres :: MeshService
   }
 
 
@@ -84,7 +85,6 @@ initConfig :: (Log :> es, Environment :> es, Fail :> es, Time :> es, IOE :> es, 
 initConfig = do
   app <- initApp
 
-  db <- initDb
   globus <- initGlobus
   scratch <- initScratch
   manager <- liftIO $ Http.newManager Http.tlsManagerSettings
@@ -96,6 +96,7 @@ initConfig = do
   -- DKIST Services
   mesh <- initMesh
   services <- initServices mesh
+  db <- initDb mesh.level2InversionPostgres
 
   -- InterserviceBus
   amqp <- initAMQPConnection services.interserviceBus
@@ -112,46 +113,41 @@ initAuth = do
   pure $ AuthConfig emails
 
 
-initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig Endpoint)
+initMesh :: (Environment :> es, Fail :> es) => Eff es (MeshConfig MeshService)
 initMesh = do
   var <- requireEnv "MESH_CONFIG"
-  mesh <- parseMeshConfig var
-  auths <- meshAuths
-
-  pure $ meshEndpoints auths mesh meshPaths
- where
-  meshPaths =
-    MeshConfig
-      { interserviceBus = ""
-      , internalApiGateway = "/graphql"
-      }
-
-  meshAuths = do
-    userISB <- requireEnv "ISB_USERNAME"
-    passISB <- requireEnv "ISB_PASSWORD"
-
-    tokGQL <- requireEnv "GQL_AUTH_TOKEN"
-
-    pure $
-      MeshConfig
-        { interserviceBus = AuthUser userISB passISB
-        , internalApiGateway = AuthToken tokGQL
-        }
+  parseMeshConfig var
 
 
-initServices :: forall es. (Environment :> es, Fail :> es) => MeshConfig Endpoint -> Eff es Services
+initServices :: forall es. (Environment :> es, Fail :> es) => MeshConfig MeshService -> Eff es Services
 initServices mesh = do
-  bus <- isbService mesh.interserviceBus
-  metadata <- metadataService
+  ba <- busAuth
+  let epBus = meshInterserviceBus mesh.interserviceBus ba
+  bus <- isbService epBus
+
+  ma <- metaAuth
+  let epMeta = meshInternalApiGateway mesh.internalApiGateway ma
+  metadata <- metadataService epMeta
+
   pure $
     Services
       { metadata = metadata
       , interserviceBus = bus
+      , postgres = mesh.level2InversionPostgres
       }
  where
-  metadataService :: Eff es MetadataService
-  metadataService = do
-    gateway <- parseService mesh.internalApiGateway
+  busAuth = do
+    userISB <- requireEnv "ISB_USERNAME"
+    passISB <- requireEnv "ISB_PASSWORD"
+    pure $ AuthUser userISB passISB
+
+  metaAuth = do
+    tokGQL <- requireEnv "GQL_AUTH_TOKEN"
+    pure $ AuthToken tokGQL
+
+  metadataService :: Endpoint -> Eff es MetadataService
+  metadataService ep = do
+    gateway <- parseService ep
     pure $
       MetadataService
         { datasets = gateway
@@ -212,10 +208,14 @@ initGlobus = do
   pure $ GlobusClient{clientId, clientSecret}
 
 
-initDb :: (Environment :> es, Fail :> es, Error Rel8Error :> es, IOE :> es) => Eff es Rel8.Connection
-initDb = do
-  postgres <- requireEnv "DATABASE_URL"
-  Rel8.connect [Rel8.connectionSettingFromUrl postgres]
+initDb :: (Environment :> es, Fail :> es, Error Rel8Error :> es, IOE :> es) => MeshService -> Eff es Rel8.Connection
+initDb mesh = do
+  user <- DBUser <$> requireEnv "PGUSER"
+  pass <- DBPass <$> requireEnv "PGPASSWORD"
+  db <- DBName <$> requireEnv "PGDATABASE"
+  let url = Rel8.connectionUrl mesh.meshAddress mesh.meshPort user pass db
+
+  Rel8.connect [Rel8.connectionSettingFromUrl url]
 
 
 initApp :: (Environment :> es, Fail :> es) => Eff es App
