@@ -1,0 +1,7 @@
+image: haskell:latest
+pipelines:
+  default:
+    - step:
+        script:
+          - cabal update
+          - cabal test
