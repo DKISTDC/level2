@@ -28,6 +28,13 @@ pipelines:
 
   branches:
     main:
+    - step:
+        name: Setup
+        script:
+          - echo "HI"
+          - echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
+          - echo "ARTIFACTORY=$ARTIFACTORY"
+          - echo "BITBUCKET_COMMIT=$BITBUCKET_COMMIT"
     - step: *run-tests
     - step:
           name: Push to Artifactory
