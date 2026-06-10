@@ -46,3 +46,6 @@ spec = do
       spectralLineName (SpectralLine NaI (Just D2) 589.0) `shouldBe` "Na I D2 (589.00 nm)"
       spectralLineName (SpectralLine H (Just Alpha) 656.28) `shouldBe` "H alpha (656.28 nm)"
       spectralLineName (SpectralLine H (Just Beta) 486.13) `shouldBe` "H beta (486.13 nm)"
+
+    it "renders spectral lines with designations" $ do
+      fail "NOPE"
