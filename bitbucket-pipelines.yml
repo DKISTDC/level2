@@ -1,7 +1,26 @@
-image: haskell:latest
+image: haskell:9.6.7              # Explicitly targets GHC 9.6.7 and associated Cabal CLI
+
+definitions:
+  caches:
+    cabal-deps:
+      key:
+        files:
+          - cabal.project
+          - "*.cabal"
+      path: ~/.cabal
+
 pipelines:
   default:
     - step:
+        name: Build Dependencies
+        caches:
+          - cabal-deps
         script:
           - cabal update
+          - cabal build --only-dependencies --enable-tests
+    - step:
+        name: Run Test Suite
+        caches:
+          - cabal-deps
+        script:
           - cabal test
