@@ -32,9 +32,7 @@ pipelines:
         name: Setup
         script:
           - echo "HI"
-          - echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
-          - echo "ARTIFACTORY=$ARTIFACTORY"
-          - echo "BITBUCKET_COMMIT=$BITBUCKET_COMMIT"
+          - printenv | cut -d= -f1
     - step: *run-tests
     - step:
           name: Push to Artifactory
