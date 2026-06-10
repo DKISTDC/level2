@@ -1,4 +1,4 @@
-image: haskell:9.8.4-bookworm
+image: haskell:9.10.3-bookworm
 
 definitions:
   caches:
