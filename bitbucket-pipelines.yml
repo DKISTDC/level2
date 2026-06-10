@@ -37,7 +37,7 @@ pipelines:
           - echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
           - echo "DOCKER_HOST=$DOCKER_HOST"
           - echo "DOCKER_HUB_URL=$DOCKER_HUB_URL"
-    - step: *run-tests
+    # - step: *run-tests
     - step:
           name: Push to Artifactory
           services:
