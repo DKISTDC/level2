@@ -33,6 +33,8 @@ pipelines:
         script:
           - echo "HI"
           - printenv | cut -d= -f1
+          - echo "ARTIFACTORY_URL=$ARTIFACTORY_URL"
+          - echo "ARTIFACTORY_USER=$ARTIFACTORY_USER"
     - step: *run-tests
     - step:
           name: Push to Artifactory
@@ -41,12 +43,12 @@ pipelines:
           script:
             - docker --version
 
-            - echo "$ARTIFACTORY_PASSWORD" | docker login "$ARTIFACTORY" --username "$ARTIFACTORY_USER" --password-stdin
+            - echo "$ARTIFACTORY_PASSWORD" | docker login "$ARTIFACTORY_URL" --username "$ARTIFACTORY_USER" --password-stdin
 
             - SHORT_SHA=$(git rev-parse --short $BITBUCKET_COMMIT)
             - echo "COMMIT_SHORT_SHA=$SHORT_SHA"
 
-            - docker push "$ARTIFACTORY/level2:$VERSION_PREFIX.$BITBUCKET_BUILD_NUMBER"
-            - docker push "$ARTIFACTORY/level2:$VERSION_PREFIX.$SHORT_SHA"
-            - docker push "$ARTIFACTORY/level2:latest"
+            - docker push "$ARTIFACTORY_URL/level2:$VERSION_PREFIX.$BITBUCKET_BUILD_NUMBER"
+            - docker push "$ARTIFACTORY_URL/level2:$VERSION_PREFIX.$SHORT_SHA"
+            - docker push "$ARTIFACTORY_URL/level2:latest"
 
