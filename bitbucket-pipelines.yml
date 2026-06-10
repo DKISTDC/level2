@@ -45,7 +45,7 @@ pipelines:
           script:
             - docker --version
 
-            - echo "$ARTIFACTORY_PASSWORD" | docker login "$DOCKER_HOST" --username "$ARTIFACTORY_USER" --password-stdin
+            - echo "$ARTIFACTORY_PASSWORD" | docker login "$DOCKER_HUB_URL" --username "$ARTIFACTORY_USER" --password-stdin
 
             - SHORT_SHA=$(git rev-parse --short $BITBUCKET_COMMIT)
             - echo "COMMIT_SHORT_SHA=$SHORT_SHA"
