@@ -10,17 +10,29 @@ definitions:
       path: ~/.cabal
 
 pipelines:
-  default:
+  pull-requests:
+    "**":
+      - step: &run-tests
+          name: Build and Test
+          caches:
+            - cabal-deps
+          script:
+            - apt-get update
+            - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libpq-dev pkg-config ca-certificates
+            - rm -rf /var/lib/apt/lists/*
+
+            - cabal update
+            - cabal build --only-dependencies --enable-tests
+
+            - cabal test
+
+  branches:
+    main:
+    - step: *run-tests
     - step:
-        name: Build and Test
-        caches:
-          - cabal-deps
+        name: Dummy STep
+        services:
+          - docker
         script:
-          - apt-get update
-          - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libpq-dev pkg-config ca-certificates
-          - rm -rf /var/lib/apt/lists/*
-
-          - cabal update
-          - cabal build --only-dependencies --enable-tests
-
-          - cabal test
+          - echo "HI"
+          - docker --version
