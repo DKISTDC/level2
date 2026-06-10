@@ -210,9 +210,9 @@ initGlobus = do
 
 initDb :: (Environment :> es, Fail :> es, Error Rel8Error :> es, IOE :> es) => MeshService -> Eff es Rel8.Connection
 initDb mesh = do
-  user <- DBUser <$> requireEnv "PGUSER"
-  pass <- DBPass <$> requireEnv "PGPASSWORD"
-  db <- DBName <$> requireEnv "PGDATABASE"
+  user <- DBUser <$> requireEnv "POSTGRES_USER"
+  pass <- DBPass <$> requireEnv "POSTGRES_PASSWORD"
+  db <- DBName <$> requireEnv "POSTGRES_DB"
   let url = Rel8.connectionUrl mesh.meshAddress mesh.meshPort user pass db
 
   Rel8.connect [Rel8.connectionSettingFromUrl url]

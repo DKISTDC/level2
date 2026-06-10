@@ -3,8 +3,8 @@ CREATE TABLE datasets (
 
     dataset_id text NOT NULL UNIQUE,
     product_id text NOT NULL,
-    experiment_id text NOT NULL,
-    proposal_id text NOT NULL,
+    primary_experiment_id text NOT NULL,
+    primary_proposal_id text NOT NULL,
     observing_program_id text NOT NULL,
     instrument_program_id text NOT NULL,
 
