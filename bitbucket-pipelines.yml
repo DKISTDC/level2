@@ -12,14 +12,23 @@ definitions:
 pipelines:
   default:
     - step:
-        name: Build Dependencies
+        name: System Dependencies
+        caches:
+          - cabal-deps
+        script:
+          - apt-get update
+          - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libpq-dev pkg-config ca-certificates
+          - rm -rf /var/lib/apt/lists/*
+          - pg_config --version # Sanity check matching your old CI
+    - step:
+        name: Cabal Dependencies
         caches:
           - cabal-deps
         script:
           - cabal update
           - cabal build --only-dependencies --enable-tests
     - step:
-        name: Run Test Suite
+        name: Cabal Test
         caches:
           - cabal-deps
         script:
