@@ -1,4 +1,4 @@
-image: haskell:9.6.7              # Explicitly targets GHC 9.6.7 and associated Cabal CLI
+image: haskell:9.8.4-bookworm
 
 definitions:
   caches:
