@@ -9,6 +9,8 @@
 dist-newstyle
 cabal.project.local
 Dockerfile
+bitbucket-pipelines.yml
+*.md
 bin/*
 
 *.hi
