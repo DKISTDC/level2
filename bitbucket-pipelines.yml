@@ -1,7 +1,5 @@
 image: haskell:9.10.3-bookworm
 
-size: 2x
-
 definitions:
   services:
     docker:
@@ -45,6 +43,7 @@ pipelines:
     # - step: *run-tests
     - step:
           name: Push to Artifactory
+          size: 2x
           services:
             - docker
           caches:
