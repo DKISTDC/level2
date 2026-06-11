@@ -42,6 +42,8 @@ pipelines:
           name: Push to Artifactory
           services:
             - docker
+          caches:
+            - docker
           script:
             - docker --version
 
