@@ -43,7 +43,7 @@ RUN hpack && hpack types
 
 RUN mkdir app src test deps types/src
 RUN touch LICENSE README.md DEVELOPMENT.md deps/metadata.graphql
-RUN cabal build --only-dependencies
+RUN cabal build --only-dependencies --enable-tests
 
 
 
@@ -58,6 +58,7 @@ WORKDIR /opt/build
 COPY . . 
 
 # Run tests
+RUN hpack && hpack types
 RUN cabal test
 
 # Install

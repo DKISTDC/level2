@@ -1,6 +1,9 @@
 image: haskell:9.10.3-bookworm
 
 definitions:
+  services:
+    docker:
+      memory: 7168
   caches:
     cabal-deps:
       key:
