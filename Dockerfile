@@ -1,6 +1,6 @@
 ### dependencies base image ################################
 
-FROM haskell:9.6.7 AS dependencies
+FROM haskell:9.10.3 AS dependencies
 
 # SYSTEM BUILD DEPENDENCIES
 RUN apt-get update -y
@@ -67,10 +67,12 @@ WORKDIR /opt/app
 
 RUN apt-get update -y
 RUN apt-get install -y curl build-essential libssl-dev libpq-dev ca-certificates openssl pkg-config
-RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cargo --version
-RUN cargo install sqlx-cli
+
+# sqlx-cli
+# RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+# ENV PATH="/root/.cargo/bin:${PATH}"
+# RUN cargo --version
+# RUN cargo install sqlx-cli
 
 
 COPY --from=build /root/.local/bin/level2 .
