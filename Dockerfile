@@ -25,10 +25,10 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 
 # basic cabal dependencies
 RUN cabal update
-# RUN cabal install hpack
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-  hpack \
-  && rm -rf /var/lib/apt/lists/*
+RUN cabal install hpack
+# RUN apt-get update -y && apt-get install -y --no-install-recommends \
+#   hpack \
+#   && rm -rf /var/lib/apt/lists/*
 
 
 RUN mkdir -p /opt/build
