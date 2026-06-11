@@ -41,13 +41,7 @@ pipelines:
           - echo "DOCKER_HOST=$DOCKER_HOST"
           - echo "DOCKER_HUB_URL=$DOCKER_HUB_URL"
 
-          - TAG_BITBUCKET="$DOCKER_HUB_URL/level2:$VERSION_PREFIX.$BITBUCKET_BUILD_NUMBER"
-          - TAG_SHA="$DOCKER_HUB_URL/level2:$VERSION_PREFIX.$SHORT_SHA"
-          - TAG_LATEST="$DOCKER_HUB_URL/level2:latest"
-          - echo "TAG_BITBUCKET=$TAG_BITBUCKET"
-          - echo "TAG_SHA=$TAG_SHA"
-          - echo "TAG_LATEST=$TAG_LATEST"
-    # - step: *run-tests
+    - step: *run-tests
     - step:
           name: Push to Artifactory
           size: 2x
@@ -60,14 +54,16 @@ pipelines:
 
             - echo "$ARTIFACTORY_PASSWORD" | docker login "$DOCKER_HUB_URL" --username "$ARTIFACTORY_USER" --password-stdin
 
+            - docker build -t level2 .
+
             - SHORT_SHA=$(git rev-parse --short $BITBUCKET_COMMIT)
-            - echo "COMMIT_SHORT_SHA=$SHORT_SHA"
+            # - echo "COMMIT_SHORT_SHA=$SHORT_SHA"
 
             - TAG_BITBUCKET="$DOCKER_HUB_URL/level2:$VERSION_PREFIX.$BITBUCKET_BUILD_NUMBER"
             - TAG_SHA="$DOCKER_HUB_URL/level2:$VERSION_PREFIX.$SHORT_SHA"
             - TAG_LATEST="$DOCKER_HUB_URL/level2:latest"
 
-            - docker build -t level2 .
+            - echo "TAGS $TAG_BITBUCKET $TAG_SHA $TAG_LATEST"
             - docker tag level2 $TAG_BITBUCKET
             - docker tag level2 $TAG_SHA
             - docker tag level2 $TAG_LATEST
