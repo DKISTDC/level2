@@ -1,6 +1,8 @@
 Level 2 Inversion
 =================
 
+**NOTE** ‼️ Repository moved to bitbucket
+
 *Admin tool to manage the creation of Level 2 data for the DKIST solar telescope.*
 
 * See [DEVELOPMENT.md](./DEVELOPMENT.md)
